@@ -1,0 +1,133 @@
+#
+# $Id$
+#
+
+Protocol for secure authentication over IRC
+
+Purpose:
+         The purpose of this sub-protocol of IRC is to provide an
+         authentication mechanism having greater security than
+         plaintext password-authentication to remote services.
+
+The client message structure:
+          Messages occur within the PRIVMSG message of the IRC protocol
+          to the service, bot, or client the user wishes to authenticate
+          to.
+
+             :<nick> PRIVMSG <service> :<command> [<parameters>]
+
+          see RFC1459 for more information.
+
+          *the 'service' is the IRC bot or service that requires
+          the user to authenticate her/himself to it.*
+
+          the authentication request messages are:
+
+          Command:            IDENTIFY-TYPES
+	  Lists available authentication types
+
+          Command:            IDENTIFY-PLAIN [<object>] <secret>
+          Plaintext identification.
+
+          Command:            IDENTIFY-<hashtype> [[<object>] <hash>]
+          Common types:       MD5
+
+          With no parameters the command requests a challenge
+          cookie from the service.
+
+          The 'hash' specified in a message with parameters is
+          a 'response' to the challenge in the used authenticator
+          type.
+
+          The 'challenge cookie' must be acquired from the service by
+          invoking the IDENTIFY-<type> command with no parameters -- or
+          the authentication service may simply issue a cookie when
+          it knows authentication would be appropriate.
+
+          The response is contructed through hashing the lowercased
+          version of an auth string, the cookie string, and a
+          MD5 message-digest-hashed {regardless of auth hash-type} `secret'
+          string [concatenated and colon-separated] in this form:
+
+                 auth-name:cookie:hashed-secret
+
+         *The hash on the password is always MD5 so that the service can
+          store their database password in this particular hashed form
+          if it so chooses without hurting the authentication scheme*
+
+          *note: the result of all hashes is stored in hexadecimal-expanded
+           form for the purposes of including it in another hash or sending it
+           over IRC. ex: 'AbAz' becomes '4162417a'*
+
+          When using a MD5 authentication type, an authenticator to nickserv
+          for the irc nick 'joe' with a cookie 3452a, and a secret 'blah'
+          the authentication hash would be:
+               5ee85cef0b3e31c8e8be3b3c81937196
+          [a MD5 hash of:   joe:3452a:6f1ed002ab5595859014ebf0951522d9 ]
+
+          The purpose of the cookie is to prevent the hash from being
+          re-used if it is intercepted -- it contains a portion that is
+          dependent on the UTC time it is requested at, and a portion that
+          is specific to the client it is issued to [to prevent two clients
+          from obtaining equal cookies]; it may be possible to predict what
+          a cookie will be, but it must be impossible for two clients to
+          ever acquire the same cookie regardless of the time of day or
+          any other factors that go into determining it.
+
+          The 'auth-name' specifier identifies the hash as belonging to
+          a particular object; typically it will simply be the name of
+          the object (ie: an irc nickname) -- all characters of it are
+          transferred to the lower-case form before it goes into the hash,
+          everything is as case-sensitive as conditions allow.
+
+The service message structure:
+
+          The service authentication is being requested of will respond in 
+          a highly-structured manner to facilitate user-scripting on the
+          client side.
+
+          Messages occur within the NOTICE message of the IRC protocol
+          and are of the form:
+
+                  :<service> NOTICE <me> :<msgcode> [<params>] [- <info>]
+
+          see RFC1459 for more information.
+
+          The following codes and messages are used
+
+             200 {type[/version] type2[/version] ...}
+                 - List of available auth types
+                 - Format version 1.0 is implicit for hash types where
+                   a version is not specified.
+             205 <auth type>/<encoding type> <protocol version> <cookie> [-
+                  Ready to authenticate.]
+                 - Service issues the challenge after receiving an
+                   IDENTIFY request message
+             210 <object> [- Authentication validated]
+                 - The authenticator has validated your identity
+             215 <cookie> [- Missing response]
+                 - A cookie was already issued and you sent another
+                   ID with no parameters, a new cookie will be sent,
+                   this message signals the previous cookie is voided.
+             300 [- You need a challenge first]
+                 - You're trying to send a hash and the service hasn't
+                   given you a cookie yet.
+             500 [- Invalid authenticator.]
+                 - Your authentication hash was not completely valid,
+                   either the auth-name, password, or cookie component
+                 - This message may be used in place of 505 where the
+                   object's existence/lack-of-existence is not already
+                   available to the user authenticating
+                   [in the case of irc services, this is meaningless
+                    as '/ns info' will always report the existence of a
+                    nick object.]
+             505 [- No such object.]
+                 - The object you are trying to authenticate your
+                   access to no longer exists - ie: the nick isn't registered
+                 - This refers to the object identification is being
+                   attempted to, not the auth-name or hash.
+
+             510 [- Authentication type unsupported.]
+                 - The service doesn't know about that kind of auth type
+
+                  

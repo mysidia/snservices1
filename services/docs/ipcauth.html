@@ -1,0 +1,545 @@
+<HTML
+><HEAD
+><TITLE
+>Authentication</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.73
+"><LINK
+REL="HOME"
+TITLE="Services installation and operation manual"
+HREF="manual.html"><LINK
+REL="UP"
+TITLE="Services IPC"
+HREF="ipc.html"><LINK
+REL="PREVIOUS"
+TITLE="Services IPC"
+HREF="ipc.html"><LINK
+REL="NEXT"
+TITLE="Query Messages"
+HREF="ipcquery.html"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Services installation and operation manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="ipc.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 5. Services IPC</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="ipcquery.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="IPCAUTH"
+>Authentication</A
+></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="IPCAUTHGEN"
+>Semantics</A
+></H2
+><P
+>				Before gaining any useful privileges,
+				all IPC clients must authenticate
+				themselves by using an auth name
+				and a password.
+
+				Two levels of authentication are available:
+				<P
+></P
+><UL
+><LI
+><P
+>System authentication</P
+></LI
+><LI
+><P
+>Object authentication</P
+></LI
+></UL
+>
+			</P
+><P
+>				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>System authentication</I
+></SPAN
+> grants an application
+				system-level permissions, for example:
+				the ability to access the akill database, to list private data on nicknames in NickServ, or
+				change certain parts of a nick that ordinary authentication to the nickname doesn't allow.
+			</P
+><P
+>					<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Object authentication</I
+></SPAN
+> grants a client
+					extended permissions for a particular object;
+					for example, by knowing a nickname's password,
+					you can authenticate to that nickname in particular
+					and make changes that your level of system
+					authentication doesn't otherwise allow you.
+			</P
+><P
+>					In other words: system authentication
+					grants a client certain rights on the
+					system overall, and object authentication
+					grants specific access to a particular nickname, channel, or
+					other object and potentially other rights that
+					are associated with being authenticated
+					to that object.
+			</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="IPCAUTHDETAIL"
+>System Authentication Details</A
+></H2
+><P
+>					System authentication occurs
+					in a number of steps:				
+				</P
+><P
+></P
+><UL
+><LI
+><P
+>			Connection: upon successful
+			connection, a client is greeted
+			with the following:
+<PRE
+CLASS="PROGRAMLISTING"
+>HELO IAM services.network.net
+AUTH SYSTEM PID XXXX
+AUTH SYSTEM LOGIN irc/services</PRE
+>
+		</P
+><P
+>			The actual information shown depends
+			on the services session.
+
+			This verifies you are connecting to
+			services IPC.
+		</P
+><P
+>			Once services has sent its AUTH SYSTEM LOGIN
+			message, it now expects the client to
+			send one.  This can be done with:
+<PRE
+CLASS="PROGRAMLISTING"
+>			AUTH SYSTEM LOGIN <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>username</I
+></SPAN
+></PRE
+>
+		</P
+></LI
+><LI
+><P
+>			Upon receiving and processing AUTH SYSTEM LOGIN,
+			services will reply with <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>OK AUTH SYSTEM LOGIN</I
+></SPAN
+>.
+			This verifies that the message was accepted:
+			errors such as <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ERR-BADLOGIN AUTH SYSTEM LOGIN - Invalid login</I
+></SPAN
+>
+			are also possible, but for this to occur on AUTH SYSTEM LOGIN,
+			a syntax error is likely, because usernames that
+			aren't valid authenticators do not normally flag
+                        an error until later in the authentication process.
+		</P
+><P
+>			In general, errors are prefixed by ERR-<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>cause</I
+></SPAN
+> <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>command</I
+></SPAN
+> - <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>informative message</I
+></SPAN
+>
+		</P
+><P
+>			If your <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>AUTH SYSTEM LOGIN</I
+></SPAN
+>
+			message is successful, services will additionally
+			send you another message of type <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>AUTH COOKIE</I
+></SPAN
+>,
+			for example:
+<PRE
+CLASS="PROGRAMLISTING"
+>AUTH COOKIE 10569CC3C9</PRE
+>
+		</P
+><P
+>			Services uses challenge-response authentication
+			for both system and object logins.
+
+			This means that if IPC were to be extended
+			over a network, passwords would not be exposed
+			to sniffers over the plaintext protocol.
+		</P
+><P
+>			To respond to the message, it is necessary
+			to compute a MD5 Message digest of the cookie and
+			the password.
+		</P
+><P
+>			The following is what you need to compute:
+<PRE
+CLASS="PROGRAMLISTING"
+>			MD5( <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>cookie</I
+></SPAN
+>:<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>authenticator</I
+></SPAN
+> )</PRE
+>
+		</P
+><P
+>			In the cause of SYSTEM LOGINs, the authenticator
+			is the password, whereas in the case
+			of Object logins, the authenticator is
+			typically MD5(<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>password</I
+></SPAN
+>)
+		</P
+><P
+>			The MD5 function here indicates the
+			base16 (hexadecimal) representation
+			of the message digest, also
+			known as md5hex.
+		</P
+><P
+>			Supposing my cookie were 123
+			and my password abc, I would
+			compute
+<PRE
+CLASS="PROGRAMLISTING"
+>MD5("123:abc") = ebecf09cd7c661306f05c7c7fa017549</PRE
+>
+		</P
+><P
+>			And login with:
+<PRE
+CLASS="PROGRAMLISTING"
+>AUTH SYSTEM PASS ebecf09cd7c661306f05c7c7fa017549</PRE
+>
+		</P
+></LI
+><LI
+><P
+>			Recognition
+		</P
+><P
+>			An example of the message that
+			follows a successful SYSTEM
+			PASS:
+<PRE
+CLASS="PROGRAMLISTING"
+>OK AUTH SYSTEM PASS
+YOU ARE www/test</PRE
+>
+		</P
+><P
+>			Once you receive the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>OK AUTH SYSTEM PASS</I
+></SPAN
+>
+			message, your connection is authenticated,
+			and you can issue ALTER, QUERY commands
+			or authenticate to OBJECTs if the
+			user you've authenticated with has
+			those privileges.
+		</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="IPCOBJAUTHSYN"
+>Object Authentication Details</A
+></H2
+><P
+>		The syntax and usage for OBJECT
+		authentication is the same as that
+		for SYSTEM authentication with a few
+		differences.
+	</P
+><P
+></P
+><UL
+><LI
+><P
+>				Instead of AUTH SYSTEM LOGIN <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>user</I
+></SPAN
+>,
+				the message is:
+				<PRE
+CLASS="PROGRAMLISTING"
+>	AUTH OBJECT LOGIN <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>object type</I
+></SPAN
+> <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>object name</I
+></SPAN
+>
+				</PRE
+>
+			</P
+><P
+>				Object type is one of <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>RNICK</I
+></SPAN
+>
+				for Registered Nickname, or <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>RCHAN</I
+></SPAN
+> for
+				registered channel. 
+
+				New types could be created as well.
+			</P
+></LI
+><LI
+><P
+>				The response to a valid
+					AUTH OBJECT LOGIN
+				message is:
+<PRE
+CLASS="PROGRAMLISTING"
+>AUTH COOKIE XXX</PRE
+>
+
+			And the client is then expected to send:
+<PRE
+CLASS="PROGRAMLISTING"
+>AUTH OBJECT PASS <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>response</I
+></SPAN
+></PRE
+>
+			</P
+><P
+>			The response is the result of applying
+			the MD5 function, in this fashion:
+<PRE
+CLASS="PROGRAMLISTING"
+>			MD5(<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>cookie</I
+></SPAN
+>:MD5(<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>secret authenticator</I
+></SPAN
+>))</PRE
+>
+			</P
+><P
+>				For RNICKs and RCHANs, the secret authenticator
+			is simply their password.
+			</P
+></LI
+><LI
+><P
+>				Successful authentication to an object results in this message:
+			</P
+><PRE
+CLASS="PROGRAMLISTING"
+>OK AUTH OBJECT RNICK PASS</PRE
+></LI
+></UL
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="ipc.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="manual.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="ipcquery.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Services IPC</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="ipc.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Query Messages</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

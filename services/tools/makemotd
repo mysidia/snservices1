@@ -1,0 +1,100 @@
+#!/bin/sh
+#
+# Copyright C 1999 James Hess
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the authors nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Mainly just a prototype for now -- probably not very portable either
+# Output a motd file to stdout
+# -Mysid
+ 
+CONF="$HOME/installed/services/services.conf"
+ALIASES="$HOME/installed/services/.nicks"
+SRATMP=""
+SOTMP=""
+
+#Expire times
+NDROP=25
+CDROP=15
+
+cat <<__EOF__
+ SorceryNet services, version 1.4.x
+ Copyright (c) 1996-1997 Chip Norkus, (c) 1997 Max Byrd,
+ (c) 1997 Greg Poma, (c) 1997 Michael Graff,
+ (c) 1998-2001 James Hess, and (c) 1997 Dafydd James.
+
+ See /info services.* for acknowledgments
+
+  Services Root Administrators:                                     
+__EOF__
+SRALIST="`grep 'SRA:' $CONF | awk -F':' '{if ($1=="SRA") {printf("%s\n", $2)}}' |sort -rn |uniq`"
+for i in $SRALIST ; do
+   X="`grep -i "&$i:" $ALIASES | head -1`"
+   if [ -n "$X" ] ; then
+       SRATMP="$SRATMP `echo "$X" | awk -F':' '{print $2}'`"
+   else
+       SRATMP="$SRATMP `echo $i`"
+   fi
+done
+echo $SRATMP |xargs -n 1 |sort -rn |uniq | awk '{printf("      %-17s%-13s (%s@sorcery.net)\n", $1, "", $1)}'
+
+cat <<__EOF__
+
+Services Operators:
+__EOF__
+#grep 'SERVOP:' $CONF | awk -F':' '{if ($1=="SERVOP") {print $2}}' | sort -rn |uniq |sort | xargs -n 5 | awk '{printf("      %s %s %s %s %s\n", $1, $2, $3, $4, $5)}'
+SOLIST="`grep 'SERVOP:' $CONF | awk -F':' '{if ($1=="SERVOP") {print $2}}' | sort -rn |uniq |sort`"
+for i in $SOLIST ; do
+   X="`grep -i "&$i:" $ALIASES | head -1`"
+   if [ -n "$X" ] ; then
+       SOTMP="$SOTMP `echo "$X" | awk -F':' '{print $2}'`"
+   else
+       SOTMP="$SOTMP `echo $i`"
+   fi
+done
+SOLIST="`echo $SOTMP |xargs -n 1 |sort -rn |uniq |sort`"
+SOTMP="$SOLIST"
+SOLIST=""
+for i in $SOTMP; do
+   if [ "$i" = "kline" ] ; then
+       continue
+   fi
+   if [ -n "$SOLIST" ] ; then
+       SOLIST="$SOLIST, $i"
+    else
+       SOLIST="$i"
+    fi
+done
+echo $SOLIST |xargs -n 5 |awk '{printf("      %s %s %s %s %s\n", $1, $2, $3, $4, $5)}'
+
+cat <<__EOF__
+
+#####################################################################
+# Nicknames will expire after $NDROP days of not being used.            #
+# Channels will expire after $CDROP days of not being used.             #
+#####################################################################
+__EOF__

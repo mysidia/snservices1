@@ -1,0 +1,269 @@
+<HTML
+><HEAD
+><TITLE
+>Overview</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.73
+"><LINK
+REL="HOME"
+TITLE="Services installation and operation manual"
+HREF="manual.html"><LINK
+REL="UP"
+TITLE="Introduction"
+HREF="intro.html"><LINK
+REL="PREVIOUS"
+TITLE="Introduction"
+HREF="intro.html"><LINK
+REL="NEXT"
+TITLE="Copyright"
+HREF="copy.html"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Services installation and operation manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="intro.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 1. Introduction</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="copy.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="OVERVIEW"
+>Overview</A
+></H1
+><P
+>					Sorserv (IRC Services) is an IRC addon,
+					that is, it is an <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>extension</I
+></SPAN
+>
+					to IRC and not part of the original IRC
+					protocol.
+
+					The addon provides registration services
+					for user nicknames and channels on IRC,
+					and it provides additional tools to help
+					administrators see and take action against
+					abuses of their server and enforce
+					their policies.
+				</P
+><P
+>					The addon is implemented as a pseudo-server.
+
+					That is, under normal operation, services exists
+					as a server node in the IRC network and provides
+					its services under the pseudonym of "fake" user nodes
+					on the network who are used when any request
+					needs to be made of services and who are used
+					to return the results of the request to the user
+					who made it.
+				</P
+><P
+>					So services is not truly an IRC server or
+					part of IRC itself, nor are the "services users"
+					really users, but to the network they appear as such, and the
+					basic IRC commands for interacting with services
+					are the same as those for interacting with
+					an ordinary IRC Robot (or user).
+				</P
+><P
+>					Requests to services are sent over IRC's
+					<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>private message</I
+></SPAN
+>
+					facility, and services' answer to a
+					request is returned in the form of
+					a <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>private notice</I
+></SPAN
+>.
+				</P
+><P
+>					Although the services package allows an
+					administrator of services to name the
+					services units however they like, the
+					typical names of the services provided
+					by the sorserv addon are:
+					<P
+></P
+><UL
+><LI
+><P
+>OperServ</P
+><P
+>							Handles most
+							administrative requests,
+							and it is an interface
+							usable only by global
+							operators of the IRC
+							system.
+						</P
+></LI
+><LI
+><P
+>NickServ</P
+><P
+>							Has the domain of
+							requests (including administrative ones)
+							that relate to the
+							registration, ownership,
+							and control of use of
+							nicknames on the IRC system.
+						</P
+></LI
+><LI
+><P
+>ChanServ</P
+><P
+>							Has the domain of
+							requests (including administrative ones)
+							that relate to the
+							registration, ownership,
+							and control of use of
+							channels on IRC.
+						</P
+></LI
+><LI
+><P
+>InfoServ</P
+><P
+>							Has the domain of
+							requests (including administrative ones)
+							that relate to the
+							automated distribution
+							of "news articles"
+							by services on IRC.
+						</P
+></LI
+><LI
+><P
+>GameServ</P
+><P
+>							Handles "dice roll" requests,
+							for use by roleplayers
+						</P
+></LI
+></UL
+>
+				</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="intro.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="manual.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="copy.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Introduction</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="intro.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Copyright</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
