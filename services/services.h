@@ -68,6 +68,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <time.h>
+#include <limits.h>
 #include <arpa/inet.h>
 
 #include <netinet/in.h>
