@@ -59,7 +59,7 @@ int	attach_conf(aClient *, aConfItem *);
 aConfItem *attach_confs(aClient*, char *, int);
 aConfItem *attach_confs_host(aClient*, char *, int);
 int	attach_Iline(aClient *, struct HostEnt *, char *);
-aConfItem *conf, *find_me(), *find_admin();
+aConfItem *conf, *find_me(void), *find_admin(void);
 aConfItem *count_cnlines(Link *);
 void	det_confs_butmask(aClient *, int);
 int	detach_conf(aClient *, aConfItem *);
@@ -102,16 +102,16 @@ int	check_server(aClient *, struct HostEnt *, \
 				    aConfItem *, aConfItem *, int);
 int	check_server_init(aClient *);
 void	close_connection(aClient *);
-void	close_listeners();
+void	close_listeners(void);
 int connect_server(aConfItem *, aClient *, struct HostEnt *);
 void	get_my_name(aClient *, char *, int);
 int	get_sockerr(aClient *);
 int	inetport(aClient *, char *, int);
-void	init_sys();
+void	init_sys(void);
 int	read_message(time_t);
 void	report_error(char *, aClient *);
 void	set_non_blocking(int, aClient *);
-int	setup_ping();
+int	setup_ping(void);
 void	summon(aClient *, char *, char *, char *);
 
 void	start_auth(aClient *);
@@ -121,7 +121,7 @@ void	send_authports(aClient *);
 void	restart(char *);
 void	send_channel_modes(aClient *, aChannel *);
 void	server_reboot(char *);
-void	terminate(), write_pidfile();
+void	terminate(void), write_pidfile(void);
 
 int	send_queued(aClient *);
 int	tolog( int logtype, char *fmt, ... );
@@ -147,7 +147,7 @@ char	*get_client_namp(char *, aClient *, int, int);
 char	*my_name_for_link(char *, aConfItem *);
 char	*myctime(time_t), *date(time_t);
 int	exit_client(aClient *, aClient *, aClient *, char *);
-void	initstats(), tstats(aClient *, char *);
+void	initstats(void), tstats(aClient *, char *);
 
 int	parse(aClient *, char *, char *, struct Message *);
 int	do_numeric(int, aClient *, aClient *, int, char **);
@@ -167,11 +167,11 @@ void delist_conf(aConfItem *aconf);
 void	free_conf(aConfItem *);
 void	free_class(aClass *);
 void	free_user(anUser *, aClient *);
-Link	*make_link();
+Link	*make_link(void);
 anUser	*make_user(aClient *);
-aConfItem *make_conf();
-aClass	*make_class();
-aServer	*make_server();
+aConfItem *make_conf(void);
+aClass	*make_class(void);
+aServer	*make_server(aClient *);
 aClient	*make_client(aClient *);
 int	free_socks(struct Socks *zap);
 aSocks	*make_socks(aClient *to);
@@ -180,7 +180,7 @@ int	IsMember(aClient *, aChannel *);
 char	*pretty_mask(char *, int);
 void	add_client_to_list(aClient *);
 void	remove_client_from_list(aClient *);
-void	initlists();
+void	initlists(void);
 
 void	add_class(int, int, int, int, long);
 void	fix_class(aConfItem *, aConfItem *);
@@ -195,14 +195,14 @@ struct	HostEnt	*get_res(char *);
 
 struct	HostEnt	*gethost_byaddr(anAddress *, Link *);
 struct	HostEnt	*gethost_byname(char *, int, Link *);
-void	flush_cache();
+void	flush_cache(void);
 int	init_resolver(int);
 time_t	timeout_query_list(time_t);
 time_t	expire_cache(time_t);
 void    del_queries(char *);
 
-void	clear_channel_hash_table();
-void	clear_client_hash_table();
+void	clear_channel_hash_table(void);
+void	clear_client_hash_table(void);
 int	add_to_client_hash_table(char *, aClient *);
 int	del_from_client_hash_table(char *, aClient *);
 int	add_to_channel_hash_table(char *, aChannel *);
@@ -214,7 +214,7 @@ aClient	*hash_find_server(char *, aClient *);
 
 void	add_history(aClient *);
 aClient	*get_history(char *, time_t);
-void	initwhowas();
+void	initwhowas(void);
 void	off_history(aClient *);
 
 int	dopacket(aClient *, char *, int);
