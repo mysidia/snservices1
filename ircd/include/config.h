@@ -61,12 +61,6 @@
 #define	ALLOW_MODEHACK	/* enable Modehack operator flag */
 #define SERVICES_NAME	"services.sorcery.net"
 
-/*
- *  URL people denied access as result of open socks server should be sent to
- *  for help
- */
-#define SOCKSFOUND_URL   "http://www.sorcery.net/help/open_socks.html"
-
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the
    *most* CPU time in ircd.  They take more time than a WHOIS *as?f?s?d*.
@@ -162,27 +156,6 @@
  * than the K line comment (the comment field is treated as a filename)
  */
 #undef	COMMENT_IS_FILE
-
-
-/*
- * read/write are restarted after signals defining this 1, gets
- * siginterrupt call compiled, which attempts to remove this
- * behaviour (apollo sr10.1/bsd4.3 needs this)
- */
-#ifdef APOLLO
-#define	RESTARTING_SYSTEMCALLS
-#endif
-
-/*
- * If your host supports varargs and has vsprintf(), vprintf() and vscanf()
- * C calls in its library, then you can define USE_VARARGS to use varargs
- * instead of imitation variable arg passing.
-#undef	USE_VARARGS
- * NOTE: with current server code, varargs doesn't survive because it can't
- *       be used in a chain of 3 or more funtions which all have a variable
- *       number of params.  If anyone has a solution to this, please notify
- *       the maintainer.
- */
 
 #if 0
 #define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
@@ -436,11 +409,6 @@
 #define HANGONGOODLINK 300	/* Recommended value: 5 minutes */
 
 /*
- * Number of seconds to wait for write to complete if stuck.
- */
-#define WRITEWAITDELAY     15	/* Recommended value: 15 */
-
-/*
  * Number of seconds to wait for a connect(2) call to complete.
  * NOTE: this must be at *LEAST* 10.  When a client connects, it has
  * CONNECTTIMEOUT - 10 seconds for its host to respond to an ident lookup
@@ -508,11 +476,6 @@ error CLIENT_FLOOD undefined
 #endif
 #if (NICKNAMEHISTORYLENGTH < 100)
 #  define NICKNAMEHISTORYLENGTH 100
-#endif
-
-#ifndef SOCKSFOUND_URL
-#error SOCKSFOUND_URL is not defined: Please define in config.h
-error SOCKSFOUND_URL is not defined: Please define in config.h
 #endif
 
 #endif /* __config_include__ */
