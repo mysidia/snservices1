@@ -36,7 +36,7 @@
 #include "h.h"
 #include "msg.h"
 
-#ifdef SOL20
+#ifdef NEED_GETADDRINFO
 #include "getaddrinfo.h"
 #endif
 

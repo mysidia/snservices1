@@ -92,6 +92,7 @@
 #define MSG_SHOWMASK "SHOWMASK" /* SHOWMASK */
 #define MSG_LOG	     "LOG"	/* LOG */
 #define MSG_WATCH    "WATCH"	/* WATCH */
+#define MSG_SHOWCON  "SHOWCON" 
  
 #define MSG_NICKSERV "NickServ"
 #define MSG_CHANSERV "ChanServ"
@@ -182,6 +183,7 @@ int m_hash(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_dns(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_showcon(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 
 /* Message flags */
 #define MF_NODUMP		0x1	/* only allow once per 2 seconds */
@@ -275,6 +277,7 @@ struct Message msgtab[] = {
   { MSG_SHOWMASK,m_showmask, 0, MAXPARA, 1,        0L, 0 },
   { MSG_HURTSET, m_hurtset,  0, MAXPARA, 1 | MF_H, 0L, 0 },
   { MSG_LOG,	 m_log,      0, MAXPARA, 1,	   0L, 0 },
+  { MSG_SHOWCON, m_showcon,  0, MAXPARA, 1 | MF_H, 0L, 0 },
   { MSG_WATCH,	 m_watch,    0, MAXPARA, 1,	   0L, 0 },
   { NULL,        NULL,       0, 0,       0,        0L, 0 }
 };

@@ -27,6 +27,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <arpa/nameser.h>
+#include <resolv.h>
+
 #include <assert.h>
 #include <stdio.h>
 #include <signal.h>
@@ -45,11 +48,9 @@ void setlinebuf(FILE *iop);
 #include "numeric.h"
 #include "patchlevel.h"
 #include "inet.h"
-#include "nameser.h"
-#include "resolv.h"
 #include "h.h"
 
-#ifdef SOL20
+#ifdef NEED_GETADDRINFO
 #include "getaddrinfo.h"
 #endif
 

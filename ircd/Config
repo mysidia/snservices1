@@ -3,7 +3,7 @@
 # Copyright 1996-2003 Michael Graff <explorer@flame.org>
 # You may distribute this file freely providing this notice remains intact.
 #
-IRCD_VERSION="sor1.3.5 (pre-release 2)"
+IRCD_VERSION="sor1.3.5 (test release 3)"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #
@@ -26,8 +26,7 @@ LINUX_GLIBC_RRES=undef
 NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
-STRTOUL=undef
-GETADDRINFO=undef
+NGETADDRINFO=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
 SN_MODE='1'
@@ -56,7 +55,7 @@ DESCRYPT="none"
 NOSPOOF="1"
 NOSPOOF_SEED01="0x12345678"
 NOSPOOF_SEED02="0x9abcdef0"
-NS_ADDRESS="nospoof@sorcery.net"
+NS_URL=""
 KLINE_ADDRESS="kline@sorcery.net"
 NETWORK_KLINE_ADDRESS='kline@sorcery.net'
 DOMAINNAME="sorcery.net"
@@ -493,6 +492,7 @@ $RM -f $EXEC $TMP
 echo "What else do I need that you don't have..."
 echo $n "Lets see...$c"
 cat > $TMP <<__EOF__
+#include <unistd.h>
 #include <netdb.h>
 main()
 {
@@ -507,6 +507,7 @@ if [ $? -ne 0 ] ; then
     sed -e "s@^GETADDRINFO=\(.*\)@GETADDRINFO=getaddrinfo.o@" Makefile > Makefile.tmp
     cp Makefile.tmp Makefile
     $RM -f Makefile.tmp
+    NGETADDRINFO=define
 else
     $RM -f Makefile.tmp
     sed -e "s@^GETADDRINFO=\(.*\)@GETADDRINFO=@" Makefile > Makefile.tmp
@@ -515,55 +516,6 @@ else
 fi
 $RM -f $EXEC $TMP
 
-cat >$TMP<<__EOF__
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-
-int main()
-{
-	_res.retry;
-	res_init();
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-	echo $n " res_init$c"
-	sed -e "s@^RES=\(.*\)@RES=res_init.o \1@" Makefile > Makefile.tmp
-	cp Makefile.tmp Makefile
-	$RM -f Makefile.tmp
-fi
-
-cat > $TMP <<__EOF__
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-
-main()
-{
-	dn_skipname("","");
-	exit(0);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ -n "$NEEDSKIPNAME" ] ;
-then
-    NEEDSKIPNAME="define";
-    echo $n " dn_skipname$c"
-    $RM -f Makefile.tmp
-    sed -e "s@^RES=\(.*\)@RES=res_comp.o res_mkquery.o@" Makefile > Makefile.tmp
-
-    cp Makefile.tmp Makefile
-    $RM -f Makefile.tmp
-#else
-#    $RM -f Makefile.tmp
-#    sed -e "s@^RES=\(.*\)@RES=@" Makefile > Makefile.tmp
-#    cp Makefile.tmp Makefile
-#    $RM -f Makefile.tmp
-fi
-$RM -f $EXEC $TMP
 cat > $TMP <<__EOF__
 #include <sys/types.h>
 main()
@@ -699,6 +651,7 @@ cat > $SETUP  <<__EOF__
 #$NINETADDR	NEED_INET_ADDR
 #$NINETNTOA	NEED_INET_NTOA
 #$NINETNETOF	NEED_INET_NETOF
+#$NGETADDRINFO	NEED_GETADDRINFO
 __EOF__
 if [ "$BZERO" = "memset" ] ; then
 	cat >> $SETUP <<__EOF__
@@ -761,6 +714,7 @@ done
 if [ -n "$SN_MODE" ] ; then
 	NETNAME='SorceryNet'
 	NETWORK_KLINE_ADDRESS='kline@sorcery.net'
+	NS_URL="http://www.sorcery.net/help/connect"	
 	URL_CONNECTHELP=''
 	SN_MODE='1'
 elif [ -z "$SN_MODE" ] ; then
@@ -1029,11 +983,9 @@ done
 FOO=""
 runonce=""
 while [ -z "$FOO" ] ; do
-    FOO="$NS_ADDRESS"
-    echo "What is the contact address for connect problems due to the"
+    FOO="$NS_URL"
+    echo "What is the URL for connect problems due to the"
     echo "anti-spoof system, shown to the user when they connect?"
-    echo "For SorceryNet, this is nospoof@sorcery.net.  If your server is not"
-    echo "part of SorceryNet, please choose some other email address."
     echo $n "[$FOO] -> $c"
     if [ -z "$AUTO_CONFIG" -o -n "$runonce" -o -z "$FOO" ] ; then
 	read cc
@@ -1041,12 +993,12 @@ while [ -z "$FOO" ] ; do
     else
 	cc=""
     fi
-    if [ -z "$cc" ] ; then
+    if [ -z "$cc" -a -n "$FOO" ] ; then
 	cc=$FOO
     fi
     case "$cc" in
-	*@*.*)
-	   NS_ADDRESS=$cc
+	http://*)
+	   NS_URL=$cc
 	    ;;
 	*)
 	    echo " "
@@ -1054,6 +1006,7 @@ while [ -z "$FOO" ] ; do
 	    echo "proper email address (user@host.domain)."
 	    echo " "
 	    FOO=""
+	    runonce=Yes
 	    ;;
     esac
 done
@@ -1698,8 +1651,8 @@ fi
 if [ -n "$NOSPOOF_SEED02" ] ; then
     echo "#define NOSPOOF_SEED02 $NOSPOOF_SEED02" >> $OPTIONS_H
 fi
-if [ -n "$NS_ADDRESS" ] ; then
-    echo "#define NS_ADDRESS \"$NS_ADDRESS\"" >> $OPTIONS_H
+if [ -n "$NS_URL" ] ; then
+    echo "#define NS_URL \"$NS_URL\"" >> $OPTIONS_H
 fi
 if [ -n "$KLINE_ADDRESS" ] ; then
     echo "#define KLINE_ADDRESS \"$KLINE_ADDRESS\"" >> $OPTIONS_H
@@ -1736,7 +1689,7 @@ NOSPOOF_SEED01="$NOSPOOF_SEED01"
 NOSPOOF_SEED02="$NOSPOOF_SEED02"
 IMODE="$IMODE"
 REQ_VERSION_RESPONSE="$REQ_VERSION_RESPONSE"
-NS_ADDRESS="$NS_ADDRESS"
+NS_URL="$NS_URL"
 KLINE_ADDRESS="$KLINE_ADDRESS"
 NETWORK_KLINE_ADDRESS="$NETWORK_KLINE_ADDRESS"
 DPATH="$DPATH"

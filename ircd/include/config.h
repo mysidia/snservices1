@@ -25,6 +25,10 @@
 #include "setup.h"
 #include "options.h"
 
+#ifndef NS_URL
+#error No value for NS_URL given
+#endif
+
 /*
  *
  *   NOTICE
@@ -180,7 +184,9 @@
  *       the maintainer.
  */
 
+#if 0
 #define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
+#endif
 
 /*
  * Full pathnames and defaults of irc system's support files. Please note that

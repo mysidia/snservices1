@@ -90,16 +90,6 @@ IRCDMODE=
 IRCDDIR=
 
 # [CHANGEME]
-# Some SunOS versions want this.  Try it without first.
-#RES=res_init.o res_comp.o res_mkquery.o
-# BSDI systems want this.
-#RES=res_skipname.o
-# Glibc Linux systems want this.
-#RES=res_comp.o res_mkquery.o
-# The rest are perfectly content with this.
-RES=
-
-# [CHANGEME]
 # If you get a compile-time error dealing with u_int32_t, comment out
 # this line.
 # NEED_U_INT32_T=	-DNEED_U_INT32_T
