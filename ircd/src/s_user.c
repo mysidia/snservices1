@@ -2240,6 +2240,37 @@ user_finish:
 	return 0;
 }
 
+/**
+ * Quote a string in a /showcon result.
+ */
+static int quoteShowConData(const char* text, char* buf, int length)
+{
+	length--; /* Reserve a position for the \0 */
+	
+	while(*text) {
+		if (length-- <= 0)    {  return -1; }
+		
+		if (isalnum(*buf) || (ispunct(*buf) && *buf != '<' && *buf != '\"' &&
+				        *buf != '&' && *buf != '%')) {
+			*buf++ = *text;
+			text++;
+			continue;
+		}
+
+		if (length <= 3)  {
+		       	return -1; 
+		}
+		
+		length -= 3;
+		*buf++ = '%';
+		sprintf(buf, "%.02X", *text);
+		text++;
+	}
+	*buf++ = '\0';
+
+	return 0;
+}
+
 /*
 ** m_showcon
 **
@@ -2248,6 +2279,8 @@ user_finish:
 int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 {
 	aClient* ptr;
+	char buf1[BUFSIZE], buf2[BUFSIZE];
+	
 	int show_unknowns = 0, show_users = 0, i;
 	
 	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
@@ -2293,12 +2326,17 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 		sendto_one(cptr, ":%s NOTICE %s :<client id=\"%d\">", me.name, sptr->name,
 					i);
+
+		quoteShowConData(BadPtr(sptr->name) ? "" : sptr->name, buf1, BUFSIZE);
+		quoteShowConData(BadPtr(sptr->username) ? "" : sptr->username, buf2, BUFSIZE);
+		
 		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name> <uid>%s</uid>", 
-				me.name, sptr->name,
-			                 BadPtr(sptr->name) ? "" : sptr->name,
-					 BadPtr(sptr->username) ? "" : sptr->username);
+				me.name, sptr->name, buf1, buf2);
+
+		quoteShowConData(ptr->sockhost, buf1, BUFSIZE);
+
 		sendto_one(cptr, ":%s NOTICE %s :<sockhost rport=\"%d\">%s</sockhost>",
-				me.name, me.name, sptr->name, ptr->port, ptr->sockhost);
+				me.name, sptr->name, ptr->port, buf1);
 		sendto_one(sptr, ":%s NOTICE %s : <info>%s</info>",  me.name, sptr->name,
                                 BadPtr(ptr->info) ? "" : ptr->info);
 		
@@ -2310,28 +2348,36 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 				ptr->status, ClientFlags(ptr), ClientUmode(ptr));
 
 		if (!BadPtr(ptr->sup_server)) {
+			quoteShowConData(ptr->sup_server, buf1, BUFSIZE);
+			
 			sendto_one(cptr, ":%s NOTICE %s :<sup_server>%s</sup_server>",
-					  me.name, sptr->name, ptr->sup_server);
+					  me.name, sptr->name, buf1);
 		}
 
 		if (!BadPtr(ptr->sup_host)) {
+			quoteShowConData(ptr->sup_host, buf1, BUFSIZE);
+			
 			sendto_one(cptr, ":%s NOTICE %s :<sup_host>%s</sup_host>",
-					me.name, sptr->name, ptr->sup_host);
+					me.name, sptr->name, buf1);
 		}
 
-		sendto_one(sptr, ":%s NOTICE %s : <times first=\"%d\" last=\"%d\" since=\"%d\" />",  me.name, sptr->name,
-				                   ptr->firsttime, ptr->lasttime, ptr->since);
-		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />",
-			                          me.name, sptr->name,
-				                  IsUserVersionKnown(ptr) ? "Known" : "Unknown");
-		sendto_one(sptr, ":%s NOTICE %s : <counts watches=\"%d\" sendM=\"%d\" sendK=\"%d\" receiveM=\"%d\" receiveK=\"%d\" />",  me.name, sptr->name, ptr->watches, ptr->sendM, ptr->sendK, ptr->receiveM, ptr->receiveK);
+		sendto_one(sptr, ":%s NOTICE %s : <times first=\"%d\" last=\"%d\" since=\"%d\" />",
+			      	me.name, sptr->name, ptr->firsttime, ptr->lasttime, ptr->since);
+		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />", me.name, sptr->name,
+				IsUserVersionKnown(ptr) ? "Known" : "Unknown");
 		
+		sendto_one(sptr, ":%s NOTICE %s : <counts watches=\"%d\" sendM=\"%d\" " 
+				 "sendK=\"%d\" receiveM=\"%d\" receiveK=\"%d\" />", 
+				me.name, sptr->name, ptr->watches, ptr->sendM, ptr->sendK, 
+				ptr->receiveM, ptr->receiveK);
 		
 		if (ptr->user)
 		{
 			if (!BadPtr(ptr->user->sup_version)) {
+				quoteShowConData(ptr->user->sup_version, buf1, BUFSIZE);
+				
 				sendto_one(sptr, ":%s NOTICE %s : <user_version>%s</user_version>",
-					      	me.name, sptr->name, ptr->user->sup_version);
+					      	me.name, sptr->name, buf1);
 			}			
 		}
 		sendto_one(cptr, ":%s NOTICE %s :</client>", me.name, sptr->name);
