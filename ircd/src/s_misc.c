@@ -1,8 +1,7 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/s_misc.c (formerly ircd/date.c)
- *   Copyright C 1990 Jarkko Oikarinen and
+ *   Copyright (C) 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
- *   Copyright C 1999-2002 James Hess -- All Rights Reserved
  *
  *   See file AUTHORS in IRC package for additional names of
  *   the programmers.
@@ -45,7 +44,7 @@ Computing Center and Jarkko Oikarinen";
 #if defined(PCS) || defined(AIX) || defined(SVR3)
 # include <time.h>
 #endif
-#ifdef OS_HPUX
+#ifdef HPUX
 #include <unistd.h>
 #endif
 #ifdef DYNIXPTX
@@ -315,44 +314,6 @@ char	*my_name_for_link(char *name, aConfItem *aconf)
 	return namebuf;
 }
 
-int remove_dcc_references(aClient *sptr)
-{
-   aClient *acptr;
-   Link *lp, *nextlp;
-   Link **lpp, *tmp;
-   int found;
-
-   lp = sptr->user->dccallow;
-
-   while(lp)
-   {
-      nextlp = lp->next;
-      acptr = lp->value.cptr;
-      for(found = 0, lpp = &(acptr->user->dccallow); *lpp; lpp=&((*lpp)->next))
-      {
-         if(lp->flags == (*lpp)->flags)
-            continue; /* match only opposite types for sanity */
-         if((*lpp)->value.cptr == sptr)
-         {
-            if((*lpp)->flags == DCC_LINK_ME) {
-               sendto_one(acptr, ":%s %d %s :%s has been removed from your DCC allow list for signing off",
-                          me.name, RPL_DCCINFO, acptr->name, sptr->name);
-	    }
-            tmp = *lpp;
-            *lpp = tmp->next;
-            free_link(tmp);
-            found++;
-            break;
-         }
-      }
-
-      free_link(lp);
-      lp = nextlp;
-   }
-   return 0;
-}
-
-
 /*
 ** exit_client
 **	This is old "m_bye". Name  changed, because this is not a
@@ -385,23 +346,16 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 {
 	aClient	*acptr;
 	aClient	*next;
-	aMachine *mmach;
 #ifdef	FNAME_USERLOG
 	time_t	on_for;
 #endif
 	char	comment1[HOSTLEN + HOSTLEN + 2 + 255];
 
-        if ((mmach = (aMachine *)hash_find_machine(sptr->ip, NULL))) {
-            mmach->online--;
-	    if (mmach->online < 1)
-                add_machine_to_purgelist(mmach);
-	}
-
 	if (MyConnect(sptr))
 	    {
 		ClientFlags(sptr) |= FLAGS_CLOSING;
                 if (IsPerson(sptr))
-                 sendto_umode(U_OPER|U_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
+                 sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
                   sptr->name, sptr->user->username, sptr->user->host, comment);
 		current_load_data.conn_count--;
 		if (IsPerson(sptr)) {
@@ -582,7 +536,6 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 			/* Clean up silencefield */
 			while ((lp = sptr->user->silence))
 				(void)del_silence(sptr, lp->value.cp);
-                        remove_dcc_references(sptr);
 		    }
 	    }
 
@@ -708,12 +661,6 @@ void	tstats(aClient *cptr, char *name)
 		   sp->is_ckr, sp->is_cbr, sp->is_skr, sp->is_sbr);
 	sendto_one(cptr, ":%s %d %s :time connected %u %u",
 		   me.name, RPL_STATSDEBUG, name, sp->is_cti, sp->is_sti);
-#ifdef FLUD
-   sendto_one(cptr, ":%s %d %s :CTCP Floods Blocked %u",
-              me.name, RPL_STATSDEBUG, name, sp->is_flud);
-#endif /*
-        * FLUD
-        */
 }
 
 
@@ -894,4 +841,3 @@ int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
   sendto_serv_butone(sptr, ":%s LOG :%s", parv[0], message);
 }
-

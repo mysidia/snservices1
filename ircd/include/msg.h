@@ -85,7 +85,6 @@
 #define MSG_GOPER    "GOPER"    /* GOPER */
 #define MSG_GLOBOPS  "GLOBOPS"  /* GLOBOPS */
 #define MSG_LOCOPS   "LOCOPS"   /* LOCOPS */
-#define MSG_TROJAN   "TROJAN"  /* TROJAN */
 #define	MSG_OPMODE   "OPMODE"   /* OPMODE */
 #define MSG_CNICK    "CNICK"    /* CNICK */
 #define MSG_MLOCK    "MLOCK"    /* MLOCK */
@@ -93,9 +92,6 @@
 #define MSG_SHOWMASK "SHOWMASK" /* SHOWMASK */
 #define MSG_LOG	     "LOG"	/* LOG */
 #define MSG_WATCH    "WATCH"	/* WATCH */
-#define MSG_CAPAB   "CAPAB"	/* CAPAB */
-#define MSG_DCCALLOW "DCCALLOW"	/* DCCALLOW */
-#define MSG_SVCSTAMP "SVCSTAMP"	/* SVCSTAMP */
  
 #define MSG_NICKSERV "NickServ"
 #define MSG_CHANSERV "ChanServ"
@@ -133,8 +129,6 @@ extern	int	m_rehash();
 extern	int	m_restart();
 extern	int	m_die();
 extern int m_hash(), m_dns(), m_log(), m_watch();
-extern int m_capab(), m_dccallow(), m_trojan();
-extern int m_svcstamp();
 
 /* Message flags */
 #define MF_NODUMP		0x1	/* only allow once per 2 seconds */
@@ -219,8 +213,6 @@ struct Message msgtab[] = {
   { MSG_GOPER,   m_goper,    0, MAXPARA, 1,        0L, 0 },
   { MSG_GLOBOPS, m_globops,  0, MAXPARA, 1,        0L, 0 },
   { MSG_LOCOPS,  m_locops,   0, MAXPARA, 1,        0L, 0 },
-  { MSG_SVCSTAMP,m_svcstamp, 0, MAXPARA, 1 | MF_H, 0L, 0 },
-  { MSG_TROJAN,  m_trojan,   0, MAXPARA, 1 | MF_H, 0L, 0 },
   { MSG_OPMODE,  m_opmode,   0, MAXPARA, 1,        0L, 0 },
   { MSG_HASH,    m_hash,     0, MAXPARA, 1,        0L, 0 },
   { MSG_DNS,     m_dns,      0, MAXPARA, 1,        0L, 0 },
@@ -231,8 +223,6 @@ struct Message msgtab[] = {
   { MSG_HURTSET, m_hurtset,  0, MAXPARA, 1 | MF_H, 0L, 0 },
   { MSG_LOG,	 m_log,      0, MAXPARA, 1,	   0L, 0 },
   { MSG_WATCH,	 m_watch,    0, MAXPARA, 1,	   0L, 0 },
-  { MSG_CAPAB,	 m_capab,   0, MAXPARA, 1,	   0L, 0 },
-  { MSG_DCCALLOW,m_dccallow, 0, MAXPARA, 1,	   0L, 0 },
   { (char *) 0, (int (*)()) 0 , 0, 0, 0, 0L}
 };
 #else

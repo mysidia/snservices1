@@ -1,6 +1,6 @@
 /*
- *   IRC - Internet Relay Chat, src/s_sock.c
- *   Copyright C 1998 James Hess -- All Rights Reserved
+ *   IRC - Internet Relay Chat, ircd/s_misc.c (formerly ircd/date.c)
+ *   Copyright (C) 1998 Mysidia
  *
  *   See file AUTHORS in IRC package for additional names of
  *   the programmers.

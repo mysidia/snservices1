@@ -1,8 +1,7 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/list.c
- *   Copyright C 1990 Jarkko Oikarinen and
- *                     University of Oulu, Finland
- *   Copyright C 1997-2002 James Hess All Rights Reserved
+ *   Copyright (C) 1990 Jarkko Oikarinen and
+ *                      University of Oulu, Finland
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -52,7 +51,6 @@ Computing Center and Jarkko Oikarinen";
 #endif
 void	free_link PROTO((Link *));
 Link	*make_link PROTO(());
-aMachine *mPurgeList;
 
 #ifdef	DEBUGMODE
 static	struct	liststats {
@@ -60,14 +58,6 @@ static	struct	liststats {
 } cloc, crem, users, servs, links, classs, aconfs;
 
 #endif
-
-#ifdef FLUD
-BlockHeap  *free_fludbots;
-
-#endif /*
-        * FLUD
-        */
-
 
 void	outofmemory();
 
@@ -198,9 +188,6 @@ anUser	*make_user(aClient *cptr)
 		user->invited = NULL;
 		user->silence = NULL;
 		user->mask = NULL;
-		user->dccallow = NULL;
-		user->auth_a = 0;
-		user->auth_b = 0;
 #ifdef  KEEP_HURTBY
 		user->hurtby = NULL;
 #endif
@@ -402,13 +389,11 @@ aConfItem	*make_conf()
 	bzero((char *)&aconf->ipnum, sizeof(struct in_addr));
 	aconf->next = NULL;
 	aconf->host = aconf->passwd = aconf->name = NULL;
-	aconf->other_p = NULL;
 	aconf->status = CONF_ILLEGAL;
 	aconf->clients = 0;
 	aconf->port = 0;
 	aconf->hold = 0;
 	aconf->bits = 0;
-	aconf->exval1 = 0;
 	aconf->tmpconf = 0;
 	Class(aconf) = 0;
 	return (aconf);
@@ -437,8 +422,6 @@ void	free_conf(aConfItem *aconf)
 		bzero(aconf->passwd, strlen(aconf->passwd));
 	MyFree(aconf->passwd);
 	MyFree(aconf->name);
-	if (aconf->other_p != 0x0)
-	    MyFree(aconf->other_p);
 	MyFree((char *)aconf);
 #ifdef	DEBUGMODE
 	aconfs.inuse--;
@@ -490,52 +473,8 @@ void	send_listinfo(aClient *cptr, char *name)
 }
 #endif
 
-aMachine *make_machine()
-{
-	aMachine *p = (aMachine *)MyMalloc(sizeof(aMachine));
-	p->next = p->hnext = NULL;
-	bzero(p, sizeof(aMachine));
-
-	return p;
-}
-
-void free_machine(aMachine *p)
-{
-	if (!p)
-	    return;
-	MyFree(p);
-	return;
-}
-
-void add_machine_to_purgelist(aMachine *p) {
-   aMachine *tmp;
-
-   if (!p)
-       return;
-   for(tmp = mPurgeList; tmp; tmp = tmp->next)
-       if (tmp == p)
-           return;
-   p->next = mPurgeList;
-   mPurgeList = p;
-}
-
-void rem_machine_from_purgelist(aMachine *zap) {
-   aMachine *tmp, *it, *it_next;
-
-   for(it = mPurgeList, tmp = NULL; it; it = it_next) {
-       it_next = it->next;
-       if (it == zap) {
-           if (tmp) tmp->next = zap->next;
-           else     mPurgeList = zap->next;
-	   zap->next = NULL;
-           return;
-       }
-       else tmp = it;
-   }
-}
-
 void    free_str_list(lp)
-Reg1    Link    *lp;
+Reg1	Link    *lp;
 {
         Reg2    Link    *next;
 
@@ -579,11 +518,3 @@ Reg2    char    *str;
         }
         return 0;
 }
-
-
-/*
-            if ((mmach->online < 1)) {
-                del_from_machine_hash_table(sptr->ip, mmach);
-                free_machine(mmach);
-            }
-*/

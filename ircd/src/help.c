@@ -1,7 +1,6 @@
 /************************************************************************
- *   IRC - Internet Relay Chat, src/help.c
- *   Portions Copyright C 1996 DALnet
- *   Copyright C 1997-2002 James Hess -- All Rights Reserved
+ *   IRC - Internet Relay Chat, ircd/help.c
+ *   Copyright (C) 1996 DALnet
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

@@ -27,22 +27,6 @@
 #include "options.h"
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-
-#include <sys/types.h>
-#ifndef _WIN32
-#include <netinet/in.h>
-#include <netdb.h>
-#endif
-#ifdef STDDEFH
-# include <stddef.h>
-#endif
-
-#include "snprintf.h"
-
-
 /*
  *
  *   NOTICE
@@ -67,6 +51,7 @@
 #undef	BOOT_MSGS
 #define	HASH_MSGTAB
 #define	ALLOW_MODEHACK	/* enable Modehack operator flag */
+#define SERVICES_NAME	"services.sorcery.net"
 
 /*
  *  URL people denied access as result of open socks server should be sent to
@@ -182,6 +167,19 @@
 #endif
 
 /*
+ * Define this to prevent mixed case userids that clonebots use. However
+ * this affects the servers running telclients WLD* FIN*  etc.
+ */
+#undef	DISALLOW_MIXED_CASE
+
+/*
+ * Define this if you wish to ignore the case of the first character of
+ * the user id when disallowing mixed case. This allows PC users to
+ * enter the more intuitive first name with the first letter capitalised
+ */
+#define	IGNORE_CASE_FIRST_CHAR
+
+/*
  * Define this if you wish to output a *file* to a K lined client rather
  * than the K line comment (the comment field is treated as a filename)
  */
@@ -263,6 +261,17 @@
  * to the behavior of the .dal3 patch.
  */
 #undef SHOW_PASSWORD
+
+/* CHROOTDIR
+ *
+ * Define for value added security if you are a rooter.
+ *
+ * All files you access must be in the directory you define as DPATH.
+ * (This may effect the PATH locations above, though you can symlink it)
+ *
+ * You may want to define IRC_UID and IRC_GID
+ */
+/* #define CHROOTDIR */
 
 /* NO_DEFAULT_INVISIBLE
  *
@@ -353,6 +362,11 @@
 #undef	CMDLINE_CONFIG /* allow conf-file to be specified on command line */
 #define CMDLINE_CONFIG
 /*
+ * To use m4 as a preprocessor on the ircd.conf file, define M4_PREPROC.
+ * The server will then call m4 each time it reads the ircd.conf file,
+ * reading m4 output as the server's ircd.conf file.
+ */
+#undef	M4_PREPROC
 
 /*
  * If you wish to have the server send 'vital' messages about server
@@ -427,6 +441,16 @@
 #ifndef BUFFERPOOL
 #define	BUFFERPOOL     (9 * MAXSENDQLENGTH)
 #endif
+
+/*
+ * IRC_UID
+ *
+ * If you start the server as root but wish to have it run as another user,
+ * define IRC_UID to that UID.  This should only be defined if you are running
+ * as root and even then perhaps not.
+ */
+/* #undef	IRC_UID */
+/* #undef	IRC_GID */
 
 /*
  * CLIENT_FLOOD
@@ -607,9 +631,13 @@ extern	void	debug();
 # define LOGFILE "/dev/null"
 #endif
 
-#ifdef OS_MIPS
-#undef OS_BSD
-#define OS_BSD             1       /* mips only works in bsd43 environment */
+#if defined(mips) || defined(PCS)
+#undef SYSV
+#endif
+
+#ifdef MIPS
+#undef BSD
+#define BSD             1       /* mips only works in bsd43 environment */
 #endif
 
 #ifdef sequent                   /* Dynix (sequent OS) */
@@ -699,5 +727,17 @@ error SOCKSFOUND_URL is not defined: Please define in config.h
 #ifdef _WIN32
 # undef FORCE_CORE
 #endif
+
+
+#define Reg1 register
+#define Reg2 register
+#define Reg3 register
+#define Reg4 register
+#define Reg5 register
+#define Reg6 register
+#define Reg7 register
+#define Reg8 register
+#define Reg9 register
+#define Reg10 register
 
 #endif /* __config_include__ */
