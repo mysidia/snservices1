@@ -19,16 +19,16 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)s_numeric.c	2.14 1/30/94 (C) 1988 University of Oulu, \
-Computing Center and Jarkko Oikarinen";
-#endif
-
 #include "struct.h"
 #include "common.h"
 #include "sys.h" 
 #include "numeric.h"
 #include "h.h"
+
+#include "ircd/send.h"
+
+IRCD_SCCSID("@(#)s_numeric.c	2.14 1/30/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
+IRCD_RCSID("$Id$");
 
 static char buffer[1024];
 

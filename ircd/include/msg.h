@@ -103,32 +103,85 @@
 #define MSG_SERVICE  "SERVICES"
 
 #define MAXPARA    15 
-extern int m_cnick();
-extern int m_private(), m_topic(), m_join(), m_part(), m_mode();
-extern int m_ping(), m_pong(), m_wallops(), m_kick();
-extern int m_nick(), m_error(), m_notice();
-extern int m_invite(), m_quit(), m_kill(), m_hurt(), m_heal(), m_hurtset();
-extern int m_akill(), m_kline(), m_unkline(), m_rakill();
-extern int m_gnotice(), m_goper(), m_globops(), m_locops();
-extern int m_zline(), m_unzline(), m_ahurt(), m_rahurt();
 
-extern int m_mlock(), m_motd(), m_who(), m_whois(), m_user(), m_list();
-extern int m_server(), m_info(), m_links(), m_stats();
-extern int m_version(), m_help(), m_showmask();
-extern int m_squit(), m_away(), m_connect();
-extern int m_oper(), m_pass(), m_trace();
-extern int m_time(), m_names(), m_admin();
-extern int m_lusers(), m_umode(), m_close();
-extern int m_motd(), m_whowas(), m_silence();
-extern int m_userhost(), m_ison();
-extern int m_nickserv(), m_chanserv(), m_operserv(), m_memoserv(), m_infoserv();
-extern int m_gameserv();
-extern int m_identify(), m_services();
-extern	int	m_opmode();
-extern	int	m_rehash();
-extern	int	m_restart();
-extern	int	m_die();
-extern int m_hash(), m_dns(), m_log(), m_watch();
+int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_part(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_ping(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_pong(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_wallops(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_error(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_invite(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_quit(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_hurtset(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_gnotice(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_goper(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_globops(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_locops(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_ahurt(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_rahurt(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+
+int m_mlock(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_motd(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_user(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_info(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_links(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_version(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_help(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_showmask(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_squit(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_away(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_time(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_admin(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_close(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_motd(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_silence(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_userhost(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_ison(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_nickserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_chanserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_operserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_memoserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_infoserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_gameserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_identify(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_services(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_opmode(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_restart(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_die(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_hash(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_dns(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+int m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 
 /* Message flags */
 #define MF_NODUMP		0x1	/* only allow once per 2 seconds */
@@ -223,7 +276,7 @@ struct Message msgtab[] = {
   { MSG_HURTSET, m_hurtset,  0, MAXPARA, 1 | MF_H, 0L, 0 },
   { MSG_LOG,	 m_log,      0, MAXPARA, 1,	   0L, 0 },
   { MSG_WATCH,	 m_watch,    0, MAXPARA, 1,	   0L, 0 },
-  { (char *) 0, (int (*)()) 0 , 0, 0, 0, 0L}
+  { NULL,        NULL,       0, 0,       0,        0L, 0 }
 };
 #else
 extern struct Message msgtab[];

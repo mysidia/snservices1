@@ -23,9 +23,7 @@
 #define	__config_include__
 
 #include "setup.h"
-#ifndef _WIN32
 #include "options.h"
-#endif
 
 /*
  *
@@ -63,7 +61,6 @@
 
 /*	BSD		Nothing Needed 4.{2,3} BSD, SunOS 3.x, 4.x */
 /*	HPUX		Nothing needed (A.08/A.09) */
-/*	ULTRIX		Nothing needed (4.2) */
 /*	OSF		Nothing needed (1.2) */
 /* 	AIX		IBM ugly so-called Unix, AIX */
 /* 	MIPS		MIPS Unix */
@@ -461,11 +458,6 @@
  */
 #define	CLIENT_FLOOD	8000
 
-/* Define this if you want the server to accomplish ircII standard */
-/* Sends an extra NOTICE in the beginning of client connection     */
-#undef	IRCII_KLUDGE
-
-
 /*   STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP  */
 
 /* You shouldn't change anything below this line, unless absolutely needed. */
@@ -599,21 +591,8 @@
 #endif
 #endif
 
-#ifdef _SEQUENT_		/* Dynix 1.4 or 2.0 Generic Define.. */
-#undef BSD
-#define SYSV			/* Also #define SYSV */
-#endif
-
-#ifdef	ultrix
-#define	ULTRIX
-#endif
-
 #ifdef	__hpux
 #define	HPUX
-#endif
-
-#ifdef	sgi
-#define	SGI
 #endif
 
 #ifndef KLINE_TEMP
@@ -623,29 +602,11 @@
 #endif
 
 #ifdef DEBUGMODE
-extern	void	debug();
 # define Debug(x) debug x
 # define LOGFILE LPATH
 #else
 # define Debug(x) ;
 # define LOGFILE "/dev/null"
-#endif
-
-#if defined(mips) || defined(PCS)
-#undef SYSV
-#endif
-
-#ifdef MIPS
-#undef BSD
-#define BSD             1       /* mips only works in bsd43 environment */
-#endif
-
-#ifdef sequent                   /* Dynix (sequent OS) */
-#define SEQ_NOFILE    128        /* set to your current kernel impl, */
-#endif                           /* max number of socket connections */
-
-#ifdef _SEQUENT_
-#define	DYNIXPTX
 #endif
 
 #ifdef	BSD_RELIABLE_SIGNALS
@@ -703,41 +664,5 @@ error CLIENT_FLOOD undefined
 #error SOCKSFOUND_URL is not defined: Please define in config.h
 error SOCKSFOUND_URL is not defined: Please define in config.h
 #endif
-
-/*
- * Some ugliness for AIX platforms.
- */
-#ifdef AIX
-# include <sys/machine.h>
-# if BYTE_ORDER == BIG_ENDIAN
-#  define BIT_ZERO_ON_LEFT
-# endif
-# if BYTE_ORDER == LITTLE_ENDIAN
-#  define BIT_ZERO_ON_RIGHT
-# endif
-/*
- * this one is used later in sys/types.h (or so i believe). -avalon
- */
-# define BSD_INCLUDES
-#endif
-
-/*
- * Cleaup for WIN32 platform.
- */
-#ifdef _WIN32
-# undef FORCE_CORE
-#endif
-
-
-#define Reg1 register
-#define Reg2 register
-#define Reg3 register
-#define Reg4 register
-#define Reg5 register
-#define Reg6 register
-#define Reg7 register
-#define Reg8 register
-#define Reg9 register
-#define Reg10 register
 
 #endif /* __config_include__ */

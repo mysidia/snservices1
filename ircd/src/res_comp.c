@@ -17,15 +17,14 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)res_comp.c	6.18 (Berkeley) 6/27/90";
-#endif /* LIBC_SCCS and not lint */
-
 #include <sys/types.h>
 #include <stdio.h>
 #include "common.h"
 #include "sys.h"
 #include "nameser.h"
+
+IRCD_SCCSID("@(#)res_comp.c	6.18 (Berkeley) 6/27/90");
+IRCD_RCSID("$Id$");
 
 static dn_find();
 
