@@ -430,8 +430,8 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 {
 	aClient *acptr;
 	Link	*lp;
-	char	*stripped = NULL;
-	int	found = 0;
+	int	sendquit;	/* Indicates the need to send a clear
+				 * (unstripped) quit msg */
 
 	/*
 	**  For a server or user quitting, propagage the information to
@@ -499,44 +499,43 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 		*/
 		if (sptr->user)
 		  {
-			if (msg_has_colors(comment)) {
-				for (acptr = &me; acptr; acptr = acptr->lnext) {
-					if (IsServer(acptr) || sptr == acptr)
-						continue;
+			stripped[0] = '\0';
+			for (acptr = &me; acptr; acptr = acptr->lnext) {
+				if (IsServer(acptr) || sptr == acptr)
+					continue;
 
-					/*
-					 * Try to find channels that are common
-					 * to both the quitting client and the
-					 * currently examined local client
-					 * and that have color stripping set.
-					 * Failing that, send as before.
-					 */
-					found = 0;
-					for (lp = sptr->user->channel; lp; lp = lp->next) {
-						if (IsMember(sptr, lp->value.chptr) &&
-						    IsMember(acptr, lp->value.chptr)) {
-							if (lp->value.chptr->mode.mode == MODE_NOCOLORS) {
-								if (!stripped)
-									stripped = strip_colors(comment);
-								sendto_prefix_one(acptr, sptr, ":%s QUIT :%s", sptr->name, stripped);
-								found = 1;
-								break;
-							}
+				/*
+				 * Try to find channels that are common
+				 * to both the quitting client and the
+				 * currently selected local client
+				 * with color stripping set.  If even one is
+				 * found, send the stripped version.  If no
+				 * such channels are found, send the
+				 * unfiltered comment.
+				 */
+				sendquit = 0;
+				for (lp = sptr->user->channel; lp; lp = lp->next) {
+					if (IsMember(sptr, lp->value.chptr) &&
+					    IsMember(acptr, lp->value.chptr)) {
+						if (lp->value.chptr->mode.mode == MODE_NOCOLORS) {
+							if (stripped[0] == '\0')
+								strip_colors(stripped, comment);
+							sendto_prefix_one(acptr, sptr, ":%s QUIT :%s", sptr->name, stripped);
+							sendquit = 0;
+							break;
 						}
+
+						else
+							sendquit = 1;
 					}
 				}
 
-				irc_free(stripped);
-
-				if (found == 0) {
-				  sendto_common_channels(sptr, ":%s QUIT :%s",
-							 sptr->name, comment);
+				if (sendquit) {
+					sendto_prefix_one(acptr, sptr,
+							  ":%s QUIT :%s",
+							  sptr->name, comment);
 				}
 			}
-
-			else
-				sendto_common_channels(sptr, ":%s QUIT :%s",
-						       sptr->name, comment);
 
 			add_history(sptr);
 			off_history(sptr);

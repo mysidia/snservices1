@@ -26,6 +26,7 @@ extern	aClient	*client, me;
 extern	aChannel *channel;
 extern	struct	stats	*ircstp;
 extern	int	bootopt;
+extern	char	stripped[BUFSIZE];
 
 extern int expr_match (const char *pattern, const char *text);
 time_t	check_pings(time_t now, int check_kills, aConfItem *conf_target);
@@ -148,7 +149,7 @@ int	do_numeric(int, aClient *, aClient *, int, char **);
 int hunt_server(aClient *,aClient *,char *,int,int,char **);
 aClient	*next_client(aClient *, char *);
 int	msg_has_colors(const char *);
-char 	*strip_colors(const char *);
+void	strip_colors(char *, const char *);
 int	m_umode(aClient *, aClient *, int, char **);
 int	m_names(aClient *, aClient *, int, char **);
 int	m_server_estab(aClient *);

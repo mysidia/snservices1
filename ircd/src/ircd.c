@@ -55,6 +55,8 @@ char *debugmode = "";		/*  -"-    -"-   */
 char *sbrk0;			/* initial sbrk(0) */
 static int dorehash = 0;
 static char *dpath = DPATH;
+char stripped[BUFSIZE];		/* Color stripped string for certain
+				 * replies--used throughout */
 
 time_t nextconnect = 1;		/* time for next try_connections call */
 time_t nextping = 1;		/* same as above for check_pings() */

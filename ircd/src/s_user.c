@@ -1335,20 +1335,20 @@ msg_has_colors(const char *msg)
 ** strip_colors
 ** Remove color codes from a string
 **
+**	out = the destination (for the resulting color-free string)
 **	in = input string
-**	returns a color-free version of the input string
-**
-**	Post-condition: returned ptr. points to a location
-**	                allocated here. Freeing this is the
-**	                responsibility of the caller.
 */
-__inline char *
-strip_colors(const char *in)
+__inline void
+strip_colors(char *out, const char *in)
 {
-	char *out = irc_strdup(in);
-	char *p;
+	char *charptr;
 
-	for(p = out; *in ; in++)
+	if (!in || !out)
+	  {
+		return;
+	  }
+
+	for(charptr = out; *in; in++)
 	{
 		switch(*in)
 		{
@@ -1378,13 +1378,12 @@ strip_colors(const char *in)
 			  break;
 
 			default:
-			  *p = *in;
-			  p++;
+			  *charptr = *in;
+			  charptr++;
 		}
 	}
 
-	*p = '\0';
-	return out;
+	*charptr = '\0';
 }
 
 /*
@@ -1406,7 +1405,7 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 	aClient	*acptr;
 	char	*s;
 	aChannel *chptr;
-	char	*nick, *server, *p, *cmd, *stripped = NULL;
+	char	*nick, *server, *p, *cmd;
 	    {
 		if (check_registered(sptr))
 			return 0;
@@ -1431,6 +1430,8 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 
 	if (MyConnect(sptr))
 		parv[1] = canonize(parv[1]);
+
+	stripped[0] = '\0';
 	for (p = NULL, nick = strtok_r(parv[1], ",", &p); nick;
 	     nick = strtok_r(NULL, ",", &p))
 	    {
@@ -1571,10 +1572,9 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 				if (MyClient(sptr) &&
 				    (chptr->mode.mode & MODE_NOCOLORS) &&
 				    !IsAnOper(sptr) &&
-				    !is_chan_op(sptr, chptr) &&
-				    msg_has_colors(parv[2])) {
-					if (!stripped)
-						stripped = strip_colors(parv[2]);
+				    !is_chan_op(sptr, chptr)) {
+					if (stripped[0] == '\0')
+						strip_colors(stripped, parv[2]);
 					sendto_channel_butone(cptr, sptr, chptr, ":%s %s %s :%s", parv[0], cmd, nick, stripped);
 				} else
 					sendto_channel_butone(cptr, sptr, chptr, ":%s %s %s :%s", parv[0], cmd, nick, parv[2]);
@@ -1637,7 +1637,6 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 			   parv[0], nick);
             }
 
-	irc_free(stripped);
 	return 0;
 }
 
@@ -1971,8 +1970,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	anUser	*user;
 	aClient *acptr, *a2cptr;
 	aChannel *chptr;
-	char	*nick, *tmp, *name;
-	char	*p = NULL;
+	char	*nick, *tmp, *name, *p = NULL;
 	int	found, len, mlen;
 
 	if (check_registered_user(sptr))
@@ -2196,28 +2194,28 @@ int m_user(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    {
 		strncpyzt(user->server, server, sizeof(user->server));
 		strncpyzt(user->host, host, sizeof(user->host));
-		goto user_finish;
 	    }
+
 	else
 	{
 		strncpyzt(sptr->sup_server, server, sizeof(sptr->sup_server));
 		strncpyzt(sptr->sup_host, host, sizeof(sptr->sup_host));
+
+		if (!IsUnknown(sptr))
+		  {
+			sendto_one(sptr, err_str(ERR_ALREADYREGISTRED),
+				   me.name, parv[0]);
+			return 0;
+		  }
+
+		strncpyzt(user->host, host, sizeof(user->host));
+		strncpyzt(user->server, me.name, sizeof(user->server));
+
+		ClientUmode(sptr) |= UFLAGS_DEFAULT;
 	}
 
-	if (!IsUnknown(sptr))
-	    {
-		sendto_one(sptr, err_str(ERR_ALREADYREGISTRED),
-			   me.name, parv[0]);
-		return 0;
-	    }
-
-	strncpyzt(user->host, host, sizeof(user->host));
-	strncpyzt(user->server, me.name, sizeof(user->server));
-
-	ClientUmode(sptr) |= UFLAGS_DEFAULT;
-
-user_finish:
-	strncpyzt(sptr->info, realname, sizeof(sptr->info));
+	strip_colors(stripped, realname);
+	strncpyzt(sptr->info, stripped, sizeof(sptr->info));
 	if (sptr->name[0] && (IsServer(cptr) ? 1 : IsNotSpoof(sptr)))
 	/* NICK and no-spoof already received, now we have USER... */
 		return register_user(cptr, sptr, sptr->name, username);
