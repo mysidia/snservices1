@@ -89,6 +89,11 @@ void delTimedGhost(char *);
 #define NENCRYPT	 0x80000 ///< Password encrypted
 #define NAHURT		 0x100000 ///< ???
 
+/* New Nick flags */
+#define NVERIFIED	 0x200000
+#define NNOVERIFY	 0x400000
+#define NVERIFY_SENT     0x800000
+
 /* users opflags */
 #define OROOT     0x000001	/*!< Services Root DONT CHANGE*/
 #define OREMROOT  0x000002	/*!< A secure flag            */

@@ -270,7 +270,7 @@ void nDesynch(char *nick, char *type)
 /**
  * Send an IRC Protocol message to grant the user their IDENTIFIED flag on IRC
  */
-void grantIdentifiedUmode(UserList* nick)
+void grantIdentifiedUmode(UserList* nick, int grantVerify)
 {
 	const char* name = nick->nick;
 
@@ -281,7 +281,7 @@ void grantIdentifiedUmode(UserList* nick)
 	sSend(":%s SVSMODE %s :+r", NickServ, name);
 #   else	
 
-	sSend(":%s MODE %s :+r", NickServ, name);
+	sSend(":%s MODE %s :+r%s", NickServ, name, grantVerify ? "v" : "");
 #   endif
 #endif
 }
@@ -673,7 +673,7 @@ void changeNick(char *from, char *to, char *ts)
 			clearIdentify(tmp);
 			tmp->caccess = 3;
 			NickSeeUser(tmp, tmp->reg, 3, 1);
-			grantIdentifiedUmode(tmp);
+			grantIdentifiedUmode(tmp, (tmp->reg->flags & NVERIFIED));
 
 			if (ts[0] == ':')
 				ts++;
@@ -2517,7 +2517,7 @@ NCMD(ns_identify)
 
 			assert(!strcasecmp(nick->reg->nick, nick->nick));
 			strcpy(nick->reg->nick, nick->nick); /* Case update */
-			grantIdentifiedUmode(nick);
+			grantIdentifiedUmode(nick, (nick->reg->flags & NVERIFIED));
 
 			PutReply(NickServ, nick, RPL_IDENTIFYOK_NOARG, 0, 0, 0);
 
@@ -2731,7 +2731,7 @@ NCMD(ns_cidentify)
 
 			assert(!strcasecmp(nick->reg->nick, nick->nick));
 			strcpy(nick->reg->nick, nick->nick);	/* Case update */
-			grantIdentifiedUmode(nick);			
+			grantIdentifiedUmode(nick, (nick->reg->flags & NVERIFIED));			
 			PutReply(NickServ, nick, RPL_AUTH_OK_0ARG, 0, 0, 0);
 			GoodPwNick(nick, tonick);
 		} else { /* Remote */
@@ -4838,6 +4838,13 @@ NCMD(ns_setflags)
 				regnick->flags |= NBANISH;
 			else
 				regnick->flags &= ~NBANISH;
+			break;
+
+		case 'V':
+			if (mode)
+				regnick->flags |= NVERIFIED;
+			else
+				regnick->flags &= ~NVERIFIED;
 			break;
 		case 'g':
 			if (isRoot(nick) == 0)
