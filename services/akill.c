@@ -764,7 +764,7 @@ void timed_akill_queue(char *)
 				if (!se->nick) {
 					continue;
 				}
-				l = sprintf(buf2,      "%-15.20s", se->nick);
+				l = sprintf(buf2,      "%-18.20s", se->nick);
 
 				for(i = 0 ; i < NUM_AKTYPE_INDICES; i++) {
 					l += sprintf(buf2 + l, " %-7d", se->count_adds[i]);
