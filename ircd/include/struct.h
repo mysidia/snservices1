@@ -40,15 +40,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>
+
 #ifdef STDDEFH
 # include <stddef.h>
 #endif
 
 #ifdef USE_SYSLOG
 # include <syslog.h>
-# ifdef SYSSYSLOGH
-#  include <sys/syslog.h>
-# endif
 #endif
 
 typedef	union	Address	anAddress;

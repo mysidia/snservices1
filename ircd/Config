@@ -17,7 +17,6 @@ OPTIONS=./Options
 AUTO_CONFIG=""
 #
 STDDEFH=undef
-SYSSYSLOGH=undef
 PARAMH=undef
 RUSAGEH=undef
 NOINDEX=undef
@@ -396,13 +395,6 @@ if [ -r /usr/include/stddef.h ] ; then
 else
 	echo 'not found :('
 fi
-echo $n "...Looking for /usr/include/sys/syslog.h...$c"
-if [ -r /usr/include/sys/syslog.h ] ; then
-	SYSSYSLOGH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
 
 if [ -z "$cc" ] ; then
 	cc="$LIBS"
@@ -681,7 +673,6 @@ cat > $SETUP  <<__EOF__
 #$LINUX_GLIBC	LINUX_GLIBC
 /*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
 #$STDDEFH	STDDEFH
-#$SYSSYSLOGH	SYSSYSLOGH
 #$NOINDEX	NOINDEX
 #$NSTRERROR	NEED_STRERROR
 #$NSTRTOKEN	NEED_STRTOKEN
