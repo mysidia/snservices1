@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, ircd/s_debug.c
  *   Copyright (C) 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
@@ -18,9 +18,9 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "struct.h"
-
 #include <errno.h>
+
+#include "struct.h"
 
 #include "ircd/send.h"
 
@@ -31,9 +31,6 @@ IRCD_RCSID("$Id$");
  * Option string.  Must be before #ifdef DEBUGMODE.
  */
 char	serveropts[] = {
-#ifdef	SENDQ_ALWAYS
-'A',
-#endif
 #ifdef	CHROOTDIR
 'c',
 #endif

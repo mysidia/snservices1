@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, common/send.c
  *   Copyright (C) 1990 Jarkko Oikarinen and
  *		      University of Oulu, Computing Center
@@ -18,13 +18,14 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <stdio.h>
+#include <assert.h>
+#include <stdarg.h>
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "h.h"
-#include <stdio.h>
-#include <assert.h>
-#include <stdarg.h>
 
 #include "ircd/send.h"
 #include "ircd/string.h"
@@ -35,206 +36,156 @@ IRCD_RCSID("$Id$");
 #define NEWLINE	"\r\n"
 
 static int recurse_send = 0;
-static char last_pattern[2048*2]="";
+static char last_pattern[2048 * 2] = "";
+static char sendbuf[2048];
+static int sentalong[MAXCONNECTIONS];
 
-static	char	sendbuf[2048];
-static	int	send_message(aClient *, char *, int);
-
-static	int	sentalong[MAXCONNECTIONS];
+static int send_message(aClient *, char *, int);
 
 /*
-** dead_link
-**	An error has been detected. The link *must* be closed,
-**	but *cannot* call ExitClient (m_bye) from here.
-**	Instead, mark it with FLAGS_DEADSOCKET. This should
-**	generate ExitClient from the main loop.
-**
-**	If 'notice' is not NULL, it is assumed to be a format
-**	for a message to local opers. I can contain only one
-**	'%s', which will be replaced by the sockhost field of
-**	the failing link.
-**
-**	Also, the notice is skipped for "uninteresting" cases,
-**	like Persons and yet unknown connections...
-*/
-static	int	dead_link(to, notice)
-aClient *to;
-char	*notice;
+ * An error has been detected. The link *must* be closed,
+ * but *cannot* call ExitClient (m_bye) from here.
+ * Instead, mark it with FLAGS_DEADSOCKET. This should
+ * generate ExitClient from the main loop.
+ *
+ * If 'notice' is not NULL, it is assumed to be a format
+ * for a message to local opers. I can contain only one
+ * '%s', which will be replaced by the sockhost field of
+ * the failing link.
+ *
+ * Also, the notice is skipped for "uninteresting" cases,
+ * like Persons and yet unknown connections...
+ */
+static int
+dead_link(aClient *to, char *notice)
 {
 	ClientFlags(to) |= FLAGS_DEADSOCKET;
+
 	/*
 	 * If because of BUFFERPOOL problem then clean dbuf's now so that
 	 * notices don't hurt operators below.
 	 */
 	DBufClear(&to->recvQ);
 	DBufClear(&to->sendQ);
-	if (!IsPerson(to) && !IsUnknown(to) && !(ClientFlags(to) & FLAGS_CLOSING))
+	if (!IsPerson(to)
+	    && !IsUnknown(to)
+	    && !(ClientFlags(to) & FLAGS_CLOSING))
 		sendto_ops(notice, get_client_name(to, FALSE));
+
 	Debug((DEBUG_ERROR, notice, get_client_name(to, FALSE)));
+
 	return -1;
 }
 
 /*
-** flush_connections
-**	Used to empty all output buffers for all connections. Should only
-**	be called once per scan of connections. There should be a select in
-**	here perhaps but that means either forcing a timeout or doing a poll.
-**	When flushing, all we do is empty the obuffer array for each local
-**	client and try to send it. if we cant send it, it goes into the sendQ
-**	-avalon
-*/
-void	flush_connections(fd)
-int	fd;
+ * Used to empty all output buffers for all connections. Should only
+ * be called once per scan of connections. There should be a select in
+ * here perhaps but that means either forcing a timeout or doing a poll.
+ * When flushing, all we do is empty the obuffer array for each local
+ * client and try to send it. if we cant send it, it goes into the sendQ
+ */
+void
+flush_connections(int fd)
 {
-#ifdef SENDQ_ALWAYS
 	int	i;
 	aClient *cptr;
 
-	if (fd == me.fd)
-	    {
+	if (fd == me.fd) {
 		for (i = highest_fd; i >= 0; i--)
 			if ((cptr = local[i]) && DBufLength(&cptr->sendQ) > 0)
 				(void)send_queued(cptr);
-	    }
-	else if (fd >= 0 && (cptr = local[fd]) && DBufLength(&cptr->sendQ) > 0)
+	} else if (fd >= 0
+		   && (cptr = local[fd])
+		   && DBufLength(&cptr->sendQ) > 0)
 		(void)send_queued(cptr);
-#endif
 }
 
 /*
-** send_message
-**	Internal utility which delivers one message buffer to the
-**	socket. Takes care of the error handling and buffering, if
-**	needed.
-*/
-static	int	send_message(to, msg, len)
-aClient	*to;
-char	*msg;	/* if msg is a null pointer, we are flushing connection */
-int	len;
-#ifdef SENDQ_ALWAYS
+ * Internal utility which delivers one message buffer to the
+ * socket. Takes care of the error handling and buffering, if
+ * needed.
+ *
+ * If msg is NULL, we are flushing the connection.
+ */
+static int
+send_message(aClient *to, char *msg, int len)
 {
 	if (IsDead(to))
 		return 0; /* This socket has already been marked as dead */
-	if (DBufLength(&to->sendQ) > get_sendq(to))
-	    {
+
+	if (DBufLength(&to->sendQ) > get_sendq(to)) {
 		if (IsServer(to))
 			sendto_ops("Max SendQ limit exceeded for %s: %d > %d",
-			   	get_client_name(to, FALSE),
-				DBufLength(&to->sendQ), get_sendq(to));
-		return dead_link(to, "Max Sendq exceeded");
-	    }
-	else if (dbuf_put(&to->sendQ, msg, len) < 0)
-		return dead_link(to, "Buffer allocation error for %s");
-	/*
-	** Update statistics. The following is slightly incorrect
-	** because it counts messages even if queued, but bytes
-	** only really sent. Queued bytes get updated in SendQueued.
-	*/
-	to->sendM += 1;
-	me.sendM += 1;
-	if (to->acpt && to->acpt != &me)
-		to->acpt->sendM += 1;
-	/*
-	** This little bit is to stop the sendQ from growing too large when
-	** there is no need for it to. Thus we call send_queued() every time
-	** 2k has been added to the queue since the last non-fatal write.
-	** Also stops us from deliberately building a large sendQ and then
-	** trying to flood that link with data (possible during the net
-	** relinking done by servers with a large load).
-	*/
-	if (DBufLength(&to->sendQ)/1024 > to->lastsq)
-		send_queued(to);
-	return 0;
-}
-#else
-{
-	int	rlen = 0;
-
-	if (IsDead(to))
-		return 0; /* This socket has already been marked as dead */
-
-	/*
-	** DeliverIt can be called only if SendQ is empty...
-	*/
-	if ((DBufLength(&to->sendQ) == 0) &&
-	    (rlen = deliver_it(to, msg, len)) < 0)
-		return dead_link(to,"Write error to %s, closing link");
-	else if (rlen < len)
-	    {
-		/*
-		** Was unable to transfer all of the requested data. Queue
-		** up the remainder for some later time...
-		*/
-		if (DBufLength(&to->sendQ) > get_sendq(to))
-		    {
-			sendto_ops("Max SendQ limit exceeded for %s : %d > %d",
 				   get_client_name(to, FALSE),
 				   DBufLength(&to->sendQ), get_sendq(to));
-			return dead_link(to, "Max Sendq exceeded");
-		    }
-		else if (dbuf_put(&to->sendQ,msg+rlen,len-rlen) < 0)
-			return dead_link(to,"Buffer allocation error for %s");
-	    }
+		return dead_link(to, "Max Sendq exceeded");
+	} else if (dbuf_put(&to->sendQ, msg, len) < 0)
+		return dead_link(to, "Buffer allocation error for %s");
+
 	/*
-	** Update statistics. The following is slightly incorrect
-	** because it counts messages even if queued, but bytes
-	** only really sent. Queued bytes get updated in SendQueued.
-	*/
+	 * Update statistics. The following is slightly incorrect
+	 * because it counts messages even if queued, but bytes
+	 * only really sent. Queued bytes get updated in SendQueued.
+	 */
 	to->sendM += 1;
 	me.sendM += 1;
 	if (to->acpt && to->acpt != &me)
 		to->acpt->sendM += 1;
+
+	/*
+	 * This little bit is to stop the sendQ from growing too large when
+	 * there is no need for it to. Thus we call send_queued() every time
+	 * 2k has been added to the queue since the last non-fatal write.
+	 * Also stops us from deliberately building a large sendQ and then
+	 * trying to flood that link with data (possible during the net
+	 * relinking done by servers with a large load).
+	 */
+	if (DBufLength(&to->sendQ)/1024 > to->lastsq)
+		send_queued(to);
+
 	return 0;
 }
-#endif
 
 /*
-** send_queued
-**	This function is called from the main select-loop (or whatever)
-**	when there is a chance the some output would be possible. This
-**	attempts to empty the send queue as far as possible...
-*/
-int	send_queued(to)
-aClient *to;
+ * This function is called from the main select-loop (or whatever)
+ * when there is a chance the some output would be possible. This
+ * attempts to empty the send queue as far as possible...
+ */
+int
+send_queued(aClient *to)
 {
 	char	*msg;
 	int	len, rlen;
 
 	/*
-	** Once socket is marked dead, we cannot start writing to it,
-	** even if the error is removed...
-	*/
-	if (IsDead(to))
-	    {
+	 * Once socket is marked dead, we cannot start writing to it,
+	 * even if the error is removed...
+	 */
+	if (IsDead(to)) {
 		/*
-		** Actually, we should *NEVER* get here--something is
-		** not working correct if send_queued is called for a
-		** dead socket... --msa
-		*/
-#ifndef SENDQ_ALWAYS
-		return dead_link(to, "send_queued called for a DEADSOCKET:%s");
-#else
+		 * Actually, we should *NEVER* get here--something is
+		 * not working correct if send_queued is called for a
+		 * dead socket.
+		 */
 		return -1;
-#endif
-	    }
-	while (DBufLength(&to->sendQ) > 0)
-	    {
+	}
+	while (DBufLength(&to->sendQ) > 0) {
 		msg = dbuf_map(&to->sendQ, &len);
-					/* Returns always len > 0 */
 		if ((rlen = deliver_it(to, msg, len)) < 0)
-			return dead_link(to,"Write error to %s, closing link");
+			return dead_link(to,
+					 "Write error to %s, closing link");
 		(void)dbuf_delete(&to->sendQ, rlen);
 		to->lastsq = DBufLength(&to->sendQ)/1024;
-		if (rlen < len) /* ..or should I continue until rlen==0? */
+		if (rlen < len)
 			break;
-	    }
+	}
 
 	return (IsDead(to)) ? -1 : 0;
 }
 
 /*
-** send message to single client
-*/
+ * send message to single client
+ */
 void
 sendto_one(aClient *to, char *fmt, ...)
 {
@@ -257,8 +208,8 @@ vsendto_one(aClient *to, char *fmt, va_list ap)
 	if (to->fd < 0) {
 		assert(to->fd >= 0);
 		Debug((DEBUG_ERROR,
-		      "Local socket %s with negative fd... AARGH!",
-		      to->name));
+		       "Local socket %s with negative fd... AARGH!",
+		       to->name));
 	} else if (IsMe(to)) {
 		sendto_ops("Trying to send [%s] to myself!", sendbuf);
 		return;
@@ -272,7 +223,7 @@ vsendto_one(aClient *to, char *fmt, va_list ap)
 
 void
 vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
-		      char *fmt, va_list ap)
+		       char *fmt, va_list ap)
 {
 	va_list ap2;
 	Link	*lp;
@@ -315,13 +266,12 @@ sendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 }
 
 /*
- * sendto_channelops_butone Added 1 Sep 1996 by Cabal95.
- *   Send a message to all OPs in channel chptr that
- *   are directly on this server and sends the message
- *   on to the next server if it has any OPs.
+ * Send a message to all OPs in channel chptr that
+ * are directly on this server and sends the message
+ * on to the next server if it has any OPs.
  *
- *   All servers must have this functional ability
- *    or one without will send back an error message. -- Cabal95
+ * All servers must have this functional ability
+ * or one without will send back an error message.
  */
 void
 sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
@@ -332,7 +282,6 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 	Link	*lp;
 	aClient	*acptr;
 	int	i;
-
 
 	va_start(ap, fmt);
 
@@ -345,28 +294,27 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 			continue;       /* ...was the one I should skip
                                            or user not not a channel op */
 		i = acptr->from->fd;
-		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
 
+		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
 			va_copy(ap2, ap);
 			sendto_prefix_one(acptr, from, fmt, ap2);
 			va_end(ap2);
 
 			sentalong[i] = 1;
-		    }
-		else
-                    {
-		/* Now check whether a message has been sent to this
-		 * remote link already */
-			if (sentalong[i] == 0) 
-			    {
-				    va_copy(ap2, ap);
-				    sendto_prefix_one(acptr, from, fmt, ap2);
-				    va_end(ap2);
+		} else {
+		/*
+		 * Now check whether a message has been sent to this
+		 * remote link already
+		 */
+			if (sentalong[i] == 0) {
+				va_copy(ap2, ap);
+				sendto_prefix_one(acptr, from, fmt, ap2);
+				va_end(ap2);
 
 				sentalong[i] = 1;
-			    }
-		    }
-	    }
+			}
+		}
+	}
 
 	va_end(ap);
 }
@@ -387,44 +335,40 @@ sendto_channelvoices_butone(aClient *one, aClient *from, aChannel *chptr,
 
 	for (i = 0; i < MAXCONNECTIONS; i++)
 		sentalong[i] = 0;
-	for (lp = chptr->members; lp; lp = lp->next)
-	    {
+	for (lp = chptr->members; lp; lp = lp->next) {
 		acptr = lp->value.cptr;
-		if (acptr->from == one || (lp->flags & CHFL_ZOMBIE) ||
-		    ( !(lp->flags & CHFL_VOICE) && !(lp->flags & CHFL_CHANOP) ))
+		if (acptr->from == one
+		    || (lp->flags & CHFL_ZOMBIE)
+		    || (!(lp->flags & CHFL_VOICE)
+			&& !(lp->flags & CHFL_CHANOP) ))
 			continue;       /* ...was the one I should skip
                                            or user not not a channel op */
 		i = acptr->from->fd;
-		if (MyConnect(acptr) && IsRegisteredUser(acptr))
-		    {
-			    va_copy(ap2, ap);
-			    vsendto_prefix_one(acptr, from, fmt, ap2);
-			    va_end(ap2);
+		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
+			va_copy(ap2, ap);
+			vsendto_prefix_one(acptr, from, fmt, ap2);
+			va_end(ap2);
 
 			sentalong[i] = 1;
-		    }
-		else
-                    {
-		/* Now check whether a message has been sent to this
-		 * remote link already */
-			if (sentalong[i] == 0) 
-			    {
-				    va_copy(ap2, ap);
-				    vsendto_prefix_one(acptr, from, fmt, ap2);
-				    va_end(ap2);
+		} else {
+		/*
+		 * Now check whether a message has been sent to this
+		 * remote link already
+		 */
+			if (sentalong[i] == 0) {
+				va_copy(ap2, ap);
+				vsendto_prefix_one(acptr, from, fmt, ap2);
+				va_end(ap2);
 
 				sentalong[i] = 1;
-			    }
-		    }
-	    }
+			}
+		}
+	}
 
 	va_end(ap);
 }
 
-
 /*
- * sendto_server_butone
- *
  * Send a message to all connected servers except the client 'one'.
  */
 void
@@ -457,8 +401,6 @@ sendto_serv_butone(aClient *one, char *fmt, ...)
 }
 
 /*
- * sendto_common_channels()
- *
  * Sends a message to all people (inclusing user) on local server who are
  * in same channel with user.
  */
@@ -485,7 +427,7 @@ sendto_common_channels(aClient *user, char *fmt, ...)
 				va_end(ap2);
 				break;
 			    }
-	    }
+	}
 	if (MyConnect(user))
 		vsendto_prefix_one(user, user, fmt, ap);
 
@@ -493,8 +435,6 @@ sendto_common_channels(aClient *user, char *fmt, ...)
 }
 
 /*
- * sendto_channel_butserv
- *
  * Send a message to all members of a channel that are connected to this
  * server.
  */
@@ -521,8 +461,6 @@ sendto_channel_butserv(aChannel *chptr, aClient *from, char *fmt, ...)
 
 
 /*
- * sendto_channel_butserv_unmask
- *
  * Send a message to all members of a channel that are connected to this
  * server; show real address to ops.
  */
@@ -567,30 +505,24 @@ sendto_channel_butserv_unmask(aChannel *chptr, aClient *from, char *fmt, ...)
 
 
 /*
-** send a msg to all ppl on servers/hosts that match a specified mask
-** (used for enhanced PRIVMSGs)
-**
-** addition -- Armin, 8jun90 (gruner@informatik.tu-muenchen.de)
-*/
+ * send a msg to all ppl on servers/hosts that match a specified mask
+ * (used for enhanced PRIVMSGs)
+ */
 
-static	int	match_it(one, mask, what)
-aClient *one;
-char	*mask;
-int	what;
+static int
+match_it(aClient *one, char *mask, int what)
 {
-	switch (what)
-	{
+	switch (what) {
 	case MATCH_HOST:
-		return (match(mask, one->user->host)==0);
+		return (match(mask, one->user->host) == 0);
+
 	case MATCH_SERVER:
 	default:
-		return (match(mask, one->user->server)==0);
+		return (match(mask, one->user->server) == 0);
 	}
 }
 
 /*
- * sendto_match_servs
- *
  * send to all servers which match the mask at the end of a channel name
  * (if there is a mask present) or to all if no mask.
  */
@@ -634,8 +566,6 @@ sendto_match_servs(aChannel *chptr, aClient *from, char *fmt, ...)
 }
 
 /*
- * sendto_match_butone
- *
  * Send to all clients which match the mask in a way defined on 'what';
  * either by user hostname or user servername.
  */
@@ -671,15 +601,14 @@ sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 				    && acptr->from == cptr)
 					break;
 			/* a person on that server matches the mask, so we
-			** send *one* msg to that server ...
+			 * send *one* msg to that server ...
 			*/
 			if (acptr == NULL)
 				continue;
 			/* ... but only if there *IS* a matching person */
-		    }
-		/* my client, does he match ? */
-		else if (!cansendlocal || (!(IsRegisteredUser(cptr) &&
-			match_it(cptr, mask, what))))
+		} else if (!cansendlocal || (!(IsRegisteredUser(cptr) &&
+					       match_it(cptr, mask, what))))
+			/* my client, does he match ? */
 			continue;
 
 		va_copy(ap2, ap);
@@ -691,8 +620,6 @@ sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 }
 
 /*
- * sendto_all_butone.
- *
  * Send a message to all connections except 'one'. The basic wall type
  * message generator.
  */
@@ -717,9 +644,7 @@ sendto_all_butone(aClient *one, aClient *from, char *fmt, ...)
 }
 
 /*
- * sendto_ops
- *
- *	Send to *local* ops only.
+ * Send to local ops only.
  */
 void
 sendto_ops(char *fmt, ...)
@@ -748,9 +673,7 @@ sendto_ops(char *fmt, ...)
 }
 
 /*
- * sendto_failops
- *
- *      Send to *local* mode +g ops only.
+ * Send to local mode +g ops only.
  */
 void
 sendto_failops(char *fmt, ...)
@@ -780,9 +703,7 @@ sendto_failops(char *fmt, ...)
 }
 
 /*
- * sendto_helpops
- *
- *	Send to mode +h people
+ * Send to mode +h people
  */
 void
 sendto_helpops(char *fmt, ...)
@@ -797,8 +718,7 @@ sendto_helpops(char *fmt, ...)
 
 	for (i = 0; i <= highest_fd; i++)
 		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
-		    IsHelpOp(cptr))
-		    {
+		    IsHelpOp(cptr)) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :*** HelpOp -- ",
 				      me.name, cptr->name);
 			(void)strncat(nbuf, fmt,
@@ -807,18 +727,16 @@ sendto_helpops(char *fmt, ...)
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
 			va_end(ap2);
-		    }
+		}
 
 	va_end(ap);
 }
 
-
-
 /*
- *   send to flags very loosely, IOW it's not essential
- *   that each message makes it, but it is essential not to 
- *   send out a flood of messages if this routine is called
- *   very quickly...
+ * send to flags very loosely, IOW it's not essential
+ * that each message makes it, but it is essential not to 
+ * send out a flood of messages if this routine is called
+ * very quickly...
  */
 void
 sendto_flag_norep(int flags, int max, char *fmt, ...)
@@ -848,9 +766,9 @@ sendto_flag_norep(int flags, int max, char *fmt, ...)
 		recurse_send = 0;
 	if (recurse_send == 0)
 		strncpy(last_pattern, next_pattern, sizeof(last_pattern));
-	if (!recurse_send || recurse_send < max) {
+	if (!recurse_send || recurse_send < max)
 		sendto_flag(flags, next_pattern);
-	} else if ((recurse_send > max) && (((recurse_send-max)) > 10))
+	else if ((recurse_send > max) && (((recurse_send-max)) > 10))
 		recurse_send = 0;
 	else
 		num_sent--;
@@ -917,9 +835,7 @@ sendto_umode_norep(int flags, int max, char *fmt, ...)
 }
 
 /*
- * sendto_flag
- *
- *  Send to specified flag
+ * Send to specified flag
  */
 void
 sendto_flag(int flags, char *fmt, ...)
@@ -948,9 +864,7 @@ sendto_flag(int flags, char *fmt, ...)
 }
 
 /*
- * sendto_socks
- *
- *  Send message to specified socks struct clients
+ * Send message to specified socks struct clients
  */
 void
 sendto_socks(aSocks *socks, char *fmt, ...)
@@ -1035,9 +949,7 @@ sendto_umode_except(int flags, int notflags, char *fmt, ...)
 }
 
 /*
- * sendto_failops_whoare_opers
- *
- *      Send to *local* mode +g ops only who are also +o.
+ * Send to local mode +g ops only who are also +o.
  */
 void
 sendto_failops_whoare_opers(char *fmt, ...)
@@ -1066,9 +978,7 @@ sendto_failops_whoare_opers(char *fmt, ...)
 }
 
 /*
- * sendto_locfailops
- *
- *      Send to *local* mode +g ops only who are also +o.
+ * Send to local mode +g ops only who are also +o.
  */
 void
 sendto_locfailops(char *fmt, ...)
@@ -1098,9 +1008,7 @@ sendto_locfailops(char *fmt, ...)
 }
 
 /*
- * sendto_opers
- *
- *	Send to *local* ops only. (all +O or +o people)
+ * Send to *local* ops only. (all +O or +o people)
  */
 void
 sendto_opers(char *fmt, ...)
@@ -1128,11 +1036,12 @@ sendto_opers(char *fmt, ...)
 	va_end(ap);
 }
 
-/* ** sendto_ops_butone
-**	Send message to all operators.
-** one - client not to send message to
-** from- client which message is from *NEVER* NULL!!
-*/
+/*
+ * Send message to all operators.
+ *
+ * one - client not to send message to
+ * from- client which message is from *NEVER* NULL!!
+ */
 void
 sendto_ops_butone(aClient *one, aClient *from, char *fmt, ...)
 {
@@ -1164,12 +1073,12 @@ sendto_ops_butone(aClient *one, aClient *from, char *fmt, ...)
 }
 
 /*
-** sendto_ops_butone
-**	Send message to all operators regardless of whether they are +w or 
-**	not.. 
-** one - client not to send message to
-** from- client which message is from *NEVER* NULL!!
-*/
+ * Send message to all operators regardless of whether they are +w or 
+ * not.. 
+ *
+ * one - client not to send message to
+ * from- client which message is from *NEVER* NULL!!
+ */
 void
 sendto_opers_butone(aClient *one, aClient *from, char *fmt, ...)
 {
@@ -1201,10 +1110,10 @@ sendto_opers_butone(aClient *one, aClient *from, char *fmt, ...)
 }
 
 /*
-** sendto_ops_butme
-**	Send message to all operators except local ones
-** from- client which message is from *NEVER* NULL!!
-*/
+ * Send message to all operators except local ones
+ *
+ * from- client which message is from *NEVER* NULL!!
+ */
 void
 sendto_ops_butme(aClient *from, char *fmt, ...)
 {
@@ -1236,13 +1145,10 @@ sendto_ops_butme(aClient *from, char *fmt, ...)
 }
 
 /*
- * sendto_prefix_one()
- *
  * to - destination client
  * from - client which message is from
  *
  * NOTE: NEITHER OF THESE SHOULD *EVER* BE NULL!!
- * -avalon
  */
 void
 sendto_prefix_one(aClient *to, aClient *from, char *fmt, ...)
@@ -1283,9 +1189,9 @@ vsendto_prefix_one(aClient *to, aClient *from, char *fmt, va_list ap)
 			}
 		}
 		/*
-		** flag is used instead of index(sender, '@') for speed and
-		** also since username/nick may have had a '@' in them. -avalon
-		*/
+		 * flag is used instead of index(sender, '@') for speed and
+		 * also since username/nick may have had a '@' in them. -avalon
+		 */
 		if (!flag && MyConnect(from) && *user->host) {
 			(void)strcat(sender, "@");
                         if (!IsMasked(from) || !user->mask
@@ -1321,9 +1227,7 @@ vsendto_prefix_one(aClient *to, aClient *from, char *fmt, va_list ap)
 }
 
 /*
- * sendto_realops
- *
- *	Send to *local* ops only but NOT +s nonopers.
+ * Send to local ops only but NOT +s nonopers.
  */
 void
 sendto_realops(char *pattern, ...)

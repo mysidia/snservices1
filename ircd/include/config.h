@@ -559,15 +559,6 @@
  */
 #define MAXCHANNELSPERUSER  10	/* Recommended value: 10 */
 
-/*
- * SendQ-Always causes the server to put all outbound data into the sendq and
- * flushing the sendq at the end of input processing. This should cause more
- * efficient write's to be made to the network.
- * There *shouldn't* be any problems with this method.
- * -avalon
- */
-#define	SENDQ_ALWAYS
-
 /* ------------------------- END CONFIGURATION SECTION -------------------- */
 #define MOTD MPATH
 #define	MYNAME SPATH
