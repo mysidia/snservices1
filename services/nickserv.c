@@ -513,6 +513,16 @@ void addNewUser(char **args, int numargs)
 			return;
 		}
 
+		if (!(newnick->oflags & NISOPER) && (newnick->reg->flags & NNETWORKNICK)) {
+			sSend(":%s KILL %s :%s!%s (Reserved nickname)",
+					services[1].name, newnick->nick, services[1].host,
+					services[1].name);
+			freeUserListRec(newnick);
+			addGhost(args[1]);
+			timer(15, delTimedGhost, strdup(args[1]));
+			return;
+		}
+
 		/*if (newnick->reg && !newnick->auth_cookie) {
 		 * sSend(":%s NOTICE %s :200 MD5 PLAIN", NickServ, newnick->nick, newnick->auth_cookie, newnick->idnum);
 		 * } */
@@ -521,7 +531,13 @@ void addNewUser(char **args, int numargs)
 			sSend(":%s MODE %s :+m", NickServ, newnick->nick);
 		}
 
-		if (!checkAccess(newnick->user, newnick->host, newnick->reg)) {
+		if ((newnick->oflags & NOISREG)) {
+			newnick->caccess = 2;
+			newnick->reg->timestamp = (time_t) atol(args[3]);
+
+			NickSeeUser(newnick, newnick->reg, 2, 1);
+		}
+		else if (!checkAccess(newnick->user, newnick->host, newnick->reg)) {
 			newnick->caccess = 1;
 			annoyNickThief(newnick);
 		} else {
@@ -584,6 +600,8 @@ void changeNick(char *from, char *to, char *ts)
 	char tmp1[NICKLEN + 2];
 
 	changeme = getNickData(from);
+	changeme->oflags &= ~NOISREG;
+	
 	if (changeme == NULL) {
 		nDesynch(from, "NICK");
 		return;
@@ -656,9 +674,9 @@ void changeNick(char *from, char *to, char *ts)
 	tmp->reg = getRegNickData(to);
 
 	if (tmp->reg != NULL) {
-		if (tmp->reg->flags & NBANISH) {
+		if (tmp->reg->flags & (NBANISH|NNETWORKNICK)) {
 			sSend
-				(":%s 433 %s :Banished nickname - You have 10 seconds to change your nick.",
+				(":%s 433 %s :Banished/Reserved nickname - You have 10 seconds to change your nick.",
 				 myname, tmp->nick);
 			sprintf(tmp1, "%s@@%i", to, 0);
 			timer(10, killide, strdup(tmp1));
@@ -743,6 +761,12 @@ void setMode(char *nick, char *mode)
 				changeme->oflags |= NISHELPOP;
 			else
 				changeme->oflags &= ~NISHELPOP;
+			break;
+		case 'r':
+			if (c == 1)
+				changeme->oflags |= NOISREG;
+			else
+				changeme->oflags &= ~NOISREG;
 			break;
 		case 'm':
 			if (c == 1) {
@@ -1773,7 +1797,7 @@ void killide(char *info)
 	if (check == NULL) {
 		FREE(info);
 		return;
-	} else if (isIdentified(check, regnick)) {
+	} else if ((check->oflags & NOISREG) || isIdentified(check, regnick)) {
 		FREE(info);
 		return;
 	} else if (host != NULL) {
@@ -2189,7 +2213,7 @@ void expireNicks(char *dummy)
 
 			if (!isIdentified(getNickData(tmp->nick), tmp)) {
 
-				if ((tmp->flags & (NHOLD | NBANISH)) != 0) {
+				if ((tmp->flags & (NHOLD | NBANISH | NNETWORKNICK)) != 0) {
 					;
 				} else if (tmp->flags & NVACATION) {
 					if ((timestart - tmp->timestamp)
@@ -2497,7 +2521,7 @@ NCMD(ns_identify)
 		return RET_NOTARGET;
 	}
 
-	if ((tonick->flags & NBANISH)) {
+	if ((tonick->flags & (NBANISH | NNETWORKNICK)) && !opFlagged(nick, OOPER)) {
 		PutError(NickServ, nick, ERR_NICKBANISHED_1ARG,
 				 s_nick ? s_nick : nick->nick, 0, 0);
 
@@ -3748,7 +3772,7 @@ NCMD(ns_drop)
 		return RET_EFAULT;
 	}
 
-	if ((nick->reg->flags & NBANISH)) {
+	if ((nick->reg->flags & (NBANISH | NNETWORKNICK))) {
 		sSend
 			(":%s NOTICE %s :Sorry, but that nickname is currently banished.",
 			 NickServ, from);
@@ -4832,6 +4856,12 @@ NCMD(ns_setflags)
 				regnick->flags |= NHOLD;
 			else
 				regnick->flags &= ~NHOLD;
+			break;
+		case 'n':
+			if (mode)
+				regnick->flags |= NNETWORKNICK;
+			else
+				regnick->flags &= ~NNETWORKNICK;
 			break;
 		case 'b':
 			if (mode)
