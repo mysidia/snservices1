@@ -93,8 +93,11 @@ host_triplet = @host@
 AR = @AR@
 CPPUNIT_PREFIX = @CPPUNIT_PREFIX@
 CXX = @CXX@
+HAVE_LIB = @HAVE_LIB@
 LD = @LD@
 LEX = @LEX@
+LIB = @LIB@
+LTLIB = @LTLIB@
 MAKEINFO = @MAKEINFO@
 MD5_DEF = @MD5_DEF@
 MD5_LIB = @MD5_LIB@
@@ -176,7 +179,7 @@ configure.in install-sh missing mkinstalldirs
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = tar
+TAR = gtar
 GZIP_ENV = --best
 DEP_FILES =  .deps/akill.P .deps/chanserv.P .deps/chantrig.P \
 .deps/clone.P .deps/conf.P .deps/credits.P .deps/db.P .deps/email.P \
