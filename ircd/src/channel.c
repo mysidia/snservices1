@@ -1124,7 +1124,7 @@ int	modehack;
 	int	limitset = 0, chasing = 0, bounce;
 	int	nusers = 0, new, len, blen, keychange = 0, opcnt = 0, banlsent = 0;
 	int     doesdeop = 0, doesop = 0, hacknotice = 0, change, gotts = 0;
-	int     member = 0, chop = 0; 
+	int     cis_member = 0, cis_chop = 0; 
 	int	orig_parc = parc;
 	aClient *who;
 	Mode	*mode, oldm;
@@ -1157,8 +1157,8 @@ int	modehack;
  * Enjoy. --dalvenjah, dalvenja@rahul.net
  */
 #if 1
-	member = IsMember(sptr, chptr);
-	chop = (member == 0) ? 0 : is_chan_op(sptr, chptr);
+	cis_member = IsMember(sptr, chptr);
+	cis_chop = (cis_member == 0) ? 0 : is_chan_op(sptr, chptr);
 
 	if ((IsServer(cptr) == 0 && IsULine(cptr,sptr) == 0 
 	     && parc == 1 
@@ -1169,7 +1169,7 @@ int	modehack;
 		((*curr == '+' || *curr == '-') && curr[1] == 'b' 
 		    && curr[2] == '\0')
 	     ) 
-	     && member != 0 && chop == 0))
+	     && cis_member != 0 && cis_chop == 0))
 		{
 #if 0
 		/* XXX: This was and is dead code, --parv is not == 0*/
@@ -1191,7 +1191,7 @@ int	modehack;
 			}
 #endif
 		}
-	else if (chop == 0)
+	else if (cis_chop == 0)
 		return 0;
 #endif
 
