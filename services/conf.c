@@ -49,6 +49,8 @@
 
 int svcOptFork = 0;
 
+extern void makeSetterExcludedFromKlineMails(const char* nick);
+
 /**
  * @brief Port number for services IPC server to listen on
  */
@@ -176,6 +178,9 @@ void readConf(void)
 		ChanLimit = atoi(&(buffer[3]));
 	else if (!strncmp(buffer, "NL:", 3))
 		NickLimit = atoi(&(buffer[3]));
+	else if (!strncmp(buffer, "AKILLDONTMAIL:", 14)) {
+		makeSetterExcludedFromKlineMails(buffer+14);
+	}
 	else if (!strncmp(buffer, "IPCPORT:", 8)) {
 		if (ipcPort == 0)
 			ipcPort = atoi(&(buffer[8]));
