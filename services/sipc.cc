@@ -78,7 +78,7 @@ const ssUInfo *getServicesSysUser(const char *username)
 	static ssUInfo users[] = {
 		{"WWW/ahurt", "test",	PRIV_QUERY_NICK_ISREG | PRIV_LOGW},
 		{"WWW/setpass", "test",	PRIV_ALTER_RNICK_GEN | PRIV_RCHAN_LOGIN | PRIV_RNICK_LOGIN },
-		{"mysid/test", "test",	PRIV_QUERY_NICK_ISREG | PRIV_QUERY_NICK_PUBLIC | PRIV_QUERY_AKILL_LIST | PRIV_QUERY_NICK_PRIVATE | PRIV_LOGW},
+		{"mysid/test", "test",	PRIV_QUERY_NICK_ISREG | PRIV_QUERY_NICK_PUBLIC | PRIV_QUERY_AKILL_LIST | PRIV_QUERY_NICK_PRIVATE | PRIV_QUERY_CHAN_PUBLIC | PRIV_LOGW},
 		{NULL}
 	};
 	int i = 0;
