@@ -1654,12 +1654,13 @@ IpcType::makeMessage(IpcConnectType *p, parse_t *pb)
 		if (strcmp(buf, "RCHAN") == 0) {
 			p->sWrite("ERR-UNIMPLEMENTED MAKE RCHAN - Not yet implemented\n");
 		}
-		else if (strcmp(buf, "RNICK") == 0) {
+		else if (strcmp(buf, "RNICK") == 0 || strcmp(buf, "FORCE-RNICK")) {
 			RegNickList *ptrNick;
 			char *nick = parse_getarg(pb);
 			char *email = parse_getarg(pb);
 			char *host = parse_getarg(pb);
 			char *ptrChar;
+			int is_force = (strcmp(buf, "FORCE-RNICK") == 0);
 			int pws;
 
 			if (nick == NULL) {
@@ -1677,7 +1678,7 @@ IpcType::makeMessage(IpcConnectType *p, parse_t *pb)
 				return;
 			}
 
-			if (getNickData(nick)) {
+			if (is_force == 0 && getNickData(nick) != NULL) {
 				p->fWrite("ERR-NICKINUSE MAKE NICK=%s - Nickname is in use.\n", nick);
 				return;
 			}
