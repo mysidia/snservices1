@@ -116,7 +116,7 @@
  */
 
 #ifdef DEBUGMODE 
-#define PATCH9 ""
+#define PATCH9 ".debug"
 #else
 #define PATCH9 ""
 #endif
