@@ -41,17 +41,17 @@ int	writecalls = 0, writeb[10] = {0,0,0,0,0,0,0,0,0,0};
 void
 dummy_sig(int sig)
 {
-	struct  sigaction       act;
+	struct sigaction act;
 
 	act.sa_handler = dummy_sig;
 	act.sa_flags = 0;
 	(void)sigemptyset(&act.sa_mask);
 	(void)sigaddset(&act.sa_mask, SIGALRM);
 	(void)sigaddset(&act.sa_mask, SIGPIPE);
-#  ifdef SIGWINCH
+#ifdef SIGWINCH
 	(void)sigaddset(&act.sa_mask, SIGWINCH);
 	(void)sigaction(SIGWINCH, &act, NULL);
-#  endif
+#endif
 	(void)sigaction(SIGALRM, &act, NULL);
 	(void)sigaction(SIGPIPE, &act, NULL);
 }
@@ -76,12 +76,10 @@ dummy_sig(int sig)
 **		work equally well whether blocking or non-blocking
 **		mode is used...
 */
-int	deliver_it(cptr, str, len)
-aClient *cptr;
-int	len;
-char	*str;
-    {
-	int	retval;
+int
+deliver_it(aClient *cptr, char *str, int len)
+{
+	int retval;
 	aClient	*acpt = cptr->acpt;
 
 #ifdef	DEBUGMODE
@@ -89,12 +87,12 @@ char	*str;
 #endif
 	(void)alarm(WRITEWAITDELAY);
 	if (IsDead(cptr) || (!IsServer(cptr) && !IsPerson(cptr) &&
-			     !IsHandshake(cptr) && !IsUnknown(cptr)))
-	{
-	  str[len]='\0';
-	  sendto_ops("* * * DEBUG ERROR * * * !!! Calling deliver_it() for %s, status %d %s, with message: %s",
-	      cptr->name, cptr->status, IsDead(cptr)?"DEAD":"", str);
-	  return -1;
+			     !IsHandshake(cptr) && !IsUnknown(cptr))) {
+		str[len]='\0';
+		sendto_ops("* * * DEBUG ERROR * * * !!! Calling deliver_it() for %s, status %d %s, with message: %s",
+			   cptr->name, cptr->status,
+			   IsDead(cptr)?"DEAD":"", str);
+		return -1;
 	}
 	retval = send(cptr->fd, str, len, 0);
 	/*
@@ -106,25 +104,19 @@ char	*str;
 	** ...now, would this work on VMS too? --msa
 	*/
 	if (retval < 0 && (errno == EWOULDBLOCK || errno == EAGAIN ||
-			   errno == ENOBUFS))
-	    {
+			   errno == ENOBUFS)) {
 		retval = 0;
 		ClientFlags(cptr) |= FLAGS_BLOCKED;
-	    }
-	else if (retval > 0)
-	    {
-#ifdef	pyr
-		(void)gettimeofday(&cptr->lw, NULL);
-#endif
+	} else if (retval > 0) {
 		ClientFlags(cptr) &= ~FLAGS_BLOCKED;
-	    }
+	}
 
 	(void )alarm(0);
 #ifdef DEBUGMODE
 	if (retval < 0) {
 		writeb[0]++;
                Debug((DEBUG_ERROR,"write error (%s) to %s",
-                        /*sys_errlist[errno]*/ strerror(errno), cptr->name));
+		      strerror(errno), cptr->name));
 
 	} else if (retval == 0)
 		writeb[1]++;
@@ -145,29 +137,24 @@ char	*str;
 	else
 		writeb[9]++;
 #endif
-	if (retval > 0)
-	    {
+	if (retval > 0) {
 		cptr->sendB += retval;
 		me.sendB += retval;
-		if (cptr->sendB > 1023)
-		    {
+		if (cptr->sendB > 1023) {
 			cptr->sendK += (cptr->sendB >> 10);
 			cptr->sendB &= 0x03ff;	/* 2^10 = 1024, 3ff = 1023 */
-		    }
-		if (acpt != &me)
-		    {
+		}
+		if (acpt != &me) {
 			acpt->sendB += retval;
-			if (acpt->sendB > 1023)
-			    {
+			if (acpt->sendB > 1023) {
 				acpt->sendK += (acpt->sendB >> 10);
 				acpt->sendB &= 0x03ff;
-			    }
-		    }
-		else if (me.sendB > 1023)
-		    {
+			}
+		} else if (me.sendB > 1023) {
 			me.sendK += (me.sendB >> 10);
 			me.sendB &= 0x03ff;
-		    }
-	    }
+		}
+	}
+
 	return(retval);
 }
