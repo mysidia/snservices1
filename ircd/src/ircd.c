@@ -435,33 +435,7 @@ main(int argc, char **argv)
 {
 	time_t	delay = 0, now;
 	int	portarg = 0;
-	int     i, error = 0;
 	aConfItem *aconf;
-
-	/* Flag differences in the case tables as an error  */
-
-	/*
-	 * This is intended to test the ircd case table against the system
-	 * toupper() and tolower().
-	 *
-	 * When necessary
-	 */
-	for(i = 0; i < 256; i++) {
-		if (tolower(i) != irc_tolower(i))
-		{
-			fprintf(stderr, "Warning: tolower(%d) is %d != irc_tolower(%d) which is %d\n", i, 
-					   tolower(i), i, irc_tolower(i));
-			error = 1;
-		}
-
-		if (toupper(i) != irc_toupper(i)) 
-		{
-			fprintf(stderr, "Warning: toupper(%d) is %d != irc_toupper(%d) which is %d\n", i,
-					toupper(i), i, irc_toupper(i));
-			error = 1;
-		}
-	}
-
 
         update_time();
 	sbrk0 = (char *)sbrk((size_t)0);
@@ -503,12 +477,10 @@ main(int argc, char **argv)
 
 #endif
 
-#ifdef USE_CASETABLES
 	/* Set up the case tables */
 	tolog(LOG_IRCD, "setting up casetables...");
-	setup_match();
+	setup_casetables();
 	tolog(LOG_IRCD, "done");
-#endif
 
 	/*
 	** All command line parameters have the syntax "-fstring"

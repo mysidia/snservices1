@@ -75,5 +75,6 @@ extern unsigned char irc_charattrib[];
  ( (irc_toupper((a)[0])!=irc_toupper((b)[0])) || (((a)[0]!=0) && smycmp((a)+1,(b)+1)) )
 int     smycmp(const char *, const char *);
 int	myncmp(const char *, const char *, int);
+void	setup_casetables();
 
 #endif /* IRCD_STRING_H */

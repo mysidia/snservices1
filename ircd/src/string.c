@@ -18,12 +18,14 @@
 
 #include <sys/types.h>
 
-#include <regex.h> 
+#include <ctype.h>
 
 #include "ircd/cdefs.h"
 #include "ircd/string.h"
 
 #include "sys.h"
+#include "struct.h"
+#include "h.h"
 
 IRCD_RCSID("$Id$");
 
@@ -125,6 +127,35 @@ myncmp(const char *str1, const char *str2, int n)
 			return 0;
 	}
 	return (res);
+}
+
+/* Flag differences in the case tables as an error  */
+
+/*
+ * This is intended to test the ircd case table against the system
+ * toupper() and tolower().
+ *
+ * When necessary
+ */
+
+void setup_casetables()
+{
+	int	i;
+
+	for(i = 0; i < 256; i++)
+	{
+		if (tolower(i) != irc_tolower(i))
+		{
+			tolog(LOG_IRCD, "Warning: tolower(%d) is %d != irc_tolower(%d) which is %d", i,
+				tolower(i), i, irc_tolower(i));
+		}
+
+		if (toupper(i) != irc_toupper(i))
+		{
+			tolog(LOG_IRCD, "Warning: toupper(%d) is %d != irc_toupper(%d) which is %d", i,
+				toupper(i), i, irc_toupper(i));
+		}
+	}
 }
 
 unsigned char irc_tolowertab[] = {

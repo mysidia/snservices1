@@ -46,6 +46,7 @@ static  Numeric local_replies[] = {
 /* 005 ------------------*/	"MODES=3 "
 /* 005 ------------------*/	"CHANMODES=b,k,l,Hcimnpst "
 /* 005 ------------------*/	"CHANTYPES=#& "
+/* 005 ------------------*/	"CASEMAPPING=ascii "
 /* 005 ------------------*/	"KICKLEN=307 " /*TOPICLEN*/
 /* 005 ------------------*/	"MAXBANS=60 " /*MAXBANS*/
 /* 005 ------------------*/	"MAXCHANNELS=10 " /*MAXCHANNELSPERUSER*/
