@@ -267,6 +267,25 @@ void nDesynch(char *nick, char *type)
 	return;
 }
 
+/**
+ * Send an IRC Protocol message to grant the user their IDENTIFIED flag on IRC
+ */
+void grantIdentifiedUmode(NickList* nick)
+{
+	const char* name = nick->nick;
+
+#ifdef IRCD_REGMODE
+#   ifdef IRCD_SVSMODE
+	/* Some ircd implementations use a command called 'SVSMODE' instead */ 
+
+	sSend(":%s SVSMODE %s :+r", NickServ, name);
+#   else	
+
+	sSend(":%s MODE %s :+r", NickServ, name);
+#   endif
+#endif
+}
+
 
 /*
  * ===DOC===
@@ -654,6 +673,7 @@ void changeNick(char *from, char *to, char *ts)
 			clearIdentify(tmp);
 			tmp->caccess = 3;
 			NickSeeUser(tmp, tmp->reg, 3, 1);
+			grantIdentifiedUmode(tmp);
 
 			if (ts[0] == ':')
 				ts++;
@@ -2497,6 +2517,7 @@ NCMD(ns_identify)
 
 			assert(!strcasecmp(nick->reg->nick, nick->nick));
 			strcpy(nick->reg->nick, nick->nick); /* Case update */
+			grantIdentifiedUmode(nick);
 
 			PutReply(NickServ, nick, RPL_IDENTIFYOK_NOARG, 0, 0, 0);
 
