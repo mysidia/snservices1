@@ -1880,7 +1880,11 @@ void	clean_channelname(cn)
 char *cn;
 {
 	for (; *cn; cn++)
-		if (*cn == '\007' || *cn == ' ' || *cn == ',')
+		if (*cn == '\007' || *cn == ' ' || *cn == ',' ||
+		    ((unsigned char)*cn) == 160 || *cn == '\033' ||
+		    *cn == '\t' || *cn == '\003'  || *cn == '\017' ||
+		    *cn == '\026' || *cn == '\037' || *cn == '\002' ||
+		    *cn == '\001' || *cn == '\b')
 		    {
 			*cn = '\0';
 			return;

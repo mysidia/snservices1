@@ -46,6 +46,12 @@
 #define __inline
 #endif
 
+/**
+ * Number of seconds a client has to reply to CTCP version prior
+ * to disconnection
+ */
+#define MAX_NOVERSION_DELAY 300
+
 #define	MAXKILLS 25     /* maximum # of people listed per kill   */
 #define	MAXHURTS 25     /* maximum # of people listed in a /hurt */
 #undef	BOOT_MSGS

@@ -1133,10 +1133,14 @@ int 	initconf(int opt)
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
 
-			aconf->real_name = NULL;
-
 			if (aconf->status & CONF_SUP_ZAP) {
-				DupString(aconf->real_name, tmp);
+				DupString(aconf->string4, tmp);
+				if ((tmp = getfield(NULL)) == NULL)
+					break;
+				DupString(aconf->string5, tmp);
+				if ((tmp = getfield(NULL)) == NULL)
+					break;
+				DupString(aconf->string6, tmp);
 				if ((tmp = getfield(NULL)) == NULL)
 					break;
 			}
@@ -1515,36 +1519,53 @@ aConfItem	*find_ahurt(aClient *cptr)
 
 char    *find_sup_zap(aClient *cptr, int dokillmsg)
 {
-	char genbuf[BUFSIZE], *retval = "Reason Unspecified";
+	char *retval = "Reason Unspecified";
+	char u_ip[HOSTLEN + 25], *u_sip;
 	static char supbuf[BUFSIZE];
 	int m = 0;
 	aConfItem* node;
 
 	supbuf[0] = '\0';
 
+	if ((u_sip = inetntoa((char *) &cptr->ip)))
+		strncpyzt(u_ip, u_sip, HOSTLEN);
+	else u_ip[0] = '\0';
 
 	for(node = conf; node; node = node->next)
 	{
-		if (node->status != CONF_SUP_ZAP || !node->host)
+		if (node->status != CONF_SUP_ZAP)
 			continue;
-		if (!cptr->sup_host[0] || !cptr->sup_server[0])
-			continue;
-		sprintf(genbuf, "%s/%s", cptr->sup_host, cptr->sup_server);
-		if ( node->name && node->name[0] &&
-			(node->name[1] || node->name[0] != '*') ) {
-			if (!cptr->user)
-				continue;
-			if (match(node->name, cptr->user->username))
+		if (!BadPtr(node->host)) {
+			if (match(node->host, u_ip) &&
+			    match(node->host, cptr->sockhost))
 				continue;
 		}
 
-		if (!BadPtr(node->real_name)) {
-			if (match(node->real_name, cptr->info))
+		if (!BadPtr(node->name) && match(node->name, cptr->name)) {
+			continue;
+		}
+
+		if (!BadPtr(node->string4)) {
+			if (!cptr->user || match(node->string4, 
+						cptr->user->username))
 				continue;
 		}
 		
-		if (match(node->host, genbuf))
-			continue;
+		if (!BadPtr(node->string5)) {
+			if (match(node->string5, cptr->sup_host))
+				continue;
+		}
+
+		if (!BadPtr(node->string6)) {
+			if (match(node->string6, cptr->sup_server))
+				continue;
+		}
+		
+		if (!BadPtr(node->string7)) {
+			if (match(node->string7, cptr->info))
+				continue;
+		}
+
 		break;
 	}
 

@@ -1365,6 +1365,20 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as a silenced user, you may only message an IRC Operator, type /who 0 o for a list.", me.name, parv[0]);
 				continue;
 			}
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	
+			if (!IsUserVersionKnown(sptr) && acptr != sptr &&
+			    !IsAnOper(acptr) && !IsULine(acptr, acptr) &&
+			    !IsInvisible(acptr)) {
+				sendto_one(sptr, ":%s NOTICE %s :Sorry, but your client "
+                                                 "software has not yet passed the "
+                                                 "version check, you may only "
+                                                 "message an IRC Operator, "
+                                                 "type /who 0 o for a list.",
+                                            me.name, parv[0]);
+				continue;
+			}
+#endif
+
 		      if (sptr->hurt == 3 && !IsULine(acptr, acptr) && IsInvisible(acptr))
 			{
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as an autohurt user, you may send messages only to services.", me.name, parv[0]);
@@ -1590,33 +1604,6 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (check_registered(sptr))
 		return 0;
 
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	
-	if (!IsUserVersionKnown(sptr)) {
-		char mybuf[85] = {'\0'};
-
-		for(i = 1, j = 0; i < parc; i++) {
-			if ( j >= 80 ) {
-				strcat(mybuf, " ...");
-				break;
-			}
-			j += snprintf(mybuf + j, 80 - j, "%s ", 
-					parv[i] );
-		}
-		
-		sendto_one(":%s NOTICE %s :Your command ``PRIVMSG %s'' "
-			   "was not processed.",
-				me.name, sptr->name, mybuf);	
-		sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
-		            "program has not yet reported its version. ",
-			    me.name, sptr->name);
-		sendto_one(":%s NOTICE %s :Please make sure that your "
-			   "system has CTCP VERSION reply enabled.",
-			   me.name, sptr->name);
-		cptr->since += 3;
-		return;
-	}
-#endif
-
 	return m_message(cptr, sptr, parc, parv, 0);
 }
 
@@ -1724,12 +1711,20 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	aChannel *chptr, *mychannel;
 	char	*channame = NULL, *s;
 	int	oper = parc > 2 ? (*parv[2] == 'o' ): 0; /* Show OPERS only */
-	int	member;
+	int	member, who_opsonly = 0;
         char everyone[5] = "0";
 
 	if (check_registered_user(sptr))
 		return 0;
-	if (IsHurt(sptr) && sptr->hurt)
+
+	who_opsonly = (IsHurt(sptr) && sptr->hurt);
+
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+	if (!IsAnOper(sptr) && !UserVersionKnown(sptr)) 
+		who_opsonly = 1;
+#endif
+	
+	if ( who_opsonly )
 	{
 /*	      if (sptr->hurt == 3)
 		{

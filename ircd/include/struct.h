@@ -562,7 +562,10 @@ struct	ConfItem	{
 	char	*host;
 	char	*passwd;
 	char	*name;
-	char    *real_name;
+	char    *string4;
+	char    *string5;
+	char	*string6;
+	char	*string7;
 	int	port;
 	time_t	hold;	/* Hold action until this time (calendar time) */
 	int	tmpconf, bits;

@@ -456,6 +456,10 @@ aConfItem	*make_conf()
 	aconf->next = NULL;
 	aconf->host = aconf->passwd = aconf->name = NULL;
 	aconf->status = CONF_ILLEGAL;
+	aconf->string4 = 0;
+	aconf->string5 = 0;
+	aconf->string6 = 0;
+	aconf->string7 = 0;
 	Class(aconf) = 0;
 	Debug((DEBUG_LIST, "make_conf() %c %#x",c , aconf));
 	return (aconf);
@@ -468,7 +472,10 @@ void	free_conf(aConfItem *aconf)
 		bzero(aconf->passwd, strlen(aconf->passwd));
 	MyFree(aconf->passwd);
 	MyFree(aconf->name);
-	MyFree(aconf->real_name);
+	MyFree(aconf->string4);
+	MyFree(aconf->string5);
+	MyFree(aconf->string6);
+	MyFree(aconf->string7);
 	bzero((char *)aconf, sizeof(*aconf));
 	aconf->next = cofree;
 	cofree = aconf;

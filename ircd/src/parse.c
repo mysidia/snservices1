@@ -500,6 +500,7 @@ struct	Message *mptr;
                                         && mptr->func != m_mode  && mptr->func != m_ison
 					&& mptr->func != m_join
 					&& mptr->func != m_private
+					&& mptr->func != m_who
                                         && (mptr->while_hurt < 1 ||
 					mptr->while_hurt > 1)) {
 
