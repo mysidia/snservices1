@@ -420,7 +420,7 @@ static	int	do_query_number(Link *lp, sock_address *numb, ResRQ *rptr)
 				cp--;
 				cp2++; cp2++; cp2++; cp2++;
 			}
-			if (ntohs(*(short int *) &numb->in6.sin6_addr.s6_addr[0]) == 0x3ffe)
+			if (ntohs(*(short int *) &((struct sockaddr_in6 *) numb->addr)->sin6_addr.s6_addr[0]) == 0x3ffe)
 			{
 				sprintf(cp2,"ip6.int.");
 			}
