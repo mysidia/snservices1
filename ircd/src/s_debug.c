@@ -18,6 +18,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <sys/resource.h>
+
 #include <errno.h>
 
 #include "struct.h"
@@ -111,12 +113,11 @@ void	send_usage(aClient *cptr, char *nick)
 # endif
 #endif
 
-	if (getrusage(RUSAGE_SELF, &rus) == -1)
-	    {
+	if (getrusage(RUSAGE_SELF, &rus) == -1) {
 		sendto_one(cptr,":%s NOTICE %s :Getruseage error: %s.",
 			   me.name, nick, strerror(errno));
 		return;
-	    }
+	}
 	secs = rus.ru_utime.tv_sec + rus.ru_stime.tv_sec;
 	rup = NOW - me.since;
 	if (secs == 0)
@@ -155,7 +156,6 @@ void	send_usage(aClient *cptr, char *nick)
 		   ":%s %d %s :<128 %d <256 %d <512 %d <1024 %d >1024 %d",
 		   me.name, RPL_STATSDEBUG, nick,
 		   writeb[5], writeb[6], writeb[7], writeb[8], writeb[9]);
-	return;
 }
 #endif
 
