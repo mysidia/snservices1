@@ -836,7 +836,10 @@ time_t	creationtime;
 		    {
 			(void)strcat(parabuf, " ");
 			(void)strcat(parabuf, name);
-			count++;
+			if (strchr(name, ' '))
+				count = 6;
+			else
+				count++;
 			*cp++ = flag;
 			*cp = '\0';
 		    }

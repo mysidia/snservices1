@@ -468,6 +468,7 @@ void	free_conf(aConfItem *aconf)
 		bzero(aconf->passwd, strlen(aconf->passwd));
 	MyFree(aconf->passwd);
 	MyFree(aconf->name);
+	MyFree(aconf->real_name);
 	bzero((char *)aconf, sizeof(*aconf));
 	aconf->next = cofree;
 	cofree = aconf;

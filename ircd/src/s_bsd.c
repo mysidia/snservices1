@@ -1355,7 +1355,7 @@ fd_set	*rfd;
 		cptr->lasttime = now;
 		if (cptr->lasttime > cptr->since)
 			cptr->since = cptr->lasttime;
-		ClientFlags(cptr) &= ~(FLAGS_PINGSENT|FLAGS_NONL);
+		ClientFlags(cptr) &= ~(FLAGS_NONL|FLAGS_PINGSENT);
 		/*
 		 * If not ready, fake it so it isnt closed
 		 */

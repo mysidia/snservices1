@@ -455,11 +455,21 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
       /*
        * following block for the benefit of time-dependent K:-lines
        */
-      if (find_kill(sptr))
+      if (find_kill(sptr, NULL))
 	{
 	  ircstp->is_ref++;
 	  return exit_client(cptr, sptr, &me, "K-lined");
 	}
+
+      if (find_sup_zap(cptr, TRUE)) {
+	      char* s = find_sup_zap(cptr, FALSE);
+
+	      if ( s )
+		      return exit_client(cptr, sptr, &me, s);
+	      else
+		      return exit_client(cptr, sptr, &me, "W-lined");
+      }
+		      
 
       if ((sconf = find_ahurt(sptr)))
 	{
@@ -1575,6 +1585,38 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 
 int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
+	int i, j;
+ 
+	if (check_registered(sptr))
+		return 0;
+
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	
+	if (!IsUserVersionKnown(sptr)) {
+		char mybuf[85] = {'\0'};
+
+		for(i = 1, j = 0; i < parc; i++) {
+			if ( j >= 80 ) {
+				strcat(mybuf, " ...");
+				break;
+			}
+			j += snprintf(mybuf + j, 80 - j, "%s ", 
+					parv[i] );
+		}
+		
+		sendto_one(":%s NOTICE %s :Your command ``PRIVMSG %s'' "
+			   "was not processed.",
+				me.name, sptr->name, mybuf);	
+		sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
+		            "program has not yet reported its version. ",
+			    me.name, sptr->name);
+		sendto_one(":%s NOTICE %s :Please make sure that your "
+			   "system has CTCP VERSION reply enabled.",
+			   me.name, sptr->name);
+		cptr->since += 3;
+		return;
+	}
+#endif
+
 	return m_message(cptr, sptr, parc, parv, 0);
 }
 
@@ -1607,6 +1649,11 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 
 	if (MyClient(sptr) && !IsUserVersionKnown(sptr)) {
+		sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
+                           "program has not yet reported its version. "
+                           "Your request (NOTICE) was not processed.",
+                            me.name, sptr->name);
+
 		return FailClientCheck(sptr);
 	}
 	else if (parc >= 2 && !BadPtr(parv[1]) && 
@@ -2588,7 +2635,8 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                acptr->name,sptr->name);
             if (MyClient(acptr))
             {
-              if (MyClient(sptr) && (!IsHurt(acptr) || !(acptr->hurt)))
+              if (MyClient(sptr) && (!IsHurt(acptr) || !(acptr->hurt))
+		  && (!IsRegisteredUser(acptr) || !IsUserVersionKnown(acptr)))
               {
                   sendto_one(sptr,"NOTICE %s :%s is not hurt!",
                   sptr->name,acptr->name);
@@ -2602,8 +2650,11 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
                           sptr->name, acptr->name);
                sendto_one(acptr,":%s NOTICE %s :%s Has removed your hurt status and restored your command access.", me.name, 
                           acptr->name, sptr->name);
-               remove_hurt(acptr);
-               acptr->hurt = 0;  
+	       if (IsHurt(acptr))
+	               remove_hurt(acptr);
+               acptr->hurt = 0;  	       
+	       if (IsRegisteredUser(acptr) && !IsUserVersionKnown(acptr))
+		       SetUserVersionKnown(acptr);
             }   
             else
             if (!MyClient(acptr) && IsPrivileged(cptr))

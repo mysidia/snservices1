@@ -395,6 +395,7 @@ aConfItem	*make_conf()
 	aconf->hold = 0;
 	aconf->bits = 0;
 	aconf->tmpconf = 0;
+	aconf->real_name = 0;
 	Class(aconf) = 0;
 	return (aconf);
 }
@@ -422,6 +423,7 @@ void	free_conf(aConfItem *aconf)
 		bzero(aconf->passwd, strlen(aconf->passwd));
 	MyFree(aconf->passwd);
 	MyFree(aconf->name);
+	MyFree(aconf->real_name);
 	MyFree((char *)aconf);
 #ifdef	DEBUGMODE
 	aconfs.inuse--;

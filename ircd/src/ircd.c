@@ -321,12 +321,30 @@ time_t	currenttime;
    AKILL/RAKILL/KLINE/UNKLINE/REHASH.  Very significant CPU usage decrease.
    I made changes to every check_pings call to add new parameter.
    -- Barubary */
-extern	time_t	check_pings(time_t currenttime, int check_kills)
+extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 {		
 	aClient	*cptr;
 	int	killflag;
 	int	ping = 0, i, rflag = 0;
 	time_t	oldest = 0, timeout;
+
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+	#define LAST_TIME(xptr)                                          \
+		(!IsRegisteredUser(xptr) ?                               \
+		     ( (xptr)->lasttime )                                \
+		 :                                                       \
+		     ( IsUserVersionKnown((xptr))                        \
+		       ?                                                 \  
+			((xptr)->lasttime)                               \
+		       :                                                 \
+                	MIN( (xptr)->firsttime + MAX_NOVERSION_DELAY,    \
+				(xptr)->lasttime )                       \
+		     )                                                   \
+		)
+#else
+	#define LAST_TIME(xptr) \
+		 ((const int)((xptr)->lasttime))
+#endif
 
 #ifdef TIMED_KLINES
 	check_kills = 1;
@@ -343,11 +361,12 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		if (ClientFlags(cptr) & FLAGS_DEADSOCKET)
 		    {
 			(void)exit_client(cptr, cptr, &me, "Dead socket");
+			i--;  /* catch re-mapped fds */
 			continue;
 		    }
 
 		if (check_kills)
-			killflag = IsPerson(cptr) ? find_kill(cptr) : 0;
+			killflag = IsPerson(cptr) ? find_kill(cptr, conf_target) : 0;
 		else
 			killflag = 0;
 		if (check_kills && !killflag && IsPerson(cptr))
@@ -360,13 +379,13 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 					    CONNECTTIMEOUT;
 		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d r %d a %d",
 			cptr->name, cptr->status, ping, killflag, rflag,
-			currenttime - cptr->lasttime));
+			currenttime - LAST_TIME(cptr)));
 		/*
 		 * Ok, so goto's are ugly and can be avoided here but this code
 		 * is already indented enough so I think its justified. -avalon
 		 */
 		if (!killflag && !rflag && IsRegistered(cptr) &&
-		    (ping >= currenttime - cptr->lasttime))
+		    (ping >= currenttime - LAST_TIME(cptr)))
 			goto ping_timeout;
 		/*
 		 * If the server hasnt talked to us in 2*ping seconds
@@ -375,10 +394,10 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		 * to be active, close this connection too.
 		 */
 		if (killflag || rflag ||
-		    ((currenttime - cptr->lasttime) >= (2 * ping) &&
+		    ((currenttime - LAST_TIME(cptr)) >= (2 * ping) &&
 		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
 		    (!IsRegistered(cptr) &&
-		     (currenttime - cptr->firsttime) >= ping))
+		     (currenttime - LAST_TIME(cptr)) >= ping))
 		    {
 #ifdef ENABLE_SOCKSCHECK
                         if (cptr->socks && cptr->socks->fd >= 0)
@@ -474,9 +493,19 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
                          if (killflag)
                                 (void)exit_client(cptr, cptr, &me,
                                   "User has been banned");
-                         else
+                         else {
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)				 
+				 if (IsRegisteredUser(cptr) &&
+				     !IsUserVersionKnown(cptr) &&
+				     (NOW - cptr->lasttime) < ping) {
+					return FailClientCheck(cptr);
+				 }
+				 else
+#endif					 
                                 (void)exit_client(cptr, cptr, &me,
                                   "Ping timeout");
+			 }
+			i--;  /* catch re-mapped fds */
 			continue;
 		    }
 		else if (IsRegistered(cptr) && (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
@@ -502,7 +531,8 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		}*/
 #endif			
 ping_timeout:
-		timeout = cptr->lasttime + ping;
+		timeout = LAST_TIME(cptr) + ping;
+		
 		/*if (ping > 20 && !IsRegistered(cptr) &&
 			!DoingDNS(cptr) && !DoingSocks(cptr) &&
 			!IsNotSpoof(cptr) && !SentNoSpoof(cptr)
@@ -965,7 +995,7 @@ void    SocketLoop(void *dummy)
 		** ping times) --msa
 		*/
 		if (now >= nextping) {
-			nextping = check_pings(now, 0);
+			nextping = check_pings(now, 0, NULL);
                 }
 
 #ifdef ENABLE_SOCKSCHECK

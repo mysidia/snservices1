@@ -499,9 +499,22 @@ struct	Message *mptr;
 					&& mptr->func != m_notice && mptr->func != m_mode 
                                         && mptr->func != m_mode  && mptr->func != m_ison
 					&& mptr->func != m_join
+					&& mptr->func != m_private
                                         && (mptr->while_hurt < 1 ||
 					mptr->while_hurt > 1)) {
-	        			        return FailClientCheck(from);
+
+					{
+					   sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
+                                                      "program has not yet reported its version. "
+                                                      "Your request (%s) was not "
+                                                      "processed.",
+                                                       me.name, from->name, 
+                                                       mptr->cmd);
+					   from->since += 3;
+
+					   return 0;
+						
+					}
         			}
 #endif
 
