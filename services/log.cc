@@ -199,16 +199,25 @@ dlogDump(FILE *fp)
 {
 	int i;
 
+	/*
+	 * Null fp is bad
+	 */
 	if (fp == NULL)
 		return;
 
+	/*
+	 * Nothing to dump
+	 */
 	if (num_entries == 0)
 		return;
 
+	/*
+	 * Start the log dump
+	 */
 	fprintf(fp, "Dump of log [%d entries]\n", num_entries);
 
 	/*
-	 * print out the entries.
+	 * print out the individual entries.
 	 */
 	if (num_entries < NUM_LOG_ENTRIES) {
 		for (i = 0; i < num_entries; i++)
@@ -224,7 +233,7 @@ dlogDump(FILE *fp)
 }
 
 /**
- * \brief Dump a log item directly to file
+ * \brief Dump a single log item directly to file
  */
 void
 logDump(FILE *fp, char *format, ...)
