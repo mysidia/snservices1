@@ -79,24 +79,6 @@ char zlinebuf[BUFSIZE];
 extern	char *version;
 
 /*
- * Try and find the correct name to use with getrlimit() for setting the max.
- * number of files allowed to be open by this process.
- */
-#ifdef RLIMIT_FDMAX
-# define RLIMIT_FD_MAX   RLIMIT_FDMAX
-#else
-# ifdef RLIMIT_NOFILE
-#  define RLIMIT_FD_MAX RLIMIT_NOFILE
-# else
-#  ifdef RLIMIT_OPEN_MAX
-#   define RLIMIT_FD_MAX RLIMIT_OPEN_MAX
-#  else
-#   undef RLIMIT_FD_MAX
-#  endif
-# endif
-#endif
-
-/*
 ** add_local_domain()
 ** Add the domain to hostname, if it is missing
 ** (as suggested by eps@TOASTER.SFSU.EDU)
@@ -387,37 +369,32 @@ void	close_listeners()
 void	init_sys()
 {
 	int	fd;
-#ifdef RLIMIT_FD_MAX
 	struct rlimit limit;
 
-	if (!getrlimit(RLIMIT_FD_MAX, &limit))
-	    {
-		if (limit.rlim_max < MAXCONNECTIONS)
-		    {
+	if (!getrlimit(RLIMIT_NOFILE, &limit)) {
+		if (limit.rlim_max < MAXCONNECTIONS) {
 			(void)fprintf(stderr, "ircd fd table too big\n");
 			(void)fprintf(stderr, "Hard Limit: %d IRC max: %d\n",
 				      (int)limit.rlim_max, MAXCONNECTIONS);
 			(void)fprintf(stderr,"Fix MAXCONNECTIONS\n");
 			exit(-1);
-		    }
+		}
 		limit.rlim_cur = limit.rlim_max; /* make soft limit the max */
-		if (setrlimit(RLIMIT_FD_MAX, &limit) == -1)
-		    {
+		if (setrlimit(RLIMIT_NOFILE, &limit) == -1) {
 			(void)fprintf(stderr,"error setting max fd's to %d\n",
 				      (int)limit.rlim_cur);
 			exit(-1);
-		    }
-	    }
-#endif
-#if !defined(SOL20)
+		}
+	}
+
 	(void)setlinebuf(stderr);
-#endif
-	for (fd = 3; fd < MAXCONNECTIONS; fd++)
-	    {
-		if (LogFd(fd)) continue;
+
+	for (fd = 3; fd < MAXCONNECTIONS; fd++) {
+		if (LogFd(fd))
+			continue;
 		(void)close(fd);
 		local[fd] = NULL;
-	    }
+	}
 	local[1] = NULL;
 	(void)close(1); /* -- allow output a little more yet */
 
