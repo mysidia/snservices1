@@ -1,6 +1,6 @@
 /************************************************************************
- *   IRC - Internet Relay Chat, src/bsd.c
- *   Copyright C 1990 Jarkko Oikarinen and
+ *   IRC - Internet Relay Chat, common/bsd.c
+ *   Copyright (C) 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -34,8 +34,7 @@ Computing Center and Jarkko Oikarinen";
 #ifndef _WIN32
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
 #endif
-
-#ifndef SYS_ERRLIST_DECLARED
+#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(REDHAT5) && !defined(LINUX_GLIBC)
 extern	char	*sys_errlist[];
 #endif
 
@@ -48,7 +47,7 @@ VOIDSIG dummy()
 #ifndef HAVE_RELIABLE_SIGNALS
 	(void)signal(SIGALRM, dummy);
 	(void)signal(SIGPIPE, dummy);
-#ifndef OS_HPUX	/* Only 9k/800 series require this, but don't know how to.. */
+#ifndef HPUX	/* Only 9k/800 series require this, but don't know how to.. */
 # ifdef SIGWINCH
 	(void)signal(SIGWINCH, dummy);
 # endif

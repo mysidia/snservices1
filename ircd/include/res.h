@@ -30,7 +30,11 @@ typedef	struct	reslist {
 	int	id;
 	int	sent;	/* number of requests sent */
 	int	srch;
-	time_t	ttl;
+#ifdef  __alpha
+        u_int   ttl;                  /* time to live */
+#else
+        u_long  ttl;                  /* time to live */
+#endif
 	char	type;
 	char	retries; /* retry counter */
 	char	sends;	/* number of sends (>1 means resent) */

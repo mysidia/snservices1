@@ -1,37 +1,29 @@
-Sat Jul 28 02:06:41 CDT 2001 - sor1.4-beta
-	* Implemented '+' channels as moderated forums
-	  where NICK changes are hidden and only chanops can see
-	  full user lists
-	* Fixed throttle and bquiet bugs that snuck in recently
+Sat Mar 15 17:53:03 PST 2003 - Mysidia - sor1.3.4_2
+	* Reduced false positives in version check, for ircle
+	  and clients that don't like CTCP before completion
+	  of user logon process.
 
-Sat Jun 30 11:01:43 CDT 2001 - sor1.4-beta
-	* Implemented the +c channel mode (Lvshadow)
-	* Scrapped the Sub7 trojan-handling code from previous revisions
-	* Made the '0' partall method require 0 occur by-itself for users.
-	* 'Ban rules' settable by services... currently just rudimentary,
-	   gecos/mask bans and 'require' bans
+Fri Jan 24 20:05:48 CST 2003 - Mysidia - sor1.3.4
+	* Onno's modifications to client connect notices
+	  and f/c flags
+	* Allow ahurt users to use /who 0 o just like
+	  users hurt for socks detected can do
 
-Tue Mar 20 18:39:50 PST 2001 - sor1.4-alpha
-	* Reject nick changes from clients on +m channels
-	* Use CHFL_BQUIET, don't check is_banned() with every
-	  message
-
-Wed Oct 25 22:10:39 UTC 2000 - Mysidia - sor1.4-alpha
-	* Revamp of the masking algorithm for ip addresses
-	* Changed masking suffixes from .imsk and .hmsk to -imsk and
-	  -hmsk
-	* Ability to K:line a gechos
-	* Subseven trojan handling code (opt-outable [+D] DCCALLOW)
-	* Numeric configuration
-	* +H/M scheme for channels to force ops' ability to see joiners'
-	  real host addresses.
-	* Servers now tell each direct link with a 'CAPAB' command what
-	  version they are running
-	* Servers of equal version will now tell each other the ip address
-	  of their clients.
-	* Nick message changed for server<->server links of sor1.4-BETA
-	  servers -- base64 encoding of a bunch of items.
-	* Closed the holes in the masking system
+Sat Aug  7 18:42:34 CDT 2001 - Mysidia - sor1.3.3-p1
+       * Backporting some features from sor1.4:
+          * Safe /list to help stop sendQ exceeds/dead sockets
+          * List options features (from dreamforge)
+          * +H channel mode to block +m users (/join unmask)
+          * Hiding of the keys in +k mode resets from non-ops to help
+            protect key security (ChanServ MLOCK)
+          * Ban caching for channel members to reduce the CPU cost of 
+            BQUIET
+          * Prevent a user from switching to a nickname banned
+            on a channel, block nick changes while moderated
+          * Shortcut for /msg service@services.sorcery.net,
+            /msg service@ or /msg service@services
+          * +c channel mode to block colors
+          * Fixed many holes in the ip masking scheme
 
 Sat Oct 14 00:00:00 CST 2000 - Mysidia - sor1.3.1
        * Bugfix to socks check; ircd was dropping the check attempt where
@@ -58,7 +50,6 @@ Sun Nov  7 11:19:23 CST 1999 - Mysidia - sor1.3
         * Services MLOCK command to set a channel's modelock status on ircd
         * Added LOG_NET a special logging flag that goes to a new usermode
           (+l) -- this is so there's a place to put misc server messages
-          that are logged to disk.
         * Allow reason to be specified in /die and require server's name 
           to be used as first parameter
         * Some small case changes to a few oper messages
@@ -69,6 +60,7 @@ Thu Apr 6  21:23:30 GMT 2000 - Andy - sor1.2.x
 	* All references to warlock.sorcery.net changed to services.sorcery.net
 	* Odd command that coredumped ircd bug fixed
 	* Socks timeout notice moved to client connects/disconnects/errors section (umode +oc)
+	* Y-lines fixed
 	* Should compile properly on linux now
 
 Sat May 8  09:54:03 GMT 1999 - DuffJ

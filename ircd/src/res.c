@@ -821,6 +821,9 @@ char	*lp;
 	    {
 		struct	hostent	*hp2 = NULL;
 
+                if (rptr->he.h_name == NULL)
+                    goto getres_err;
+
 		Debug((DEBUG_DNS, "relookup %s <-> %s",
 			rptr->he.h_name, inetntoa((char *)&rptr->he.h_addr)));
 		/*

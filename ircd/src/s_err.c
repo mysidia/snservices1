@@ -1,7 +1,6 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/s_err.c
- *   Copyright C 1992 Darren Reed
- *   Copyright C 1998-2002 James Hess -- All Rights Reserved
+ *   Copyright (C) 1992 Darren Reed
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -20,7 +19,6 @@
 
 #include "struct.h"
 #include "numeric.h"
-#include "s_err.h"
 
 #ifndef lint
 static  char sccsid[] = "@(#)s_err.c	1.12 11/1/93 (C) 1992 Darren Reed";
@@ -37,11 +35,24 @@ static	char	numbers[] = "0123456789";
 
 static  Numeric local_replies[] = {
 /* 000 */	0, NULL,
-/* 001 RPL_WELCOME */	1,	":"WELC_MESSG"%s",
+/* 001 RPL_WELCOME */	1,	":Welcome to the "NETWORK" IRC Network %s",
 /* 002 RPL_YOURHOST*/	2,	":Your host is %s, running version %s",
 /* 003 RPL_CREATED */	3,	":This server was created %s",
-/* 004 RPL_MYINFO */	4,	"%s %s oilmwsghOkcfdt bciklmnopstv",
-/* 005 RPL_PROTOCTL*/	5,	"WTCH_BROKEN=128 :are available on this server",
+/* 004 RPL_MYINFO */	4,	"%s %s oilmwsghOkcf Hbciklmnopstv",
+/* 005 RPL_PROTOCTL*/	5,	"NETWORK=" NETWORK " "
+/* 005 ------------------*/	"WTCH_BROKEN=128 "
+/* 005 ------------------*/	"MODES=3 "
+/* 005 ------------------*/	"CHANMODES=b,k,l,Hcimnpst "
+/* 005 ------------------*/	"CHANTYPES=#& "
+/* 005 ------------------*/	"KICKLEN=307 " /*TOPICLEN*/
+/* 005 ------------------*/	"MAXBANS=60 " /*MAXBANS*/
+/* 005 ------------------*/	"MAXCHANNELS=10 " /*MAXCHANNELSPERUSER*/
+/* 005 ------------------*/	"NICKLEN=17 " /*NICKLEN*/
+/* 005 ------------------*/	"PREFIX=(ov)@+ "
+/* 005 ------------------*/	"SILENCE=5 "
+/* 005 ------------------*/	"TOPICLEN=307 " /*TOPICLEN*/
+/* 005 ------------------*/	"WALLCHOPS "
+/* 005 ------------------*/	":are available on this server",
 
 /* 200 */	RPL_TRACELINK, "Link %s%s %s %s",
 /* 201 */	RPL_TRACECONNECTING, "Attempt %d %s",
@@ -69,20 +80,20 @@ static  Numeric local_replies[] = {
 /* 234 */	RPL_SERVLIST, (char *)NULL,
 /* 235 */	RPL_SERVLISTEND, (char *)NULL,
 /* 241 */	RPL_STATSLLINE, "%c %s * %s %d %d",
-/* 242 */	RPL_STATSUPTIME, ":"S_SERVER" Up %d days, %d:%02d:%02d",
+/* 242 */	RPL_STATSUPTIME, ":Server Up %d days, %d:%02d:%02d",
 /* 243 */	RPL_STATSOLINE, "%c %s * %s %s %d",
 /* 244 */	RPL_STATSHLINE, "%c %s * %s %d %d", 
-/* 245 */	RPL_STATSGENLINE, "%c %s * %s %d %d", 
+/* 245 */	RPL_STATSSLINE, "%c %s * %s %d %d", 
 /* 247 */	RPL_STATSXLINE, "X %s %d", 
 /* 248 */	RPL_STATSULINE, "%c %s * %s %d %d", 
 /* 250 */       RPL_STATSCONN,
                 ":Highest connection count: %d (%d clients)",
 /* 251 */	RPL_LUSERCLIENT,
-		":There are %d "LU_USERS" and %d "LU_INVIS" on %d "LU_SERVERS,
-/* 252 */	RPL_LUSEROP, "%d :"LU_OPER"(s) online",
+		":There are %d users and %d invisible on %d servers",
+/* 252 */	RPL_LUSEROP, "%d :operator(s) online",
 /* 253 */	RPL_LUSERUNKNOWN, "%d :unknown connection(s)",
-/* 254 */	RPL_LUSERCHANNELS, "%d :"LU_CHAN" formed",
-/* 255 */	RPL_LUSERME, ":I have %d "LU_ME_C" and %d "LU_SERVERS,
+/* 254 */	RPL_LUSERCHANNELS, "%d :channels formed",
+/* 255 */	RPL_LUSERME, ":I have %d clients and %d servers",
 /* 256 */	RPL_ADMINME, ":Administrative info about %s",
 /* 257 */	RPL_ADMINLOC1, ":%s",
 /* 258 */	RPL_ADMINLOC2, ":%s",
@@ -96,13 +107,13 @@ static  Numeric local_replies[] = {
 /* 302 */	RPL_USERHOST, ":",
 /* 303 */	RPL_ISON, ":",
 /* 304 */	RPL_TEXT, (char *)NULL,
-/* 305 */	RPL_UNAWAY, ":"UNAWAY_MESSG,
-/* 306 */	RPL_NOWAWAY, ":"AWAY_MESSG,
-/* 309 */	RPL_WHOISHURT, "%s :has been hushed",
+/* 305 */	RPL_UNAWAY, ":You are no longer marked as being away",
+/* 306 */	RPL_NOWAWAY, ":You have been marked as being away",
+/* 309 */	RPL_WHOISHURT, "%s :has been muted",
 /* 310 */	RPL_WHOISHELPOP, "%s :looks very helpful.",
 /* 311 */	RPL_WHOISUSER, "%s %s %s * :%s",
 /* 312 */	RPL_WHOISSERVER, "%s %s :%s",
-/* 313 */	RPL_WHOISOPERATOR, "%s :"ISOPER_MESSG,
+/* 313 */	RPL_WHOISOPERATOR, "%s :is an IRC Operator",
 /* 314 */	RPL_WHOWASUSER, "%s %s %s * :%s",
 /* 315 */	RPL_ENDOFWHO, "%s :End of /WHO list.",
 /* 316 */	RPL_WHOISCHANOP, (char *)NULL,
@@ -143,8 +154,8 @@ static  Numeric local_replies[] = {
 /* 374 */	RPL_ENDOFINFO, ":End of /INFO list.",
 /* 375 */	RPL_MOTDSTART, ":- %s Message of the Day - ",
 /* 376 */	RPL_ENDOFMOTD, ":End of /MOTD command.",
-/* 381 */	RPL_YOUREOPER, ":"OPER_MESSG,
-/* 382 */	RPL_REHASHING, "%s :"REHASH_MESSG,
+/* 381 */	RPL_YOUREOPER, ":You are now an IRC Operator",
+/* 382 */	RPL_REHASHING, "%s :Rehashing",
 /* 383 */	RPL_YOURESERVICE, (char *)NULL,
 /* 384 */	RPL_MYPORTIS, "%d :Port to local server is\r\n",
 /* 385 */	RPL_NOTOPERANYMORE, (char *)NULL,
@@ -154,15 +165,15 @@ static  Numeric local_replies[] = {
 /* 394 */	RPL_ENDOFUSERS, ":End of Users",
 /* 395 */	RPL_NOUSERS, ":Nobody logged in.",
 
-/* 401 */	ERR_NOSUCHNICK, "%s :No such "NOSUCH_N,
-/* 402 */	ERR_NOSUCHSERVER, "%s :No such "NOSUCH_S_N,
-/* 403 */	ERR_NOSUCHCHANNEL, "%s :No such "NOSUCH_C_N,
-/* 404 */	ERR_CANNOTSENDTOCHAN, "%s :Cannot send to "LCASE_CHAN_N,
-/* 405 */	ERR_TOOMANYCHANNELS, "%s :You have joined too many" LU_CHAN,
-/* 406 */	ERR_WASNOSUCHNICK, "%s :There was no such "WWAS_NONICK_N,
+/* 401 */	ERR_NOSUCHNICK, "%s :No such nick/channel",
+/* 402 */	ERR_NOSUCHSERVER, "%s :No such server",
+/* 403 */	ERR_NOSUCHCHANNEL, "%s :No such channel",
+/* 404 */	ERR_CANNOTSENDTOCHAN, "%s :Cannot send to channel",
+/* 405 */	ERR_TOOMANYCHANNELS, "%s :You have joined too many channels",
+/* 406 */	ERR_WASNOSUCHNICK, "%s :There was no such nickname",
 /* 407 */	ERR_TOOMANYTARGETS,
 		"%s :Duplicate recipients. No message delivered",
-/* 408 */       ERR_NOCOLORSONCHAN, "%s :This channel does not allow colors to be used. Unable to send your message: %s",
+/* 408 */	ERR_NOCOLORSONCHAN, "%s :This channel does not allow colors to be used. Unable to send your message: %s",
 /* 409 */	ERR_NOORIGIN, ":No origin specified",
 /* 410 */	ERR_NORECIPIENT, ":No recipient given (%s)",
 /* 411 */	ERR_NOTEXTTOSEND, ":No text to send",
@@ -182,9 +193,9 @@ static  Numeric local_replies[] = {
 /* 437 */	ERR_BANNICKCHANGE,
 		"%s :Cannot change nickname when moderated/banned on a channel.",
 /* 440 */	ERR_SERVICESDOWN, "Services is currently down. Please wait a few moments and then try again.",
-/* 441 */	ERR_USERNOTINCHANNEL, "%s %s :They aren't on that "NOSUCH_C_N,
-/* 442 */	ERR_NOTONCHANNEL, "%s :You're not on that "NOSUCH_C_N,
-/* 443 */	ERR_USERONCHANNEL, "%s %s :is already on "NOSUCH_C_N,
+/* 441 */	ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel",
+/* 442 */	ERR_NOTONCHANNEL, "%s :You're not on that channel",
+/* 443 */	ERR_USERONCHANNEL, "%s %s :is already on channel",
 /* 444 */	ERR_NOLOGIN, "%s :User not logged in",
 /* 445 */	ERR_SUMMONDISABLED, ":SUMMON has been disabled",
 /* 446 */	ERR_USERSDISABLED, ":USERS has been disabled",
@@ -199,10 +210,10 @@ static  Numeric local_replies[] = {
 /* 461 */	ERR_NEEDMOREPARAMS, "%s :Not enough parameters",
 /* 462 */	ERR_ALREADYREGISTRED, ":You may not reregister",
 /* 463 */	ERR_NOPERMFORHOST, ":Your host isn't among the privileged",
-/* 464 */	ERR_PASSWDMISMATCH, ":"PASSWD_MESSG,
-/* 465 */	ERR_YOUREBANNEDCREEP, ":"KLINE_MESSG, 
+/* 464 */	ERR_PASSWDMISMATCH, ":Password Incorrect",
+/* 465 */	ERR_YOUREBANNEDCREEP, ":You are banned from this server.  Mail " KLINE_ADDRESS " for more information", 
 /* 466 */	ERR_YOUWILLBEBANNED, (char *)NULL, 
-/* 467 */	ERR_KEYSET, "%s :"UCASE_CHAN_N" key already set",
+/* 467 */	ERR_KEYSET, "%s :Channel key already set",
 /* 471 */	ERR_CHANNELISFULL, "%s :Cannot join channel (+l)",
 /* 472 */	ERR_UNKNOWNMODE  , "%c :is unknown mode char to me",
 /* 473 */	ERR_INVITEONLYCHAN, "%s :Cannot join channel (+i)",
@@ -213,8 +224,8 @@ static  Numeric local_replies[] = {
 /* 481 */	ERR_NOPRIVILEGES,
 		":Permission Denied- You're not an IRC operator",
 /* 482 */	ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator",
-/* 483 */	ERR_CANTKILLSERVER, ":You cant kill (or hurt) a "NOSUCH_S_N"!",
-/* 491 */	ERR_NOOPERHOST, ":"NOOPER_HOST,
+/* 483 */	ERR_CANTKILLSERVER, ":You cant kill (or hurt) a server!",
+/* 491 */	ERR_NOOPERHOST, ":No O-lines for your host",
 /* 492 */	ERR_NOSERVICEHOST, (char *)NULL,
 /* 501 */	ERR_UMODEUNKNOWNFLAG, ":Unknown MODE flag",
 /* 502 */	ERR_USERSDONTMATCH, ":Cant change mode for other users",
@@ -224,7 +235,6 @@ static  Numeric local_replies[] = {
 /* 514 */	ERR_YOURHURT, ":Your connection is silenced:\
  You should not attempt to speak or issue any IRC commands: Attempts\
  to do so will not be successful.",
-/* 516 */	ERR_TOOMANYDCC, "%s :Your dcc allow list is full. Maximum size is %d entries",
 /* 521 */	ERR_LISTSYNTAX, "Bad list syntax, type /quote list ? or /raw list ?",
 /* 522 */	0, NULL, /* who syntax */
 /* 523 */	0, NULL, /* who limit */
@@ -240,15 +250,11 @@ static  Numeric local_replies[] = {
 /* 606 */ RPL_WATCHLIST, ":%s",
 /* 607 */ RPL_ENDOFWATCHLIST, ":End of WATCH %c",
 /* 608 */	0, NULL, /* RESERVED - watch*/
-/* 617 */ RPL_DCCSTATUS, ":%s has been %s your DCC allow list",
-/* 618 */ RPL_DCCLIST, ":%s",
-/* 619 */ RPL_ENDOFDCCLIST, ":End of DCCALLOW %s",
-/* 620 */ RPL_DCCINFO, ":%s",
-/* 625 */ ERR_NOMASKCHAN, "%s :This channel requires that you reveal your "
-          "address (which you chose to hide).  To enter this channel AND "
-          "reveal your address to those inside, type: /join <channel> UNMASK "
-          "and press enter.  Note that <channel> means simply the name of the "
-          " channel.",
+/* 617-620 DALnet dccallow/dccstatus */
+/* 625 */ ERR_NOMASKCHAN, "%s :To join, you must show your IP address "
+	         "(which you have masked) to the channel operators inside. "
+	         "To do this, type: /join %s UNMASK",
+
 /* 626 */ ERR_BANRULE, "%s :This channel has established a special entry "
                        "requirement that you do not satisfy.",
 /* 627 */ ERR_BANREQUIRE, "%s :This channel has established a special entry "

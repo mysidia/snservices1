@@ -73,7 +73,11 @@ res_init()
 
 	_res.nsaddr.sin_addr.s_addr = INADDR_ANY;
 	_res.nsaddr.sin_family = AF_INET;
+#ifdef TESTNET
+	_res.nsaddr.sin_port = htons(NAMESERVER_PORT + 10000);
+#else
 	_res.nsaddr.sin_port = htons(NAMESERVER_PORT);
+#endif
 	_res.nscount = 1;
 
 	/* Allow user to override the local domain definition */
@@ -152,7 +156,12 @@ res_init()
 			    continue;
 		    }
 		    _res.nsaddr_list[nserv].sin_family = AF_INET;
+#ifdef TESTNET
+		    _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT +
+		        10000);
+#else
 		    _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
+#endif
 		    nserv++;
 		    continue;
 		}

@@ -1,8 +1,7 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/list.c
- *   Copyright C 1990 Jarkko Oikarinen and
- *                     University of Oulu, Finland
- *   Copyright C 1998-2002 James Hess All Rights Reserved
+ *   Copyright (C) 1990 Jarkko Oikarinen and
+ *                      University of Oulu, Finland
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
