@@ -388,7 +388,7 @@ aChannel *chptr;
 			!(lp->flags & CHFL_ZOMBIE))?1:0);
 }
 
-int BanRuleMatch(const char *text, aClient *cptr, int *result,
+int BanRuleMatch(char *text, aClient *cptr, int *result,
                  const char *nuh, const char *nuhmask,
                  const char *sip)
 {

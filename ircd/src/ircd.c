@@ -338,18 +338,19 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 			cptr->lasttime = currenttime;
 			continue;
 		}
+		else if (!IsRegistered(cptr))
+		{
 #if !defined(REQ_VERSION_RESPONSE) && !defined(NO_VERSION_CHECK)
-		else if (!IsRegistered(cptr) && IsNotSpoof(cptr)
-			&& !IsUserVersionKnown(cptr)
-			&& cptr->user && cptr->name[0])
-		{
-			SetUserVersionKnown(cptr);
-			register_user(cptr, cptr, cptr->name,
-				cptr->user->username);
-		}
+			if (IsNotSpoof(cptr)
+				&& !IsUserVersionKnown(cptr)
+				&& cptr->user && cptr->name[0])
+			{
+				SetUserVersionKnown(cptr);
+				register_user(cptr, cptr, cptr->name,
+					cptr->user->username);
+				continue;
+			}
 #endif
-		else if (!IsRegistered)
-		{
 			if (IsConnecting(cptr) || IsHandshake(cptr))
 			{
 				sendto_ops("Connecting to %s failed, closing link",
@@ -358,7 +359,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 			else if (cptr->user)
 			{
 				sendto_one(cptr, ":%s NOTICE AUTH :*** Your IRC software has failed to respond properly to the client check.", me.name);
-				sendto_one(sptr, ":%s NOTICE AUTH :*** Try turning off or uninstalling any software addons or scripts you may be running and try again.", me.name);
+				sendto_one(cptr, ":%s NOTICE AUTH :*** Try turning off or uninstalling any software addons or scripts you may be running and try again.", me.name);
 				sendto_one(cptr, ":%s NOTICE AUTH :*** If you still have trouble connecting, then please see: " NS_URL "", me.name);
 			}
 			exit_client(cptr, cptr, &me, "Connection setup failed");
