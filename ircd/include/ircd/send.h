@@ -60,8 +60,6 @@ void sendto_ops(char *fmt, ...);
 
 void sendto_failops(char *fmt, ...);
 
-void sendto_flag(int flags, char *fmt, ...);
-
 void sendto_umode(int flags, char *fmt, ...);
 
 void sendto_failops_whoare_opers(char *fmt, ...);
