@@ -193,7 +193,7 @@ char	*get_client_name(aClient *sptr, int showip)
 
   if (MyConnect(sptr))
   {
-      if (showip)
+      if (showip && sptr->sock != NULL)
       {
 	  sprintf(nbuf, "%s[%s@%s]",
 		  sptr->name,
@@ -224,7 +224,7 @@ char	*get_client_name_mask(aClient *sptr, int showip, int showport, int mask)
 
   if (MyConnect(sptr))
   {
-      if (showip)
+      if (showip && sptr->sock != NULL)
       {
 	  sprintf(nbuf, "%s[%s@%s]",
 		  sptr->name,
