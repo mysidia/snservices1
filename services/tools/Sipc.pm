@@ -12,6 +12,37 @@ $Sipc::revision = '$Id$';
 $Sipc::VERSION='0.1';
 my $ERRORTEXT="_";
 
+sub validNickName
+{
+	my $x = shift;
+	my $name = shift;
+
+	if ($name =~ /^[0-9]/ || $name =~ / /) {
+		return 0;
+	}
+
+	if ($name =~ /^[0-9a-zA-Z\[\\\]\^_`\{|\}~]+/) {
+		return 1;
+	}
+	return 0;
+}
+
+sub validChanName
+{
+	my $x = shift;
+	my $name = shift;
+
+	if ($name =~ /[ ,\33\t\003\017\026\037\002\001\b]/) {
+		return 0;
+	}
+
+	if ($name =~ /^[+#&]/) {
+		return 1;
+	}
+
+	return 0;
+}
+
 sub Errmsg
 {
 	my $self = shift;
@@ -26,7 +57,7 @@ sub getPublicChanInfo
 	my $target = shift;
 
 	(($n->{CHAN} = $self->queryChan($target, "")) ne undef) or return undef;
-	(($n->{REGTIME} = $self->queryChan($target, "TIMEREG")) ne undef) or return undef;
+	(($n->{TIMEREG} = $self->queryChan($target, "TIMEREG")) ne undef) or return undef;
 	(($n->{DESC} = $self->queryChan($target, "DESC")) ne undef) or return undef;
 	return $n;
 }
@@ -38,7 +69,7 @@ sub getPublicNickInfo
 	my $target = shift;
 	
 	(($n->{NICK} = $self->queryNick($target, "")) ne undef) or return undef;
-	(($n->{REGTIME} = $self->queryNick($target, "TIMEREG")) ne undef) or return undef;
+	(($n->{TIMEREG} = $self->queryNick($target, "TIMEREG")) ne undef) or return undef;
 	(($n->{URL} = $self->queryNick($target, "URL")) ne undef) or return undef;
 	(($n->{FLAGS} = $self->queryNick($target, "FLAGS")) ne undef) or return undef;
 	(($n->{BADPWS} = $self->queryNick($target, "BADPWS")) ne undef) or return undef;
@@ -89,7 +120,7 @@ sub loginChannel
 				return undef;
 			}
 			while ($line = $sock->getline) {
-print $line . "\n";
+#print $line . "\n";
 				if ($line =~ /^OK AUTH OBJECT RCHAN LOGIN/) {
 				}
 				elsif ($line =~ /^AUTH COOKIE (\S+)/) {
@@ -107,7 +138,7 @@ print $line . "\n";
 					$self->{ERRORTEXT} = "Error: $2";
 					return undef;
 				}
-				else {
+				elsif ($line =~ /\s*\S+/) {
 					$self->{ERRORTEXT} = "Invalid login reply";
 					return undef;
 				}
