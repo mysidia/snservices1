@@ -1,0 +1,190 @@
+#!/usr/bin/perl
+# *  Copyright (c) 2001 James Hess
+# *  All rights reserved.
+# *
+# *  This is free software; you can redistribute it and/or
+# *  modify it under the terms of the GNU General Public
+# *  License as published by the Free Software Foundation; either
+# *  version 2 of the License.
+# *
+# *  This software is distributed in the hope that it will be useful,
+# *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+# *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# *  General Public License for more details.
+# *
+# *  You should have received a copy of the GNU General Public
+# *  License along with this software; if not, write to the Free Software
+# *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+#
+
+#PLAN = have one commands file that defines the flags, caps, etc
+#       for all services commands compile-time: file auto-generates
+#       the command data files
+#
+#       the commands themselves will eventually be bound to .so modules:
+#       one of them being a .so module that loads command .so modules.
+#
+#       other modules commands could be bound to might use .pl, .scm, .py
+#       files to load services commands written in perl or scheme, etc.
+#
+$cmdl = {};
+$protos = {};
+
+print "Generating command.h... ";
+open(F, "<./commands") || die "Unable to open ./commands :(";
+open(TAB, ">./.cmdtab") || die "Unable to open ./.cmdtab";
+open(CONST, ">./.cmdconst") || die "Unable to open ./.cmdconst";
+
+print(TAB "// *autocmd-pl*\n");
+print(TAB "#ifdef __interp_c__\n");
+
+print(CONST "\n\n");
+print(CONST "namespace interp {\n");
+print(CONST "   namespace commands {\n");
+print(CONST "   typedef enum\n   {\n");
+
+$service = "(Error)";
+
+while (chomp($line = <F>)) {
+  if (grep(/^\#/, $line) || !$line) {
+      break;
+  }
+  elsif (grep(/^:/, $line)) {
+     if ($service ne "(Error)") {
+         print(TAB "}\n\n");
+         print(CONST "\n");
+     }
+     $service = $line;
+     $service =~ s/:(.*)/\1/;
+     print(CONST "        // $service commands\n");
+
+     $service =~ s/(.*)/\L\1\E/;
+     print(TAB "interp::service_cmd_t " . $service . "\_commands[] =\n");
+     print(TAB "{\n");
+  }
+  else {
+      my($cconst, $cfunc, $cflags, $clog, $cnames) = split(/	{1,}/, $line);
+      if (($service eq "(Error)") && ($cfunc ne ":EVENT:")) {
+          die "Illegal statement '$line' where \$service = '$service'\n";
+      }
+
+      $creq = $cnames;
+      $cnames =~ s/\/(.*)\///;
+      $cnames =~ s/ (.*)/\1/;
+      $cflood = $clog;
+      $clog   =~ s/(.*)\/(.*)/\1/;
+      $clog   =~ s/^NO/LOG_NO/;
+      $clog   =~ s/^OK/LOG_OK/;
+      $clog   =~ s/^ALWAYS/LOG_ALWAYS/;
+
+      if (!grep(/\/(.*)\/(.*)/, $creq)) {
+          $creq = "";
+      }
+      else {
+          $creq =~ s/\/(.*)\/(.*)/\1/;
+      }
+
+      $creq =~ s/R/CMD_REG /g;
+      $creq =~ s/A/CMD_AHURT /g;
+      $creq =~ s/(.*)\s$/\1/;
+      $creq =~ s/\s/|/g;
+
+      if (!grep(/\/(.*)/, $cflood)) {
+          $cflood = 0;
+      }
+      else {
+          $cflood =~ s/(.*)\/(.*)/\2/;
+      }
+
+#      print "Service   :    $service\n";
+#      print "Constant  :    $cconst\n";
+#      print "Function  :    $cfunc\n";
+#      print "Flags     :    $cflags\n";
+#      print "Log       :    $clog\n";
+#      print "Flood lvl :    $cflood\n";
+#      print "Names     :    $cnames\n";
+#      print "Use       :    $creq\n\n";
+
+      @c = split(/\s{1,}/, $cnames);
+      $i = 0;
+
+     if ($cfunc eq ":EVENT:") {
+         if ($cconst eq "SVC_CMD_NONE") {
+             push @cmdl, "{$cconst, NULL}";
+         }
+         else {
+             push @cmdl, "TBL($cconst)";
+         }
+     }
+     else
+     {
+      while($i <= $#c) {
+          if ($cfunc ne ":EVENT:" ) {
+              print(TAB "   { \"" . $c[$i] ."\",		$cfunc,	$cflags,	$clog,	$creq,	$cflood }\n");
+          }
+          print(CONST "       " . $cconst . ",\n");
+          if ($cfunc ne ":EVENT:") {
+              push @cmdl, "TF($cconst, $cfunc), ";
+              $lchar = substr($service, 0, 1);
+              $lchar =~ s/(.*)/\U\1\E/;
+              
+              if ($lchar eq "N" || $lchar eq "C" || $lchar eq "O" ||
+                  $lchar eq "I" || $lchar eq "G") {
+                  push @protos, $lchar . "CMD($cfunc);";
+              }
+              else {
+                  push @protos, "NCMD($cfunc);";
+              }
+          }
+          $i++;
+      }
+     }
+  }
+}
+
+print(TAB "}\n\n");
+print(TAB "#endif\n");
+
+print(CONST "   };\n\n");
+print(CONST "\n\n#ifdef __interp_c__\n");
+print(CONST "    static cmd_name_table global_cmd_table[] =\n");
+print(CONST "    {\n");
+$i = 0;
+
+while($i <= $#cmdl) {
+    print(CONST "	" . $cmdl[$i] . ", \n" );
+    $i++;
+}
+
+print(CONST "    }\n");
+print(CONST "#endif\n");
+print(CONST "}\n\n");
+
+close(F);
+close(TAB);
+close(CONST);
+
+open(F, ">command.h") || die "Unable to open command.h :(";
+print(F "//\n");
+print(F "// Note: File automatically generated by autocmd.pl from 'commands'\n");
+print(F "//\n");
+print(F "// Do Not edit.\n"); 
+print(F "//\n\n");
+print(F "#include \"interp.h\"\n\n");
+print(F "#define TBL(ccname) { ccname, #ccname }\n");
+print(F "#define TF(ccname, fname) { ccname, #ccname, fname }\n\n");
+
+$i = 0;
+while($i <= $#protos) {
+    print(F "" . $protos[$i] . "\n" );
+    $i++;
+}
+
+close(F);
+system "cat .cmdconst .cmdtab >>command.h";
+
+#C=`cat commands |grep -v '# ' |sed s/'		'/'	'/ \
+#	|sed s/'		'/'	'/ |awk -F'	' '{if ($0){print $0}}' \
+#        `;
+print "done\n";
+exit;

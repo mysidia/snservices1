@@ -1,0 +1,376 @@
+<HTML
+><HEAD
+><TITLE
+>Installing Services</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.73
+"><LINK
+REL="HOME"
+TITLE="Services installation and operation manual"
+HREF="manual.html"><LINK
+REL="UP"
+TITLE="Getting Started"
+HREF="preinstall.html"><LINK
+REL="PREVIOUS"
+TITLE="Getting Started"
+HREF="preinstall.html"><LINK
+REL="NEXT"
+TITLE="Configuring Services"
+HREF="config.html"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Services installation and operation manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="preinstall.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 2. Getting Started</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="config.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="INSTALL"
+>Installing Services</A
+></H1
+><P
+>			<P
+></P
+><UL
+><LI
+><P
+>					Untar the package (where XXX is the version number)
+<PRE
+CLASS="PROGRAMLISTING"
+>				gunzip services-XXX.tar.gz
+				tar xvf services-XXX.tar</PRE
+>
+				</P
+></LI
+><LI
+><P
+>					Build the package.
+					<P
+></P
+><UL
+><LI
+><P
+>cd services
+					</P
+></LI
+><LI
+><P
+>Run configure with appropriate options (see ./configure
+            --help)</P
+><P
+>Example:
+<PRE
+CLASS="PROGRAMLISTING"
+>		./configure --with-cfgpath=/usr/local/lib/services \
+			    --with-help=/usr/local/lib/services/help \
+			    --with-network='sorcery.net' \
+			    --with-klinemail='kline@example.net' \
+			    --with-md5 \
+			    --with-sendmail='/usr/sbin/sendmail -T' \
+			    --disable-grpops</PRE
+>
+					</P
+></LI
+><LI
+><P
+>Run make
+					</P
+></LI
+></UL
+>
+				</P
+></LI
+><LI
+><P
+>Install the services binary in the configuration directory by copying
+it there; alternatively, run <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>make install</I
+></SPAN
+> after
+building services.
+				</P
+></LI
+><LI
+><P
+>Switch to the directory you named in the 'cfgpath' compilation option,
+and create blank databases to be used when services runs.
+For example:
+<PRE
+CLASS="PROGRAMLISTING"
+>		cd /usr/local/lib/services
+		mkdir chanserv nickserv memoserv operserv
+		      nickserv/backups chanserv/backups
+		echo 'done' &#62; nickserv/nickserv.db
+		echo 'done' &#62; chanserv/chanserv.db
+		echo 'done' &#62; memoserv/memoserv.db
+		echo 'done' &#62; operserv/trigger.db</PRE
+>
+				</P
+></LI
+><LI
+><P
+>Write a services.conf file and place it within the directory named
+in the --with-cfgpath option.					
+				</P
+></LI
+><LI
+><P
+>To install the services helpfiles, unpack help tarball one level above the directory
+named in the --with-help configure option.  For example:
+<PRE
+CLASS="PROGRAMLISTING"
+>		cd /usr/local/lib/services
+		gunzip &lt; /path/to/tarball/services-help.tar.gz | tar -xvf -</PRE
+>
+					
+				</P
+></LI
+><LI
+><P
+>					Add appropriate matching C and N lines for your services.conf
+				        configuration to your IRC server. The C-line and the N-line should
+				        be identical. The N-line password should match the W-line in
+					services.conf, and the server name in the C and N-lines should
+					match the H-line in services.conf.
+					Example C/N-line pair (supposing that you are using Y-line class 32 for hub connection class):
+					<PRE
+CLASS="PROGRAMLISTING"
+>		C:127.0.0.1:mypasswd:services.hostname_here.net::32
+		N:127.0.0.1:mypasswd:services.hostname_here.net::32
+					</PRE
+>
+				</P
+></LI
+><LI
+><P
+>					Add a U-line and a H-line for services
+					to your IRC server's configuration file,
+					and have all other servers on the network
+					do the same.
+
+					Be certain the U-line and H-lines are added <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>before</I
+></SPAN
+>
+					starting services, or you will need to restart
+					services after adding the lines (and doing a server /rehash)
+					for changes to take effect.
+					Sample U/H-lines:
+					<PRE
+CLASS="PROGRAMLISTING"
+>		U:services.hostname_here.net:*:*
+		H:*::services.hostname_here.net
+					</PRE
+>
+				</P
+></LI
+></UL
+>
+			</P
+><P
+>				After services have been installed, in
+				this manner, you should be able to start
+				them by running the binary.
+				If the IRC server is running and both
+				services and your IRC server are properly
+				configured, services will then activate.
+
+				However, if you have been installing
+				services using administrative access
+				on your machine,
+				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>					stop now
+				</I
+></SPAN
+>, make a separate services
+				account, and ensure that the databases
+				and database directories where the
+				logfiles will be written are all owned
+				by that account.
+
+				Never run services as root for any reason.
+			</P
+><P
+>				To gain administrative access within
+				services during the first services session,
+				start services, register your nickname with
+				NickServ, add a line that reads 'SRA:nickname_here'
+				to your services.conf file, and finally,
+				restart services.
+
+				Once you have administrative access, new
+				configuration options can be added and
+				helpfiles can be updated with the
+				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperServ reset</I
+></SPAN
+> command.
+			</P
+><P
+>				Once services start, and you are able
+				to interact with services, the installation
+				is completed.
+
+				It is, however, a good idea to test
+				services functions that required special
+				actions on your part to work properly:
+
+				Test to ensure that requests such as
+				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/NickServ HELP</I
+></SPAN
+>
+				work (if it fails, you may not have installed
+				the helpfiles properly, see <A
+HREF="install.html"
+>the Section called <I
+>Installing Services</I
+></A
+>&#62;.), and register sample nicks, channels,
+				memos, triggers, and restart services to
+				ensure all databases are being written:
+				if they are not, ensure that the permissions
+				on the files and directories allow the services
+				user full access to those files.
+			</P
+><P
+>				If services fail to start, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>core.log</I
+></SPAN
+>,
+				and notices sent to +s users on the IRC server you
+				were trying to connect services to are good places to start looking
+				for information on why the startup failed.
+			</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="preinstall.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="manual.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="config.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Getting Started</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="preinstall.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Configuring Services</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

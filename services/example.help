@@ -1,0 +1,69 @@
+.# $Id$
+.#
+This is a plain old text line.
+
+This is as well.
+
+Note that multiple blank lines are supressed:
+
+
+
+
+
+This is preceeded by 5 blank lines.
+
+.if oper
+this should only show if you ARE an oper.
+.endif
+this should always show.
+.if !oper
+this should only show if you ARE NOT an oper.
+.endif
+this should always show.
+.if servop
+This will show only if you ARE a service operator.
+.endif
+
+this should always show.
+
+.if !servop
+This will show only if you ARE NOT a service operator.
+.endif
+
+this should always show.
+
+.if sra
+This will show only if you ARE an sra.
+.endif
+
+this should always show.
+
+.if !sra
+This will show only if you ARE NOT an sra.
+.endif
+
+.if oper servop
+This will only show if you ARE an ircop AND a service operator.
+.endif
+
+.if oper sra
+This will only show if you ARE an ircop AND an sra.
+.endif
+
+.if oper  !sra
+This will show only if you ARE an oper AND NOT an sra.
+.endif
+
+.if sra
+.exit If you are an SRA, this is the last line you will see.
+.endif
+.if oper
+.exit If you are an oper, this is the last line you will see.
+.endif
+.if servop
+.exit If you are a servop, this is the last line you will see.
+.endif
+
+If you are a regular user, this is the last line you will see.
+.exit
+this will never show.

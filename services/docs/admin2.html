@@ -1,0 +1,366 @@
+<HTML
+><HEAD
+><TITLE
+>Administering Permission Flags</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.73
+"><LINK
+REL="HOME"
+TITLE="Services installation and operation manual"
+HREF="manual.html"><LINK
+REL="UP"
+TITLE="Administering Services"
+HREF="adms.html"><LINK
+REL="PREVIOUS"
+TITLE="Administering Services"
+HREF="adms.html"><LINK
+REL="NEXT"
+TITLE="Services IPC"
+HREF="ipc.html"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Services installation and operation manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="adms.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 4. Administering Services</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="ipc.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="ADMIN2"
+>Administering Permission Flags</A
+></H1
+><P
+>				The command <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperServ SETOP</I
+></SPAN
+>
+				is used to administer permission flags
+				of operators.
+			</P
+><P
+>				There exist a number of 'flags' that allow
+				access to specific services functions to be
+				shared with operators.
+
+				These permission flags can be added or
+				removed individually as needed.
+			</P
+><P
+>				The command <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperServ SETOP LIST</I
+></SPAN
+>
+				displays a list of all operators who have been
+				assigned any special permissions, and the command
+				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperSERV SETOP &lt;nickname&gt;</I
+></SPAN
+>
+				shows the access flags that nickname has (if any).
+			</P
+><P
+>				Other than this, SETOP acts much like the
+				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/mode</I
+></SPAN
+> command, each
+				flag resembles an 'mode' in that it determines
+				the access (or no access) state of an
+				operator to a services function.
+			</P
+><P
+>				Also note that the
+				Administrative access to services allows one
+				to change on/off any mode shown below, but
+				the setop access granted by the +s access
+				greatly limited in comparison, because
+				a +s user can only revoke or assign
+				certain very specific permissions, never
+				can a user other than a services root
+				change the flags of a '+!' user either.
+			</P
+><P
+>				The following are the flags that can
+				be toggled by any user with access to
+				SETOP (who also has that flag):
+<P
+></P
+><UL
+><LI
+><P
+>				+o, the default operator flags [+opka]
+	</P
+></LI
+><LI
+><P
+>				+k, autokill access but not full
+                                    access to autokill
+					(limited durations &lt;= 3 hours,
+					limits on akill patterns,
+					can't remove akills set by others)
+	</P
+></LI
+><LI
+><P
+>				+a, access to <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperServ OVERRIDE</I
+></SPAN
+>
+				which allows overriding of some restrictions normally
+				placed on users, but that services allows staff of
+				a network to override directly.
+				Note that some uses of OVERRIDE require flags
+				other than +a, for example editing a channel
+				access list requires +d also.
+	</P
+></LI
+><LI
+><P
+>				+p, ability to post low-priority
+				messages on InfoServ (full ServOP access
+				provides priority 3 and 4 posting)
+	</P
+></LI
+></UL
+></P
+><P
+>		The following permission flags require administrative access
+		to change:
+<P
+></P
+><UL
+><LI
+><P
+>				+S, nickserv setflag:
+				ability to change flags on nicknames
+				such as vacation, kill mode, banished.
+	</P
+></LI
+><LI
+><P
+>				+O, services operator access
+	</P
+></LI
+><LI
+><P
+>				+K, services operator autokill access
+				    (no restrictions on normal use of akill)
+	</P
+></LI
+><LI
+><P
+>				+N, banish/delete nicknames
+	</P
+></LI
+><LI
+><P
+>				+C, banish/delete/close channels
+	</P
+></LI
+><LI
+><P
+>				+I, set services ignores
+	</P
+></LI
+><LI
+><P
+>				+j, use the JUPE command
+	</P
+></LI
+><LI
+><P
+>				+L, List channels/nicknames
+	</P
+></LI
+><LI
+><P
+>				+c, change the clone auto-trigger rules
+	</P
+></LI
+><LI
+><P
+>				+G, access to NickServ GETPASS -xfer
+				and related commands used to help
+				get users a working password to their
+				nick/channels back if stolen/lost.
+	</P
+></LI
+><LI
+><P
+>				+D, when combined with +a  allows an oper
+				to use <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperServ OVERRIDE</I
+></SPAN
+>
+				to directly edit channels in certain ways
+				as though they were the founder
+	</P
+></LI
+><LI
+><P
+>				+H, autohurt: write access to the OperServ
+				AUTOHURT list.
+	</P
+></LI
+><LI
+><P
+>				+! this oper's permission entry is locked, probably
+				   because it is listed in services.conf
+				   and as a result use of SETOP on them
+				   without proper precautions would
+				   be temporary and cause potential confusion.
+	</P
+></LI
+></UL
+>
+			</P
+><P
+>				Information on the other commands
+				is well-documented within services itself,
+				see <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/OperServ HELP</I
+></SPAN
+>,
+				<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/ChanServ HELP &lt;command&gt;</I
+></SPAN
+>,
+				... for more information.
+			</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="adms.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="manual.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="ipc.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Administering Services</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="adms.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Services IPC</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,24 @@
+$Id$
+services1.4-useridx
+--------------------
+
+This is a plan for improving services' memory efficiency by
+storing id numbers in lists and at the same time making it
+easy to detect stale entries.
+
+We do the following:
+
+- Assign each registered nick a number that is unique at least
+  for that session of services. Number can be 32 bits. (DONE)
+
+- Store and hash each access list entry by number instead of by
+  a nickname (DONE)
+
+- Be quickly able to access a nick by number - using an array and
+  binary searching. (DONE)
+
+Things that need to be Changed:
+
+o ChanServ op lists (DONE)
+o MemoServ block lists (DONE)
+o Various things in NickServ (DONE???)

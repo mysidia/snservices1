@@ -1,0 +1,85 @@
+########################################
+# info services needs/wants on startup #
+########################################
+
+# H:myname (The name of services)
+H:warlock.sorcery.net
+
+# P:port (what port are they *connecting* to)
+P:9090
+
+# W:password (C/N password)
+W:mypassword
+
+# C:server (where are we connecting to)
+C:localhost
+
+##############################################################################
+# limits:
+# CL = Registered channel limit
+# NL = Registered nick limit
+# OL = Op Limit (includes founders too!)
+# BL = Akick Limit
+# LL = Access List item limit
+##############################################################################
+OL:251
+BL:100
+LL:10
+CL:10
+NL:5
+##############################################################################
+# Services info stuff.
+# O:OperServ	N:NickServ	C:ChanServ    M:MemoServ
+# ?N: Service's name
+# ?U: Service's username
+# ?H: Service's host
+# ?R: Service's realname
+# ?M: Service's mode
+##############################################################################
+### OperServ ###
+ON:OperServ
+OU:warlock
+OH:sorcery.net
+OR:Operator Services
+OM:+oi
+### NickServ ###
+NN:NickServ
+NU:sorceress
+NH:sorcery.net
+NR:Nickname Services
+NM:
+### ChanServ ###
+CN:ChanServ
+CU:wizard
+CH:sorcery.net
+CR:Channel Services
+CM:
+### MemoServ ###
+MN:MemoServ
+MU:witch
+MH:sorcery.net
+MR:Memo Services
+MM:
+### InfoServ ###
+IN:InfoServ
+IU:sorcerer
+IH:sorcery.net
+IR:Information Services
+IM:
+
+##############################################################################
+# Services Root:
+# of the format:
+# SRA:nick
+# Their nick MUST be registered, or SRA has NO affect on them
+##############################################################################
+SRA:Some_Cool_SRA
+
+# These nicks can remove SRAs on the fly using /os remroot 
+REMSRA:Some_Cool_SRA
+
+# These people are our fearless servops
+SERVOP:Some_Cool_Servop
+
+# These people can add akills, even without Servop+ access
+AKILL:Some_person_who_needs_to_akill

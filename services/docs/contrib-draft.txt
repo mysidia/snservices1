@@ -1,0 +1,414 @@
+$Id$
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+These are the rules for user contributions to be considered for
+inclusion in SorceryNet packages.
+
+Any contribution that is not submitted according to the rules outlined
+will not be accepted.
+
+SorceryNet technical staff need not submit source contributions in
+this manner, but the stylistic guides may be helpful for coders as
+well.
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+Submissions
+===========
+
+I. General format
+------------------
+
+	A. Contributions are submitted in the form of unified diffs.
+
+		Such diffs may be created by comparing the original package
+		to the modified package, with a command such as:
+
+			diff -urN ../orig-dir ./curr-dir >/tmp/file.patch
+
+		Where orig-dir holds a backup copy of the sources from
+		before you started making changes that encompass this
+		contribution.
+
+		All such diffs should be against a release or SorceryNet
+		cvs version of the package.
+
+		If you have access to the CVS server, then you may also use:
+
+			cvs diff -uN >/tmp/file.patch
+
+		However, a text message must be inserted before the patch portion
+		of any contribution and include the following form:
+
+--------------------------------------------------------------------------
+COPYRIGHT:
+          I agree to http://www.sorcery.net/technical/copyright.html
+AUTHOR:   <name>, <e-mail address>
+CONTRIB:  <name, version>
+PACKAGE:  <Either ircd or services>  <version number>
+SYNOPSIS: 
+          <a summary of the contribution and all changes goes here>
+ISSUES:
+          <any known issues that you think this contribution has>
+          <if they're listed, attempts may be made to resolve>
+          <them.>
+--------------------------------------------------------------------------
+
+	Contributions may be uploaded to a special 'contrib' directory on a
+	FTP server somewhere or e-mailed to some special address,
+	probably to a special mailing list, ie: contrib@sorcery.net.
+
+II. Contrib
+----------------
+
+	The third field of a submission is the 'CONTRIB:' line.
+	in this field you should include a short name for your
+	contribution and a version number.
+
+	The name should consist only of alphanumeric characters
+	and underscores, followed by a comman, then a version
+	number which may contain only numeric characters and
+	periods.
+
+
+III.  Copyright
+----------------
+
+	A. You must be both the author and owner of the copyright for any
+	   contribution you submit.
+
+	B. As a contributor you have two options:
+
+		1. Release your contribution to the public domain.
+
+		OR
+
+		2. License the recipients of the submission and the general
+		   public to use, modify, and distribute your software
+		   under the terms of the BSD license.
+
+		If you choose option 1, then you must include the following
+		statement in the COPYRIGHT section of your contribution
+		header:
+
+No copyright is claimed: this work is in the public domain.
+I agree to http://www.sorcery.net/technical/copyright.html
+
+		If you choose option 2, then you must include a copyright
+		notice with your name, followed by te following text:
+
+Copyright (c) <PLACE YOUR NAME HERE>
+I agree to http://www.sorcery.net/technical/copyright.html
+
+		Contributions that do not take one of the above options will
+		not be integrated.
+
+IV. Example Form
+-----------------
+
+
+--------------------------------------------------------------------------
+COPYRIGHT:
+          I agree to http://www.sorcery.net/technical/copyright.html
+AUTHOR:   John Doe, foo@bar
+CONTRIB:  crash, 1.0
+PACKAGE:  services 8.0-stable
+SYNOPSIS: 
+          This patch is designed to crash services and it does
+          it very nicely... a crash every 15 seconds, it's really
+          neat!
+ISSUES:
+          If you get too many registrations, it stops crashing..
+          some people don't like it.
+--------------------------------------------------------------------------
+
+<patch would follow>
+
+
+Source Code
+============
+
+I. Style and Formatting
+------------------------
+
+	These are the style and formatting suggestions for services
+	contributions.
+
+	Submissions included may be reformatted or aletered prior to
+	or at any time after inclusion in the services package so that
+	submissions fit well and function in an appropriate manner.
+
+	The following are only guidelines, and they will be ignored where
+	their use hurts readability or confuses programmers.
+
+	A. Brace style
+
+		1. It is suggested that you use the BSD brace style for
+		   compounds at the top level of nesting and also for
+		   long blocks (those that span more than 15 lines),
+		   contain at least two nested levels, or if the
+		   controlling statement preceding a block is a null
+		   or non-executable statement (such as a function
+		   header).
+
+		   Opening and closing outer braces are placed on their
+		   own lines and are flush with the control statement.
+
+		   Indentation level increase occurs at the start of
+		   a compound block.
+
+		   Ex: int foo()
+		       {
+		           body_goes_here;
+		       }
+		   
+		2. You can use K&R-style bracing for short blocks
+		   following control statements found below the top
+		   level and blocks on executable statements nested at
+		   the lowest level. That is, the opening brace is
+		   placed on the same line as the statement the block
+		   is nested below, and that line is one indentation
+		   level above the block. The closing brace is flush
+		   with the statement controlling execution of the
+		   block's contents.
+
+		   Ex: if (a) {
+		           body_goes_here;
+		       }
+
+		   Before adding nest levels or a significant amount of
+		   code below a block in K&R style, change the block to
+		   BSD style by pushing the brace down to the next line
+		   and indenting it properly.
+
+		3. Make the order of conditional bracing in any contributed
+		   code obvious, even to people that may not be intimately
+		   familiar with C/++ syntax.
+
+		   When 'else' is used, all preceding nest levels must
+		   contain explicit braces around their blocks.
+
+		   Sample ambiguous-appearing block:
+			if (x)
+			    if (y)
+			        aa;
+			    else
+			        ab;
+
+		   Sample of clear conditional code:
+			if (x) {
+			    if (y)
+			        aa;
+			    else
+			        ab;
+			}
+
+		4. Use implicit bracing ONLY in shallow nests, never
+		   below 2 levels deep in a nest, not counting the parent
+		   function as a level.  This is done for readability.
+
+	B. Indentation
+		1. A tab-stop is 4 spaces.  Do nest-level indention
+		   with tabs, and preferably indent all nested statements
+		   one level below their parent.
+
+		   Consider braces part of the frame around compound
+		   statements: leave opening braces at the indentation
+		   level of the controlling block.
+
+		2. A level of indentation occurs when a statement
+		   is nested -- the statement is contained
+		   within a block executed by another statement.
+
+		3. Don't increase indentation by more than one level in
+		   a single line.  Unless explicit braces are provided.
+
+		   You don't get:
+
+		   <tab><tab> else if (x) {
+		   <tab><tab><tab><tab> body
+		   <tab><tab> }
+
+		   You get:
+
+		   <tab><tab> else if (x) {
+		   <tab><tab><tab> body
+		   <tab><tab> }
+
+		4. With the exception of 'else if', you need to
+		   put any statement that is nested below another
+		   statement on its own line or use a compound block
+		   and one of the bracing styles described above.
+
+		5. When it is necessary to break a line, as
+		   the line continues, tab it to the same indentation
+		   level as the first line in the broken sequence, and
+		   use spaces for indentation necessary in the line-break
+		   style.   
+
+	C. Line breaking
+
+		1. All source should be browseable on an 80x25 display
+		   when 4 spaces are being used for tab stops and
+		   word-wrapping is not supported.  The source must
+		   be display able on a viewer that truncates lines
+		   to 80 characters.
+
+		2. If a line exceeds the 80th position, then
+		   it must be broken into at least two lines.
+
+		3. You should do line breaks before logical operators
+                   if possible, and you need to do them in such a way
+		   as to maximize readability.
+
+		4. If the line broken precedes a compound statement,
+		   then the bracing should be in BSD style.
+
+		5. Use 2-space or 4-space indent for any sub-indentation
+		   within broken lines (spaces, not tabs).
+
+		6. When you break a line for readability or necessity,
+                   split the line at highest preference at an opening
+		   parentheses, and use the parethensis in the form of
+		   one of the standard bracing styles and if parentheses
+		   were braces, if the contents of the statement are long,
+		   use the nesting principles also, example:
+
+		   BSD style:
+		   if 
+		   (
+		     (a && b) || (c && e) ||
+		     (d && b) || !(q && !e) || 
+                     (
+		         a && b && c && q && z && x && y && p && v &&
+		         s || z && b || c && q || t
+		     )
+		   )
+
+		   K&R style:
+		   if (
+		        (a && b) || (c && e) ||
+		        (d && b) || !(q && !e) || (
+		            a && b && c && q && z && x && y && p && v &&
+		            s || z && b || c && q || t
+		        )
+		      )
+
+		6. To split function parameter lists, split
+		   after a comma, indent the next line to the
+		   level of the declaration or call with tabs, and
+		   use spaces to match up the two lines.
+
+	D. Comment Style
+
+		Use one of these styles for ordinary comments:
+
+		/* This is a comment. */
+
+		/*
+		 * Comment goes here.
+		 * blah blah blah
+		 */
+
+		// C++,  blah blah blah
+
+
+		Use one of these styles for comments read by
+		doxygen:
+
+		/**
+		 * documentation for the following item
+		 */
+
+		/// One-line Documentation of the following item
+
+		///< Documentation of the thing to the left
+
+		Avoid using these last three:
+
+		//!< Documentation of stuff to the left
+		/*! \brief stuff */
+		/*!< \brief stuff to the left */
+
+	E. Naming Conventions for services
+
+		1. Give all new functions clear, distinct
+		   names that intuitively identify their function.
+
+		2. Give any new literal constants you define at
+		   the preprocessor or constant variables names that
+		   are completely uppercase.  Words may be separated
+		   with underscores.
+
+	F. Other requirements
+
+		1. Only introduce non-constant global variables
+		   if they are used for holding state data and lists that
+		   must be held by services across messages or they
+		   are useful for efficiency reasons.
+
+		2. Ensure that what you introduce is readable and sensible.
+
+		3. You should list any problems in your contribution
+		   in the ``ISSUES'' section of your submission.
+
+		   If your submission fails to meet one of the
+		   requirements listed here, then it may be
+		   fixed and included, IF you tag those issues
+		   in the submission or add them later.
+
+II. Documentation
+------------------
+
+	These are the documentation standards suggested
+	for services contributions.
+
+	Otherwise suitable contributions lacking documentation may be
+	held from the services package until appropriate documentation
+	can be added by either a coder, 'documentor', or contributor.
+
+	1. You need to document source files your contribution adds:
+	   A file should start with a file information block,
+	   including, the complete text of ex/file.tmpl with
+	   modifications to include a brief description, a long description, 
+	   a filename items, and other information specified in that
+	   template.
+
+	2. Document exported functions you add with a special
+	   comment block that includes enumeration of the purpose
+	   of each parameter, the nature of any return value,
+	   and finally any preconditions or postconditions.
+
+	   In particular, if a function takes data that must have
+	   certain constraints, such as not being a null pointer,
+	   or having a limited range, then the constraints -must-
+	   be documented as calling conventions.
+
+	   See ex/func.tmpl from the services package for an example
+	   of a documentation block for preceding an exported function,
+	   examples can also be found throughout the services package.
+ 
+	   Module local functions should contain all documentation
+	   necessary to use them.
+
+	3. All global entities and those outside local scope including
+	   structures, classes, enumerated data types, union declarations,
+	   and global variables (plus "named constants") must contain
+	   at least a brief description of the entities purpose and usage.
+	   See ex/entity.ex and  ex/class.ex for examples on how a global
+	   entity declaration might be documented.
+
+	   Each member of a structure, union, class, or every value of
+	   an enumeration should contain a description, but the
+	   description for class methods (or "member functions") should be
+	   in their implementation and include all calling conventions as if
+	   they were exported functions.
+
+	   ex/class.ex has an example of documentation in a class
+	   header.
+
+	4. Ordinary documentation procedures apply.  Any 'obscure'
+	   requirements within a procedure, complex processing, or
+	   anything not self-explanatory should contain an explicit
+	   documentation block or line with clarifications.

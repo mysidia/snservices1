@@ -1,0 +1,229 @@
+<HTML
+><HEAD
+><TITLE
+>Services IPC</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.73
+"><LINK
+REL="HOME"
+TITLE="Services installation and operation manual"
+HREF="manual.html"><LINK
+REL="PREVIOUS"
+TITLE="Administering Permission Flags"
+HREF="admin2.html"><LINK
+REL="NEXT"
+TITLE="Authentication"
+HREF="ipcauth.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Services installation and operation manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="admin2.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="ipcauth.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="IPC"
+>Chapter 5. Services IPC</A
+></H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="ipc.html#IPCCONTACT"
+>Making contact with services</A
+></DT
+><DT
+><A
+HREF="ipcauth.html"
+>Authentication</A
+></DT
+><DT
+><A
+HREF="ipcquery.html"
+>Query Messages</A
+></DT
+><DT
+><A
+HREF="ipcalter.html"
+>Alter Messages</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="IPCCONTACT"
+>Making contact with services</A
+></H1
+><P
+>				Services' IPC facility (if enabled)
+				is provided by a TCP Stream listener
+				that binds to the local interface.
+			</P
+><P
+>				At this time, the testing services
+				on SorceryNet are using local port
+				2050 for this purpose, but any
+				other port could be used, as an
+				explicit port number is supplied
+				in services.conf to enable IPC.
+				So an application using IPC will
+				need to consider the port number a
+				variable parameter that is supplied
+				when services have been configured
+				to use a particular port number.
+			</P
+><P
+>				Contact is initiated by simply
+				connecting to the local TCP port.
+			</P
+><P
+>				Once a connection is established,
+				commands will be read from the
+				connection, although many will be
+				unavailable until you authenticate
+				for some IPC system privileges.
+			</P
+><P
+>				All messages are read as commands,
+				input is line-by-line much like in
+				IRC; however, unlike in IRC,
+				the commands are case-sensitive.
+				<PRE
+CLASS="PROGRAMLISTING"
+>	AUTH SYSTEM LOGIN bob
+				</PRE
+>
+
+				is a valid command, but
+				<PRE
+CLASS="PROGRAMLISTING"
+>	AuTh SyStEm LOGIN bob
+				</PRE
+>
+				is not a valid command and will
+				either be ignored or you may instead
+				receive an error:
+				<PRE
+CLASS="PROGRAMLISTING"
+>	ERR-NOAUTH (Allowed: AUTH, HELP, QUIT) - You are not authenticated.
+				</PRE
+>				
+			</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="admin2.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="manual.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="ipcauth.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Administering Permission Flags</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Authentication</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
