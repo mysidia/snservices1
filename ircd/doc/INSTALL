@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, doc/INSTALL
  *   Copyright (C) 1990,1991,1992, Jeff Trim, Mike Bolotski,
  *   Jarkko Oikarinen and Darren Reed.
@@ -50,7 +50,7 @@ Overview of this document:
 
         DPATH is provided so that the other pathnames (SPATH, CPATH, etc)
       may be provided in just filename form.  When the server starts, it
-      chdir's to DPATH before chroot or any other file operation, making
+      chdir's to DPATH, making
       it the "current directory" for the server.  This is where core files
       will go if it core dumps.
 
@@ -74,28 +74,11 @@ Overview of this document:
       file.  It is used for storing the server's PID so a ps(1) isn't
       necessary.
 
-   e) CHROOTDIR
+   e) CHROOTDIR -- depricated
 
-	To use the CHROOTDIR feature, make sure it is #define'd and that
-      the server is being run as root.  The server will chroot to the
-      directory name provded by DPATH.
+   f) ENABLE_SUMMON, ENABLE_USERS -- depricated
 
-   f) ENABLE_SUMMON, ENABLE_USERS
-
-	For security conscious server admins, they may wish to leave
-      ENABLE_USERS undefined, disabling the USERS command which can be used
-      to glean information the same as finger can.  ENABLE_SUMMON toggles
-      whether the server will attempt to summon local users to irc by
-      writing a message similar to that from talk(1) to a user's tty.
-
-   g) SHOW_INVISIBLE_LUSERS, NO_DEFAULT_INVISIBLE
-
-	On large IRC networks, the number of invisible users is likely to
-      be large and reporting that number cause no pain.  To aid and effect
-      this, SHOW_INVISIBLE_LUSERS is provided to cause the LUSERS command
-      to report the number of invisible users to all people and not just
-      operators.  The NO_DEFAULT_INVISIBLE define is used to toggle whether
-      clients are automatically made invisible when they register.
+   g) SHOW_INVISIBLE_LUSERS, NO_DEFAULT_INVISIBLE - depricated
 
    h) OPER_KILL, OPER_REHASH, OPER_RESTART, LOCAL_KILL_ONLY
 

@@ -42,10 +42,6 @@
 #define QUERY		0x0		/* standard query */
 #define IQUERY		0x1		/* inverse query */
 #define STATUS		0x2		/* nameserver status query */
-#if 0
-#define xxx		0x3		/* 0x3 reserved */
-	/* non standard */
-#endif
 
 #define UPDATEA		0x9		/* add resource record */
 #define UPDATED		0xa		/* delete a specific resource record */
@@ -90,6 +86,7 @@
 #define T_MINFO		14		/* mailbox information */
 #define T_MX		15		/* mail routing information */
 #define T_TXT		16		/* text strings */
+#define T_AAAA		28		/* IPv6 address */
 	/* non standard */
 #define T_UINFO		100		/* user (finger) information */
 #define T_UID		101		/* user ID */
@@ -128,7 +125,7 @@
 #if defined(vax) || defined(ns32000) || defined(sun386) || defined(MIPSEL) || \
     defined(BIT_ZERO_ON_RIGHT) || defined(sequent) || defined(i386) ||\
     defined(___vax__) || defined(__ns32000__) || defined(__sun386__) ||\
-    defined(__alpha) || defined(_WIN32)
+    defined(__alpha)
 #define BYTE_ORDER	LITTLE_ENDIAN
 
 #endif

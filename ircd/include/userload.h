@@ -20,13 +20,6 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ****************************************************************************/
 
-/* This needs to be defined for the counts to be correct--it should be the
- * default anyway, as opers shouldn't be superior to lusers except where
- * absolutely necessary, and here it isn't necessary.                       */
-#ifndef SHOW_INVISIBLE_LUSERS
-#define SHOW_INVISIBLE_LUSERS
-#endif
-
 struct current_load_struct {
   u_short client_count, local_count, conn_count;
   u_long  entries;
@@ -44,6 +37,6 @@ extern struct load_entry *load_list_head, *load_list_tail,
                          *load_free_head, *load_free_tail;
 
 
-extern void initload PROTO ((void));
-extern void update_load PROTO ((void));
-extern void calc_load PROTO ((aClient *, char *));
+extern void initload(void);
+extern void update_load(void);
+extern void calc_load(aClient *, char *);

@@ -17,67 +17,69 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef	lint
-static char sccsid[] = "@(#)class.c	1.4 6/28/93 (C) 1990 Darren Reed";
-#endif
-
 #include "struct.h"
 #include "common.h"
 #include "numeric.h"
 #include "h.h"
 
+#include "ircd/send.h"
+
+IRCD_SCCSID("@(#)class.c	1.4 6/28/93 (C) 1990 Darren Reed");
+IRCD_RCSID("$Id$");
+
 #define BAD_CONF_CLASS		-1
 #define BAD_PING		-2
 #define BAD_CLIENT_CLASS	-3
 
-aClass	*classes;
+aClass *classes;
 
-int	get_conf_class(aConfItem *aconf)
+int
+get_conf_class(aConfItem *aconf)
 {
 	if ((aconf) && Class(aconf))
 		return (ConfClass(aconf));
 
 	Debug((DEBUG_DEBUG,"No Class For %s",
-	      (aconf) ? aconf->name : "*No Conf*"));
+	       (aconf) ? aconf->name : "*No Conf*"));
 
 	return (BAD_CONF_CLASS);
-
 }
 
-static	int	get_conf_ping(aConfItem *aconf)
+static int
+get_conf_ping(aConfItem *aconf)
 {
 	if ((aconf) && Class(aconf))
 		return (ConfPingFreq(aconf));
 
 	Debug((DEBUG_DEBUG,"No Ping For %s",
-	      (aconf) ? aconf->name : "*No Conf*"));
+	       (aconf) ? aconf->name : "*No Conf*"));
 
 	return (BAD_PING);
 }
 
-
-int	get_client_class(aClient *acptr)
+int
+get_client_class(aClient *acptr)
 {
 	Link	*tmp;
 	aClass	*cl;
-	int	i = 0, retc = BAD_CLIENT_CLASS;
+	int	retc = BAD_CLIENT_CLASS;
 
 	if (acptr && !IsMe(acptr)  && (acptr->confs))
-		for (tmp = acptr->confs; tmp; tmp = tmp->next)
-		    {
+		for (tmp = acptr->confs; tmp; tmp = tmp->next) {
 			if (!tmp->value.aconf ||
 			    !(cl = tmp->value.aconf->class))
 				continue;
 			if (Class(cl) > retc)
 				retc = Class(cl);
-		    }
+		}
 
 	Debug((DEBUG_DEBUG,"Returning Class %d For %s",retc,acptr->name));
 
 	return (retc);
 }
 
-int	get_client_ping(aClient *acptr)
+int
+get_client_ping(aClient *acptr)
 {
 	int	ping = 0, ping2;
 	aConfItem	*aconf;
@@ -85,32 +87,31 @@ int	get_client_ping(aClient *acptr)
 
 	link = acptr->confs;
 
-	if (link)
-		while (link)
-		    {
+	if (link) {
+		while (link) {
 			aconf = link->value.aconf;
 			if (aconf->status & (CONF_CLIENT|CONF_CONNECT_SERVER|
-					     CONF_NOCONNECT_SERVER))
-			    {
+					     CONF_NOCONNECT_SERVER)) {
 				ping2 = get_conf_ping(aconf);
 				if ((ping2 != BAD_PING) && ((ping > ping2) ||
-				    !ping))
+							    !ping))
 					ping = ping2;
-			     }
+			}
 			link = link->next;
-		    }
-	else
-	    {
+		}
+	} else {
 		ping = PINGFREQUENCY;
 		Debug((DEBUG_DEBUG,"No Attached Confs"));
-	    }
+	}
 	if (ping <= 0)
 		ping = PINGFREQUENCY;
 	Debug((DEBUG_DEBUG,"Client %s Ping %d", acptr->name, ping));
+
 	return (ping);
 }
 
-int	get_con_freq(aClass *clptr)
+int
+get_con_freq(aClass *clptr)
 {
 	if (clptr)
 		return (ConFreq(clptr));
@@ -125,22 +126,22 @@ int	get_con_freq(aClass *clptr)
  * if no present entry is found, then create a new one and add it in
  * immeadiately after the first one (class 0).
  */
-void	add_class(int class, int ping, int confreq, int maxli, long sendq)
+void
+add_class(int class, int ping, int confreq, int maxli, long sendq)
 {
 	aClass *t, *p;
 
 	t = find_class(class);
-	if ((t == classes) && (class != 0))
-	    {
-		p = (aClass *)make_class();
+	if ((t == classes) && (class != 0)) {
+		p = make_class();
 		NextClass(p) = NextClass(t);
 		NextClass(t) = p;
-	    }
-	else
+	} else
 		p = t;
+
 	Debug((DEBUG_DEBUG,
-		"Add Class %d: p %x t %x - cf: %d pf: %d ml: %d sq: %l",
-		class, p, t, confreq, ping, maxli, sendq));
+	       "Add Class %d: p %x t %x - cf: %d pf: %d ml: %d sq: %l",
+	       class, p, t, confreq, ping, maxli, sendq));
 	Class(p) = class;
 	ConFreq(p) = confreq;
 	PingFreq(p) = ping;
@@ -150,7 +151,8 @@ void	add_class(int class, int ping, int confreq, int maxli, long sendq)
 		Links(p) = 0;
 }
 
-aClass	*find_class(int cclass)
+aClass *
+find_class(int cclass)
 {
 	aClass *cltmp;
 
@@ -160,32 +162,31 @@ aClass	*find_class(int cclass)
 	return classes;
 }
 
-void	check_class()
+void
+check_class(void)
 {
 	aClass *cltmp, *cltmp2;
 
 	Debug((DEBUG_DEBUG, "Class check:"));
 
-	for (cltmp2 = cltmp = FirstClass(); cltmp; cltmp = NextClass(cltmp2))
-	    {
+	for (cltmp2 = cltmp = FirstClass(); cltmp; cltmp = NextClass(cltmp2)) {
 		Debug((DEBUG_DEBUG,
-			"Class %d : CF: %d PF: %d ML: %d LI: %d SQ: %ld",
-			Class(cltmp), ConFreq(cltmp), PingFreq(cltmp),
-			MaxLinks(cltmp), Links(cltmp), MaxSendq(cltmp)));
-		if (MaxLinks(cltmp) < 0)
-		    {
+		       "Class %d : CF: %d PF: %d ML: %d LI: %d SQ: %ld",
+		       Class(cltmp), ConFreq(cltmp), PingFreq(cltmp),
+		       MaxLinks(cltmp), Links(cltmp), MaxSendq(cltmp)));
+		if (MaxLinks(cltmp) < 0) {
 			NextClass(cltmp2) = NextClass(cltmp);
 			if (Links(cltmp) <= 0)
 				free_class(cltmp);
-		    }
-		else
+		} else
 			cltmp2 = cltmp;
-	    }
+	}
 }
 
-void	initclass()
+void
+initclass(void)
 {
-	classes = (aClass *)make_class();
+	classes = make_class();
 
 	Class(FirstClass()) = 0;
 	ConFreq(FirstClass()) = CONNECTFREQUENCY;
@@ -196,7 +197,8 @@ void	initclass()
 	NextClass(FirstClass()) = NULL;
 }
 
-void	report_classes(aClient *sptr)
+void
+report_classes(aClient *sptr)
 {
 	aClass *cltmp;
 
@@ -206,20 +208,21 @@ void	report_classes(aClient *sptr)
 			   MaxLinks(cltmp), MaxSendq(cltmp));
 }
 
-long	get_sendq(aClient *cptr)
+long
+get_sendq(aClient *cptr)
 {
 	int	sendq = MAXSENDQLENGTH, retc = BAD_CLIENT_CLASS;
 	Link	*tmp;
 	aClass	*cl;
 
 	if (cptr && !IsMe(cptr)  && (cptr->confs))
-		for (tmp = cptr->confs; tmp; tmp = tmp->next)
-		    {
+		for (tmp = cptr->confs; tmp; tmp = tmp->next) {
 			if (!tmp->value.aconf ||
 			    !(cl = tmp->value.aconf->class))
 				continue;
 			if (Class(cl) > retc)
 				sendq = MaxSendq(cl);
-		    }
+		}
+
 	return sendq;
 }

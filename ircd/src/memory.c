@@ -139,7 +139,7 @@ irc_free(void *x)
 }
 
 char *
-irc_strdup(char *s)
+irc_strdup(const char *s)
 {
 	char *ret;
 	int len;

@@ -17,33 +17,23 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed";
-#endif
-
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "res.h"
 #include "numeric.h"
 #include "patchlevel.h"
-#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
-#ifdef	UNIXPORT
-# include <sys/un.h>
-#endif
-#if defined(__hpux)
-# include "inet.h"
-#endif
-#else
-#include <io.h>
-#endif
 #include <fcntl.h>
-#include "sock.h"	/* If FD_ZERO isn't define up to this point,  */
-			/* define it (BSD4.2 needs this) */
 #include "h.h"
+
+#include "ircd/send.h"
+#include "ircd/string.h"
+
+IRCD_SCCSID("@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed");
+IRCD_RCSID("$Id$");
 
 /*
  * start_auth
@@ -56,13 +46,14 @@ static  char sccsid[] = "@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed";
  */
 void	start_auth(aClient *cptr)
 {
-	struct	sockaddr_in	sock;
-	int	addrlen = sizeof(struct sockaddr_in);
+	anAddress	sock;
+	int	addrlen = sizeof(anAddress);
 
 	Debug((DEBUG_NOTICE,"start_auth(%x) fd %d status %d",
 		cptr, cptr->fd, cptr->status));
+	getsockname(cptr->fd, (struct sockaddr *)&sock, &addrlen);
 	(void)alarm(2); /* To catch waiting for 'no more sockets' */
-	if ((cptr->authfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	if ((cptr->authfd = socket(sock.addr_family, SOCK_STREAM, 0)) == -1)
 	    {
 	        (void)alarm(0);
 #ifdef	USE_SYSLOG
@@ -72,13 +63,12 @@ void	start_auth(aClient *cptr)
                 Debug((DEBUG_ERROR, "Unable to create auth socket for %s:%s",
                         get_client_name(cptr, TRUE),
                         strerror(get_sockerr(cptr))));
-		if (!DoingDNS(cptr) && !DoingSocks(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 		ircstp->is_abad++;
 		return;
 	    }
         (void)alarm(0);
-#ifndef _WIN32
 	if (cptr->authfd >= (MAXCONNECTIONS - 3))
 	    {
 		sendto_ops("Can't allocate fd for auth on %s",
@@ -86,42 +76,49 @@ void	start_auth(aClient *cptr)
 		(void)close(cptr->authfd);
 		return;
 	    }
-#endif
 	set_non_blocking(cptr->authfd, cptr);
 
-	getsockname(cptr->fd, (struct sockaddr *)&sock, &addrlen);
-	sock.sin_port = 0;
-	sock.sin_family = AF_INET; /* redundant? */
+	switch (sock.addr_family)
+	{
+		case AF_INET:
+			sock.in.sin_port = 0;
+			break;
+#ifdef AF_INET6
+		case AF_INET6:
+			sock.in6.sin6_port = 0;
+			break;
+#endif
+	}
 	(void)bind(cptr->authfd, (struct sockaddr *)&sock, sizeof(sock));
 
-	bcopy((char *)&cptr->ip, (char *)&sock.sin_addr,
-		sizeof(struct in_addr));
+	bcopy((char *)&cptr->addr, (char *)&sock,
+		sizeof(anAddress));
 
-	sock.sin_port = htons(113);
-	sock.sin_family = AF_INET;
+	switch (sock.addr_family)
+	{
+		case AF_INET:
+			sock.in.sin_port = htons(113);
+			break;
+#ifdef AF_INET6
+		case AF_INET6:
+			sock.in6.sin6_port = htons(113);
+			break;
+#endif
+	}
 
 	(void)alarm((unsigned)4);
 	if (connect(cptr->authfd, (struct sockaddr *)&sock,
-#ifndef _WIN32
 		    sizeof(sock)) == -1 && errno != EINPROGRESS)
-#else
-		    sizeof(sock)) == -1 && (WSAGetLastError() !=
-		WSAEINPROGRESS && WSAGetLastError() != WSAEWOULDBLOCK))
-#endif
 	    {
 		ircstp->is_abad++;
                 connotice(cptr, REPORT_ERR_AUTH);
 		/*
 		 * No error report from this...
 		 */
-#ifndef _WIN32
 		(void)alarm((unsigned)0);
 		(void)close(cptr->authfd);
-#else
-		(void)closesocket(cptr->authfd);
-#endif
 		cptr->authfd = -1;
-		if (!DoingDNS(cptr) && !DoingSocks(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 		return;
 	    }
@@ -144,7 +141,7 @@ void	start_auth(aClient *cptr)
  */
 void	send_authports(aClient *cptr)
 {
-	struct	sockaddr_in	us, them;
+	anAddress	us, them;
 	char	authbuf[32];
 	int	ulen, tlen;
 
@@ -161,32 +158,36 @@ void	send_authports(aClient *cptr)
 		goto authsenderr;
 	    }
 
-	(void)sprintf(authbuf, "%u , %u\r\n",
-		(unsigned int)ntohs(them.sin_port),
-		(unsigned int)ntohs(us.sin_port));
+	switch (us.addr_family)
+	{
+		case AF_INET:
+			(void)sprintf(authbuf, "%u , %u\r\n",
+				(unsigned int)ntohs(them.in.sin_port),
+				(unsigned int)ntohs(us.in.sin_port));
+			break;
+#ifdef AF_INET6
+		case AF_INET6:
+			(void)sprintf(authbuf, "%u , %u\r\n",
+				(unsigned int)ntohs(them.in6.sin6_port),
+				(unsigned int)ntohs(us.in6.sin6_port));
+			break;
+#endif
+	}
 
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",
-		authbuf, inetntoa((char *)&them.sin_addr)));
-#ifndef _WIN32
+		authbuf, inetntoa(&them)));
 	if (write(cptr->authfd, authbuf, strlen(authbuf)) != strlen(authbuf))
-#else
-	if (send(cptr->authfd, authbuf, strlen(authbuf), 0) != (int)strlen(authbuf))
-#endif
 	    {
 authsenderr:
 		ircstp->is_abad++;
-#ifndef _WIN32
 		(void)close(cptr->authfd);
-#else
-		(void)closesocket(cptr->authfd);
-#endif
 		if (cptr->authfd == highest_fd)
 			while (!local[highest_fd])
 				highest_fd--;
                 connotice(cptr, REPORT_ERR_AUTH);
 		cptr->authfd = -1;
 		ClientFlags(cptr) &= ~FLAGS_AUTH;
-		if (!DoingDNS(cptr) && !DoingSocks(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 	    }
 	ClientFlags(cptr) &= ~FLAGS_WRAUTH;
@@ -217,13 +218,8 @@ void	read_authports(aClient *cptr)
 	 * Oh. this is needed because an authd reply may come back in more
 	 * than 1 read! -avalon
 	 */
-#ifndef _WIN32
 	if ((len = read(cptr->authfd, cptr->buffer + cptr->count,
 			sizeof(cptr->buffer) - 1 - cptr->count)) >= 0)
-#else
-	if ((len = recv(cptr->authfd, cptr->buffer + cptr->count,
-			sizeof(cptr->buffer) - 1 - cptr->count, 0)) >= 0)
-#endif
 	    {
 		cptr->count += len;
 		cptr->buffer[cptr->count] = '\0';
@@ -256,18 +252,14 @@ void	read_authports(aClient *cptr)
 		Debug((DEBUG_ERROR,"bad auth reply in [%s]", cptr->buffer));
 		*ruser = '\0';
 	    }
-#ifndef _WIN32
 	(void)close(cptr->authfd);
-#else
-	(void)closesocket(cptr->authfd);
-#endif
 	if (cptr->authfd == highest_fd)
 		while (!local[highest_fd])
 			highest_fd--;
 	cptr->count = 0;
 	cptr->authfd = -1;
 	ClearAuth(cptr);
-	if (!DoingDNS(cptr) && !DoingSocks(cptr))
+	if (!DoingDNS(cptr))
 		SetAccess(cptr);
 	if (len > 0)
 		Debug((DEBUG_INFO,"ident reply: [%s]", cptr->buffer));

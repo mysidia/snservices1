@@ -17,7 +17,7 @@
 #*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #*/
 
-CC=@CC@
+CC=gcc
 INCLUDEDIR=../include
 
 # [CHANGEME]
@@ -28,11 +28,11 @@ INCLUDEDIR=../include
 # If you are configuring by hand, try "-O -g" for XCFLAGS, and leave
 # IRCDLIBS blank.  If that fails, try recomendations below.
 #
-XCFLAGS=
-IRCDLIBS=@LIBS@ @MD5CRYPT@
+XCFLAGS=-O -g -Wuninitialized -Wcomment -Wall -Wformat=2 -Wmissing-prototypes -Wmissing-declarations
+IRCDLIBS=-lcrypt
 
 #set this to fcrypt.o to enable des crypt()
-DESCRYPT=@DESCRYPT@
+DESCRYPT=-lcrypt
 
 #
 # use the following on MIPS:
@@ -82,12 +82,12 @@ DESCRYPT=@DESCRYPT@
 #
 # WARNING: if you are making ircd SUID or SGID, check config.h to make sure
 #          you are not defining CMDLINE_CONFIG 
-IRCDMODE=@IRCDMODE@
+IRCDMODE=700
 
 # [CHANGEME]
 # IRCDDIR must be the same as DPATH in include/config.h
 #
-IRCDDIR=@DPATH@
+IRCDDIR=/u0/home/explorer/proj/SORCERY/ircd/testconf
 
 # [CHANGEME]
 # Some SunOS versions want this.  Try it without first.
@@ -111,16 +111,18 @@ NEED_U_INT32_T=
 # STRTOUL=	strtoul.o
 STRTOUL=
 
+GETADDRINFO=
+
 # [CHANGEME]
 # If you get crashes around a specific number of clients, and that client
 # load comes close or a little over the system-defined value of FD_SETSIZE,
 # override it here and see what happens.
-FD_SETSIZE=
+FD_SETSIZE=-DFD_SETSIZE=1024
 
-CFLAGS=-I$(INCLUDEDIR) -I@top_srcdir@/../ -I../md5 @CFLAGS@ $(XCFLAGS) $(FD_SETSIZE)
+CFLAGS=-I$(INCLUDEDIR) $(XCFLAGS) $(NEED_U_INT32_T) $(FD_SETSIZE)
 
 SHELL=/bin/sh
-SUBDIRS=md5 src
+SUBDIRS=src
 BINDIR=$(IRCDDIR)
 MANDIR=/usr/local/man
 INSTALL=/usr/bin/install
@@ -136,15 +138,16 @@ MAKEARGS =	'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
 		'INCLUDEDIR=${INCLUDEDIR}' 'IRCDDIR=${IRCDDIR}' \
 		'MANDIR=${MANDIR}' 'RM=${RM}' 'CP=${CP}' 'TOUCH=${TOUCH}' \
 		'DESCRYPT=${DESCRYPT}' \
-		'RES=${RES}' 'SHELL=${SHELL}' 'STRTOUL=${STRTOUL}'
+		'RES=${RES}' 'SHELL=${SHELL}' 'STRTOUL=${STRTOUL}' \
+		'GETADDRINFO=${GETADDRINFO}'
 
 server:
 build:
-#	-@if [ ! -f include/setup.h ] ; then \
-#		echo "Hmm...doesn't look like you've run Config..."; \
-#		echo "Doing so now."; \
-#		sh Config; \
-#	fi
+	-@if [ ! -f include/setup.h ] ; then \
+		echo "Hmm...doesn't look like you've run Config..."; \
+		echo "Doing so now."; \
+		sh Config; \
+	fi
 
 	@if [ "$(DESCRYPT)" = "fcrypt.o" ] ; then \
 	        ./fcrypt.sh ; \
@@ -164,22 +167,14 @@ clean:
 		( cd $$i; ${MAKE} ${MAKEARGS} clean; ) \
 	done
 	-@if [ -f include/setup.h ] ; then \
-	  echo "To really restart installation, run make distclean" ; \
+	  echo "To really restart installation, remove include/setup.h" ; \
 	fi
-	(cd md5;${MAKE} clean)
-	(cd tools;${MAKE} clean)
+	-@if [ -f include/options.h ] ; then \
+	  echo "and include/options.h" ; \
+	fi
 
-distclean: clean
-	rm -f config.cache config.status Options
-	rm -f Config setup.h Makefile
-	(cd src;make distclean)
-	(cd md5;make distclean)
-	(cd tools;make distclean)
-
-cleandir: distclean
-
-maintainer-clean: distclean
-	rm -f configure config.cache
+cleandir: clean
+	rm -rf include/setup.h include/options.h Makefile Options
 
 depend:
 	@for i in $(SUBDIRS); do \
@@ -203,5 +198,8 @@ install: all
 	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
 	./helpdigest ${IRCDDIR}
 	$(CP) doc/example.conf ${IRCDDIR}
+	chmod +x src/buildm4
+	@$(RM) -f ${IRCDDIR}/ircd.m4
+	@$(TOUCH) ${IRCDDIR}/ircd.m4
+	src/buildm4 ${IRCDDIR}
 	@echo "done!"
-

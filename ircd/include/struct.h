@@ -25,34 +25,33 @@
 #include "common.h"
 #include "sys.h"
 
+#include <sys/socket.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
+#if defined(SOL20) || defined(__linux__)
+#define va_copy(dst, src) ((dst) = (src))
+#endif
+
 #include "snprintf.h"
 
 #include <sys/types.h>
-#ifndef _WIN32
 #include <netinet/in.h>
 #include <netdb.h>
-#endif
+
 #ifdef STDDEFH
 # include <stddef.h>
 #endif
 
 #ifdef USE_SYSLOG
 # include <syslog.h>
-# ifdef SYSSYSLOGH
-#  include <sys/syslog.h>
-# endif
-#endif
-#ifdef	pyr
-#include <sys/time.h>
 #endif
 
+typedef	union	Address	anAddress;
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
-typedef	struct	Socks	aSocks;
 typedef	struct	Channel	aChannel;
 typedef	struct	User	anUser;
 typedef	struct	Server	aServer;
@@ -74,17 +73,10 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 /*#define NETWORK                 "SorceryNet"*/
 /*#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"*/
-#define SOCKS_TIMEOUT	30	/* number of seconds to wait before giving
-				   up on a socks request */
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
-#ifndef _WIN32
-/*#define ENABLE_SOCKSCHECK*/	/* enable socks check */
-#endif
-
-#define SOCKSPORT		1080
 
 #undef	KEEP_HURTBY            /* remember who hurt a user */
 #undef NICKLEN_CHANGE          /* used for a network nickname length change
@@ -124,15 +116,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
                                            we're dead meat as far as hurt timing goes:/  */
 #define HELPOP_CHAN     "#HelpOps"
 
-
-/*
-** 'offsetof' is defined in ANSI-C. The following definition
-** is not absolutely portable (I have been told), but so far
-** it has worked on all machines I have needed it. The type
-** should be size_t but...  --msa
-*/
 #ifndef offsetof
-#define	offsetof(t,m) (int)((&((t *)0L)->m))
+#define offsetof(type, member)  ((size_t)(unsigned long)(&((type *)0)->member))
 #endif
 
 #define	elementsof(x) (sizeof(x)/sizeof(x[0]))
@@ -140,13 +125,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 /*
 ** flags for bootup options (command line flags)
 */
-#define	BOOT_CONSOLE	1
-#define	BOOT_QUICK	2
-#define	BOOT_DEBUG	4
-#define	BOOT_INETD	8
-#define	BOOT_TTY	16
-#define	BOOT_OPER	32
-#define	BOOT_AUTODIE	64
+#define	BOOT_DEBUG	0x0000001
+#define	BOOT_FORK	0x0000002
 
 #define	STAT_AUTHSERV	-7	/* Server waiting identd check */
 #define	STAT_LOG	-6	/* logfile for -x */
@@ -241,8 +221,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define FLAGS_ULINE		BIT17 /* User/server is considered U-lined */
 #define FLAGS_SQUIT		BIT18 /* Server has been /squit by an oper */
 #define FLAGS_HURT		BIT19 /* if ->hurt is set, user is silenced */
-#define FLAGS_SOCK		BIT20 /* socks check pending */
-#define FLAGS_SOCKS		FLAGS_SOCK	/* same as flags_sock */
+/* bit20 unused */
 #define FLAGS_GOT_VERSION	BIT21 /* Ctcp version reply received */
 #define FLAGS_GOT_SPOOFCODE	BIT22 /* Is not spoof */
 #define FLAGS_SENT_SPOOFCODE	BIT23
@@ -269,27 +248,18 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
 #define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
+/*
+ * Default mode(s) to set on new user connections.
+ */
+#define UFLAGS_DEFAULT	(U_MASK)
+
 #define FLAGSET_FLOOD   (U_FLOOD)  /* what clients should flood notices be sent to ? */
 #define FLAGSET_CLIENT	(U_CLIENT) /* what clients should client notices be sent to ? */
-#define FLAGSET_SOCKS	(U_OPER)   /* what clients should socks warnings be sent to ?  */
-
-/* socks flags */
-#define	SOCK_WANTCON		BIT01	/* nonblocking connection in progress */
-#define SOCK_CONNECTED		BIT02	/* we can now write to the socket */
-#define SOCK_CANREAD		BIT03	/* we can now read from the socket */
-#define SOCK_GO			BIT04	/* socks check done, for better or for worse */
-#define SOCK_FOUND		BIT05	/* found a socks server;/ */
-#define SOCK_DESTROY		BIT06	/* destroy the ->socks structure and free() it very soon */
-#define SOCK_DONE		SOCK_GO
-#define SOCK_ERROR		BIT07	/* got an error message */
-#define SOCK_SENT		BIT08	/* sent data already */
-#define SOCK_REFUSED		BIT09	/* request refused (good) */
-#define SOCK_NEW		BIT10	/* New */
-#define SOCK_CACHED		BIT11	/* cached */
-#define SOCK_W			BIT12	/* Has appeared in W fd set */
 
 typedef	enum {
-	LOG_OPER, 	LOG_USER,        LOG_NET,
+	LOG_OPER,
+ 	LOG_USER,
+        LOG_NET,
 	LOG_HI
 } loglevel_value_t;
 
@@ -329,7 +299,6 @@ typedef	enum {
 #define	ClearAuth(x)		((x)->flags &= ~FLAGS_AUTH)
 
 #define	NoNewLine(x)		((x)->flags & FLAGS_NONL)
-#define DoingSocks(x)		(((x)->flags & FLAGS_SOCKS) && (x)->socks && (!((x)->socks->status & SOCK_DONE)) && (!((x)->socks->status & SOCK_DESTROY)) )
 #define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x)) /* Can this client see cool messages? */
 #define IsULine(cptr,sptr)      (ClientFlags(sptr) & FLAGS_ULINE)
 
@@ -392,7 +361,7 @@ typedef	enum {
 #define         SentNoSpoof(x)  ((ClientFlags(x)) & FLAGS_SENT_SPOOFCODE)
 #else
 #define IsNotSpoof(x)           (1)
-#define SetNotSpoof(x)		(1)
+#define SetNotSpoof(x)		do {} while (0)
 #endif
 
 #define IsUserVersionKnown(x)	(ClientFlags(x) & FLAGS_GOT_VERSION)
@@ -549,19 +518,41 @@ typedef struct help_struct {
 #define	DEBUG_LIST  10	/* debug list use */
 
 /*
- * defines for curses in client
+ * Don't use sockaddr_storage: it's too big. --Onno
  */
-#define	DUMMY_TERM	0
-#define	CURSES_TERM	1
-#define	TERMCAP_TERM	2
+union Address
+{
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+	u_char  addr_dummy[2];
+#define addr_family addr_dummy[1]
+#else
+	unsigned short int	addr_family;
+#endif
+	struct sockaddr_in	in;
+#ifdef AF_INET6
+	struct sockaddr_in6	in6;
+#endif
+};
+
+struct HostEnt
+{
+  char *h_name;                 /* Official name of host.  */
+  char **h_aliases;             /* Alias list.  */
+  anAddress **h_addr_list;      /* List of addresses from name server. */
+#define h_addr  h_addr_list[0]  /* Address, for backward compatibility.  */
+};
 
 struct	ConfItem	{
 	unsigned int	status;	/* If CONF_ILLEGAL, delete when no clients */
 	int	clients;	/* Number of *LOCAL* clients using this */
-	struct	in_addr ipnum;	/* ip number of host field */
+	anAddress	addr;	/* network address of host */
 	char	*host;
 	char	*passwd;
 	char	*name;
+	char    *string4;
+	char    *string5;
+	char	*string6;
+	char	*string7;
 	int	port;
 	time_t	hold;	/* Hold action until this time (calendar time) */
 	int	tmpconf, bits;
@@ -570,9 +561,6 @@ struct	ConfItem	{
 #endif
 	struct	ConfItem *next;
 };
-
-#define	CFLAG_NOSOCKS		0x00000001
-#define	CFLAG_NOIDENT		0x00000002
 
 #define	CONF_ILLEGAL		0x80000000
 #define	CONF_MATCH		0x40000000
@@ -585,9 +573,6 @@ struct	ConfItem	{
 #define	CONF_ME			0x0040
 #define	CONF_KILL		0x0080
 #define	CONF_ADMIN		0x0100
-#ifdef 	R_LINES
-#define	CONF_RESTRICT		0x0200
-#endif
 #define	CONF_CLASS		0x0400
 #define	CONF_SERVICE		0x0800
 #define	CONF_LEAF		0x1000
@@ -601,8 +586,9 @@ struct	ConfItem	{
 #define CONF_CRULEAUTO          0x400000
 #define CONF_MISSING		0x800000
 #define CONF_AHURT		0x1000000
+#define CONF_SUP_ZAP		0x2000000
 
-#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT)
+#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT | CONF_SUP_ZAP)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER)
 #define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | CONF_SERVER_MASK )
@@ -612,6 +598,20 @@ struct	ConfItem	{
 #define	IsIllegal(x)	((x)->status & CONF_ILLEGAL)
 #define	IsCNLine(x)	((x)->status & CONF_SERVER_MASK)
 #define IsTemp(x)	((x)->tmpconf)
+
+#define GetUserSupVersion(x)	((x)->sup_version)
+
+struct  StringHash
+{
+	struct StringHashElement* ptr;
+};
+
+struct	StringHashElement {
+	char* str;
+	int   refct;
+
+	struct StringHashElement* next;
+};
 
 /*
  * Client structures
@@ -629,6 +629,7 @@ struct	User	{
 	char	username[USERLEN+1];
 	char	host[HOSTLEN+1];
         char	server[HOSTLEN+1];
+        char    *sup_version;
 #ifdef  KEEP_HURTBY
 	char    *hurtby;
 #endif
@@ -656,21 +657,12 @@ struct	Server	{
 #endif
 };
 
-struct Socks {
-	int fd;
-	int status;
-	time_t start;
-	struct in_addr in_addr;
-	struct Socks *next;
-};
-
 struct Client	{
 	struct	Client *next, *prev, *hnext;
 	anUser	*user;		/* ...defined, if this is a User */
 	aServer	*serv;		/* ...defined, if this is a server */
-	aSocks  *socks;		/* socks check data */
 	int	hashv;		/* raw hash value */
-	time_t  hurt;           /* hurt til... */  
+	time_t  hurt;           /* hurt til... */
 	time_t	lasttime;	/* ...should be only LOCAL clients? --msa */
 	time_t	firsttime;	/* time client was created */
 	time_t	since;		/* last time we parsed something */
@@ -712,9 +704,9 @@ struct Client	{
 	Link	*confs;		/* Configuration record associated */
 	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
-	struct	in_addr	ip;	/* keep real ip# too */
+	anAddress	addr;	/* keep real ip# too */
 	u_short	port;	/* and the remote port# too :-) */
-	struct	hostent	*hostp;
+	struct	HostEnt	*hostp;
 	LOpts   *lopt;
 #ifdef	pyr
 	struct	timeval	lw;

@@ -772,10 +772,7 @@ H:*.us.sorcery.net::usa-hub.us.sorcery.net
 
  These lines will open up ports other than the port you specified in your
  config.h when you compiled your ircd.
- Using internet domain ports below 1024 mean that you must run ircd from
- inetd. ircd can listen to ports in the UNIX domain as well as the internet
- domain. With UNIX domain ports you must give a unix socket file, you must
- also compile ircd with UNIXPORT defined in your config.h.
+
  You may limit usage of ports in the internet domain to certain hostmasks.
  You do not need to provide a P line for the default port you defined in
  your config.h, only extra ports you wish to open. You should compile ircd
@@ -785,8 +782,8 @@ H:*.us.sorcery.net::usa-hub.us.sorcery.net
  this is the standard server connection port for all SorceryNet servers.
 
  Syntax:
-P:hostmask or UNIX socket file:*:*:port number
- The 1st field should either specify a path to a UNIX socket file, or give
+P:hostmask:*:*:port number
+ The 1st field should give
  a hostmask to match against connecting clients on this port. Clients not
  matching this mask will be rejected.
  The 2nd and 3rd field's are currently unused, and should be left blank.
@@ -801,10 +798,6 @@ P:*:::9090
 P:*.net:::6665
  This line will open up port 6665 and wait for connections, connections from
  hosts not matching `*.net' will be rejected.
-
-P:/tmp/.ircd:*:*:6666
- This line will open up the port 6666 in the UNIX domain, with a socket file
- of: /tmp/.ircd.
 
                         --------------------
 3.14) Z lines [OPTIONAL]

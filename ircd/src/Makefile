@@ -1,4 +1,3 @@
-# Generated automatically from Makefile.in by configure.
 #************************************************************************
 #*   IRC - Internet Relay Chat, src/Makefile
 #*   Copyright (C) 1990 Jarkko Oikarinen
@@ -19,17 +18,14 @@
 #*/
 DIRCHG=(cd ../;make)
 CC=danger will robinson
-MAKEDEPEND=/usr/X11R6/bin/makedepend
-#CC=gcc
-#normal
 
 LINTFLAGS=-hba
 
 OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
 	class.o hash.o ircd.o list.o res.o s_auth.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
-	whowas.o userload.o crule.o help.o version.o s_sock.o \
-	snprintf.o numnicks.o $(RES) $(STRTOUL)
+	whowas.o userload.o crule.o md5.o help.o version.o \
+	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO)
 
 SRC=$(OBJS:%.o=%.c)
 
@@ -59,10 +55,10 @@ ircd: $(OBJS)
 	@chmod $(IRCDMODE) ircd
 
 chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
-	 ../include/common.h crule.c chkconf.c
+	 ../include/common.h crule.c chkconf.c memory.o
 	$(CC) $(DFLAGS) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
 	$(CC) -ggdb $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
-	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o \
+	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o memory.o string.o \
 	$(LDFLAGS) $(IRCDLIBS) -o chkconf
 
 saber: $(SRC)
@@ -72,21 +68,21 @@ lint:
 	lint $(LINTFLAGS) -I../include $(SRC) | egrep -v 'sendto_|debug'
 
 parse.o: parse.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o parse.o -c parse.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o parse.o -c parse.c
 bsd.o: bsd.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o bsd.o -c bsd.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o bsd.o -c bsd.c
 dbuf.o: dbuf.c $(INCLUDES) ../include/dbuf.h
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o dbuf.o -c dbuf.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o dbuf.o -c dbuf.c
 packet.o: packet.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o packet.o -c packet.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o packet.o -c packet.c
 send.o: send.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o send.o -c send.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o send.o -c send.c
 match.o: match.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o match.o -c match.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o match.o -c match.c
 support.o: support.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o support.o -c support.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o support.o -c support.c
 userload.o: userload.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o userload.o -c userload.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o userload.o -c userload.c
 help.o: help.c $(INCLUDES)
 
 #install: all
@@ -105,19 +101,10 @@ help.o: help.c $(INCLUDES)
 clean:
 	$(RM) -f *.o *~ core ircd version.c chkconf
 
-distclean: clean
-	$(RM) -f Makefile options.h
-
-distclean: clean
+cleandir: clean
 
 depend:
-	@echo "Making dependencies, please wait..."
-	#$(MAKEDEPEND) -I${INCLUDEDIR} -I.. -I../md5 -f Makefile.in ${SRC}
-	@echo 'Making dependencies.  This takes a while'
-	@sed -n '1,/^# MakeDep here:$$/p' < Makefile.in > tmp
-	@mv -f tmp Makefile.in
-	@cc -MM -I../include -I.. -I../md5 ${SRC} >> Makefile.in
-	(cd ../;sh ./config.status)
+	makedepend -Y -I${INCLUDEDIR} ${SRC}
 
 channel.o: channel.c $(INCLUDES) ../include/channel.h
 	$(CC) $(CFLAGS) -c channel.c
@@ -139,9 +126,6 @@ s_bsd.o: s_bsd.c ../include/dbuf.h $(INCLUDES)
 
 s_auth.o: s_auth.c ../include/dbuf.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c s_auth.c
-
-s_sock.o: s_sock.c ../include/dbuf.h $(INCLUDES)
-	$(CC) $(CFLAGS) -c s_sock.c
 
 s_conf.o: s_conf.c ../include/dbuf.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c s_conf.c
@@ -181,445 +165,7 @@ crule.o: crule.c $(INCLUDES)
 help.o: help.c $(INCLUDES)
 	$(CC) $(CFLAGS) -c help.c
 
+md5.o: md5.c $(INCLUDES)
+	$(CC) $(CFLAGS) -c md5.c
+
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-# MakeDep Here:
-Config.o: Config.c
-fcrypt.o: fcrypt.c
-foo.o: foo.c
-main.o: main.c
-maskutil.o: maskutil.c
-snprintf.o: snprintf.c
-Config.o: Config.c
-bsd.o: bsd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-channel.o: channel.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/channel.h \
- ../include/hash.h ../include/h.h
-chkconf.o: chkconf.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h
-class.o: class.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/h.h
-crule.o: crule.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-dbuf.o: dbuf.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-fcrypt.o: fcrypt.c
-foo.o: foo.c
-hash.o: hash.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/hash.h ../include/h.h
-help.o: help.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h \
- ../include/msg.h
-ircd.o: ircd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/userload.h ../include/h.h
-list.o: list.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h \
- ../include/numeric.h
-list2.o: list2.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-main.o: main.c
-maskutil.o: maskutil.c
-match.o: match.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-md5.o: md5.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-numnicks.o: numnicks.c ../include/numnicks.h ../include/struct.h \
- ../include/config.h ../setup.h ../include/options.h \
- ../include/snprintf.h ../include/common.h ../include/sys.h \
- ../include/class.h ../include/dbuf.h ../include/numeric.h \
- ../include/msg.h ../include/channel.h ../include/userload.h
-packet.o: packet.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/msg.h ../include/h.h
-parse.o: parse.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/msg.h ../include/numeric.h ../include/h.h
-res.o: res.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/h.h \
- ../include/nameser.h ../include/resolv.h
-res_comp.o: res_comp.c ../include/common.h ../include/sys.h ../setup.h \
- ../include/nameser.h
-res_init.o: res_init.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/nameser.h ../include/resolv.h
-res_mkquery.o: res_mkquery.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/sys.h \
- ../include/nameser.h ../include/resolv.h
-res_skipname.o: res_skipname.c ../include/nameser.h
-s_auth.o: s_auth.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/sock.h ../include/h.h
-s_bsd.o: s_bsd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/inet.h ../include/nameser.h ../include/resolv.h \
- ../include/sock.h ../include/h.h
-s_conf.o: s_conf.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/h.h
-s_debug.o: s_debug.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/whowas.h \
- ../include/hash.h ../include/h.h
-s_err.o: s_err.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/s_err.h
-s_misc.o: s_misc.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/userload.h ../include/h.h
-s_numeric.o: s_numeric.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/h.h
-s_serv.o: s_serv.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/msg.h ../include/channel.h \
- ../include/userload.h ../include/patchlevel.h ../md5/md5_iface.h \
- ../include/h.h
-s_service.o: s_service.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/msg.h \
- ../include/channel.h ../include/userload.h ../include/h.h
-s_sock.o: s_sock.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/sock.h ../include/h.h
-s_user.o: s_user.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/msg.h ../include/channel.h \
- ../include/userload.h ../md5/md5_iface.h ../include/h.h
-send.o: send.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-snprintf.o: snprintf.c
-strtoul.o: strtoul.c ../setup.h
-support.o: support.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/struct.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h
-userload.o: userload.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/userload.h ../include/h.h
-version.o: version.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/patchlevel.h
-whowas.o: whowas.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/whowas.h ../include/h.h
-Config.o: Config.c
-bsd.o: bsd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-channel.o: channel.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/channel.h \
- ../include/hash.h ../include/h.h
-chkconf.o: chkconf.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h
-class.o: class.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/h.h
-crule.o: crule.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-dbuf.o: dbuf.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-fcrypt.o: fcrypt.c
-foo.o: foo.c
-hash.o: hash.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/hash.h ../include/h.h
-help.o: help.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h \
- ../include/msg.h
-ircd.o: ircd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/userload.h ../include/h.h
-list.o: list.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h \
- ../include/numeric.h
-list2.o: list2.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-main.o: main.c
-maskutil.o: maskutil.c
-match.o: match.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-md5.o: md5.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-numnicks.o: numnicks.c ../include/numnicks.h ../include/struct.h \
- ../include/config.h ../setup.h ../include/options.h \
- ../include/snprintf.h ../include/common.h ../include/sys.h \
- ../include/class.h ../include/dbuf.h ../include/numeric.h \
- ../include/msg.h ../include/channel.h ../include/userload.h
-packet.o: packet.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/msg.h ../include/h.h
-parse.o: parse.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/msg.h ../include/numeric.h ../include/h.h
-res.o: res.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/h.h \
- ../include/nameser.h ../include/resolv.h
-res_comp.o: res_comp.c ../include/common.h ../include/sys.h ../setup.h \
- ../include/nameser.h
-res_init.o: res_init.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/nameser.h ../include/resolv.h
-res_mkquery.o: res_mkquery.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/sys.h \
- ../include/nameser.h ../include/resolv.h
-res_skipname.o: res_skipname.c ../include/nameser.h
-s_auth.o: s_auth.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/sock.h ../include/h.h
-s_bsd.o: s_bsd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/inet.h ../include/nameser.h ../include/resolv.h \
- ../include/sock.h ../include/h.h
-s_conf.o: s_conf.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/h.h
-s_debug.o: s_debug.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/whowas.h \
- ../include/hash.h ../include/h.h
-s_err.o: s_err.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/s_err.h
-s_misc.o: s_misc.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/userload.h ../include/h.h
-s_numeric.o: s_numeric.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/h.h
-s_serv.o: s_serv.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/msg.h ../include/channel.h \
- ../include/userload.h ../include/patchlevel.h ../md5/md5_iface.h \
- ../include/h.h
-s_service.o: s_service.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/msg.h \
- ../include/channel.h ../include/userload.h ../include/h.h
-s_sock.o: s_sock.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/sock.h ../include/h.h
-s_user.o: s_user.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/msg.h ../include/channel.h \
- ../include/userload.h ../md5/md5_iface.h ../include/h.h
-send.o: send.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-snprintf.o: snprintf.c
-strtoul.o: strtoul.c ../setup.h
-support.o: support.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/struct.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h
-userload.o: userload.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/userload.h ../include/h.h
-version.o: version.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/patchlevel.h
-whowas.o: whowas.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/whowas.h ../include/h.h
-bsd.o: bsd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-dbuf.o: dbuf.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-packet.o: packet.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/msg.h ../include/h.h
-send.o: send.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-match.o: match.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h
-parse.o: parse.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/msg.h ../include/numeric.h ../include/h.h
-support.o: support.c ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/struct.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h
-channel.o: channel.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/channel.h \
- ../include/hash.h ../include/h.h
-class.o: class.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/h.h
-hash.o: hash.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/hash.h ../include/h.h
-ircd.o: ircd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/userload.h ../include/h.h
-list.o: list.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h \
- ../include/numeric.h
-res.o: res.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/h.h \
- ../include/nameser.h ../include/resolv.h
-s_auth.o: s_auth.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/sock.h ../include/h.h
-s_bsd.o: s_bsd.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/inet.h ../include/nameser.h ../include/resolv.h \
- ../include/sock.h ../include/h.h
-s_conf.o: s_conf.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/h.h
-s_debug.o: s_debug.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/whowas.h \
- ../include/hash.h ../include/h.h
-s_err.o: s_err.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/s_err.h
-s_misc.o: s_misc.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/userload.h ../include/h.h
-s_numeric.o: s_numeric.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/h.h
-s_serv.o: s_serv.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/msg.h ../include/channel.h \
- ../include/userload.h ../include/patchlevel.h ../md5/md5_iface.h \
- ../include/h.h
-s_user.o: s_user.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/msg.h ../include/channel.h \
- ../include/userload.h ../md5/md5_iface.h ../include/h.h
-s_service.o: s_service.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/numeric.h ../include/msg.h \
- ../include/channel.h ../include/userload.h ../include/h.h
-whowas.o: whowas.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/numeric.h ../include/whowas.h ../include/h.h
-userload.o: userload.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/userload.h ../include/h.h
-crule.o: crule.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h
-help.o: help.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h ../include/h.h \
- ../include/msg.h
-version.o: version.c ../include/struct.h ../include/config.h \
- ../setup.h ../include/options.h ../include/snprintf.h \
- ../include/common.h ../include/sys.h ../include/class.h \
- ../include/dbuf.h ../include/patchlevel.h
-s_sock.o: s_sock.c ../include/struct.h ../include/config.h ../setup.h \
- ../include/options.h ../include/snprintf.h ../include/common.h \
- ../include/sys.h ../include/class.h ../include/dbuf.h \
- ../include/res.h ../include/numeric.h ../include/patchlevel.h \
- ../include/sock.h ../include/h.h
-snprintf.o: snprintf.c
-numnicks.o: numnicks.c ../include/numnicks.h ../include/struct.h \
- ../include/config.h ../setup.h ../include/options.h \
- ../include/snprintf.h ../include/common.h ../include/sys.h \
- ../include/class.h ../include/dbuf.h ../include/numeric.h \
- ../include/msg.h ../include/channel.h ../include/userload.h

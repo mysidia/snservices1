@@ -17,120 +17,37 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner;\
-1992, 1993 Darren Reed";
-#endif
+#include <stdio.h>
+#include <signal.h>
 
 #include "config.h"
-#ifdef DYNIXPTX
-#include <sys/timers.h>
-#include <stddef.h>
-#endif
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
-#ifdef _WIN32
-#include <io.h>
-#else
+#include <sys/socket.h>
 
-extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
-#endif
-extern	void	outofmemory();
+#include "h.h"
 
-#ifdef NEED_STRTOKEN
-/*
-** 	strtoken.c --  	walk through a string of tokens, using a set
-**			of separators
-**			argv 9/90
-**
-*/
+#include "ircd/send.h"
 
-char *strtoken(char **save, char *str, char *fs)
+IRCD_SCCSID("@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner; 1992, 1993 Darren Reed");
+IRCD_RCSID("$Id$");
+
+int addr_cmp(const anAddress *a1, const anAddress *a2)
 {
-    char *pos = *save;	/* keep last position across calls */
-    char *tmp;
-
-    if (str)
-	pos = str;		/* new string scan */
-
-    while (pos && *pos && index(fs, *pos) != NULL)
-	pos++; 		 	/* skip leading separators */
-
-    if (!pos || !*pos)
-	return (pos = *save = NULL); 	/* string contains only sep's */
-
-    tmp = pos; 			/* now, keep position of the token */
-
-    while (*pos && index(fs, *pos) == NULL)
-	pos++; 			/* skip content of the token */
-
-    if (*pos)
-	*pos++ = '\0';		/* remove first sep after the token */
-    else
-	pos = NULL;		/* end of string */
-
-    *save = pos;
-    return(tmp);
-}
-#endif /* NEED_STRTOKEN */
-
-#if (defined(REDHAT5) || defined(REDHAT6) || defined(LINUX_GLIBC)) && defined(NEED_STRTOK) 
-#undef NEED_STRTOK
+	if (a1->addr_family != a2->addr_family)
+		return 1;
+	switch (a1->addr_family)
+	{
+		case AF_INET:
+			return bcmp(&a1->in.sin_addr, &a2->in.sin_addr, sizeof(struct in_addr));
+#ifdef AF_INET6
+		case AF_INET6:
+			return bcmp(&a1->in6.sin6_addr, &a2->in6.sin6_addr, sizeof(struct in6_addr));
 #endif
-
-#ifdef NEED_STRTOK
-/*
-** NOT encouraged to use!
-*/
-
-char *strtok(char *str, char *fs)
-{
-    static char *pos;
-
-    return strtoken(&pos, str, fs);
+	}
+	return 1;
 }
-
-#endif /* NEED_STRTOK */
-
-#ifdef NEED_STRERROR
-/*
-**	strerror - return an appropriate system error string to a given errno
-**
-**		   argv 11/90
-*/
-
-char *strerror(int err_no)
-{
-	extern	char	*sys_errlist[];	 /* Sigh... hopefully on all systems */
-	extern	int	sys_nerr;
-
-	static	char	buff[40];
-	char	*errp;
-
-	errp = (err_no > sys_nerr ? (char *)NULL : sys_errlist[err_no]);
-
-	if (errp == (char *)NULL)
-	    {
-		errp = buff;
-#ifndef _WIN32
-		(void) sprintf(errp, "Unknown Error %d", err_no);
-#else
-		switch (err_no)
-		    {
-			case WSAECONNRESET:
-				sprintf(errp, "Connection reset by peer");
-				break;
-			default:
-				sprintf(errp, "Unknown Error %d", err_no);
-				break;
-		    }
-#endif
-	    }
-	return errp;
-}
-
-#endif /* NEED_STRERROR */
 
 /*
 **	inetntoa  --	changed name to remove collision possibility and
@@ -142,17 +59,37 @@ char *strerror(int err_no)
 **	inet_ntoa --	its broken on some Ultrix/Dynix too. -avalon
 */
 
-char	*inetntoa(char *in)
+char *
+inetntoa(const anAddress *addr)
 {
-	static	char	buf[16];
-	u_char	*s = (u_char *)in;
+	static	char	buf[40];
+	u_char	*s;
 	int	a,b,c,d;
 
-	a = (int)*s++;
-	b = (int)*s++;
-	c = (int)*s++;
-	d = (int)*s++;
-	(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
+	switch (addr->addr_family)
+	{
+		case AF_INET:
+			s = (u_char *)&addr->in.sin_addr;
+			a = (int)*s++;
+			b = (int)*s++;
+			c = (int)*s++;
+			d = (int)*s++;
+			(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
+			break;
+#ifdef AF_INET6
+		case AF_INET6:
+			sprintf(buf, "%x:%x:%x:%x:%x:%x:%x:%x",
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[0]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[2]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[4]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[6]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[8]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[10]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[12]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[14]));
+			break;
+#endif
+	}
 
 	return buf;
 }
@@ -164,7 +101,8 @@ char	*inetntoa(char *in)
 **
 */
 
-int inet_netof(struct in_addr in)
+int
+inet_netof(struct in_addr in)
 {
     int addr = in.s_net;
 
@@ -180,20 +118,26 @@ int inet_netof(struct in_addr in)
 
 
 #if defined(DEBUGMODE)
-void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char *p6, char *p7, char *p8, char *p9)
+void
+dumpcore(char *fmt, ...)
 {
+	va_list ap;
+	va_list ap2;
+	char    msg[2048];
 	static	time_t	lastd = 0;
 	static	int	dumps = 0;
 	char	corename[12];
-	time_t	now;
+	time_t	now = NOW;
 	int	p;
 
-	now = NOW;
+	va_start(ap, fmt);
+	vsprintf(msg, fmt, ap);
+	va_end(ap);
 
 	if (!lastd)
 		lastd = now;
 	else if (now - lastd < 60 && dumps > 2)
-		(void)s_die();
+		(void)s_die(0);
 	if (now - lastd > 60)
 	    {
 		lastd = now;
@@ -201,7 +145,6 @@ void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char 
 	    }
 	else
 		dumps++;
-#ifndef _WIN32
 	p = getpid();
 	if (fork()>0) {
 		kill(p, 3);
@@ -212,168 +155,16 @@ void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char 
 	(void)rename("core", corename);
 	Debug((DEBUG_FATAL, "Dumped core : core.%d", p));
 	sendto_ops("Dumped core : core.%d", p);
-#endif
-	Debug((DEBUG_FATAL, msg, p1, p2, p3, p4, p5, p6, p7, p8, p9));
-	sendto_ops(msg, p1, p2, p3, p4, p5, p6, p7, p8, p9);
-		(void)s_die();
+
+	va_start(ap, fmt);
+	va_copy(ap2, ap);
+	Debug((DEBUG_FATAL, msg, ap2));
+	va_end(ap2);
+	sendto_ops(msg, ap);
+	va_end(ap);
+	(void)s_die(0);
 }
-
-static	char	*marray[20000];
-static	int	mindex = 0;
-
-#define	SZ_EX	(sizeof(char *) + sizeof(size_t) + 4)
-#define	SZ_CHST	(sizeof(char *) + sizeof(size_t))
-#define	SZ_CH	(sizeof(char *))
-#define	SZ_ST	(sizeof(size_t))
-
-char	*MyMalloc(size_t x)
-{
-	int	i;
-	char	**s;
-	char	*ret;
-
-#ifndef _WIN32
-	ret = (char *)malloc(x + (size_t)SZ_EX);
-#else
-	ret = (char *)GlobalAlloc(GPTR, x + (size_t)SZ_EX);
-#endif
-
-	if (!ret)
-	    {
-		outofmemory();
-	    }
-	bzero(ret, (int)x + SZ_EX);
-	bcopy((char *)&ret, ret, SZ_CH);
-	bcopy((char *)&x, ret + SZ_CH, SZ_ST);
-	bcopy("VAVA", ret + SZ_CHST + (int)x, 4);
-	Debug((DEBUG_MALLOC, "MyMalloc(%ld) = %#x", x, ret+8));
-	for(i = 0, s = marray; *s && i < mindex; i++, s++)
-		;
- 	if (i < 20000)
-	    {
-		*s = ret;
-		if (i == mindex)
-			mindex++;
-	    }
-	return ret + SZ_CHST;
-    }
-
-char    *MyRealloc(char *x, size_t y)
-{
-        int	l;
-	char	**s;
-	char	*ret, *cp;
-	size_t	i;
-	int	k;
-
-	x -= SZ_CHST;
-	bcopy(x, (char *)&cp, SZ_CH);
-	bcopy(x + SZ_CH, (char *)&i, SZ_ST);
-	bcopy(x + (int)i + SZ_CHST, (char *)&k, 4);
-	if (bcmp((char *)&k, "VAVA", 4) || (x != cp))
-		dumpcore("MyRealloc %#x %d %d %#x %#x", x, y, i, cp, k,
-			 NULL, NULL, NULL, NULL);
-#ifndef _WIN32
-	ret = (char *)realloc(x, y + (size_t)SZ_EX);
-#else
-	ret = (char *)GlobalReAlloc(x, y + (size_t)SZ_EX, GMEM_MOVEABLE|GMEM_ZEROINIT);
-#endif
-
-	if (!ret)
-	    {
-		outofmemory();
-	    }
-	bcopy((char *)&ret, ret, SZ_CH);
-	bcopy((char *)&y, ret + SZ_CH, SZ_ST);
-	bcopy("VAVA", ret + SZ_CHST + (int)y, 4);
-	Debug((DEBUG_NOTICE, "MyRealloc(%#x,%ld) = %#x", x, y, ret + SZ_CHST));
-	for(l = 0, s = marray; *s != x && l < mindex; l++, s++)
-		;
- 	if (l < mindex)
-		*s = NULL;
-	else if (l == mindex)
-		Debug((DEBUG_MALLOC, "%#x !found", x));
-	for(l = 0, s = marray; *s && l < mindex; l++,s++)
-		;
- 	if (l < 20000)
-	    {
-		*s = ret;
-		if (l == mindex)
-			mindex++;
-	    }
-	return ret + SZ_CHST;
-    }
-
-void	MyFree(char *x)
-{
-	size_t	i;
-	char	*j;
-	u_char	k[4];
-	int	l;
-	char	**s;
-
-	if (!x)
-		return;
-	x -= SZ_CHST;
-
-	bcopy(x, (char *)&j, SZ_CH);
-	bcopy(x + SZ_CH, (char *)&i, SZ_ST);
-	bcopy(x + SZ_CHST + (int)i, (char *)k, 4);
-
-	if (bcmp((char *)k, "VAVA", 4) || (j != x))
-		dumpcore("MyFree %#x %ld %#x %#x", x, i, j,
-			 (k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0],
-			 NULL, NULL, NULL, NULL, NULL);
-
-#undef	free
-#ifndef _WIN32
-	(void)free(x);
-#else
-	(void)GlobalFree(x);
-#endif
-#define	free(x)	MyFree(x)
-	Debug((DEBUG_MALLOC, "MyFree(%#x)",x + SZ_CHST));
-
-	for (l = 0, s = marray; *s != x && l < mindex; l++, s++)
-		;
-	if (l < mindex)
-		*s = NULL;
-	else if (l == mindex)
-		Debug((DEBUG_MALLOC, "%#x !found", x));
-}
-
-#else
-char	*MyMalloc(size_t x)
-{
-#ifndef _WIN32
-	char *ret = (char *)malloc(x);
-#else
-	char *ret = (char *)GlobalAlloc(GPTR, x);
-#endif
-
-	if (!ret)
-	    {
-		outofmemory();
-	    }
-	return	ret;
-}
-
-char	*MyRealloc(char *x, size_t y)
-{
-#ifndef _WIN32
-	char *ret = (char *)realloc(x, y);
-#else
-	char *ret = (char *)GlobalReAlloc(x, y, GMEM_MOVEABLE|GMEM_ZEROINIT);
-#endif
-
-	if (!ret)
-	    {
-		outofmemory();
-	    }
-	return ret;
-    }
-#endif
-
+#endif /* DEBUGMODE */
 
 /*
 ** read a string terminated by \r or \n in from a fd
@@ -387,7 +178,8 @@ char	*MyRealloc(char *x, size_t y)
 **	dgets(x,y,0);
 ** to mark the buffer as being empty.
 */
-int	dgets(int fd, char *buf, int num)
+int
+dgets(int fd, char *buf, int num)
 {
 	static	char	dgbuf[8192];
 	static	char	*head = dgbuf, *tail = dgbuf;

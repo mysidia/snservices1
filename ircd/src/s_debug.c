@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, ircd/s_debug.c
  *   Copyright (C) 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
@@ -18,46 +18,30 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)s_debug.c	2.30 1/3/94 (C) 1988 University of Oulu, \
-Computing Center and Jarkko Oikarinen";
-#endif
+#include <sys/resource.h>
+
+#include <errno.h>
 
 #include "struct.h"
 
-#include <errno.h>
+#include "ircd/send.h"
+
+#ifdef SOL20
+int getrusage(int who, struct rusage *rusage);
+#endif
+
+IRCD_SCCSID("@(#)s_debug.c	2.30 1/3/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
+IRCD_RCSID("$Id$");
 
 /*
  * Option string.  Must be before #ifdef DEBUGMODE.
  */
 char	serveropts[] = {
-#ifdef	SENDQ_ALWAYS
-'A',
-#endif
-#ifdef	CHROOTDIR
-'c',
-#endif
-#ifdef	CMDLINE_CONFIG
-'C',
-#endif
-#ifdef	DO_ID
-'d',
-#endif
 #ifdef	DEBUGMODE
 'D',
 #endif
-#ifdef	NOTE_FORWARDER
-'f',
-#endif
 #ifdef	HUB
 'H',
-#endif
-'i', /* SHOW_INVISIBLE_LUSERS */
-#ifndef	NO_DEFAULT_INVISIBLE
-'I',
-#endif
-#ifdef	M4_PREPROC
-'m',
 #endif
 #ifdef	IDLE_FROM_MSG
 'M',
@@ -71,26 +55,8 @@ char	serveropts[] = {
 #ifdef NOSPOOF
 'n',
 #endif
-#ifdef	NPATH
-'N',
-#endif
-#ifdef	IRCII_KLUDGE
-'u',
-#endif
-#ifdef	VALLOC
-'V',
-#endif
-#ifdef	_WIN32
-'W',
-#endif
-#ifdef	UNIXPORT
-'X',
-#endif
 #ifdef	USE_SYSLOG
 'Y',
-#endif
-#ifdef	V28PlusOnly
-'8',
 #endif
 '\0'};
 
@@ -99,103 +65,35 @@ char	serveropts[] = {
 #include "sys.h"
 #include "whowas.h"
 #include "hash.h"
-#ifndef _WIN32
 #include <sys/file.h>
-#endif
-#ifdef HPUX
-#include <fcntl.h>
-#endif
-#if !defined(ULTRIX) && !defined(SGI) && !defined(sequent) && \
-    !defined(__convex__) && !defined(_WIN32)
-# include <sys/param.h>
-#endif
-#ifdef HPUX
-# include <sys/syscall.h>
-# define getrusage(a,b) syscall(SYS_GETRUSAGE, a, b)
-#endif
-#ifdef GETRUSAGE_2
-# ifdef SOL20
-#  include <sys/time.h>
-#  ifdef RUSAGEH
-#   include <sys/rusage.h>
-#  endif
-# endif
-# include <sys/resource.h>
-#else
-#  ifdef TIMES_2
-#   include <sys/times.h>
-#  endif
-#endif
-#ifdef PCS
-# include <time.h>
-#endif
-#ifdef HPUX
-#include <unistd.h>
-#ifdef DYNIXPTX
-#include <sys/types.h>
-#include <time.h>
-#endif
-#endif
+#include <sys/param.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include "h.h"
-
-#ifndef ssize_t
-#define ssize_t unsigned int
-#endif
 
 #ifdef DEBUGMODE
 static	char	debugbuf[1024];
 
-#ifndef	USE_VARARGS
-/*VARARGS2*/
-void	debug(level, form, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
-int	level;
-char	*form, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10;
+void
+debug(int level, char *form, ...)
 {
-# ifndef _WIN32
-	int	err = errno;
-# else
-	int	err = WSAGetLastError();
-# endif
-#else
-void	debug(level, form, va_alist)
-int	level;
-char	*form;
-va_dcl
-{
-	va_list	vl;
-# ifndef _WIN32
-	int	err = errno;
-# else
-	int	err = WSAGetLastError();
-# endif
+	va_list	ap;
+	int err = errno;
 
-	va_start(vl);
-#endif
+	va_start(ap, form);
 
-	if ((debuglevel >= 0) && (level <= debuglevel))
-	    {
-#ifndef	USE_VARARGS
-		(void)sprintf(debugbuf, form,
-				p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
-#else
-		(void)vsprintf(debugbuf, form, vl);
-#endif
-#ifndef _WIN32
-		if (local[2])
-		    {
+	if ((debuglevel >= 0) && (level <= debuglevel)) {
+		(void)vsprintf(debugbuf, form, ap);
+
+		if (local[2]) {
 			local[2]->sendM++;
 			local[2]->sendB += strlen(debugbuf);
-		    }
+		}
 		(void)fprintf(stderr, "%s", debugbuf);
 		(void)fputc('\n', stderr);
-	    }
+	}
 	errno = err;
-#else
-		strcat(debugbuf, "\r");
-		Cio_Puts(hCio, debugbuf, strlen(debugbuf));
-	    }
-	WSASetLastError(err);
-#endif
+	va_end(ap);
 }
 
 /*
@@ -207,8 +105,6 @@ va_dcl
  */
 void	send_usage(aClient *cptr, char *nick)
 {
-
-#ifdef GETRUSAGE_2
 	struct	rusage	rus;
 	time_t	secs, rup;
 #ifdef	hz
@@ -218,21 +114,14 @@ void	send_usage(aClient *cptr, char *nick)
 #  define hzz HZ
 # else
 	int	hzz = 1;
-#  ifdef HPUX
-	hzz = (int)sysconf(_SC_CLK_TCK);
-#  endif
 # endif
 #endif
 
-	if (getrusage(RUSAGE_SELF, &rus) == -1)
-	    {
-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
-		extern char *sys_errlist[];
-#endif
+	if (getrusage(RUSAGE_SELF, &rus) == -1) {
 		sendto_one(cptr,":%s NOTICE %s :Getruseage error: %s.",
-			   me.name, nick, sys_errlist[errno]);
+			   me.name, nick, strerror(errno));
 		return;
-	    }
+	}
 	secs = rus.ru_utime.tv_sec + rus.ru_stime.tv_sec;
 	rup = NOW - me.since;
 	if (secs == 0)
@@ -258,45 +147,7 @@ void	send_usage(aClient *cptr, char *nick)
 	sendto_one(cptr, ":%s %d %s :Signals %d Context Vol. %d Invol %d",
 		   me.name, RPL_STATSDEBUG, nick, rus.ru_nsignals,
 		   rus.ru_nvcsw, rus.ru_nivcsw);
-#else
-# ifdef TIMES_2
-	struct	tms	tmsbuf;
-	time_t	secs, mins;
-	int	hzz = 1, ticpermin;
-	int	umin, smin, usec, ssec;
 
-#  ifdef HPUX
-	hzz = sysconf(_SC_CLK_TCK);
-#  endif
-	ticpermin = hzz * 60;
-
-	umin = tmsbuf.tms_utime / ticpermin;
-	usec = (tmsbuf.tms_utime%ticpermin)/(float)hzz;
-	smin = tmsbuf.tms_stime / ticpermin;
-	ssec = (tmsbuf.tms_stime%ticpermin)/(float)hzz;
-	secs = usec + ssec;
-	mins = (secs/60) + umin + smin;
-	secs %= hzz;
-
-	if (times(&tmsbuf) == -1)
-	    {
-		sendto_one(cptr,":%s %d %s :times(2) error: %s.",
-#  ifndef _WIN32
-			   me.name, RPL_STATSDEBUG, nick, strerror(errno));
-#  else
-			   me.name, RPL_STATSDEBUG, nick,
-				   strerror(WSAGetLastError()));
-#  endif
-		return;
-	    }
-	secs = tmsbuf.tms_utime + tmsbuf.tms_stime;
-
-	sendto_one(cptr,
-		   ":%s %d %s :CPU Secs %d:%d User %d:%d System %d:%d",
-		   me.name, RPL_STATSDEBUG, nick, mins, secs, umin, usec,
-		   smin, ssec);
-# endif
-#endif
 	sendto_one(cptr, ":%s %d %s :Reads %d Writes %d",
 		   me.name, RPL_STATSDEBUG, nick, readcalls, writecalls);
 	sendto_one(cptr, ":%s %d %s :DBUF alloc %d blocks %d",
@@ -309,7 +160,6 @@ void	send_usage(aClient *cptr, char *nick)
 		   ":%s %d %s :<128 %d <256 %d <512 %d <1024 %d >1024 %d",
 		   me.name, RPL_STATSDEBUG, nick,
 		   writeb[5], writeb[6], writeb[7], writeb[8], writeb[9]);
-	return;
 }
 #endif
 
@@ -481,13 +331,7 @@ void	count_memory(aClient *cptr, char *nick)
 
 	sendto_one(cptr, ":%s %d %s :Total: ww %d ch %d cl %d co %d db %d",
 		   me.name, RPL_STATSDEBUG, nick, totww, totch, totcl, com, db);
-#ifndef _WIN32
 	sendto_one(cptr, ":%s %d %s :TOTAL: %d sbrk(0)-etext: %u",
 		   me.name, RPL_STATSDEBUG, nick, tot,
 		   (u_int)((char *)sbrk((size_t)0)-(char *)sbrk0));
-#else
-	sendto_one(cptr, ":%s %d %s :TOTAL: %d",
-		   me.name, RPL_STATSDEBUG, nick, tot);
-#endif
-	return;
 }
