@@ -188,9 +188,8 @@ char	*get_client_name(aClient *sptr, int showip)
   {
       if (showip && sptr->sock != NULL)
       {
-	  sprintf(nbuf, "%s[%s@%s]",
+	  sprintf(nbuf, "%s[%s]",
 		  sptr->name,
-		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
 		  address_tostring(sptr->sock->raddr, 1));
       } 
       else
@@ -219,9 +218,8 @@ char	*get_client_name_mask(aClient *sptr, int showip, int showport, int mask)
   {
       if (showip && sptr->sock != NULL)
       {
-	  sprintf(nbuf, "%s[%s@%s]",
+	  sprintf(nbuf, "%s[%s]",
 		  sptr->name,
-		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
 		  mask ? genHostMask(address_tostring(sptr->sock->raddr, 0)) : address_tostring(sptr->sock->raddr, showport));
       }
       else
@@ -248,8 +246,7 @@ char	*get_client_host(aClient *cptr)
   if (!cptr->hostp)
     return get_client_name(cptr, FALSE);
 
-  sprintf(nbuf, "%s[%-.*s@%-.*s]", cptr->name, USERLEN,
-		(ClientFlags(cptr) & FLAGS_GOTID) ? cptr->username : "",
+  sprintf(nbuf, "%s[%-.*s]", cptr->name,
 		HOSTLEN, cptr->hostp->h_name);
 
   return nbuf;

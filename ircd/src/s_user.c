@@ -349,7 +349,6 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
   char stripuser[USERLEN+1], userbad[USERLEN*2+1], olduser[USERLEN+1];
   char *u1 = stripuser, *u2, *ubad = userbad;
 #endif
-  short   oldstatus = sptr->status;
   anUser	*user = sptr->user;
   aConfItem	*sconf;
   int	i;
@@ -532,9 +531,6 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 			 ns_down ? ", when services become available." : "." );
 	    }
 	}
-
-      if (oldstatus == STAT_MASTER && MyConnect(sptr))
-	m_oper(&me, sptr, 1, parv);
     }
   else
     if (user->username != username)

@@ -60,8 +60,6 @@ typedef	struct	SMode	Mode;
 typedef struct	Watch	aWatch;
 typedef struct  ListOptions     LOpts;
 
-typedef struct  CloneItem aClone;
-
 #ifdef NEED_U_INT32_T
 typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #endif
@@ -71,8 +69,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #include "dbuf.h"	/* THIS REALLY SHOULDN'T BE HERE!!! --msa */
 #endif
 
-/*#define NETWORK                 "SorceryNet"*/
-/*#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"*/
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
@@ -111,7 +107,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	MAXSILES	5
 #define	MAXSILELENGTH	128
 
-#define	USERHOST_REPLYLEN	(NICKLEN+HOSTLEN+USERLEN+5)
 #define MAXTIME			0x7FFFFFFF /* largest thing time() returns, when time() exceeds this,
                                            we're dead meat as far as hurt timing goes:/  */
 #define HELPOP_CHAN     "#HelpOps"
@@ -128,9 +123,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	BOOT_DEBUG	0x0000001
 #define	BOOT_FORK	0x0000002
 
-#define	STAT_AUTHSERV	-7	/* Server waiting identd check */
-#define	STAT_LOG	-6	/* logfile for -x */
-#define	STAT_MASTER	-5	/* Local ircd master before identification */
+#define	STAT_LOG	-5	/* logfile for -x */
 #define	STAT_CONNECTING	-4
 #define	STAT_HANDSHAKE	-3
 #define	STAT_ME		-2
@@ -146,21 +139,17 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	IsConnecting(x)		((x)->status == STAT_CONNECTING)
 #define	IsHandshake(x)		((x)->status == STAT_HANDSHAKE)
 #define	IsMe(x)			((x)->status == STAT_ME)
-#define	IsUnknown(x)		((x)->status == STAT_UNKNOWN || \
-				 (x)->status == STAT_MASTER)
+#define	IsUnknown(x)		((x)->status == STAT_UNKNOWN)
 #define	IsServer(x)		((x)->status == STAT_SERVER)
 #define	IsClient(x)		((x)->status == STAT_CLIENT)
-#define	IsAuthServ(x)		((x)->status == STAT_AUTHSERV)
 #define	IsLog(x)		((x)->status == STAT_LOG)
 
-#define	SetMaster(x)		((x)->status = STAT_MASTER)
 #define	SetConnecting(x)	((x)->status = STAT_CONNECTING)
 #define	SetHandshake(x)		((x)->status = STAT_HANDSHAKE)
 #define	SetMe(x)		((x)->status = STAT_ME)
 #define	SetUnknown(x)		((x)->status = STAT_UNKNOWN)
 #define	SetServer(x)		((x)->status = STAT_SERVER)
 #define	SetClient(x)		((x)->status = STAT_CLIENT)
-#define	SetAuthServ(x)		((x)->status = STAT_AUTHSERV)
 #define	SetLog(x)		((x)->status = STAT_LOG)
 
 /* the lovely little bits used in flags  the defines are to shorten lengths
@@ -202,26 +191,19 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	FLAGS_PINGSENT		BIT01 /* Unreplied ping was sent */
 #define	FLAGS_DEADSOCKET	BIT02 /* Local socket is dead--Exiting soon */
 #define	FLAGS_KILLED		BIT03 /* kill message sent, no QUIT needed */
-#define	FLAGS_BLOCKED		BIT04 /* socket is in a blocked condition */
-/* bit 5 unused */
-#define	FLAGS_CLOSING		BIT06 /* set when closing to suppress errors */
-#define	FLAGS_LISTEN		BIT07 /* used to mark clients which we listen() on */
-#define	FLAGS_CHKACCESS		BIT08 /* ok to check clients access if set */
-#define	FLAGS_DOINGDNS		BIT09 /* client is waiting for a DNS response */
-#define	FLAGS_AUTH		BIT10 /* client is waiting on rfc931 auth/ident response */
-#define	FLAGS_WRAUTH		BIT11 /* set if we havent written to ident server */
-#define	FLAGS_LOCAL		BIT12 /* set for local clients */
-#define	FLAGS_GOTID		BIT13 /* successful ident lookup achieved */
-#define	FLAGS_DOID		BIT14 /* I-lines say must use ident return */
-#define	FLAGS_NONL		BIT15 /* No \n in buffer */
-#define FLAGS_TS8		BIT16 /* TS8 timestamping flag [who knows what it does] */
-#define FLAGS_ULINE		BIT17 /* User/server is considered U-lined */
-#define FLAGS_SQUIT		BIT18 /* Server has been /squit by an oper */
-#define FLAGS_HURT		BIT19 /* if ->hurt is set, user is silenced */
-/* bit20 unused */
-#define FLAGS_GOT_VERSION	BIT21 /* Ctcp version reply received */
-#define FLAGS_GOT_SPOOFCODE	BIT22 /* Is not spoof */
-#define FLAGS_SENT_SPOOFCODE	BIT23
+#define	FLAGS_CLOSING		BIT04 /* set when closing to suppress errors */
+#define	FLAGS_LISTEN		BIT05 /* used to mark clients which we listen() on */
+#define	FLAGS_CHKACCESS		BIT06 /* ok to check clients access if set */
+#define	FLAGS_DOINGDNS		BIT07 /* client is waiting for a DNS response */
+#define	FLAGS_LOCAL		BIT08 /* set for local clients */
+#define	FLAGS_NONL		BIT09 /* No \n in buffer */
+#define FLAGS_TS8		BIT10 /* TS8 timestamping flag [who knows what it does] */
+#define FLAGS_ULINE		BIT11 /* User/server is considered U-lined */
+#define FLAGS_SQUIT		BIT12 /* Server has been /squit by an oper */
+#define FLAGS_HURT		BIT13 /* if ->hurt is set, user is silenced */
+#define FLAGS_GOT_VERSION	BIT14 /* Ctcp version reply received */
+#define FLAGS_GOT_SPOOFCODE	BIT15 /* Is not spoof */
+#define FLAGS_SENT_SPOOFCODE	BIT16
 
 /* usermode flags
      NOTE: these are still held in sptr->flags */
@@ -250,7 +232,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 		         U_REGISTERED|U_REGONLY|U_VERIFIED|U_VERONLY)
 /* list of all usermodes except those that are in send_umodes*/
 #define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
-#define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
 /*
  * Default mode(s) to set on new user connections.
@@ -304,10 +285,6 @@ enum forbidden_result {
 #define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)  /* DNS check pending */
 #define	ClearDNS(x)		((x)->flags &= ~FLAGS_DOINGDNS) /* Yay, finished the DNS check */
 
-#define	DoingAuth(x)		((x)->flags & FLAGS_AUTH)
-#define SetAuth(x)		((x)->flags |= FLAGS_AUTh)
-#define	ClearAuth(x)		((x)->flags &= ~FLAGS_AUTH)
-
 #define	NoNewLine(x)		((x)->flags & FLAGS_NONL)
 #define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x)) /* Can this client see cool messages? */
 #define IsULine(cptr,sptr)      (ClientFlags(sptr) & FLAGS_ULINE)
@@ -358,8 +335,6 @@ enum forbidden_result {
 #define IsVerOnly(x)            (ClientUmode(x) & U_VERONLY)
 #define SetVerOnly(x)           (ClientUmode(x) |= U_VERONLY)
 #define ClearVerOnly(x)         (ClientUmode(x) &= ~U_VERONLY)
-
-
 
 #define	IsInvisible(x)		(ClientUmode(x) & U_INVISIBLE)
 #define	SetInvisible(x)		(ClientUmode(x) |= U_INVISIBLE)
@@ -450,43 +425,6 @@ enum forbidden_result {
 #else
 #define	OPCanModeHack(x) (0)
 #endif
-
-/********************************************************************
- * help system flags/structs
- */
-
-typedef struct help_struct {
-	int flags;
-	int ndesc;
-	int naliases;
-	char *command;
-	char *usage;
-	char **desc;
-	char **aliases;
-} aHelptopic;
-
-
-#define H_NICK    0x00001     /* NickServ command */
-#define H_MEMO    0x00002     /* MemoServ command */
-#define H_CHAN    0x00004     /* ChanServ command */
-#define H_OSERV   0x00008     /* OperServ Command */
-#define H_ISERV   0x00010     /* InfoServ Command */
-#define H_IRC     0x00020     /* non-services command/help */
-#define H_GS	  0x00040     /* GameServ Command */
-
-#define H_AOP     0x00100     /* requires AOP/higher access*/
-#define H_SOP     0x00200     /* requires SOP/higher access*/
-#define H_FOUNDER 0x00400     /* requires founder access*/
-
-#define H_ACC3    0x01000     /* requires ACC3 */
-
-#define H_HELPOP  0x10000     /* only helpops can need this help */
-#define H_OPER    0x20000     /* only opers can need this help */
-#define H_GOPER   0x40000     /* only global opers can need this help */
-
-#define H_TOPIC   0x100000    /* help on a topic, not a command */
-#define H_PAGE    0x200000    /* a raw help page */
-
 
 #define OPSetRehash(x)	((x)->oflag |= OFLAG_REHASH)
 #define OPSetDie(x)	((x)->oflag |= OFLAG_DIE)
@@ -894,13 +832,6 @@ struct Channel	{
  */
 #define	MODE_WPARAS	(MODE_CHANOP|MODE_VOICE|MODE_BAN|MODE_KEY|MODE_LIMIT)
 
-/*
- * Undefined here, these are used in conjunction with the above modes in
- * the source.
-#define	MODE_DEL       0x40000000
-#define	MODE_ADD       0x80000000
- */
-
 /* Lifted somewhat from Undernet code --Rak */
 
 #define IsSendable(x)           (DBufLength(&x->sendQ) < 2048)
@@ -973,8 +904,6 @@ extern	int	schecksfd;
 /* misc defines */
 
 #define	FLUSH_BUFFER	-2
-#define	UTMP		"/etc/utmp"
-#define	COMMA		","
 
 /* IRC client structures */
 
