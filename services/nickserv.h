@@ -62,8 +62,8 @@ void delTimedGhost(char *);
 #define NISONLINE 0x0008	///< Is client online? (huh?)
 #define NISAHURT  0x0010	///< Is client ahurt?
 #define NOISMASK  0x0020	///< Is client +m ?
-
 #define NCNICK    0x1000	///< CNICK sent?
+#define NOISREG   0x2000
 
 /* nickname flag slots, 5 open */
 #define NKILL		 0x00001 ///< Enforcement
@@ -93,6 +93,8 @@ void delTimedGhost(char *);
 #define NVERIFIED	 0x200000
 #define NNOVERIFY	 0x400000
 #define NVERIFY_SENT     0x800000
+#define NNETWORKNICK     0x1000000 ///< Nick reserved for network use
+
 
 /* users opflags */
 #define OROOT     0x000001	/*!< Services Root DONT CHANGE*/
