@@ -521,7 +521,7 @@ ping_timeout:
 static int
 bad_command(void)
 {
-	(void)printf("Usage: ircd [-s][-f] [-x loglevel] [-v]\n");
+	(void)printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
 	(void)printf("Server not started\n\n");
 	return (-1);
 }
@@ -595,9 +595,14 @@ main(int argc, char **argv)
 		}
 
 		switch (flag) {
-		case 'f':
+		case 'F':
 			bootopt &= ~BOOT_FORK;
 			fprintf(stderr, "Will not fork()");
+			break;
+
+		case 'f':
+			configfile = p;
+			fprintf(stderr, "Config[%s] ", configfile);
 			break;
 
 		case 's':
