@@ -4543,8 +4543,8 @@ CCMD(cs_drop)
 				ChanServ, from);
 
 		sSend(":%s NOTICE %s :You may contact a services operator for assistance. "
-				      "see /motd services.*",
-				ChanServ, from);
+				      "see /motd %s",
+				ChanServ, from, InfoServ);
 		chanlog->log(nick, CS_DROP, args[1], LOGF_FAIL);
 		return RET_EFAULT;
 	}
