@@ -1184,8 +1184,8 @@ nickkilldone:
 			   lp->value.chptr->chname);
 	        return 0;
 	      }
-	      sendto_prefix_one(sptr, sptr, ":%s NICK :%s", parv[0], nick);
-	    }
+            }
+	    sendto_prefix_one(sptr, sptr, ":%s NICK :%s", parv[0], nick);
 	  }
 	  
 	  /*
