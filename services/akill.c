@@ -55,7 +55,7 @@
 #define NUM_AKTYPE_INDICES 4
 
 struct _akill_mail_exclude {
-	const char* nick;
+	char* nick;
 	int count_removes[NUM_AKTYPE_INDICES];
 	int count_adds[NUM_AKTYPE_INDICES];
 
@@ -64,7 +64,7 @@ struct _akill_mail_exclude {
 
 typedef struct _akill_mail_exclude SetterExclude;
 
-static LIST_HEAD(, _akill_mail_exclude)  dontMailAkills;
+static LIST_HEAD(, _akill_mail_exclude)  mailExcludedSetters;
 
 /*******************************************************************/
 
@@ -131,6 +131,38 @@ int IpcConnectType::sendAkills(int akillType, const char *searchText)
 		}
 	}
 	return x;
+}
+
+/**
+ * \brief Excluded the given nick from akill mailings to ops@ and kline@
+ * \param nick -- The setter to be excluded, non-null zero terminated char array
+ */
+void makeSetterExcludedFromKlineMails(const char* nick)
+{
+	SetterExclude* se;
+	int i;
+	
+	if (nick == 0 || !*nick)
+		return;
+
+	// Never list one twice
+	for(se = LIST_FIRST(&mailExcludedSetters); se; se = LIST_NEXT(se, dm_lst))
+	{
+		if (se->nick && !str_cmp(se->nick, nick))
+			return;
+	}
+
+	se = (SetterExclude*)oalloc(sizeof(SetterExclude));
+	LIST_ENTRY_INIT(se, dm_lst);
+	se->nick = (char *)oalloc(strlen(nick)+1);
+	strcpy(se->nick, nick);
+
+	for(i = 0; i < NUM_AKTYPE_INDICES; i++) {
+		se->count_adds[i] = 0;
+		se->count_removes[i] = 0;
+	}
+
+	LIST_INSERT_HEAD(&mailExcludedSetters, se, dm_lst);
 }
 
 /**
@@ -591,7 +623,7 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 				ctime(&(time)));
 	}
 
-	for(se = LIST_FIRST(&dontMailAkills); se; se = LIST_NEXT(se, dm_lst))
+	for(se = LIST_FIRST(&mailExcludedSetters); se; se = LIST_NEXT(se, dm_lst))
 	{
 		if (se->nick && !str_cmp(se->nick, setby))
 		{
@@ -683,7 +715,7 @@ const char *aktype_str(int type, int which)
 void timed_akill_queue(char *)
 {
 	char buf1[1024], buf2[1024];
-	SetterExclude* se = LIST_FIRST(&dontMailAkills);
+	SetterExclude* se = LIST_FIRST(&mailExcludedSetters);
 	int i, l;
 
 #ifdef AKILLMAILTO
@@ -740,8 +772,8 @@ void timed_akill_queue(char *)
 				}
 
 				for(i = 0 ; i < NUM_AKTYPE_INDICES; i++) {
-					l += sprintf(buf2 + l, " %-6.6d", se->count_adds[i]);
-					se->count_adds[i] = 0;
+					l += sprintf(buf2 + l, " %-6.6d", se->count_removes[i]);
+					se->count_removes[i] = 0;
 				}
 				
 				ops_email.body.add(buf2);
