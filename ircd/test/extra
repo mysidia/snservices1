@@ -1,0 +1,8 @@
+
+O:*:bXaw9wU1lQubY:test:O*:10
+
+H:*::services.sorcery.net
+U:services.sorcery.net:*:*
+C:127.0.0.1:zoink:services.sorcery.net
+N:127.0.0.1:zoink:services.sorcery.net
+
