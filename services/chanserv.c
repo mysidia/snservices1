@@ -3394,6 +3394,7 @@ CCMD(cs_register)
 	chan->reg = reg;
 	strcpy(reg->name, chan->name);
 	reg->founderId = nick->reg->regnum;
+	reg->flags |= CENCRYPT;
 	pw_enter_password(args[2], reg->password, ChanGetEnc(reg));
 
 	reg->timereg = CTime;
