@@ -93,11 +93,8 @@ host_triplet = @host@
 AR = @AR@
 CPPUNIT_PREFIX = @CPPUNIT_PREFIX@
 CXX = @CXX@
-HAVE_LIB = @HAVE_LIB@
 LD = @LD@
 LEX = @LEX@
-LIB = @LIB@
-LTLIB = @LTLIB@
 MAKEINFO = @MAKEINFO@
 MD5_DEF = @MD5_DEF@
 MD5_LIB = @MD5_LIB@
@@ -119,7 +116,8 @@ HELP_PATH = @HELP_PATH@
 
 DEFINES = 
 
-CFLAGS = @CFLAGS@ $(DEFS) -Wall $(WFLAGS) -g
+CFLAGS = @CFLAGS@ $(DEFS) $(WFLAGS) -g
+CXXFLAGS = $(CFLAGS)
 
 DEFAULT_INCLUDES = 
 
@@ -129,7 +127,7 @@ LIBS = @LIBS@ ${MD5_LIB}
 LDFLAGS = @LDFLAGS@
 
 # Warning flags
-WFLAGS = -Wpointer-arith -Wcast-qual -Wcast-align -Wmissing-declarations -Woverloaded-virtual -Winline 
+WFLAGS = -Wall -Wpointer-arith -Wcast-qual -Wcast-align -Woverloaded-virtual -Winline 
 
 
 services_SOURCES = akill.c chanserv.c clone.c db.c hash.c help.c main.c parse.cc memoserv.c nickserv.c operserv.c server.c stuff.c timer.c infoserv.c credits.c gameserv.c passwd.c interp.cc log.cc email.cc string.cc conf.c mass.c signal.c chantrig.c sipc.cc timestr.cc timestr.h
@@ -165,7 +163,6 @@ string.o conf.o mass.o signal.o chantrig.o sipc.o timestr.o
 services_LDADD = $(LDADD)
 services_DEPENDENCIES = 
 services_LDFLAGS = 
-CXXFLAGS = @CXXFLAGS@
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@
@@ -179,7 +176,7 @@ configure.in install-sh missing mkinstalldirs
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
+TAR = tar
 GZIP_ENV = --best
 DEP_FILES =  .deps/akill.P .deps/chanserv.P .deps/chantrig.P \
 .deps/clone.P .deps/conf.P .deps/credits.P .deps/db.P .deps/email.P \
