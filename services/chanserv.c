@@ -4538,6 +4538,17 @@ CCMD(cs_drop)
 		return RET_EFAULT;
 	}
 
+	if ((tmp->flags & (CMARK | CHOLD)) && !isRoot(nick)) {
+		sSend(":%s NOTICE %s :Sorry, dropping this channel is not allowed.",
+				ChanServ, from);
+
+		sSend(":%s NOTICE %s :You may contact a services operator for assistance. "
+				      "see /motd services.*",
+				ChanServ, from);
+		chanlog->log(nick, CS_DROP, args[1], LOGF_FAIL);
+		return RET_EFAULT;
+	}
+
 	if (isFounder(tmp, nick) == 0) {
 		sSend(":%s NOTICE %s :Access denied", ChanServ, from);
 		return RET_NOPERM;
@@ -6170,6 +6181,11 @@ CCMD(cs_getpass)
 		return RET_NOTARGET;
 	}
 
+	if ((chan->flags & CMARK) && !opFlagged(nick, OVERRIDE)) {
+		sSend(":%s NOTICE %s :%s is marked: use /OperServ override chanserv getpass ...  to override", ChanServ, from, chan->name);
+		return RET_FAIL;
+	}
+
 	regnick = chan->founderId.getNickItem();
 
 	if (regnick == NULL) {
@@ -6644,7 +6660,7 @@ CCMD(cs_delete)
 		sSend(":%s GLOBOPS :%s tried to use DROP command on %s", ChanServ,
 			  from, args[1]);
 		chanlog->log(nick, CS_DELETE, args[1], LOGF_FAIL | LOGF_OPER);
-		return RET_OK_DB;
+		return RET_EFAULT;
 	}
 
 
@@ -6661,8 +6677,18 @@ CCMD(cs_delete)
 		sSend
 			(":%s NOTICE %s :That is a held channel.",
 			 ChanServ, from);
-		sSend(":%s GLOBOPS :%s tried to use DROP command on %s", ChanServ,
+		sSend(":%s GLOBOPS :%s tried to use DROP command on %s (held channel)", ChanServ,
 			  from, args[1]);
+		chanlog->log(nick, CS_DELETE, args[1], LOGF_FAIL | LOGF_OPER);
+		return RET_EFAULT;
+	}
+
+	if ((reg->flags & CMARK) && !opFlagged(nick, OROOT)) {
+		sSend
+			(":%s NOTICE %s :That is a marked channel.",
+			 ChanServ, from);
+		sSend(":%s GLOBOPS :%s tried to use DROP command on %s (marked channel)", ChanServ,
+				from, args[1]);
 		chanlog->log(nick, CS_DELETE, args[1], LOGF_FAIL | LOGF_OPER);
 		return RET_OK_DB;
 	}
@@ -7060,6 +7086,18 @@ CCMD(cs_dmod)
 	if (!chan) {
 		sSend(":%s NOTICE %s :%s is not registered", ChanServ, from, args[1]);
 		return RET_NOTARGET;
+	}
+
+	if (is_sn_chan(chan->name) && !opFlagged(nick, OOPER | OROOT | OVERRIDE)) {
+		sSend(":%s NOTICE %s :Please contact a services root, to use dmod on a "
+			" held channel.", ChanServ, from);
+		chanlog->log(nick, CS_DMOD, chan->name, LOGF_FAIL | LOGF_OPER);
+		return RET_NOPERM;
+	}
+
+	if (!isRoot(nick) && (chan->flags & (CHOLD|CMARK))) {
+		sSend(":%s NOTICE %s :Error: %s is held or marked.", ChanServ, from, args[1]);
+		return RET_NOPERM;
 	}
 
 	rshift_argv(args, i, numargs);

@@ -4074,7 +4074,8 @@ NCMD(ns_ghost)
 				2
 			}};
 
-			if (Valid_md5key(args[2], auth_info, tmp->nick, tmp->password, NickGetEnc(tmp)) == 0)
+			if (Valid_md5key(args[2], auth_info, 
+				tmp->nick, tmp->password, NickGetEnc(tmp)) == 0)
 			{
 				sSend(":%s NOTICE %s :Invalid MD5 key.", NickServ, nick->nick);
 				nick->auth_cookie = 0;
@@ -4089,6 +4090,8 @@ NCMD(ns_ghost)
 			PutReply(NickServ, nick, ERR_BADPW_NICK_1ARG, args[1], 0, 0);
 			return RET_BADPW;
 		}
+
+		/* Password ok, fall through */
 	}
 	else
 	{
@@ -4098,9 +4101,11 @@ NCMD(ns_ghost)
 			PutReply(NickServ, nick, ERR_NOACCESS, 0, 0, 0);
 			return RET_NOPERM;
 		}			
+
+		/* Access ok, fall through */
 	}
 
-	/* From now on, access assumed */
+	/* From now on, access is assumed */
 
 	if (getGhost(args[1])) {
 		sSend(":%s NOTICE %s :%s has been ghosted", NickServ,
@@ -4231,6 +4236,8 @@ NCMD(ns_recover)
 
 			return RET_BADPW;
 		}
+
+		/* Password is ok then : fall through */
 	}
 
 #ifndef ALLOW_PASSLESS_RECOVER
@@ -4298,7 +4305,8 @@ NCMD(ns_release)
 		return RET_SYNTAX;
 	}
 
-	if (isGhost(args[1])) {
+	if (isGhost(args[1])) 
+	{
 		tmp = getRegNickData(args[1]);
 		/* I don't know if this is more readable -- but it helped me */
 
@@ -4358,7 +4366,7 @@ NCMD(ns_release)
 				  NickServ, from, args[1]);
 		}
 		return RET_OK;
-	}
+	} /* if isGhost(args[1]) */
 
 	sSend(":%s NOTICE %s :Services are not currently holding that nick.",
 		  NickServ, from);
@@ -5084,6 +5092,13 @@ NCMD(ns_getpass)
 			  args[nick_arg]);
 		return RET_EFAULT;
 	}
+
+        if ((targetNick->flags & NMARK) && !opFlagged(nick, OVERRIDE)) {
+		sSend(":%s NOTICE %s :%s is marked: use /OperServ override nickserv getpass ...  to override", NickServ, from, targetNick->nick);
+		return RET_FAIL;
+	}
+
+	
 	if (!key_transfer && (strncmp(targetNick->email, "(none)", 6) == 0
 		|| targetNick->email[0] == 0)) {
 		sSend(":%s NOTICE %s :Nick %s has not specified an e-mail address",
