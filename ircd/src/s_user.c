@@ -352,7 +352,8 @@ canonize(char *buffer)
 **	   nick from local user or kill him/her...
 */
 
-static int register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
+static int
+register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 {
   aConfItem *aconf;
   char *parv[3], *tmpstr;
@@ -651,15 +652,18 @@ static void
 NospoofText(aClient* acptr)
 {
 #ifdef NOSPOOF
+	  char* auth_name = "AUTH";
+
+	  if (!BadPtr(acptr->name))
+		  auth_name = acptr->name;
+	  
 	  sendto_one(acptr, "NOTICE %s :*** If you are having problems"
 		     " connecting due to ping timeouts, please"
                      " type /notice %X nospoof now.",
-		     acptr->name, acptr->nospoof);
+		     auth_name, acptr->nospoof);
 	  sendto_one(acptr, "NOTICE %s :*** If you still have trouble"
-		     " connecting, please email " NS_ADDRESS " with the"
-		     " name and version of the client you are using,"
-		     " and the server you tried to connect to: (%s)",
-		     acptr->name, me.name);
+		     " connecting, then please see: " NS_URL "",
+		     auth_name, me.name);
          sendto_one(acptr, "PING :%X", acptr->nospoof);
 #endif	 
 }
@@ -675,6 +679,81 @@ static int UserOppedOn(aClient *sptr, char *chan)
     if (( lp = find_user_link(chptr->members, sptr) ) == NULL)
         return 0;
     return (lp->flags & CHFL_CHANOP);
+}
+
+/**
+ * is_nick_forbidden 
+ *   answers:  NICK_FORBIDDEN or  NICK_IS_ALLOWED
+ *             implements additional checks on nickname beyond
+ *             the character set.
+ *             
+ * param nick: sz, nickname to check
+ * param reason: pointer to character array, will be pointed to storage
+ *               containing constant reason text.
+ */
+static enum forbidden_result is_nick_forbidden(char const* nick, char const** reason)
+{
+	int i;
+
+	if (BadPtr(nick)) 
+	{
+		*reason = "That nickname is blank.";
+		return NICK_FORBIDDEN;
+	}
+
+	if (myncmp(nick, "Auth-", 5) == 0) 
+	{
+		*reason = "This nickname is reserved for internal use.";
+	    	return NICK_FORBIDDEN;
+	}
+
+	for(i = 0; service_nick[i] != NULL; i++) {
+		if (mycmp(nick, service_nick[i]) == 0) {
+			*reason = "Sorry, this nickname is reserved for services.";
+			return NICK_FORBIDDEN;
+		}
+	}
+
+	return NICK_IS_ALLOWED;
+}
+
+/**
+ * check_forbidden_nickname
+ *      checks if a client sptr (linked from sptr) is prevented from
+ *      using the nickname 'nick' by a nickname forbid.
+ *
+ * answers:  NICK_IS_ALLOWED
+ *      if they are allowed to use it.
+ *
+ * answers: NICK_FORBIDDEN
+ *      if 'sptr' is a local user client, and the nick is forbidden
+ *
+ *      sends an error message for the nick change before returning
+ *      this result code.
+ *
+ *   nick: sz, the nickname that 'sptr' tries to use
+ *   cptr: connection pointer
+ *   sptr: sender pointer
+ */
+static enum forbidden_result check_forbidden_nickname(char const* nick, 
+   const aClient* cptr, aClient* sptr)
+{
+	char const* sendnick = (sptr == NULL || BadPtr(sptr->name)) ? "*" :
+			      sptr->name;
+	char const *reason_text = 0;
+
+	if (!BadPtr(nick) && MyClient(sptr)) 
+	{
+		if (is_nick_forbidden(nick, &reason_text) == NICK_IS_ALLOWED)
+			return NICK_IS_ALLOWED;
+
+		sendto_one(sptr, err_str(ERR_ERRONEUSNICKNAME), me.name,
+				sendnick, nick, reason_text ? reason_text : "*");
+		
+		return NICK_FORBIDDEN;
+	}
+
+	return NICK_IS_ALLOWED;
 }
 
 /*
@@ -789,6 +868,12 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0; /* NICK message ignored */
 		    }
 	}
+
+
+        if (check_forbidden_nickname(nick, cptr, sptr) == NICK_FORBIDDEN) {
+	    return 0;
+	}
+	   
 
 	/*
 	** Check for a Q-lined nickname. If we find it, and it's our
@@ -1108,6 +1193,20 @@ nickkilldone:
 	      (!MyClient(sptr) && parc>2 && atoi(parv[2])<sptr->lastnick))
 	    sptr->lastnick = (MyClient(sptr) || parc < 3) ?
 	      NOW:atoi(parv[2]);
+
+	  /* Change of nick name, Remove any +r (Registered) or +v (Verified ) */
+	  if ((IsRegNick(sptr) || IsVerNick(sptr)) && mycmp(parv[0], nick) != 0) {
+		  char modebuf[BUFSIZE];
+		  long oldmode = ClientUmode(sptr);
+	
+		  ClearRegNick(sptr);
+		  ClearVerNick(sptr);	  
+		  
+		  if (MyClient(cptr)) {			  
+			  send_umode(cptr, sptr, sptr, oldmode, ALL_UMODES, modebuf);
+		  }
+	  }
+	  
 	  sendto_common_channels(sptr, ":%s NICK :%s", parv[0], nick);
 	  if (IsPerson(sptr))
 	    add_history(sptr);
@@ -1167,7 +1266,9 @@ nickkilldone:
 	    sptr->nospoof = 0xdeadbeef;
 
           if (!IsUserVersionKnown(sptr))
+          {
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
+	  }
 
           NospoofText(cptr);
           SetSentNoSpoof(cptr);
@@ -1296,6 +1397,19 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 		    if (!is_silenced(sptr, acptr))
 		    {
                       check_hurt(acptr);
+
+                      if (!IsULine(sptr, sptr)) {
+                          if ((IsRegOnly(acptr) && !IsRegNick(sptr)) ||
+			       (IsVerOnly(acptr) && !IsVerNick(sptr))) 
+                          {
+				  sendto_one(sptr, rpl_str(ERR_NONONREG), me.name, parv[0],
+						  IsVerOnly(acptr) ? "verified"
+						                   : "registered",
+						  acptr->name);
+				  continue;
+                          }
+                      }
+		      
                       if (MyClient(sptr)) 
                       {
 		      if (IsHurt(sptr) && acptr!=sptr && sptr->hurt && !IsAnOper(acptr)
@@ -1553,14 +1667,18 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 **	parv[2] = notice text
 */
 
-int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
+int
+m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 #if defined(NOSPOOF)
-	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0])
-	   && cptr->nospoof && (parc > 1) && !myncmp(parv[1], "Auth-", 5))
+	if ((!IsRegistered(cptr) || MyClient(sptr))
+	    && (cptr->name[0])
+	    && cptr->nospoof
+	    && (parc > 1)
+	    && (myncmp(parv[1], "Auth-", 5) == 0))
 	{
 		char version_buf[BUFSIZE];
-		int l;
+		int version_length;
 		
 		if (parc < 3 || BadPtr(parv[1]) || BadPtr(parv[2]))
 			return 0;
@@ -1568,7 +1686,7 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0;
 		if (strtoul((parv[1])+5, NULL, 16) != (cptr->nospoof ^ 0xbeefdead))
 			return 0;
-		if (myncmp(parv[2], "\001VERSION ", 9))
+		if (myncmp(parv[2], "\001VERSION ", 9) || strlen(parv[2]) >= 265)
 			return 0;
 		if (!IsRegistered(cptr) && !IsNotSpoof(cptr) && !SentNoSpoof(cptr)) {
 			NospoofText(cptr);
@@ -1583,15 +1701,24 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		}
 #endif
 
-		l = strlen(parv[2]) - 9;
+		version_length = strlen(parv[2]) - 9;
 
-		if ( l > 0 ) {
-			strncpyzt(version_buf, parv[2]+9, l);
-			if (version_buf[l - 1] == '\1')
-				version_buf[l - 1] = '\0';
-			dup_sup_version(sptr->user, version_buf);
+		if ((version_length > 0) && (version_length < 256)) 
+		{
+			strncpyzt(version_buf, parv[2]+9, version_length);
+
+			if (version_buf[version_length - 1] == '\1')
+			{
+				version_buf[version_length - 1] = '\0';
+			}
+
+			if (sptr->user != NULL && 
+				sptr->user->sup_version == NULL)
+			{
+				dup_sup_version(sptr->user, version_buf);
+			}
+			Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
 		}
-		Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
 		return 0;
 	}
 
@@ -1615,7 +1742,7 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
                  (irc_toupper(parv[1][3]) == 'H') &&
                  (parv[1][4] == '-'))
                 return 0;
-#endif
+#endif  /* NOSPOOF */
 
 	if (!IsRegistered(cptr) && (cptr->name[0]) && !IsNotSpoof(cptr))
 	{
@@ -1986,6 +2113,13 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				   me.name, parv[0], name, user->server,
 				   a2cptr?safe_info(IsOper(sptr), a2cptr):"*Not On This Net*");
 
+			if(IsRegNick(acptr) || IsVerNick(acptr))
+			{
+				sendto_one(sptr, rpl_str(RPL_WHOISREGNICK), me.name, parv[0], name, 
+					     IsVerNick(acptr) ? " (Verified)" : "");
+			}
+	
+
 			if (user->away)
 				sendto_one(sptr, rpl_str(RPL_AWAY), me.name,
 					   parv[0], name, user->away);
@@ -2105,6 +2239,208 @@ user_finish:
 		strncpyzt(sptr->user->username, username, USERLEN+1);
 	return 0;
 }
+
+/**
+ * Quote a string in a /showcon result.
+ */
+static int quoteShowConData(const char* text, char* buf, int length)
+{
+	length--; /* Reserve a position for the \0 */
+	
+	while(*text) {
+		if (length-- <= 0)    {  return -1; }
+		
+		if (isalnum(*text) || (ispunct(*text) && *text != '<' && *text != '\"' &&
+				        *text != '&' && *text != '%')) {
+			*buf++ = *text;
+			text++;
+			continue;
+		}
+
+		if (length <= 3)  {
+		       	return -1; 
+		}
+		
+		length -= 3;
+		*buf++ = '%';
+		sprintf(buf, "%.02X", *text);
+		text++;
+	}
+	*buf++ = '\0';
+
+	return 0;
+}
+
+/*
+** m_showcon
+**
+**  List  connections info
+*/
+int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
+{
+	aClient* ptr;
+	char* pos = NULL, *option, *option_args = NULL;
+
+	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
+	
+	int show_unknowns = 0, show_users = 0, need_start = 1, extended = 0, show_all = 0, i,
+	     show_servers = 0, show_ports = 0;
+	
+	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
+		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+		return 0;
+	}
+
+	if (parc < 2) {
+		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON [<server>] {(unknowns | users | servers | ports) + ...}", me.name, sptr->name);
+		return 0;
+
+	}
+
+	if (parc >= 3) {
+		option_args = parv[2];
+
+	        if (hunt_server(cptr,sptr,":%s SHOWCON %s :%s", 1,parc,parv) != HUNTED_ISME)
+        	    return 0;
+	}
+	else {
+		option_args = parv[1];
+	}
+
+	
+	 for (option = strtoken(&pos, option_args, "+"); option;
+	       option = strtoken(&pos, NULL, "+"))
+	 {
+	 	if (mycmp(option, "unknowns") == 0)
+			show_unknowns = 1;
+		else if (mycmp(option, "users") == 0)
+			show_users = 1;
+		else if (mycmp(option, "all") == 0)  {
+			show_all = 1;
+			show_servers = 1;
+			show_users = 1;
+			show_unknowns = 1;
+			show_ports = 1;
+		}
+		else if (mycmp(option, "ports") == 0) {
+			show_ports = 1;
+		}
+		else if (mycmp(option, "servers") == 0) {
+			show_servers = 1;
+		}	
+		else if (mycmp(option, "xml") == 0) 
+			extended = 1;
+		else {
+			sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> {(unknowns | users) + ...}", me.name, sptr->name);
+			return 0;
+		}
+	}
+
+	if (extended == 0) {
+		sendto_one(cptr, ":%s NOTICE %s :Client List", me.name, sptr->name);
+	}
+
+	for(i = 0; i <= highest_fd; i++) {
+		if (!(ptr = local[i]))
+			continue;
+
+		if (IsLog(ptr) || IsMe(ptr))
+			continue;
+
+		if (!show_unknowns && IsUnknown(ptr))
+			continue;
+
+		if (!show_users && IsPerson(ptr))
+			continue;
+
+		if (!show_servers && IsServer(ptr))
+			continue;
+
+		if (!show_ports && IsListening(ptr))
+			continue;
+
+		if (extended == 0) {
+			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%d,%d,%d] [h:%s] [s:%s]",
+					me.name, sptr->name, i,
+					BadPtr(ptr->name) ? "-" : ptr->name,
+					BadPtr(ptr->username) ? "-" : ptr->username,
+					ptr->sockhost,
+					IsNotSpoof(ptr) ? "" : "Spoof?",
+					ClientFlags(ptr),
+					ClientUmode(ptr),
+					ptr->status,
+					ptr->sup_host,
+					ptr->sup_server
+				  );
+			continue;
+		}
+
+		/* Extended mode */
+
+		sendto_one(cptr, ":%s NOTICE %s :%s<client id=\"%d\">", me.name, sptr->name,
+				need_start ? "<clients>" : "", i);
+		need_start = 0;
+
+		quoteShowConData(BadPtr(ptr->name) ? "" : ptr->name, buf1, BUFSIZE);
+		quoteShowConData(BadPtr(ptr->username) ? "" : ptr->username, buf2, BUFSIZE);
+		quoteShowConData(ptr->sockhost, buf3, BUFSIZE);
+		
+		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name><uid>%s</uid>"
+				 "<sockhost rport=\"%d\" lport=\"%d\">%s</sockhost>", 
+				me.name, sptr->name, buf1, buf2, ptr->port,
+			       	ptr->acpt ? ptr->acpt->port : 0, buf3);
+
+		quoteShowConData(BadPtr(ptr->info) ? "" : ptr->info, buf1, BUFSIZE);
+
+		sendto_one(sptr, ":%s NOTICE %s : <info>%s</info>%s%s<statuscode>%d</statuscode>"
+				 "<flags client=\"%ld\" user=\"%ld\" />", 
+			         me.name, sptr->name, buf1, 
+				 DoingDNS(ptr) ? "<doingdns />" : "",
+				 !IsNotSpoof(ptr) ? "<maybespoof />" : "",
+				 ptr->status, ClientFlags(ptr), ClientUmode(ptr));
+		
+		quoteShowConData(ptr->sup_server, buf1, BUFSIZE);
+		quoteShowConData(ptr->sup_host, buf2, BUFSIZE);
+		
+		sendto_one(cptr, ":%s NOTICE %s :<sup_server>%s</sup_server>"
+				                "<sup_host>%s</sup_host>",
+				  me.name, sptr->name, buf1, buf2);
+
+		sendto_one(sptr, ":%s NOTICE %s : <times first=\"%d\" last=\"%d\" since=\"%d\" />",
+			      	me.name, sptr->name, ptr->firsttime, ptr->lasttime, ptr->since);
+		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />"
+				 "<counts watches=\"%d\" sendM=\"%d\" " 
+				 "sendK=\"%d\" sendB=\"%d\" receiveM=\"%d\" receiveK=\"%d\" "
+				 " receiveB=\"%d\" />", 
+				me.name, sptr->name,
+				IsUserVersionKnown(ptr) ? "Known" : "Unknown",
+			       	ptr->watches, ptr->sendM, ptr->sendK, ptr->sendB, 
+				ptr->receiveM, ptr->receiveK, ptr->receiveB);
+		
+		if (ptr->user)
+		{
+			if (!BadPtr(ptr->user->sup_version)) {
+				quoteShowConData(ptr->user->sup_version, buf1, BUFSIZE);
+				
+				sendto_one(sptr, ":%s NOTICE %s : <user_version>%s</user_version>",
+					      	me.name, sptr->name, buf1);
+			}			
+		}
+		sendto_one(cptr, ":%s NOTICE %s :</client>", me.name, sptr->name);
+
+	}
+
+	if (extended == 0) {
+		sendto_one(cptr, ":%s NOTICE %s :End of List",  me.name, sptr->name);
+		
+	}
+	else {
+		sendto_one(sptr, ":%s NOTICE %s :</clients>", me.name, sptr->name);
+	}
+
+	return 0;
+}
+
 
 /*
 ** m_quit
@@ -3409,6 +3745,10 @@ static int user_modes[]	     = { U_OPER, 'o',
 				 U_FLOOD, 'f',
 				 U_LOG, 'l',
 				 U_MASK, 'm',
+				 U_REGISTERED, 'r',
+				 U_VERIFIED, 'v',				 
+				 U_REGONLY, 'R',
+				 U_VERONLY, 'V',
 				 0, 0 };
 
 /*
@@ -3515,6 +3855,10 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  for (s = user_modes; (flag = *s); s += 2)
 	    if (*m == (char)(*(s+1)))
 	      {
+		if (uline == 0 && (flag == U_REGISTERED || flag == U_VERIFIED)) {
+			   /* TODO: Should have a table of flags + who can set them */
+			break;
+		}
 		if (what == MODE_ADD)
 		  ClientUmode(acptr) |= flag;
 		else
@@ -3561,7 +3905,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  }
 
 	  /* hackwarn for anything besides +/- h */
-#define ULINE_CHANGE (U_HELPOP|U_MASK)
+#define ULINE_CHANGE (U_HELPOP|U_MASK|U_VERIFIED|U_REGISTERED|U_VERONLY|U_REGONLY)
 	  if (!hackwarn)
 	  {
 	      if((realflags & ~(ULINE_CHANGE)) == (ClientUmode(acptr) & ~(ULINE_CHANGE)))
@@ -4169,30 +4513,21 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
     return 0;
   } 
 
+   if ((parc < 4 ) || !isdigit(*parv[3]))
+       ts = NOW;
+   else
+       ts = atol(parv[3]);
+
+  if(!MyConnect(acptr)) {
+     sendto_one(acptr, ":%s CNICK %s %s %ld", parv[0], parv[1], parv[2], ts);
+     return 0;
+  }
+
   if(IsServer(acptr) || IsMe(acptr)) { /* Can't change server's name */
     return 0;
   }
 
-  if(!IsServer(sptr)) {
-     return 0;
-  }
-
-  if(parc < 3) {
-     sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "CNICK");
-     return 0;
-  }
-
   if (strlen(parv[2]) > NICKLEN) return 0;
-  acptr = find_client(parv[1], NULL);
-
-   if(acptr == NULL) { /* Who? */
-     sendto_one(sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
-     return 0;
-   } 
-
-   if(IsServer(acptr) || IsMe(acptr)) { /* Can't change servers nick */
-     return 0;
-   }
 
    acptr2 = find_client(parv[2], NULL);
    if(acptr2 != NULL) { /* Nick is in use */
@@ -4207,18 +4542,9 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
            return 0;
    }
 
-   if ((parc < 4 ) || !isdigit(*parv[3]))
-       ts = NOW;
-   else
-       ts = atol(parv[3]);
  /* at this point the CNICK must -NOT- fail, even kill clients using the
     nick if necessary... */
    sendto_common_channels(acptr, ":%s NICK :%s", parv[1], parv[2]);
-   (void)add_history(acptr);
-   if(!MyConnect(acptr)) {
-      sendto_one(acptr, ":%s CNICK %s %s %ld", parv[0], parv[1], parv[2], ts);
-      return 0;
-   }
    if (IsPerson(acptr))
    (void)add_history(acptr);
    sendto_serv_butone(NULL, ":%s NICK %s :%i",
@@ -4229,7 +4555,5 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
    (void)add_to_client_hash_table(parv[2], acptr);
    hash_check_watch(acptr, RPL_LOGON);
 
-  /*tonick[0] = parv[1];  tonick[1] = parv[2];  tonick[2] = NULL;
-    return m_nick(acptr, acptr, 2, tonick);*/
   return 0;  
 }

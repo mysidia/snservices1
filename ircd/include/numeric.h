@@ -194,11 +194,15 @@
 #define ERR_BANNEDFROMCHAN   474
 #define	ERR_BADCHANNELKEY    475
 #define	ERR_BADCHANMASK      476
+#define ERR_NEEDREGGEDNICK   477
 #define ERR_BANLISTFULL      478
 
 #define ERR_NOPRIVILEGES     481
 #define ERR_CHANOPRIVSNEEDED 482
 #define	ERR_CANTKILLSERVER   483
+
+
+#define ERR_NONONREG         486
 
 #define ERR_NOOPERHOST       491
 #define ERR_NOSERVICEHOST    492
@@ -230,6 +234,7 @@
 #define ERR_NOMASKCHAN       625
 #define ERR_BANRULE          626
 #define ERR_BANREQUIRE       627
+#define ERR_NEEDVERNICK      628
 
 
 /*
@@ -243,6 +248,7 @@
 #define RPL_TEXT             304
 #define	RPL_UNAWAY           305
 #define	RPL_NOWAWAY          306
+#define RPL_WHOISREGNICK     307
 
 #define RPL_WHOISHURT	     309 /* user is hurt */
 #define RPL_WHOISHELPOP      310 /* -Donwulff */

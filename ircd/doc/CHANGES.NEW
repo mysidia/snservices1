@@ -14,7 +14,12 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 CHANGES SINCE sorircd1.3.4
 *********************************************************************
 
-Wed Jul 16 13:39:51 CDT 2003  sor1.3.5 - Mysidia
+Sat Jul 17 02:26:59 CDT 2004  sor1.3.5pre3 - Mysidia
+ * +r/R usermodes, new /whois entry
+ * New ban record types RR and RV   (Require registered, Require-validated
+ * nospoof@ is now a URL
+
+Wed Jul 16 13:39:51 CDT 2003  sor1.3.5pre1 - Mysidia
  * Ipv6 improved masking support
  * Ipv6 patch [Onno]
  * REQ_VERSION_RESPONSE now separate from NO_VERSION_CHECK

@@ -111,6 +111,7 @@ static  Numeric local_replies[] = {
 /* 304 */	{ RPL_TEXT, NULL },
 /* 305 */	{ RPL_UNAWAY, ":You are no longer marked as being away" },
 /* 306 */	{ RPL_NOWAWAY, ":You have been marked as being away" },
+/* 307 */       { RPL_WHOISREGNICK, "%s :has identified for this nick%s" },
 /* 309 */	{ RPL_WHOISHURT, "%s :has been muted" },
 /* 310 */	{ RPL_WHOISHELPOP, "%s :looks very helpful." },
 /* 311 */	{ RPL_WHOISUSER, "%s %s %s * :%s" },
@@ -194,7 +195,7 @@ static  Numeric local_replies[] = {
 /* 436 */	{ ERR_NICKCOLLISION, "%s :Nickname collision KILL" },
 /* 437 */	{ ERR_BANNICKCHANGE,
 		"%s :Cannot change nickname when moderated/banned on a channel." },
-/* 440 */	{ ERR_SERVICESDOWN, "Services is currently down. Please wait a few moments and then try again." },
+/* 440 */	{ ERR_SERVICESDOWN, ":Services is currently down. Please wait a few moments and then try again." },
 /* 441 */	{ ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel" },
 /* 442 */	{ ERR_NOTONCHANNEL, "%s :You're not on that channel" },
 /* 443 */	{ ERR_USERONCHANNEL, "%s %s :is already on channel" },
@@ -222,11 +223,18 @@ static  Numeric local_replies[] = {
 /* 474 */	{ ERR_BANNEDFROMCHAN, "%s :Cannot join channel (+b)" },
 /* 475 */	{ ERR_BADCHANNELKEY, "%s :Cannot join channel (+k)" },
 /* 476 */	{ ERR_BADCHANMASK, "%s :Bad Channel Mask" },
+/* 477 */       { ERR_NEEDREGGEDNICK, "%s :You need to identify to a registered nick to "
+                                      "join that channel. For help with registering "
+                                      "your nickname, type /msg nickserv@ help register or see "
+				      "http://www.sorcery.net/help/register" },
 /* 478 */	{ ERR_BANLISTFULL, "%s %s :Channel ban/ignore list is full" },
 /* 481 */	{ ERR_NOPRIVILEGES,
 		":Permission Denied- You're not an IRC operator" },
 /* 482 */	{ ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator" },
 /* 483 */	{ ERR_CANTKILLSERVER, ":You cant kill (or hurt) a server!" },
+/* 486 */       { ERR_NONONREG, ":You must identify to a "
+                                    "%s nick to private message %s", },
+    
 /* 491 */	{ ERR_NOOPERHOST, ":No O-lines for your host" },
 /* 492 */	{ ERR_NOSERVICEHOST, NULL },
 /* 501 */	{ ERR_UMODEUNKNOWNFLAG, ":Unknown MODE flag" },
@@ -263,6 +271,11 @@ static  Numeric local_replies[] = {
                        "requirement that you do not satisfy." },
 /* 627 */ { ERR_BANREQUIRE, "%s :This channel has established a special entry "
                        "requirement that you do not satisfy." },
+/* 628 */ { ERR_NEEDVERNICK, "%s :You need to identify to a registered AND verified nickname to "
+                             "join that channel. For help with registering "
+	                     "your nickname, type /msg nickserv@ help register "
+			     "And /msg nickserv@ help verify" },
+			     
 };
 
 static char *replies[1000];

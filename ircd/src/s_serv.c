@@ -1715,8 +1715,8 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (!aconf)
 	    {
 	      sendto_one(sptr,
-			 "NOTICE %s :Connect: Host %s not listed in irc.conf",
-			 parv[0], parv[1]);
+			 "NOTICE %s :Connect: Host %s not listed in %s",
+			 parv[0], parv[1], CPATH);
 	      return 0;
 	    }
 	/*
@@ -2318,6 +2318,18 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (!IsUnknown(acptr) && !IsConnecting(acptr) &&
 		    !IsHandshake(acptr))
 			continue;
+		if (parc >= 2 && match(parv[1], acptr->sockhost)) {
+			continue;
+		}
+
+		if (parc <= 1) {
+			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s.%d] [n:%s] [%s]", me.name,
+				       	sptr->name, i, acptr->sockhost, acptr->port,
+				       	BadPtr(acptr->name) ? "" : acptr->name,
+					DoingDNS(acptr) ? "DoingDNS" : "");
+			continue;
+		}
+		
 		sendto_one(sptr, rpl_str(RPL_CLOSING), me.name, parv[0],
 			   get_client_name(acptr, TRUE), acptr->status);
 		(void)exit_client(acptr, acptr, acptr, "Oper Closing");

@@ -376,6 +376,30 @@ char	*banid;
 }
 
 /*
+ * index_left_part( text, substring, int *pointer ) :
+ *    Tries to find 'substring' at the beginning of text.
+ *       if successful returns the index 1 after the end, else 0
+ */
+int index_left_part(const char* text, const char* substring)
+{
+	int i = 0;
+
+	for(; *substring != '\0'; substring++) {
+		if (*text == '\0') {
+			return 0;
+		}
+
+		if (irc_tolower(*text) != irc_tolower(*substring))  {
+			return 0;
+		}
+		text++;
+		i++;
+	}
+
+	return i;
+}
+
+/*
  * IsMember - returns 1 if a person is joined and not a zombie
  */
 int	IsMember(cptr, chptr)
@@ -418,10 +442,21 @@ int BanRuleMatch(const char *text, aClient *cptr, int *result,
             ban_flags = BAN_GECOS;
             pattern_start = 2;
         }
+        else if (((pattern_start = index_left_part(text, "RR:")) > 0)
+	          && !IsRegNick(cptr)) {
+            ban_flags = BAN_REGONLY;
+        }
+        else if (((pattern_start = index_left_part(text, "RV:")) > 0)
+	          && !IsVerNick(cptr)) {
+	    ban_flags = BAN_VERONLY;
+        }	
         else return 0;
 
-	if (ban_flags == BAN_BQUIET && pattern_start) {
-	    if (
+
+	/* Ban flags +q,  NV, and NR  match nick!user@host  like any other ban */
+	if ((ban_flags == BAN_BQUIET || ban_flags == BAN_VERONLY || ban_flags == BAN_REGONLY)
+	      && pattern_start) {
+	    if (  text[pattern_start] != '\0' &&
                   (match(text+pattern_start, nuh)) &&
                   (!nuhmask || match(text+pattern_start, nuhmask)) &&
                   (!sip || match(text+pattern_start, sip))
@@ -1051,7 +1086,7 @@ int limit_rules;
 	  lead++;
 
       switch(*lead) {
-	      case 'r': case 'g':
+	      case 'R': case 'r': case 'g':
 	      case 'q': case 'm':
 		      return mask;
 	      default:;
@@ -1124,6 +1159,7 @@ int	modehack;
 	int	limitset = 0, chasing = 0, bounce;
 	int	nusers = 0, new, len, blen, keychange = 0, opcnt = 0, banlsent = 0;
 	int     doesdeop = 0, doesop = 0, hacknotice = 0, change, gotts = 0;
+	int     cis_member = 0, cis_chop = 0; 
 	int	orig_parc = parc;
 	aClient *who;
 	Mode	*mode, oldm;
@@ -1155,35 +1191,45 @@ int	modehack;
  * then it'll display the banlist. Else, it just returns "You're not chanop."
  * Enjoy. --dalvenjah, dalvenja@rahul.net
  */
+#if 1
+	cis_member = IsMember(sptr, chptr);
+	cis_chop = (cis_member == 0) ? 0 : is_chan_op(sptr, chptr);
 
-	if (!(IsServer(cptr) || IsULine(cptr,sptr) || is_chan_op(sptr, chptr) || modehack))
+	if ((IsServer(cptr) == 0 && IsULine(cptr,sptr) == 0 
+	     && parc == 1 
+	     && modehack == 0
+	     && curr == parv[0]
+	     && (  
+		(*curr == 'b' && curr[1] == '\0') || 
+		((*curr == '+' || *curr == '-') && curr[1] == 'b' 
+		    && curr[2] == '\0')
+	     ) 
+	     && cis_member != 0 && cis_chop == 0))
 		{
-			if ( ((*curr=='b' && (strlen(parv[0])==1 && parc==1))
-			      || ((*curr=='+') && (*(curr+1)=='b') && (strlen(parv[0])==2 && parc==1))
-			      || ((*curr=='-') && (*(curr+1)=='b') && (strlen(parv[0])==2 && parc==1)))
-			    && (!is_chan_op(sptr, chptr)))
-			    {
-				    if (--parv == 0) /* XXX MLG Was <= */
-					{
-					for (lp=chptr->banlist;lp;lp=lp->next)
-						sendto_one(cptr,
-							   rpl_str(RPL_BANLIST),
-							   me.name, cptr->name,
-							   chptr->chname,
-							   lp->value.ban.banstr,
-							   lp->value.ban.who,
-							   lp->value.ban.when);
-						sendto_one(cptr,
-							   rpl_str(RPL_ENDOFBANLIST),
-							   me.name, cptr->name,
-							   chptr->chname);
-					}
-			    }
-			else
+#if 0
+		/* XXX: This was and is dead code, --parv is not == 0*/
+		    if (--parv == 0) /* XXX MLG Was <= */
 			{
-				return 0;
+			/* NOTREACHED */
+			for (lp=chptr->banlist;lp;lp=lp->next)
+				sendto_one(cptr,
+					   rpl_str(RPL_BANLIST),
+					   me.name, cptr->name,
+					   chptr->chname,
+					   lp->value.ban.banstr,
+					   lp->value.ban.who,
+					   lp->value.ban.when);
+				sendto_one(cptr,
+					   rpl_str(RPL_ENDOFBANLIST),
+					   me.name, cptr->name,
+					   chptr->chname);
 			}
+#endif
 		}
+	else if (cis_chop == 0 && IsServer(cptr) == 0 &&
+		 IsULine(cptr, sptr) == 0 && modehack == 0)
+		return 0;
+#endif
 
 	new = mode->mode;
 
@@ -1822,6 +1868,10 @@ char	*key;
                return (ERR_BANRULE);
            if (IS_SET(bantype, BAN_REQUIRE))
                return (ERR_BANREQUIRE);
+           if (IS_SET(bantype, BAN_VERONLY))
+	       return (ERR_NEEDVERNICK);	   
+	   if (IS_SET(bantype, BAN_REGONLY))
+	       return (ERR_NEEDREGGEDNICK);
 	}
 
 	if (chptr->mode.limit && chptr->users >= chptr->mode.limit)
@@ -2800,7 +2850,8 @@ char	*parv[];
 
 		memset(lopt, 0, sizeof(LOpts));
 
-		lopt->next = (LOpts *)lopt->yeslist = lopt->nolist = (Link *)0;
+		lopt->next = (LOpts *) NULL;
+		lopt->yeslist = lopt->nolist = (Link *) NULL;
 		lopt->usermin = 0;
 		lopt->usermax = -1;
 		lopt->chantimemax = lopt->topictimemax = currenttime + 86400;
