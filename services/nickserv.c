@@ -786,7 +786,7 @@ void setMode(char *nick, char *mode)
 
 				if (hasValidModeR(changeme)) {
 					sSend(":%s NOTICE %s :Since you were previously identified,"
-				              "you will be allowed to remain on your current "
+				              " you will be allowed to remain on your current "
 					      "nickname." ,
 					      NickServ, changeme->nick);
 				}
