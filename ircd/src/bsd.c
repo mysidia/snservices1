@@ -21,7 +21,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include <signal.h>
 #include <errno.h>
 
 #include "struct.h"
@@ -37,25 +36,6 @@ IRCD_RCSID("$Id$");
 #ifdef DEBUGMODE
 int	writecalls = 0, writeb[10] = {0,0,0,0,0,0,0,0,0,0};
 #endif
-
-void
-dummy_sig(int sig)
-{
-	struct sigaction act;
-
-	act.sa_handler = dummy_sig;
-	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGALRM);
-	(void)sigaddset(&act.sa_mask, SIGPIPE);
-#ifdef SIGWINCH
-	(void)sigaddset(&act.sa_mask, SIGWINCH);
-	(void)sigaction(SIGWINCH, &act, NULL);
-#endif
-	(void)sigaction(SIGALRM, &act, NULL);
-	(void)sigaction(SIGPIPE, &act, NULL);
-}
-
 
 /*
  * Attempt to send a sequence of bytes to the connection.

@@ -11,6 +11,11 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+CHANGED BEHAVIOUR IN ircd-sor1.3.6
+*********************************************************************
+
+ * Status messages now go to ircd.log instead of stderr.
+
 CHANGED BEHAVIOUR IN ircd-sor1.3.5
 *********************************************************************
 

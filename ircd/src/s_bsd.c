@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <sys/resource.h>
 
 #include <netinet/in.h>
@@ -267,25 +268,6 @@ int	port;
 		return -1;
 	    }
 
-	if (cptr == &me) /* KLUDGE to get it work... */
-	    {
-		char	buf[1024];
-
-		switch(server.addr_family)
-		{
-			case AF_INET:
-				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    			ntohs(server.in.sin_port));
-				break;
-#ifdef AF_INET6
-			case AF_INET6:
-				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    			ntohs(server.in6.sin6_port));
-				break;
-#endif
-		}
-		(void)write(0, buf, strlen(buf));
-	    }
 	if (cptr->fd > highest_fd)
 		highest_fd = cptr->fd;
 	bcopy(&server, &cptr->addr, sizeof(anAddress));
@@ -376,35 +358,33 @@ void	init_sys()
 
 	if (!getrlimit(RLIMIT_NOFILE, &limit)) {
 		if (limit.rlim_max < MAXCONNECTIONS) {
-			(void)fprintf(stderr, "ircd fd table too big\n");
-			(void)fprintf(stderr, "Hard Limit: %d IRC max: %d\n",
-				      (int)limit.rlim_max, MAXCONNECTIONS);
-			(void)fprintf(stderr,"Fix MAXCONNECTIONS\n");
+			tolog(LOG_IRCD, "ircd fd table too big");
+			tolog(LOG_IRCD, "Hard Limit: %d IRC max: %d",
+				      limit.rlim_max, MAXCONNECTIONS);
+			tolog(LOG_IRCD, "Fix MAXCONNECTIONS");
 			exit(-1);
 		}
 		limit.rlim_cur = limit.rlim_max; /* make soft limit the max */
 		if (setrlimit(RLIMIT_NOFILE, &limit) == -1) {
-			(void)fprintf(stderr,"error setting max fd's to %d\n",
-				      (int)limit.rlim_cur);
+			tolog(LOG_IRCD, "error setting max fd's to %d",
+				      limit.rlim_cur);
 			exit(-1);
 		}
 	}
 
-	(void)setlinebuf(stderr);
-
-	for (fd = 3; fd < MAXCONNECTIONS; fd++) {
+	for (fd = 0; fd < MAXCONNECTIONS; fd++) {
+		local[fd] = NULL;
 		if (LogFd(fd))
 			continue;
-		(void)close(fd);
-		local[fd] = NULL;
+		if ((bootopt & BOOT_FORK) == 0 && fd == 2)
+			continue;
+		close(fd);
 	}
-	local[1] = NULL;
-	(void)close(1); /* -- allow output a little more yet */
 
 	if ((bootopt & BOOT_FORK) != 0) {
 		if (fork())
 			exit(0);
-		fprintf(stderr, "fork() successful, now in child.\n");
+		tolog(LOG_IRCD, "fork() successful, now in child.");
 	}
 
 	resfd = init_resolver(0x1f);
@@ -949,8 +929,7 @@ aClient *cptr;
 	 * fd remap to keep local[i] filled at the bottom.
 	 */
 	if (empty > 0)
-		if ((j = highest_fd) > (i = empty) &&
-		    (local[j]->status != STAT_LOG))
+		if ((j = highest_fd) > (i = empty))
 		    {
 			if (dup2(j,i) == -1)
 				return;
@@ -1167,7 +1146,7 @@ static	int	read_packet(cptr, rfd)
 aClient *cptr;
 fd_set	*rfd;
 {
-	int	dolen = 0, length = 0, done;
+	int	dolen = 0, length = 0;
 	time_t	now = NOW;
 
 	if (FD_ISSET(cptr->fd, rfd) &&
@@ -1197,8 +1176,8 @@ fd_set	*rfd;
 	if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr) || (IsPerson(cptr) && IsOper(cptr)))
 	    {
 		if (length > 0)
-			if ((done = dopacket(cptr, readbuf, length)))
-				return done;
+			if (dopacket(cptr, readbuf, length) == FLUSH_BUFFER)
+				return FLUSH_BUFFER;
 	    }
 	else
 	    {
@@ -1226,20 +1205,6 @@ fd_set	*rfd;
 		       ((cptr->status < STAT_UNKNOWN) ||
 			(cptr->since - now < 10)))
 		    {
-			/*
-			** If it has become registered as a Service or Server
-			** then skip the per-message parsing below.
-			*/
-			if (IsServer(cptr))
-			    {
-				dolen = dbuf_get(&cptr->recvQ, readbuf,
-						 sizeof(readbuf));
-				if (dolen <= 0)
-					break;
-				if ((done = dopacket(cptr, readbuf, dolen)))
-					return done;
-				break;
-			    }
 			dolen = dbuf_getmsg(&cptr->recvQ, readbuf,
 					    sizeof(readbuf));
 			/*
@@ -1268,6 +1233,21 @@ fd_set	*rfd;
 			if (dolen > 0 &&
 			    (dopacket(cptr, readbuf, dolen) == FLUSH_BUFFER))
 				return FLUSH_BUFFER;
+			/*
+			** If it has become registered as a operator or server
+			** then skip further per-message parsing.
+			*/
+			if (IsServer(cptr) || (IsPerson(cptr) && IsOper(cptr)))
+			    {
+				dolen = dbuf_get(&cptr->recvQ, readbuf,
+						 sizeof(readbuf));
+				if (dolen <= 0)
+					break;
+				if (dopacket(cptr, readbuf, dolen) == FLUSH_BUFFER)
+					return FLUSH_BUFFER;
+				break;
+			    }
+
 		    }
 	    }
 	return 1;
@@ -1299,9 +1279,6 @@ read_message(time_t delay)
 
 		for (i = highest_fd ; i >= 0 ; i--) {
 			if (!(cptr = local[i]))
-				continue;
-
-			if (IsLog(cptr))
 				continue;
 
 			if (DoingDNS(cptr))
@@ -1547,7 +1524,6 @@ struct	HostEnt	*hp;
 
 	set_non_blocking(cptr->fd, cptr);
 	set_sock_opts(cptr->fd, cptr, AF_INET); /* XXXMLG hard-coded! */
-	(void)signal(SIGALRM, dummy_sig);
 	(void)alarm(4);
 	if (connect(cptr->fd, svp, len) < 0 && errno != EINPROGRESS)
 	    {

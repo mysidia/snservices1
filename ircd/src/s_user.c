@@ -358,7 +358,6 @@ int register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
   char stripuser[USERLEN+1], userbad[USERLEN*2+1], olduser[USERLEN+1];
   char *u1 = stripuser, *u2, *ubad = userbad;
 #endif
-  short   oldstatus = sptr->status;
   anUser	*user = sptr->user;
   aConfItem	*sconf;
   int	i;
@@ -541,9 +540,6 @@ int register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 			 ns_down ? ", when services become available." : "." );
 	    }
 	}
-
-      if (oldstatus == STAT_MASTER && MyConnect(sptr))
-	(void)m_oper(&me, sptr, 1, parv);
     }
   else
     if (user->username != username)
@@ -1217,7 +1213,7 @@ nickkilldone:
 	  md5data[4] = me.receiveM;
 	  md5data[5] = 0;
 	  md5data[6] = getpid();
-	  md5data[7] = (int) &sptr->addr.in.sin_addr;
+	  md5data[7] = *(int *) &sptr;
 	  md5data[8] = sptr->fd;
 	  md5data[9] = 0;
 	  md5data[10] = 0;
@@ -2272,7 +2268,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		if (!(ptr = local[i]))
 			continue;
 
-		if (IsLog(ptr) || IsMe(ptr))
+		if (IsMe(ptr))
 			continue;
 
 		if (!show_unknowns && IsUnknown(ptr))

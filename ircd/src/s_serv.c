@@ -2128,11 +2128,6 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   now - acptr->lasttime);
 			cnt++;
 			break;
-		case STAT_LOG:
-			sendto_one(sptr, rpl_str(RPL_TRACELOG), me.name,
-				   parv[0], LOGFILE, acptr->port);
-			cnt++;
-			break;
 		default: /* ...we actually shouldn't come here... --msa */
 			sendto_one(sptr, rpl_str(RPL_TRACENEWTYPE), me.name,
 				   parv[0], name);

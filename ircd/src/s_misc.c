@@ -671,15 +671,18 @@ int remove_hurt(aClient *acptr)
 	return 0;
 }
 
+#ifdef IRC_LOGGING
 static int slogfiles[LOG_HI+3];
 static char *logfile_n[] = {
 	FNAME_OPERLOG,
 	FNAME_USERLOG,
+	FNAME_IRCDLOG,
 	NULL,
 	NULL,
 	NULL,
 	NULL
 };
+#endif
 
 void
 open_logs(void)
@@ -687,8 +690,6 @@ open_logs(void)
 #ifdef IRC_LOGGING
 	int i;
 
-	for (i = 0 ; i <= LOG_HI ; i++)
-		slogfiles[i] = -1;
 	for (i = 0 ; i <= LOG_HI ; i++) {
 		if (!logfile_n[i]) {
 			slogfiles[i] = -1;
@@ -703,23 +704,37 @@ open_logs(void)
 /* descriptor used for logging ? */
 int LogFd(int descriptor)
 {
-    int i  = 0;
-    if (descriptor < 0) return 0;
-    for ( i = 0 ; i < LOG_HI; i++)
-          if ( slogfiles[i] == descriptor) return 1;
-    return 0;
+#ifdef IRC_LOGGING
+	int i;
+
+	if (descriptor < 0)
+	{
+		return 0;
+	}
+	for (i = 0 ; i < LOG_HI; i++)
+	{
+		if (slogfiles[i] == descriptor)
+		{
+			return 1;
+		}
+	}
+#endif
+	return 0;
 }
 
 void
 close_logs(void)
 {
 #ifdef IRC_LOGGING
-	int i = 0;
-	return;  /* XXXMLG Why is this here? */
+	int i;
 
-	for (i = 0 ; i <= LOG_HI && logfile_n[i] ; i++) {
-		if (slogfiles[i] < 0) continue;    
-		(void)close(slogfiles[i]);
+	for (i = 0 ; i <= LOG_HI && logfile_n[i] ; i++)
+	{
+		if (slogfiles[i] < 0)
+		{
+			continue;
+		}
+		close(slogfiles[i]);
 		slogfiles[i] = -1;
 	}
 #endif
@@ -727,11 +742,11 @@ close_logs(void)
 
 int tolog( int logtype, char *fmt, ... )
 {
-#ifdef IRC_LOGGING
-        int orig_logtype = logtype;
+	int orig_logtype = logtype;
 	static char buf[8192] = "";
 	va_list args;
 
+#ifdef IRC_LOGGING
         va_start(args, fmt);
 
         if (logtype == LOG_NET)
@@ -744,15 +759,12 @@ int tolog( int logtype, char *fmt, ... )
         va_end(args);
         if (orig_logtype == LOG_NET)
             sendto_umode(U_LOG, "Log -- from %s: %s", me.name, buf);
-        if (slogfiles[logtype] < 0)
-            return 0;
 	strcat(buf, "\n");
-        write( slogfiles[logtype], buf, strlen(buf));
+        if (slogfiles[logtype] >= 0)
+	{
+        	write(slogfiles[logtype], buf, strlen(buf));
+	}
 #else
-        int orig_logtype = logtype;
-	static char buf[8192] = "";
-	va_list args;
-
         if (logtype == LOG_NET)
         {
             va_start(args, fmt);
@@ -760,7 +772,12 @@ int tolog( int logtype, char *fmt, ... )
             va_end(args);
             sendto_umode(U_LOG, "Log -- from %s: %s", me.name, buf);
         }
+	strcat(buf, "\n");
 #endif
+	if (logtype == LOG_IRCD && (bootopt & BOOT_FORK) == 0)
+	{
+		fprintf(stderr, buf);
+	}
         return 0;
 }
 

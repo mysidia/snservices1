@@ -128,9 +128,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	BOOT_DEBUG	0x0000001
 #define	BOOT_FORK	0x0000002
 
-#define	STAT_AUTHSERV	-7	/* Server waiting identd check */
-#define	STAT_LOG	-6	/* logfile for -x */
-#define	STAT_MASTER	-5	/* Local ircd master before identification */
 #define	STAT_CONNECTING	-4
 #define	STAT_HANDSHAKE	-3
 #define	STAT_ME		-2
@@ -146,22 +143,16 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	IsConnecting(x)		((x)->status == STAT_CONNECTING)
 #define	IsHandshake(x)		((x)->status == STAT_HANDSHAKE)
 #define	IsMe(x)			((x)->status == STAT_ME)
-#define	IsUnknown(x)		((x)->status == STAT_UNKNOWN || \
-				 (x)->status == STAT_MASTER)
+#define	IsUnknown(x)		((x)->status == STAT_UNKNOWN)
 #define	IsServer(x)		((x)->status == STAT_SERVER)
 #define	IsClient(x)		((x)->status == STAT_CLIENT)
-#define	IsAuthServ(x)		((x)->status == STAT_AUTHSERV)
-#define	IsLog(x)		((x)->status == STAT_LOG)
 
-#define	SetMaster(x)		((x)->status = STAT_MASTER)
 #define	SetConnecting(x)	((x)->status = STAT_CONNECTING)
 #define	SetHandshake(x)		((x)->status = STAT_HANDSHAKE)
 #define	SetMe(x)		((x)->status = STAT_ME)
 #define	SetUnknown(x)		((x)->status = STAT_UNKNOWN)
 #define	SetServer(x)		((x)->status = STAT_SERVER)
 #define	SetClient(x)		((x)->status = STAT_CLIENT)
-#define	SetAuthServ(x)		((x)->status = STAT_AUTHSERV)
-#define	SetLog(x)		((x)->status = STAT_LOG)
 
 /* the lovely little bits used in flags  the defines are to shorten lengths
      BIT32 as a flag is simpler to allign than 0x10000000 */
@@ -264,6 +255,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 typedef	enum {
 	LOG_OPER,
  	LOG_USER,
+	LOG_IRCD,
         LOG_NET,
 	LOG_HI
 } loglevel_value_t;

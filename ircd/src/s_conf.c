@@ -2132,7 +2132,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 	for (i=highest_fd;i>0;i--)
 	{
-	  if (!(acptr = local[i]) || IsLog(acptr) || IsMe(acptr));
+	  if (!(acptr = local[i]) || IsMe(acptr));
 	     continue;
 	  if (  find_zap(acptr, 1) )
           {

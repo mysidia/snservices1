@@ -19,6 +19,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -51,7 +52,7 @@ time_t NOW, tm_offset = 0;
 
 void server_reboot(char *);
 void restart(char *);
-static void setup_signals(void);
+static void setup_signals();
 
 char **myargv;
 int portnum = -1;		/* Server port number, listening this */
@@ -84,13 +85,7 @@ VOIDSIG s_die(int sig)
 
 static VOIDSIG s_rehash()
 {
-	struct	sigaction act;
 	dorehash = 1;
-	act.sa_handler = s_rehash;
-	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGHUP);
-	(void)sigaction(SIGHUP, &act, NULL);
 }
 
 void	restart(char *mesg)
@@ -109,12 +104,19 @@ VOIDSIG s_restart()
 	(void)syslog(LOG_WARNING, "Server Restarting on SIGHUP");
 #endif
 	if (restarting == 0)
-	    {
+	{
+		sigset_t	set;
+
+		/* Unblock this signal */
+		sigemptyset(&set);
+		sigaddset(&set, SIGINT);
+		sigprocmask(SIG_UNBLOCK, &set, NULL);
+
 		/* Send (or attempt to) a dying scream to oper if present */
 
 		restarting = 1;
 		server_reboot("SIGHUP");
-	    }
+	}
 }
 
 void	server_reboot(mesg)
@@ -131,15 +133,21 @@ char	*mesg;
 	/*
 	 * Close any FDs we may have open.
 	 */
-	for (i = 3; i < MAXCONNECTIONS; i++)
-		(void)close(i);
+	for (i = 0; i < MAXCONNECTIONS; i++)
+	{
+		if ((bootopt & BOOT_FORK) == 0 && i == 2)
+			continue;
+		close(i);
+	}
 
-	(void)execv(MYNAME, myargv);
+	execv(MYNAME, myargv);
 
+	open_logs();
 #ifdef USE_SYSLOG
 	syslog(LOG_CRIT, "execv(%s,%s) failed: %m\n", MYNAME, myargv[0]);
 #endif
 	Debug((DEBUG_FATAL,"Couldn't restart server: %s", strerror(errno)));
+	close_logs();
 
 	exit(-1);
 }
@@ -271,7 +279,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 	check_kills = 1;
 #endif
 	for (i = 0; i <= highest_fd; i++) {
-		if (!(cptr = local[i]) || IsMe(cptr) || IsLog(cptr))
+		if (!(cptr = local[i]) || IsMe(cptr))
 			continue;
 
 		/*
@@ -392,8 +400,12 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 static void
 bad_command(void)
 {
-	(void)printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
-	(void)printf("Server not started\n\n");
+#ifdef DEBUGMODE
+	printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
+#else
+	printf("Usage: ircd [-sFv] [-f configfile]\n");
+#endif
+	printf("Server not started\n\n");
 	exit(-1);
 }
 
@@ -410,26 +422,45 @@ main(int argc, char **argv)
 	myargv = argv;
 	(void)umask(077);                /* better safe than sorry --SRB */
 	bzero((char *)&me, sizeof(me));
-	fprintf(stderr, "Setting up signals...");
+
+	if (chdir(dpath)) {
+		perror("chdir");
+		exit(-1);
+	}
+
+	if ((getuid() == 0) || (geteuid() == 0)) {
+		fprintf(stderr, "ERROR: do not run ircd setuid root.\n");
+		exit(-1);
+	}
+
+	open_logs();
+
+	tolog(LOG_IRCD, "ircd %s starting up...", version);
+
+	tolog(LOG_IRCD, "Setting up signals...");
 	setup_signals();
-	fprintf(stderr, "done\n");
+	tolog(LOG_IRCD, "done");
 	initload();
 
 #ifdef FORCE_CORE
-        fprintf(stderr, "Removing corefile size limits...");
+        tolog(LOG_IRCD, "Removing corefile size limits...");
 	corelim.rlim_cur = corelim.rlim_max = RLIM_INFINITY;
 	if (setrlimit(RLIMIT_CORE, &corelim))
-	  printf("unlimit core size failed; errno = %d\n", errno);
+	{
+		tolog(LOG_IRCD, "unlimit core size failed; errno = %d", errno);
+	}
         else
-        fprintf(stderr, "done\n");
+	{
+		tolog(LOG_IRCD, "done");
+	}
 
 #endif
 
 #ifdef USE_CASETABLES
 	/* Set up the case tables */
-	fprintf(stderr, "setting up casetables...");
+	tolog(LOG_IRCD, "setting up casetables...");
 	setup_match();
-	fprintf(stderr, "done\n");
+	tolog(LOG_IRCD, "done");
 #endif
 
 	/*
@@ -438,7 +469,7 @@ main(int argc, char **argv)
 	** be empty. Flag characters cannot be concatenated (like
 	** "-fxyz"), it would conflict with the form "-fstring".
 	*/
-	fprintf(stderr, "Startup options: ");
+	tolog(LOG_IRCD, "Startup options: ");
 	while (--argc > 0 && (*++argv)[0] == '-')
 	    {
 		char	*p = argv[0]+1;
@@ -456,30 +487,28 @@ main(int argc, char **argv)
 		switch (flag) {
 		case 'F':
 			bootopt &= ~BOOT_FORK;
-			fprintf(stderr, "Will not fork()");
+			tolog(LOG_IRCD, "Will not fork()");
 			break;
 
 		case 'f':
 			configfile = p;
-			fprintf(stderr, "Config[%s] ", configfile);
+			tolog(LOG_IRCD, "Config[%s] ", configfile);
 			break;
 
 		case 's':
-			fprintf(stderr, "\n");
-			printf("sizeof(anUser) == %lu\t\t",
+			printf("sizeof(anUser) == %lu\n",
 			       (unsigned long)sizeof(anUser));
-			printf("sizeof(aClient) == %lu\t\t",
+			printf("sizeof(aClient) == %lu\n",
 			       (unsigned long)sizeof(aClient));
 			printf("sizeof(aClient) == %lu\n",
 			       (unsigned long)sizeof(aClient));
-			printf("sizeof(Link) == %lu\t\t",
+			printf("sizeof(Link) == %lu\n",
 			       (unsigned long)sizeof(Link));
-			printf("sizeof(aServer) == %lu\t\t",
+			printf("sizeof(aServer) == %lu\n",
 			       (unsigned long)sizeof(aServer));
 			printf("sizeof(dbuf) == %lu\n",
 			       (unsigned long)sizeof(dbuf));
-			printf("\n");
-			printf("sizeof(aChannel) == %lu\t\t",
+			printf("sizeof(aChannel) == %lu\n",
 			       (unsigned long)sizeof(aChannel));
 			printf("bans maxlength: %u maxn# %u"
 			       " banstruct %lu*bans\n",
@@ -490,8 +519,7 @@ main(int argc, char **argv)
 			exit(0);
 
 		case 'v':
-			fprintf(stderr, "\n");
-			(void)printf("ircd %s\n", version);
+			printf("ircd %s\n", version);
 			exit(0);
 
 		case 'x':
@@ -501,68 +529,49 @@ main(int argc, char **argv)
 			bootopt |= BOOT_DEBUG;
 			break;
 #else
-			(void)fprintf(stderr,
-				      "%s: DEBUGMODE must be defined for -x\n",
-				      myargv[0]);
-			exit(0);
+			bad_command();
 #endif
 
 		default:
-			fprintf(stderr, "\n");
 			bad_command();
 			break;
 		}
 	    }
-	fprintf(stderr, "\n");
-
-	if (chdir(dpath)) {
-		perror("chdir");
-		exit(-1);
-	}
-
-	if ((getuid() == 0) || (geteuid() == 0)) {
-		fprintf(stderr,	"ERROR: do not run ircd setuid root.\n");
-		exit(-1);
-	}
 
 	if (argc > 0)
 		bad_command();
 
-	fprintf(stderr, "Cleaning hash tables...");
+	tolog(LOG_IRCD, "Cleaning hash tables...");
 	clear_client_hash_table();
 	clear_channel_hash_table();
         boot_replies();
 
-	fprintf(stderr, "done\n");
+	tolog(LOG_IRCD, "done");
 	msgtab_buildhash();
 
-	fprintf(stderr, "Initializing lists...");
+	tolog(LOG_IRCD, "Initializing lists...");
 
 	initlists();
 	initclass();
 	initwhowas();
 	initstats();
-	fprintf(stderr, "done\n");
+	tolog(LOG_IRCD, "done");
 	if (portnum < 0)
 		portnum = PORTNUM;
 	me.port = portnum;
-	fprintf(stderr, "Pre-socket startup done.\n");
-	(void)init_sys();
+	tolog(LOG_IRCD, "Pre-socket startup done.");
+	init_sys();
 	me.flags = FLAGS_LISTEN;
 	me.fd = -1;
-
-	open_logs();
 
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
 #endif
 	if (initconf(bootopt) == -1) {
-		fprintf(stderr, "error opening ircd config file: %s\n",
+		tolog(LOG_IRCD, "error opening ircd config file: %s",
 			configfile);
 		Debug((DEBUG_FATAL, "Failed in reading configuration file %s",
 		       configfile));
-		(void)printf("Couldn't open configuration file %s\n",
-			     configfile);
 		exit(-1);
 	}
 
@@ -570,8 +579,7 @@ main(int argc, char **argv)
 		portnum = aconf->port;
 	Debug((DEBUG_ERROR, "Port = %d", portnum));
 	if (inetport(&me, aconf->passwd, portnum)) {
-		fprintf(stderr,
-			"Error listening on port %d\n", portnum);
+		tolog(LOG_IRCD, "Error listening on port %d", portnum);
 		exit(1);
 	}
 
@@ -675,38 +683,25 @@ main(int argc, char **argv)
 	    }
     }
 
-static void
-setup_signals(void)
+static void setup_signals()
 {
-	struct	sigaction act;
+	struct sigaction	act;
 
 	/*
-	 * Ignore the following signals:  PIPE, ALRM, WINCH
+	 * Ignore the following signals:  PIPE, ALRM
 	 */
 	act.sa_handler = SIG_IGN;
 	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGPIPE);
-	(void)sigaddset(&act.sa_mask, SIGALRM);
-# ifdef	SIGWINCH
-	(void)sigaddset(&act.sa_mask, SIGWINCH);
-	(void)sigaction(SIGWINCH, &act, NULL);
-# endif
-	(void)sigaction(SIGPIPE, &act, NULL);
-
-	act.sa_handler = dummy_sig;
-	(void)sigaction(SIGALRM, &act, NULL);
+	sigemptyset(&act.sa_mask);
+	sigaction(SIGPIPE, &act, NULL);
+	sigaction(SIGALRM, &act, NULL);
 
 	act.sa_handler = s_rehash;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGHUP);
-	(void)sigaction(SIGHUP, &act, NULL);
+	sigaction(SIGHUP, &act, NULL);
 
 	act.sa_handler = s_restart;
-	(void)sigaddset(&act.sa_mask, SIGINT);
-	(void)sigaction(SIGINT, &act, NULL);
+	sigaction(SIGINT, &act, NULL);
 
 	act.sa_handler = s_die;
-	(void)sigaddset(&act.sa_mask, SIGTERM);
-	(void)sigaction(SIGTERM, &act, NULL);
+	sigaction(SIGTERM, &act, NULL);
 }

@@ -195,7 +195,6 @@
 #endif
 #define	CPATH	"ircd.conf"	/* server configuration file */
 #define	MPATH	"ircd.motd"	/* server MOTD file */
-#define	LPATH	"debug.log"	/* Where the debug file lives, if DEBUGMODE */
 #define	PPATH	"ircd.pid"	/* file for server pid */
 
 /*
@@ -207,6 +206,7 @@
 #define	IRC_LOGGING
 #define FNAME_USERLOG "users.log"
 #define FNAME_OPERLOG "opers.log"
+#define FNAME_IRCDLOG "ircd.log"
 
 /* FAILOPER_WARN
  *
@@ -477,10 +477,8 @@
 
 #ifdef DEBUGMODE
 # define Debug(x) debug x
-# define LOGFILE LPATH
 #else
 # define Debug(x) ;
-# define LOGFILE "/dev/null"
 #endif
 
 /*

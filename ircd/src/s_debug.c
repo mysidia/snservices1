@@ -78,12 +78,7 @@ debug(int level, char *form, ...)
 	if ((debuglevel >= 0) && (level <= debuglevel)) {
 		(void)vsprintf(debugbuf, form, ap);
 
-		if (local[2]) {
-			local[2]->sendM++;
-			local[2]->sendB += strlen(debugbuf);
-		}
-		(void)fprintf(stderr, "%s", debugbuf);
-		(void)fputc('\n', stderr);
+		tolog(LOG_IRCD, debugbuf);
 	}
 	errno = err;
 	va_end(ap);
