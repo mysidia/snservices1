@@ -561,23 +561,19 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  update_load();
 	  (void)m_motd(sptr, sptr, 1, parv);
 
-#if defined(NOSPOOF)
           if (!IsUserVersionKnown(sptr)) {
-	      if (!IsHurt(sptr)) {
 #if defined(REQ_VERSION_RESPONSE)		      
-		      sptr->hurt = 4;
-		      SetHurt(sptr);
+		  if (!IsHurt(sptr)) {
+			  sptr->hurt = 4;
+			  SetHurt(sptr);
+		  }
 #endif		      
-	      }
 			
- 	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
-	 }
-#endif
-	}
-      else 
-	{ 
-	  update_load();
-	  sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
+		  sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
+	  }
+	} else { 
+		update_load();
+		sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
 	}
 #ifdef HOSTILENAME
       /*
@@ -635,8 +631,11 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
        sendto_serv_butone(sptr, ":%s HURTSET %s %d", me.name, sptr->name,
 		            sptr->hurt);
   }
-  if (MyConnect(sptr))
-    send_umode_out(cptr, sptr, sptr, 0);
+  if (MyConnect(sptr)) {
+	  if (UFLAGS_DEFAULT & U_MASK)
+		  perform_mask(sptr, MODE_ADD);
+	  send_umode_out(cptr, sptr, sptr, 0);
+  }
 
   return 0;
 }
@@ -1581,6 +1580,7 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				version_buf[l - 1] = '\0';
 			dup_sup_version(sptr->user, version_buf);
 		}
+		Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
 		return 0;
 	}
 
@@ -2030,7 +2030,6 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 */
 int m_user(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-#define	UFLAGS	(0)
 	char	*username, *host, *server, *realname;
 	anUser	*user;
  
@@ -2080,13 +2079,11 @@ int m_user(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			   me.name, parv[0]);
 		return 0;
 	    }
-	ClientUmode(sptr) |= U_INVISIBLE;
 
-	/* sptr->flags |= (UFLAGS & atoi(host)); 
-             call me crazy, but isn't &'ing host (a pointer) a bit weird ? */
-	ClientUmode(sptr) |= (UFLAGS); 
 	strncpyzt(user->host, host, sizeof(user->host));
 	strncpyzt(user->server, me.name, sizeof(user->server));
+
+	ClientUmode(sptr) |= UFLAGS_DEFAULT;
 
 user_finish:
 	strncpyzt(sptr->info, realname, sizeof(sptr->info));

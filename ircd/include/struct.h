@@ -258,11 +258,18 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
 #define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
+/*
+ * Default mode(s) to set on new user connections.
+ */
+#define UFLAGS_DEFAULT	(U_MASK)
+
 #define FLAGSET_FLOOD   (U_FLOOD)  /* what clients should flood notices be sent to ? */
 #define FLAGSET_CLIENT	(U_CLIENT) /* what clients should client notices be sent to ? */
 
 typedef	enum {
-	LOG_OPER, 	LOG_USER,        LOG_NET,
+	LOG_OPER,
+ 	LOG_USER,
+        LOG_NET,
 	LOG_HI
 } loglevel_value_t;
 
