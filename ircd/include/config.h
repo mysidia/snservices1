@@ -229,14 +229,6 @@
  */
 #define FAILOPER_WARN
 
-/* NO_DEFAULT_INVISIBLE
- *
- * When defined, your users will not automatically be attributed with user
- * mode "i" (i == invisible). Invisibility means people dont showup in
- * WHO or NAMES unless they are on the same channel as you.
- */
-#define	NO_DEFAULT_INVISIBLE
-
 /* OPER_* defines
  *
  * See ./docs/example.conf for examples of how to restrict access for

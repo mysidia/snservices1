@@ -37,10 +37,6 @@ char	serveropts[] = {
 #ifdef	HUB
 'H',
 #endif
-'i', /* SHOW_INVISIBLE_LUSERS */
-#ifndef	NO_DEFAULT_INVISIBLE
-'I',
-#endif
 #ifdef	IDLE_FROM_MSG
 'M',
 #endif

@@ -78,14 +78,7 @@ Overview of this document:
 
    f) ENABLE_SUMMON, ENABLE_USERS -- depricated
 
-   g) SHOW_INVISIBLE_LUSERS, NO_DEFAULT_INVISIBLE
-
-	On large IRC networks, the number of invisible users is likely to
-      be large and reporting that number cause no pain.  To aid and effect
-      this, SHOW_INVISIBLE_LUSERS is provided to cause the LUSERS command
-      to report the number of invisible users to all people and not just
-      operators.  The NO_DEFAULT_INVISIBLE define is used to toggle whether
-      clients are automatically made invisible when they register.
+   g) SHOW_INVISIBLE_LUSERS, NO_DEFAULT_INVISIBLE - depricated
 
    h) OPER_KILL, OPER_REHASH, OPER_RESTART, LOCAL_KILL_ONLY
 

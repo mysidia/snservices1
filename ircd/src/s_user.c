@@ -2128,9 +2128,7 @@ int m_user(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			   me.name, parv[0]);
 		return 0;
 	    }
-#ifndef	NO_DEFAULT_INVISIBLE
 	ClientUmode(sptr) |= U_INVISIBLE;
-#endif
 
 	/* sptr->flags |= (UFLAGS & atoi(host)); 
              call me crazy, but isn't &'ing host (a pointer) a bit weird ? */
