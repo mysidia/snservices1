@@ -599,29 +599,6 @@ sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 }
 
 /*
- * Send a message to all connections except 'one'. The basic wall type
- * message generator.
- */
-void
-sendto_all_butone(aClient *one, aClient *from, char *fmt, ...)
-{
-	va_list	ap;
-	va_list ap2;
-	aClient *cptr;
-
-	va_start(ap, fmt);
-
-	for (cptr = &me; cptr; cptr = cptr->lnext)
-		if (!IsMe(cptr) && one != cptr) {
-			va_copy(ap2, ap);
-			vsendto_prefix_one(cptr, from, fmt, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-/*
  * Send to local ops only.
  */
 void
@@ -676,137 +653,6 @@ sendto_failops(char *fmt, ...)
 		}
 
 	va_end(ap);
-}
-
-/*
- * Send to mode +h people
- */
-void
-sendto_helpops(char *fmt, ...)
-{
-	va_list ap;
-	va_list ap2;
-	aClient *cptr;
-	char    nbuf[1024];
-
-	va_start(ap, fmt);
-
-	for (cptr = &me; cptr; cptr = cptr->lnext)
-		if (!IsServer(cptr) && !IsMe(cptr) &&
-		    IsHelpOp(cptr)) {
-			sprintf(nbuf, ":%s NOTICE %s :*** HelpOp -- ",
-				me.name, cptr->name);
-			strncat(nbuf, fmt,
-				sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-			vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-/*
- * send to flags very loosely, IOW it's not essential
- * that each message makes it, but it is essential not to 
- * send out a flood of messages if this routine is called
- * very quickly...
- */
-void
-sendto_flag_norep(int flags, int max, char *fmt, ...)
-{
-	va_list ap;
-	char next_pattern[2048*2] = "";
-	static time_t last_send = 0;
-	static int    num_sent  = 0;
-
-	if (last_send<1 || ((NOW - last_send) > 7 ))
-                num_sent = 0;
-
-	last_send = NOW;
-
-	if (++num_sent > 15 && (num_sent < 100))
-		return;
-	else if (num_sent >= 100) /* give another warning */
-		num_sent = 13;
-
-	va_start(ap, fmt);
-	vsprintf(next_pattern, fmt, ap);
-	va_end(ap);
-
-	if (strcmp(last_pattern, next_pattern)==0)
-		recurse_send++;
-	else
-		recurse_send = 0;
-	if (recurse_send == 0)
-		strncpy(last_pattern, next_pattern, sizeof(last_pattern));
-	if (!recurse_send || recurse_send < max)
-		sendto_flag(flags, next_pattern);
-	else if ((recurse_send > max) && (((recurse_send-max)) > 10))
-		recurse_send = 0;
-	else
-		num_sent--;
-}
-
-void
-sendto_umode_norep(int flags, int max, char *fmt, ...)
-{
-	va_list ap;
-	static char   buff1[1024] = "";
-	static char   buff2[1024] = "";
-	static char   *outbuf = buff1;
-	char *lastbuf;
-	static time_t last_send = 0;
-	static int    num_sent  = 0;
-	int same;
-
-	/*
-	 * Rotate buffers.  This sames the last output in the buffer, but
-	 * keeps us from having to strcpy it to the save area.
-	 */
-	if (outbuf == buff1) {
-		outbuf = buff2;
-		lastbuf = buff1;
-	} else {
-		outbuf = buff1;
-		lastbuf = buff2;
-	}
-
-	/*
-	 * Print the text to the output buffer.
-	 */
-	va_start(ap, fmt);
-	vsnprintf(outbuf, sizeof(buff1), fmt, ap);
-	va_end(ap);
-
-	/*
-	 * Has it been at least 7 seconds since the last call?
-	 */
-	if (last_send < 1 || ((NOW - last_send) > 7 ))
-                num_sent = 0;
-
-	/*
-	 * Was it the same as last call?
-	 */
-	same = 0;
-	if (num_sent)
-		if (strcmp(lastbuf, outbuf) == 0)
-			same = 1;
-
-	last_send = NOW;
-	if (!same)
-		num_sent = 0;
-
-	/*
-	 * Print no more than "max" messages in a row from this one source.
-	 */
-	if (++num_sent > max && (num_sent < 100))
-		return;
-	else if (num_sent >= 100) /* give another warning */
-		num_sent = max;
-
-	sendto_umode(flags, outbuf);
 }
 
 /*
@@ -1036,40 +882,6 @@ sendto_opers_butone(aClient *one, aClient *from, char *fmt, ...)
 			continue;
 		if (cptr->from == one)
 			continue;	/* ...was the one I should skip */
-		sentalong[i] = 1;
-
-		va_copy(ap2, ap);
-      		vsendto_prefix_one(cptr->from, from, fmt, ap2);
-		va_end(ap2);
-	}
-
-	va_end(ap);
-}
-
-/*
- * Send message to all operators except local ones
- *
- * from- client which message is from *NEVER* NULL!!
- */
-void
-sendto_ops_butme(aClient *from, char *fmt, ...)
-{
-	va_list	ap;
-	va_list	ap2;
-	int	i;
-	aClient *cptr;
-
-	va_start(ap, fmt);
-
-	bzero(sentalong, sizeof(sentalong));
-	for (cptr = client; cptr; cptr = cptr->next) {
-		if (!SendWallops(cptr))
-			continue;
-		i = cptr->from->sock->fd;	/* find connection oper is on */
-		if (sentalong[i])	/* sent message along it already ? */
-			continue;
-		if (!strcmp(cptr->user->server, me.name))	/* a locop */
-			continue;
 		sentalong[i] = 1;
 
 		va_copy(ap2, ap);

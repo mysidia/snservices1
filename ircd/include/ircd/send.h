@@ -41,8 +41,6 @@ void sendto_umode_except(int flags, int notflags, char *fmt, ...);
 
 void sendto_locfailops(char *fmt, ...);
 
-void sendto_helpops(char *fmt, ...);
-
 void sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 			      char *fmt, ...);
 
@@ -58,15 +56,9 @@ void sendto_match_servs(aChannel *chptr, aClient *from, char *fmt, ...);
 void sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 			 char *fmt, ...);
 
-void sendto_all_butone(aClient *one, aClient *from, char *fmt, ...);
-
 void sendto_ops(char *fmt, ...);
 
 void sendto_failops(char *fmt, ...);
-
-void sendto_flag_norep(int flags, int max, char *fmt, ...);
-
-void sendto_umode_norep(int flags, int max, char *fmt, ...);
 
 void sendto_flag(int flags, char *fmt, ...);
 
