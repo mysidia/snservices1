@@ -25,6 +25,10 @@
 #include "setup.h"
 #include "options.h"
 
+#ifndef NS_URL
+#error No value for NS_URL given
+#endif
+
 /*
  *
  *   NOTICE
