@@ -541,6 +541,8 @@ aClient	*cptr;
 	sendto_one(cptr, "SERVER %s 1 :%s",
 		   my_name_for_link(me.name, aconf), me.info);
 
+	socket_monitor(cptr->sock, MONITOR_READ, network_read_handler);
+
 	return (IsDead(cptr)) ? -1 : 0;
 }
 
@@ -878,7 +880,7 @@ struct	HostEnt	*hp;
 		nextdnscheck = 1;
 		s = (char *)index(aconf->host, '@');
 		s++; /* should NEVER be NULL */
-		aconf->addr = address_make(s, 0);
+		aconf->addr = address_make(s, (aconf->port > 0 ? aconf->port : portnum));
 		if (aconf->addr == NULL)
 		{
 			return 0;
@@ -906,6 +908,8 @@ struct	HostEnt	*hp;
 		free_client(cptr);
 		return -1;
 	}
+
+	cptr->sock->data = cptr;
 
         /* Attach config entries to client here rather than in
          * completed_connection. This to avoid null pointer references

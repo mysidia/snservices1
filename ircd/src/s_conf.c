@@ -1235,7 +1235,7 @@ static	int	lookup_confhost(aConfItem *aconf)
 	ln.value.aconf = aconf;
 	ln.flags = ASYNC_CONF;
 
-	aconf->addr = address_make(s, 0);
+	aconf->addr = address_make(s, (aconf->port > 0 ? aconf->port : portnum));
 	if (aconf->addr == NULL)
 	{
 		goto badlookup;
