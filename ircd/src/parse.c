@@ -502,7 +502,7 @@ struct	Message *mptr;
 					&& mptr->func != m_private
 					&& mptr->func != m_who
                                         && (mptr->while_hurt < 1 ||
-					mptr->while_hurt > 1)) {
+					mptr->while_hurt > 2)) {
 
 					{
 					   sendto_one(from, ":%s NOTICE %s :Sorry, but your IRC software "
