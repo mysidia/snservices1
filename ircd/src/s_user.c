@@ -3781,7 +3781,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		break;
 	      }
 	  if (flag == 0 && MyConnect(acptr))
-	    sendto_one(acptr,
+	    sendto_one(sptr,
 		       err_str(ERR_UMODEUNKNOWNFLAG),
 		       me.name, parv[0]);
 	  break;
