@@ -145,16 +145,16 @@ build:
 	fi
 
 	@if [ "$(DESCRYPT)" = "fcrypt.o" ] ; then \
-	        fcrypt.sh ; \
+	        ./fcrypt.sh ; \
 	fi
 
 	@for i in $(SUBDIRS); do \
 		echo "Building $$i"; \
 		echo '' | awk '{print systime()}' > $$i/clock ; \
-		( cd $$i; rm -f Makefile.err ; ${MAKE} ${MAKEARGS} build; fin.sh; ) ; \
+		( cd $$i; rm -f Makefile.err ; ${MAKE} ${MAKEARGS} build; ./fin.sh; ) ; \
                 rm -f $i/clock ; \
 	done
-#	@#info.sh -m
+#	@#./info.sh -m
 
 clean:
 	$(RM) -f *~ \#* core *.orig include/*.orig

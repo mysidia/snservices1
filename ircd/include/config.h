@@ -39,8 +39,16 @@
  *
  */
 
-#define MAXKILLS 25     /* maximum # of people listed per kill   */
-#define MAXHURTS 25     /* maximum # of people listed in a /hurt */
+#define	MAXKILLS 25     /* maximum # of people listed per kill   */
+#define	MAXHURTS 25     /* maximum # of people listed in a /hurt */
+#undef	BOOT_MSGS
+#define	HASH_MSGTAB
+
+/*
+ *  URL people denied access as result of open socks server should be sent to
+ *  for help
+ */
+#define SOCKSFOUND_URL   "http://www.sorcery.net/help/open_socks.html"
 
 /* Type of host. These should be made redundant somehow. -avalon */
 
@@ -199,7 +207,7 @@
  *       the maintainer.
  */
 
-/* #undef	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
+#undef	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
 
 /*
  * defining FORCE_CORE will automatically "unlimit core", forcing the
@@ -436,11 +444,6 @@
 #ifndef BUFFERPOOL
 #define	BUFFERPOOL     (9 * MAXSENDQLENGTH)
 #endif
-
-/*
- * use these to setup a Unix domain socket to connect clients/servers to.
- */
-/* #define	UNIXPORT /* */
 
 /*
  * IRC_UID
@@ -701,10 +704,6 @@ error You stuffed up config.h signals #defines use only one.
 # undef DOTERMCAP
 #endif
 
-#ifndef	UNIXPORT
-#undef	UNIXPORTPATH
-#endif
-
 #if defined(CLIENT_FLOOD)
 #  if	(CLIENT_FLOOD > 8000)
 #    define CLIENT_FLOOD 8000
@@ -718,6 +717,11 @@ error CLIENT_FLOOD undefined
 #endif
 #if (NICKNAMEHISTORYLENGTH < 100)
 #  define NICKNAMEHISTORYLENGTH 100
+#endif
+
+#ifndef SOCKSFOUND_URL
+#error SOCKSFOUND_URL is not defined: Please define in config.h
+error SOCKSFOUND_URL is not defined: Please define in config.h
 #endif
 
 /*

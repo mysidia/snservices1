@@ -168,6 +168,7 @@
 #define	ERR_NICKCOLLISION    436
 #define ERR_BANNICKCHANGE    437
 
+#define ERR_SERVICESDOWN     440
 #define ERR_USERNOTINCHANNEL 441
 #define ERR_NOTONCHANNEL     442
 #define	ERR_USERONCHANNEL    443
@@ -220,12 +221,12 @@
 #define	RPL_UNAWAY           305
 #define	RPL_NOWAWAY          306
 
+#define RPL_WHOISHURT	     309 /* user is hurt */
 #define RPL_WHOISHELPOP      310 /* -Donwulff */
 
 #define RPL_WHOISUSER        311
 #define RPL_WHOISSERVER      312
 #define RPL_WHOISOPERATOR    313
-
 #define RPL_WHOWASUSER       314
 /* rpl_endofwho below (315) */
 #define	RPL_ENDOFWHOWAS      369
