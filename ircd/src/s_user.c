@@ -2279,7 +2279,7 @@ static int quoteShowConData(const char* text, char* buf, int length)
 int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 {
 	aClient* ptr;
-	char* pos = NULL, *option;
+	char* pos = NULL, *option, *option_args = NULL;
 
 	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
@@ -2297,21 +2297,26 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 	}
 
 	if (parc >= 3) {
+		option_args = parv[2];
+
 	        if (hunt_server(cptr,sptr,":%s SHOWCON %s :%s", 1,parc,parv) != HUNTED_ISME)
         	    return 0;
 	}
+	else {
+		option_args = parv[1];
+	}
 
 	
-	 for (option = strtoken(&pos, parv[1], "+"); option;
+	 for (option = strtoken(&pos, option_args, "+"); option;
 	       option = strtoken(&pos, NULL, "+"))
 	 {
-	 	if (mycmp(parv[2], "unknowns") == 0)
+	 	if (mycmp(option, "unknowns") == 0)
 			show_unknowns = 1;
-		else if (mycmp(parv[2], "users") == 0)
+		else if (mycmp(option, "users") == 0)
 			show_users = 1;
-		else if (mycmp(parv[2], "all") == 0) 
+		else if (mycmp(option, "all") == 0) 
 			show_all = 1;
-		else if (mycmp(parv[2], "xml") == 0) 
+		else if (mycmp(option, "xml") == 0) 
 			extended = 1;
 		else {
 			sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> {(unknowns | users) + ...}", me.name, sptr->name);
