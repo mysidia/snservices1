@@ -39,7 +39,7 @@ static  Numeric local_replies[] = {
 /* 002 RPL_YOURHOST*/	2,	":Your host is %s, running version %s",
 /* 003 RPL_CREATED */	3,	":This server was created %s",
 /* 004 RPL_MYINFO */	4,	"%s %s oilmwsghOkcf biklmnopstv",
-/* 005 RPL_PROTOCTL*/	5,	"WATCH=128 :is available on this server",
+/* 005 RPL_PROTOCTL*/	5,	"WTCH_BROKEN=128 :are available on this server",
 
 /* 200 */	RPL_TRACELINK, "Link %s%s %s %s",
 /* 201 */	RPL_TRACECONNECTING, "Attempt %d %s",

@@ -1800,7 +1800,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                    }
                 else if (sItem && !(sItem->status & SOCK_DONE) && ( (NOW - sItem->start) > SOCKS_TIMEOUT) )
                   {
-                      sendto_socks(sItem, "Socks check timed out.  "
+                      sendto_socks(sItem, "*** Socks check timed out.  "
 		      		 "This is probably a good thing.", me.name);
                       sendto_umode(FLAGSET_CLIENT, "Socks server timeout for [%s]",
 			inetntoa((char *)&sItem->in_addr));
