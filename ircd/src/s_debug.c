@@ -65,10 +65,6 @@ char	serveropts[] = {
 #include <sys/resource.h>
 #include "h.h"
 
-#ifndef ssize_t
-#define ssize_t unsigned int
-#endif
-
 #ifdef DEBUGMODE
 static	char	debugbuf[1024];
 
