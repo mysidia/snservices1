@@ -17,6 +17,45 @@ sub Errmsg
 	return $SIPC::ERRORTEXT;
 }
 
+sub queryNick
+{
+	my $self = shift;
+	my $qtarget = shift;
+	my $qfield = shift;
+	my $sock = $self->{sock};
+	my $sel = $self->{sel};
+
+	#print "\nQUERY OBJECT RNICK " . $qtarget . " " . $qfield . "\n";
+	$sock->print("QUERY OBJECT RNICK " . $qtarget . " " . $qfield . "\n");
+	for(;;) {
+		for ($sel->can_read(5)) {
+			if ($_ ne $self->{sock}) {
+				return undef;
+			}
+			while ($line = $sock->getline) {
+				#print "\n" . $line . "\n";
+				if ($line =~ /^ERR-BADTARGET QUERY OBJECT RNICK=(\S+) - (.*)/)
+				{
+					$SIPC::ERRORTEXT = $2;
+					return undef;
+				}
+				elsif ($line =~ /^ERR-BADATT QUERY OBJECT RNICK EATTR - (.*)/) 
+				{
+					$SIPC::ERRORTEXT = "Unknown attribute: RNICK " . $qfield;
+					return undef;
+				}
+				elsif ($line =~ /^OK QUERY OBJECT RNICK=(\S+) (\S+) (.*)/)
+				{
+					if ($1 ne $qtarget) {
+						warn "$1 <> $target" . "\n";
+					}
+					return $3;
+				}
+			}
+		}
+	}
+}
+
 sub Connect 
 {
 	my ($x, $host, $port, $user, $password) = @_;
@@ -39,7 +78,7 @@ sub Connect
 				return undef;
 			}
 			while ($line = $sock->getline) {
-				print $line;
+				#print $line;
 
 				if (grep(/^AUTH SYSTEM LOGIN irc\/services/, $line)) {
 					$sock->print("AUTH SYSTEM LOGIN " . $user . "\n");
@@ -60,7 +99,12 @@ sub Connect
 					$sock->close;
 					return undef;
 				}
-				elsif ($line =~ /^OK AUTH SYSTEM PASS/) {
+				# $line =~ /^OK AUTH SYSTEM PASS/
+				elsif ($line =~ /YOU ARE (\S+)\/(\S+)/) {
+                                       while ($line = $sock->getline) {
+					}
+					$self->{'sock'}=$sock;
+					$self->{'sel'}=$sel;
 					return (bless $self, $x);
 				}
 			}

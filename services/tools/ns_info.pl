@@ -5,4 +5,10 @@ use Sipc;
 
 print "Logging in to services...\n";
 $h = Sipc->Connect("127.0.0.1", 2050, "mysid/test", "test") || die 'Unable to connect';
-print "\nLogged in.\n";
+
+if (!($x = $h->queryNick("Mysidia", "TIMEREG"))) {
+   print "Error: " . $h->Errmsg() . "\n";
+}
+
+
+print $x . "\n";
