@@ -12,10 +12,12 @@ class TimeStrTestCase : public CppUnit::TestCase
 {
 	CPPUNIT_TEST_SUITE( TimeStrTestCase );
 	CPPUNIT_TEST( testParse );
+	CPPUNIT_TEST( testOldStyle );
 	CPPUNIT_TEST_SUITE_END();
 	public:
 
 	void testParse();
+	void testOldStyle();
 
 	TimeStrTestCase() { }
 	virtual ~TimeStrTestCase() { }

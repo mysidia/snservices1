@@ -8,6 +8,39 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TimeStrTestCase );
 
+void 
+TimeStrTestCase::testOldStyle()
+{
+	TimeLengthString tls("3", false);
+
+	CPPUNIT_ASSERT(tls.isValid() == false);
+
+	tls = TimeLengthString("3", true);
+	CPPUNIT_ASSERT(tls.isValid() == true);
+	CPPUNIT_ASSERT(tls.getSeconds() == 0 && tls.getMinutes() == 0);
+	CPPUNIT_ASSERT(tls.getDays() == 0);
+	CPPUNIT_ASSERT(tls.getHours() == 3);
+	CPPUNIT_ASSERT(tls.getTotalSeconds() == 3*3600);
+
+	CPPUNIT_ASSERT(TimeLengthString("99999999999999999999999999999").
+                       isValid() == false);
+
+	CPPUNIT_ASSERT(TimeLengthString("106144390400000").isValid() == false);
+
+	CPPUNIT_ASSERT(TimeLengthString("4x", true).isValid() == false);
+	CPPUNIT_ASSERT(TimeLengthString("4h5", true).isValid() == false);
+	CPPUNIT_ASSERT(TimeLengthString("4h5d", true).isValid() == true);
+	CPPUNIT_ASSERT(TimeLengthString("4h5", false).isValid() == false);
+	CPPUNIT_ASSERT(TimeLengthString("4h5m", true).isValid() == true);
+	CPPUNIT_ASSERT(TimeLengthString("4.5", true).isValid() == false);
+	CPPUNIT_ASSERT(TimeLengthString("4h5m36x", true).isValid() == false);
+	CPPUNIT_ASSERT(TimeLengthString("4h5m36m", true).isValid() == true);
+
+	CPPUNIT_ASSERT(TimeLengthString("4h5m36m", true).getMinutes() == 36);
+	CPPUNIT_ASSERT(TimeLengthString("4h5m36m15s5s", true).getTotalSeconds() 
+                                   == 4*3600+36*60+5 );
+}
+
 void
 TimeStrTestCase::testParse()
 {
