@@ -243,5 +243,6 @@
 #define NETNICK			"SorceryNet"
 #define	NETNICKFOUNDERLINE	"The SorceryNet Network (sorcery@sorcery.net)"
 #define IRCD_MLOCK
+#define IRCD_REGMODE
 #endif
 #endif
