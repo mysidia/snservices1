@@ -655,6 +655,7 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 				excluded->count_removes[x]++;
 			}	
 		}
+		ops_email_nitems++;
 	}
 #endif	
 }
