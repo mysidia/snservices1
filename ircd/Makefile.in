@@ -1,0 +1,207 @@
+#/************************************************************************
+#*   IRC - Internet Relay Chat, Makefile
+#*   Copyright (C) 1990, Jarkko Oikarinen
+#*
+#*   This program is free software; you can redistribute it and/or modify
+#*   it under the terms of the GNU General Public License as published by
+#*   the Free Software Foundation; either version 1, or (at your option)
+#*   any later version.
+#*
+#*   This program is distributed in the hope that it will be useful,
+#*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#*   GNU General Public License for more details.
+#*
+#*   You should have received a copy of the GNU General Public License
+#*   along with this program; if not, write to the Free Software
+#*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#*/
+
+CC=@CC@
+INCLUDEDIR=../include
+
+# [CHANGEME]
+# Default flags:
+# Change XCFLAGS if you don't like what Config puts there.  Same with
+# IRCDLIBS.
+#
+# If you are configuring by hand, try "-O -g" for XCFLAGS, and leave
+# IRCDLIBS blank.  If that fails, try recomendations below.
+#
+XCFLAGS=
+IRCDLIBS=@LIBS@ @MD5CRYPT@
+
+#set this to fcrypt.o to enable des crypt()
+DESCRYPT=@DESCRYPT@
+
+#
+# use the following on MIPS:
+#CFLAGS= -systype bsd43 -DSYSTYPE_BSD43 -I$(INCLUDEDIR)
+# For Irix 4.x (SGI), use the following:
+#CFLAGS= -g -cckr -I$(INCLUDEDIR)
+#
+# on NEXT use:
+#CFLAGS=-bsd -I$(INCLUDEDIR)
+#on NeXT other than 2.0:
+#IRCDLIBS=-lsys_s
+#
+# AIX 370 flags
+#CFLAGS=-D_BSD -Hxa -I$(INCLUDEDIR)
+#IRCDLIBS=-lbsd
+#
+# Dynix/ptx V2.0.x
+#CFLAGS= -I$(INCLUDEDIR) -O -Xo
+#IRCDLIBS= -lsocket -linet -lnsl -lseq
+# 
+# Dynix/ptx V1.x.x
+#IRCDLIBS= -lsocket -linet -lnsl -lseq
+#
+#use the following on SUN OS without nameserver libraries inside libc
+#IRCDLIBS=-lresolv
+#
+# Solaris 2
+#IRCDLIBS=-lsocket -lnsl -lresolv -L/usr/ucblib -R/usr/ucblib -lgen
+#
+# ESIX
+#CFLAGS=-O -I$(INCLUDEDIR) -I/usr/ucbinclude
+#IRCDLIBS=-L/usr/ucblib -L/usr/lib -lsocket -lucb -lns -lnsl
+#
+# LDFLAGS - flags to send the loader (ld). SunOS users may want to add
+# -Bstatic here.
+#
+#LDFLAGS=-Bstatic
+#
+#Dell SVR4
+#CC=gcc
+#CFLAGS= -I$(INCLUDEDIR) -O2
+#IRCDLIBS=-lsocket -lnsl -lucb
+
+# [CHANGEME]
+# IRCDMODE is the mode you want the binary to be.
+# The 4 at the front is important (allows for setuidness)
+#
+# WARNING: if you are making ircd SUID or SGID, check config.h to make sure
+#          you are not defining CMDLINE_CONFIG 
+IRCDMODE=@IRCDMODE@
+
+# [CHANGEME]
+# IRCDDIR must be the same as DPATH in include/config.h
+#
+IRCDDIR=@DPATH@
+
+# [CHANGEME]
+# Some SunOS versions want this.  Try it without first.
+#RES=res_init.o res_comp.o res_mkquery.o
+# BSDI systems want this.
+#RES=res_skipname.o
+# Glibc Linux systems want this.
+#RES=res_comp.o res_mkquery.o
+# The rest are perfectly content with this.
+RES=
+
+# [CHANGEME]
+# If you get a compile-time error dealing with u_int32_t, comment out
+# this line.
+# NEED_U_INT32_T=	-DNEED_U_INT32_T
+NEED_U_INT32_T=
+
+# [CHANGEME]
+# If you get a link-time error dealing with strtoul, comment out
+# this line.
+# STRTOUL=	strtoul.o
+STRTOUL=
+
+# [CHANGEME]
+# If you get crashes around a specific number of clients, and that client
+# load comes close or a little over the system-defined value of FD_SETSIZE,
+# override it here and see what happens.
+FD_SETSIZE=
+
+CFLAGS=-I$(INCLUDEDIR) -I@top_srcdir@/../ -I../md5 @CFLAGS@ $(XCFLAGS) $(FD_SETSIZE)
+
+SHELL=/bin/sh
+SUBDIRS=md5 src
+BINDIR=$(IRCDDIR)
+MANDIR=/usr/local/man
+INSTALL=/usr/bin/install
+RM=rm
+CP=cp
+TOUCH=touch
+
+all:	build
+
+MAKEARGS =	'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
+		'LDFLAGS=${LDFLAGS}' 'IRCDMODE=${IRCDMODE}' \
+		'BINDIR=${BINDIR}' 'INSTALL=${INSTALL}' \
+		'INCLUDEDIR=${INCLUDEDIR}' 'IRCDDIR=${IRCDDIR}' \
+		'MANDIR=${MANDIR}' 'RM=${RM}' 'CP=${CP}' 'TOUCH=${TOUCH}' \
+		'DESCRYPT=${DESCRYPT}' \
+		'RES=${RES}' 'SHELL=${SHELL}' 'STRTOUL=${STRTOUL}'
+
+server:
+build:
+#	-@if [ ! -f include/setup.h ] ; then \
+#		echo "Hmm...doesn't look like you've run Config..."; \
+#		echo "Doing so now."; \
+#		sh Config; \
+#	fi
+
+	@if [ "$(DESCRYPT)" = "fcrypt.o" ] ; then \
+	        ./fcrypt.sh ; \
+	fi
+
+	@for i in $(SUBDIRS); do \
+		echo "Building $$i"; \
+		( cd $$i; ${MAKE} ${MAKEARGS} build; ) ; \
+	done
+	@./helpdigest NONE
+#	@#./info.sh -m
+
+clean:
+	$(RM) -f *~ \#* core *.orig include/*.orig
+	@for i in $(SUBDIRS); do \
+		echo "Cleaning $$i";\
+		( cd $$i; ${MAKE} ${MAKEARGS} clean; ) \
+	done
+	-@if [ -f include/setup.h ] ; then \
+	  echo "To really restart installation, run make distclean" ; \
+	fi
+	(cd md5;${MAKE} clean)
+	(cd tools;${MAKE} clean)
+
+distclean: clean
+	rm -f config.cache config.status Options
+	rm -f Config setup.h Makefile
+	(cd src;make distclean)
+	(cd md5;make distclean)
+	(cd tools;make distclean)
+
+cleandir: distclean
+
+maintainer-clean: distclean
+	rm -f configure config.cache
+
+depend:
+	@for i in $(SUBDIRS); do \
+		echo "Making dependencies in $$i";\
+		( cd $$i; ${MAKE} ${MAKEARGS} depend; ) \
+	done
+
+#install: all
+#	@echo "Now install by hand; make install is broken."
+
+install: all
+	@if [ ! -d ${IRCDDIR} -a ! -f ${IRCDDIR} ] ; then \
+		mkdir ${IRCDDIR} ; \
+		chmod 700 ${IRCDDIR} ; \
+	fi
+	@echo "installing ircd..."
+	$(CP) src/ircd ${IRCDDIR}
+	@chmod $(IRCDMODE) ${IRCDDIR}/ircd
+	$(CP) src/chkconf ${IRCDDIR}
+	@chmod $(IRCDMODE) ${IRCDDIR}/chkconf
+	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
+	./helpdigest ${IRCDDIR}
+	$(CP) doc/example.conf ${IRCDDIR}
+	@echo "done!"
+

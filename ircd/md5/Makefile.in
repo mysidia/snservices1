@@ -1,0 +1,26 @@
+CFLAGS=@CFLAGS@ -Wall -I@basedir@ -I@include@
+AR=@AR@
+RM=@RM@
+
+SRC=md5.c iface.c
+
+build: hash.a
+
+hash.a: iface.o md5.o
+	@echo "Building hash.a:"
+	$(AR) r md5.a iface.o
+	$(AR) r md5.a md5.o
+
+clean:
+	$(RM) -f md5.a iface.o md5.o
+
+distclean: clean
+	$(RM) -f Makefile
+
+depend:
+	@echo "Making dependencies:"
+	@MAKEDEPEND@ -I@include@ -I@basedir@ -f Makefile.in ${SRC}
+
+md5.o: md5.c md5.h
+iface.o: iface.c md5_iface.h md5.h
+
