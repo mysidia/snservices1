@@ -38,8 +38,21 @@ static  Numeric local_replies[] = {
 /* 001 RPL_WELCOME */	1,	":Welcome to the "NETWORK" IRC Network %s",
 /* 002 RPL_YOURHOST*/	2,	":Your host is %s, running version %s",
 /* 003 RPL_CREATED */	3,	":This server was created %s",
-/* 004 RPL_MYINFO */	4,	"%s %s oilmwsghOkcf biklmnopstv",
-/* 005 RPL_PROTOCTL*/	5,	"WTCH_BROKEN=128 :are available on this server",
+/* 004 RPL_MYINFO */	4,	"%s %s oilmwsghOkcf Hbciklmnopstv",
+/* 005 RPL_PROTOCTL*/	5,	"NETWORK=" NETWORK " "
+/* 005 ------------------*/	"WTCH_BROKEN=128 "
+/* 005 ------------------*/	"MODES=3 "
+/* 005 ------------------*/	"CHANMODES=b,k,l,Hcimnpst "
+/* 005 ------------------*/	"CHANTYPES=#& "
+/* 005 ------------------*/	"KICKLEN=307 " /*TOPICLEN*/
+/* 005 ------------------*/	"MAXBANS=60 " /*MAXBANS*/
+/* 005 ------------------*/	"MAXCHANNELS=10 " /*MAXCHANNELSPERUSER*/
+/* 005 ------------------*/	"NICKLEN=17 " /*NICKLEN*/
+/* 005 ------------------*/	"PREFIX=(ov)@+ "
+/* 005 ------------------*/	"SILENCE=5 "
+/* 005 ------------------*/	"TOPICLEN=307 " /*TOPICLEN*/
+/* 005 ------------------*/	"WALLCHOPS "
+/* 005 ------------------*/	":are available on this server",
 
 /* 200 */	RPL_TRACELINK, "Link %s%s %s %s",
 /* 201 */	RPL_TRACECONNECTING, "Attempt %d %s",
@@ -116,6 +129,7 @@ static  Numeric local_replies[] = {
 /* 331 */	RPL_NOTOPIC, "%s :No topic is set.",
 /* 332 */	RPL_TOPIC, "%s :%s",
 /* 333 */       RPL_TOPICWHOTIME, "%s %s %lu",
+/* 334 */	RPL_COMMANDSYNTAX, "%s",
 /* 341 */	RPL_INVITING, "%s %s",
 /* 342 */	RPL_SUMMONING, "%s :User summoned to irc",
 #ifdef USE_CASETABLES
@@ -159,7 +173,7 @@ static  Numeric local_replies[] = {
 /* 406 */	ERR_WASNOSUCHNICK, "%s :There was no such nickname",
 /* 407 */	ERR_TOOMANYTARGETS,
 		"%s :Duplicate recipients. No message delivered",
-/* 408 */	ERR_NOSUCHSERVICE, (char *)NULL,
+/* 408 */	ERR_NOCOLORSONCHAN, "%s :This channel does not allow colors to be used. Unable to send your message: %s",
 /* 409 */	ERR_NOORIGIN, ":No origin specified",
 /* 410 */	ERR_NORECIPIENT, ":No recipient given (%s)",
 /* 411 */	ERR_NOTEXTTOSEND, ":No text to send",
@@ -177,7 +191,7 @@ static  Numeric local_replies[] = {
 /* 435 */	ERR_SERVICECONFUSED, (char *)NULL,
 /* 436 */	ERR_NICKCOLLISION, "%s :Nickname collision KILL",
 /* 437 */	ERR_BANNICKCHANGE,
-		"%s :Cannot change nickname while banned on channel",
+		"%s :Cannot change nickname when moderated/banned on a channel.",
 /* 440 */	ERR_SERVICESDOWN, "Services is currently down. Please wait a few moments and then try again.",
 /* 441 */	ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel",
 /* 442 */	ERR_NOTONCHANNEL, "%s :You're not on that channel",
@@ -206,6 +220,7 @@ static  Numeric local_replies[] = {
 /* 474 */	ERR_BANNEDFROMCHAN, "%s :Cannot join channel (+b)",
 /* 475 */	ERR_BADCHANNELKEY, "%s :Cannot join channel (+k)",
 /* 476 */	ERR_BADCHANMASK, "%s :Bad Channel Mask",
+/* 478 */	ERR_BANLISTFULL, "%s %s :Channel ban/ignore list is full",
 /* 481 */	ERR_NOPRIVILEGES,
 		":Permission Denied- You're not an IRC operator",
 /* 482 */	ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator",
@@ -220,7 +235,7 @@ static  Numeric local_replies[] = {
 /* 514 */	ERR_YOURHURT, ":Your connection is silenced:\
  You should not attempt to speak or issue any IRC commands: Attempts\
  to do so will not be successful.",
-/* 521 */	0, NULL, /* list syntax */
+/* 521 */	ERR_LISTSYNTAX, "Bad list syntax, type /quote list ? or /raw list ?",
 /* 522 */	0, NULL, /* who syntax */
 /* 523 */	0, NULL, /* who limit */
 
@@ -236,6 +251,14 @@ static  Numeric local_replies[] = {
 /* 607 */ RPL_ENDOFWATCHLIST, ":End of WATCH %c",
 /* 608 */	0, NULL, /* RESERVED - watch*/
 /* 617-620 DALnet dccallow/dccstatus */
+/* 625 */ ERR_NOMASKCHAN, "%s :To join, you must show your IP address "
+	         "(which you have masked) to the channel operators inside. "
+	         "To do this, type: /join %s UNMASK",
+
+/* 626 */ ERR_BANRULE, "%s :This channel has established a special entry "
+                       "requirement that you do not satisfy.",
+/* 627 */ ERR_BANREQUIRE, "%s :This channel has established a special entry "
+                       "requirement that you do not satisfy.",
 };
 
 static char *replies[1000];

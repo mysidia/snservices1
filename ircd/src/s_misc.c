@@ -355,7 +355,7 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 	    {
 		ClientFlags(sptr) |= FLAGS_CLOSING;
                 if (IsPerson(sptr))
-                 sendto_umode(U_OPER|U_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
+                 sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
                   sptr->name, sptr->user->username, sptr->user->host, comment);
 		current_load_data.conn_count--;
 		if (IsPerson(sptr)) {
