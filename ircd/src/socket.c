@@ -88,7 +88,7 @@ int socket_init(int maxfds)
 #ifdef HAVE_SSL
 	SSL_load_error_strings();
 	SSLeay_add_ssl_algorithms();
-	ctx = SSL_CTX_new (SSLv23_server_method());
+	ctx = SSL_CTX_new (SSLv23_method());
 	if (!ctx)
 	{
 		return 0;
@@ -238,7 +238,7 @@ int _socket_checkssl(sock *sock, int err)
  *            local address is ok. If src is specified, it should be an
  *            address in the same address family as dst.
  * dst        Destination address.
- * flags      Supported flags are SOCKET_DGRAM, SOCKET_STREAM.
+ * flags      Supported flags are SOCKET_DGRAM, SOCKET_STREAM, SOCKET_SSL.
  *
  * returns    A valid sock structure, or NULL if the connection failed.
  */
@@ -251,6 +251,19 @@ sock *socket_connect(sock_address *src, sock_address *dst, int flags)
 	sock_address	sa;
 
 	memset(s, 0, sizeof(sock));
+
+#ifdef HAVE_SSL
+	if (flags & SOCKET_SSL)
+	{
+		if (ctx == NULL)
+		{
+			_socket_free(s);
+			return NULL;
+		}
+		s->sslstate = SSL_CONNECT;
+	}
+#endif
+
 	s->flags = flags;
 	if (flags & SOCKET_DGRAM)
 	{
@@ -298,6 +311,16 @@ sock *socket_connect(sock_address *src, sock_address *dst, int flags)
 		s->laddr = address_copy(&sa);
 	}
 	fds[s->fd] = s;
+
+#ifdef HAVE_SSL
+	if (s->sslstate == SSL_CONNECT)
+	{
+		s->ssl = SSL_new(ctx);
+		SSL_set_fd (s->ssl, s->fd);
+		_socket_monitor(s->fd, MONITOR_WRITE);
+	}
+#endif
+
 	return s;
 }
 
@@ -670,6 +693,12 @@ void _socket_handle(int fd, int type)
 			{
 				type |= MONITOR_ERROR;
 			}			
+			break;
+		case SSL_CONNECT:
+			if (_socket_checkssl(sock, SSL_connect(sock->ssl)) < 0)
+			{
+				type |= MONITOR_ERROR;
+			}
 			break;
 		case SSL_READ:
 			if (sock->read_handler)
