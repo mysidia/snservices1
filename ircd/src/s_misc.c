@@ -476,14 +476,10 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 				sendto_one(acptr, "SQUIT %s :%s",
 					   sptr->name, comment);
 			    }
-	    }
-	} else if (!IsPerson(sptr))
-				    /* ...this test is *dubious*, would need
-				    ** some thougth.. but for now it plugs a
-				    ** nasty hole in the server... --msa
-				    */
-		; /* Nothing */
-	else if (sptr->name[0]) /* ...just clean all others with QUIT... */
+		    }
+	}
+
+	else if (IsPerson(sptr)) /* ...users are cleaned with a QUIT */
 	    {
 		/*
 		** If this exit is generated from "m_kill", then there
@@ -541,6 +537,9 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 			else
 				sendto_common_channels(sptr, ":%s QUIT :%s",
 						       sptr->name, comment);
+
+			add_history(cptr);
+			off_history(cptr);
 
 			while ((lp = sptr->user->channel))
 				remove_user_from_channel(sptr,lp->value.chptr);

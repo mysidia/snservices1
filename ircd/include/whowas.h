@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2003/12/01 07:30:33  skandranon
+ * sync with sor1_3 -- all the other crap here is gone now
+ *
  * Revision 1.1.1.3.4.1  2003/10/12 07:17:41  Mysid
  * completing the merge
  *
@@ -68,6 +71,7 @@ typedef struct aname {
 	time_t	ww_logout;
 	char	ww_nick[NICKLEN+1];
 	char	ww_info[REALLEN+1];
+	Link	*ww_chans;
 } aName;
 
 /*

@@ -344,11 +344,6 @@ void	remove_client_from_list(aClient *cptr)
 	    }
 	if (cptr->next)
 		cptr->next->prev = cptr->prev;
-	if (IsPerson(cptr)) /* Only persons can have been added before */
-	    {
-		add_history(cptr);
-		off_history(cptr); /* Remove all pointers to cptr */
-	    }
 	if (cptr->user)
 		free_user(cptr->user, cptr);
 	if (cptr->serv)

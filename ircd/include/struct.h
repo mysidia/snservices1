@@ -743,6 +743,12 @@ struct  HMessage {
         struct HMessage *next;
 };
 
+typedef struct wwchan {
+	char	chname[CHANNELLEN];
+	unsigned char	pub;
+	unsigned short	ucflags;
+} wwChan;
+
 /* general link structure used for chains */
 
 struct	SLink	{
@@ -752,6 +758,7 @@ struct	SLink	{
 		aChannel *chptr;
 		aConfItem *aconf;
 		aWatch *wptr;
+		wwChan *wwcptr;
 		char	*cp;
 		struct {
 		  char *banstr;
