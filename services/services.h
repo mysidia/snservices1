@@ -282,7 +282,7 @@ void            doTfunc(char *);
 char           *sfgets(char *, int, FILE *);
 int		check_match(char *);
 int		exp_match(char *, char *);
-void		parse_str(char **, int, int, char *, size_t);
+void		parse_str(char **, unsigned int, unsigned int, char *, size_t);
 void            mask(char *, char *, int, char *);
 void	        tzapply(char *);
 int		split_userhost(const char *input_host, MaskData *data);

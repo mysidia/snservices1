@@ -48,6 +48,67 @@
 #include "options.h"
 
 /**
+ * \brief EmailString constructor
+ * \post An EmailString object has been initialized
+ */
+EmailString::EmailString() : theLength(0), theString(NULL)
+{
+}
+
+/**
+ * \brief EmailString destructor
+ * \post An EmailString object has been destroyed
+ */
+EmailString::~EmailString()
+{
+	if (theString)
+		delete theString;
+	return;
+}
+
+/**
+ * \brief Return a pointer to the internal representation (char array)
+ * \return A pointer to the current value of the actual string
+ */
+const char *EmailString::get_string()
+{
+	if ( theString )
+		return theString;
+	return "";
+}
+
+/**
+ * \brief Sets the internal string pointer for an EmailString object
+ * \param s The new character pointer to set
+ * \return A pointer to the new value of the string
+ * \pre s must point to a valid NUL-terminated character array
+ * \post The string received has been copied into the present value
+ *       which is located in a new memory area and pointed to by the
+ *       object.             
+ */
+const char *EmailString::set_string_ptr(char *s)
+{
+	theLength = s ? strlen(s) : 0;
+	return theString = s;
+}
+
+/**
+ * \brief Subscript operator to access any character in an EmailString object
+ * \param i subscript to access
+ * \return reference to the character accessed
+ * \pre integer i is >= 0
+ */
+char &EmailString::operator [](int i)
+{
+	if (i<0||i>theLength) {
+		abort();
+		return ((char *)0x0)[0];
+	}
+
+	return theString[i];
+}
+
+/**
  * \brief Assign a new string value to an EmailString object
  * \param str New string to set
  * \return A pointer to the new value of the string
@@ -144,6 +205,25 @@ const char *EmailAddressBuf::add_email(const char *str)
 	return theString;
 }
 
+/**
+ * \brief EmailMessage constructor
+ * \post An EmailMessage object has been initialized
+ */
+EmailMessage::EmailMessage()
+{
+}
+
+/**
+ * \brief The message has been blanked
+ * \post The email message is empty
+ */
+void EmailMessage::reset()
+{
+	from = NULL;
+	to = NULL;
+	subject = NULL;
+	body = NULL;
+}
 
 /**
  * \brief Sends an e-mail

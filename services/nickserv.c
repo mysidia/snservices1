@@ -272,9 +272,9 @@ void nDesynch(char *nick, char *type)
  */
 void grantIdentifiedUmode(UserList* nick, int grantVerify)
 {
-	const char* name = nick->nick;
-
 #ifdef IRCD_REGMODE
+	const char *name = nick->nick;
+
 #   ifdef IRCD_SVSMODE
 	/* Some ircd implementations use a command called 'SVSMODE' instead */ 
 
@@ -288,9 +288,9 @@ void grantIdentifiedUmode(UserList* nick, int grantVerify)
 
 void revokeIdentifiedUmode(UserList* nick)
 {
-	const char* name = nick->nick;
-
 #ifdef IRCD_REGMODE
+	const char *name = nick->nick;
+
 #   ifdef IRCD_SVSMODE
         sSend(":%s SVSMODE %s :-r", NickServ, name);
 #   else
@@ -510,8 +510,8 @@ void addNewUser(char **args, int numargs)
 
 	if (((CTime - 240) <= (newnick->timestamp)) && (ahitem = getBanInfo(newnick->nick, newnick->user, newnick->host, A_AHURT)) != NULL) {
 #ifdef IRCD_HURTSET
-		sSend(":%s HURTSET %s 2 :[#%.6x] Subject to a selective user ban.",
-			  OperServ, newnick->nick, getAkillId(ahitem));
+		sSend(":%s HURTSET %s 2 :[#%.6lx] Subject to a selective user ban.",
+		      OperServ, newnick->nick, getAkillId(ahitem));
 #endif
 		newnick->oflags |= NISAHURT;
 	}
@@ -3073,7 +3073,7 @@ cmd_return ns_set_maxmemo(nss_tab *setEnt, UserList *nick,
 		else
 			sSend(":%s NOTICE %s :Your current max memo limit "
 			      "is: unlimited", NickServ, from);
-		sSend(":%S NOTICE %s :To change this value, specify a new "
+		sSend(":%s NOTICE %s :To change this value, specify a new "
 		      "limit", NickServ, from);
 		return RET_OK;
 	}

@@ -351,8 +351,8 @@ make_clone()
 	(void)ranstring(blip1, sizeof(blip1) - 1, 0);
 	(void)ranstring(blip2, sizeof(blip2) - 1, 1);
 
-	snprintf(host, sizeof(host), "services-%x.%s-sorcery-massdetect.net",
-		(time(0)/30)%1000, blip1);
+	snprintf(host, sizeof(host), "services-%lx.%s-sorcery-massdetect.net",
+		 (time(0)/30)%1000, blip1);
 
 
 	if (getNickData(rand_nick) || getRegNickData(rand_nick)) {

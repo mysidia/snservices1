@@ -196,6 +196,35 @@ int TimeLengthString::getSeconds() const
 	return length.seconds;
 }
 
+void TimeLengthString::normalize()
+{
+	int k;
+
+	if (length.seconds >= 60) {
+		k = length.seconds / 60;
+		length.minutes += k;
+		length.seconds -= k * 60;
+	}
+
+	// Reduce every 60 mins to an hour
+	if (length.minutes >= 60) {
+		k = length.minutes / 60;
+		length.hours += k;
+		length.minutes -= k * 60;
+	}
+
+	// Every 24 hours to a day
+	if (length.hours >= 24) {
+		k = length.hours / 24;
+		length.days += k;
+		length.hours -= k * 24;
+	}
+
+	if (length.hours < 0 || length.minutes < 0 || length.seconds < 0
+	    || length.days < 0)
+		f_isValid = false;
+}
+
 const char* TimeLengthString::asString(char* buf, int len, bool pad,
 			bool long_format, bool show_secs) const
 {
@@ -253,28 +282,28 @@ const char* TimeLengthString::asString(char* buf, int len, bool pad,
 
 
 	if (showdays) {
-		TIME_WRITE(length.days, "%dd", "%4dd", "%4d days");
+		TIME_WRITE(length.days, "%ldld", "%4ldld", "%4ld days");
 	}
 
 	// Number of hours output
 	if (showhours) {
-		TIME_WRITE(length.hours, "%dh", "%.2dh", "%2d hours");
+		TIME_WRITE(length.hours, "%ldh", "%.2ldh", "%2ld hours");
 	}
 
 	// Number of minutes output
 	if (showmins) {
 		if (long_format == 0 || showsecs != 0)
 		{
-			TIME_WRITE(length.minutes, "%dm", "%.2dm", "%2d minutes");
+			TIME_WRITE(length.minutes, "%ldm", "%.2ldm", "%2ld minutes");
 		}
 		else 
 		{
-			TIME_WRITE(length.minutes, "%dm", "%.2dm", "and %2d minutes");
+			TIME_WRITE(length.minutes, "%ldm", "%.2ldm", "and %2ld minutes");
 		}
 	}
 		
 	if (showsecs) {
-		TIME_WRITE(length.seconds, "%ds", "%.2ds", "and %2d seconds");
+		TIME_WRITE(length.seconds, "%lds", "%.2lds", "and %2ld seconds");
 	}
 
 	return buf;

@@ -72,13 +72,115 @@ FILE *fp1;
 #endif
 
 /**
+ * \brief Services log constructor (normal log only)
+ */
+SLogfile::SLogfile(const char *fname): fp(NULL), fpw(NULL), logFileName(0),
+				       logwFileName(0), fp_noclose(0),
+				       fpw_noclose(0)
+{
+	/*if (!(db = dbopen(fname, O_RDWR | O_EXLOCK | O_CREAT, DB_HASH, NULL))) {
+	  fprintf(stderr, "Error: Could not open %s: %s\n", fname ? fname :
+	  "", strerror(errno));
+	  sshutdown(0);
+	  }*/
+
+	if (!(fp = fopen(fname, "a"))) {
+		fprintf(stderr, "Error: Could not open %s: %s\n", fname ?
+			fname : "", strerror(errno));
+		sshutdown(0);
+	}
+
+	logFileName = static_cast<char *>(oalloc(strlen(fname) + 1));
+	strcpy(logFileName, fname);
+}
+
+
+/**
+ * \brief Services log copy constructor
+ */
+SLogfile::SLogfile(const SLogfile& x)
+{
+	if (x.logFileName) {
+		logFileName = static_cast<char *>(oalloc(strlen(x.logFileName) + 1));
+		strcpy(logFileName, x.logFileName);
+	}
+
+	if (x.logwFileName) {
+		logwFileName = static_cast<char *>(oalloc(strlen(x.logwFileName) + 1));
+		strcpy(logwFileName, x.logFileName);
+	}
+
+	if (x.fp)
+		fp_noclose = 1;
+	if (x.fpw)
+		fpw_noclose = 1;
+}
+
+/**
+ * \brief Services log constructor (both normal and working logs)
+ */
+SLogfile::SLogfile(const char *fname, const char *fnamew): fp(NULL), fpw(NULL),
+							   logFileName(0),
+							   logwFileName(0),
+							   fp_noclose(0),
+							   fpw_noclose(0)
+{
+	if (!(fp = fopen(fname, "a"))) {
+		fprintf(stderr, "Error: Could not open %s: %s\n", fname ?
+			fname : "", strerror(errno));
+		sshutdown(0);
+	}
+
+	if (!(fpw = fopen(fnamew, "a"))) {
+		fprintf(stderr, "Error: Could not open %s: %s\n", fnamew ?
+			fnamew : "", strerror(errno));
+		sshutdown(0);
+	}
+
+	logFileName = static_cast<char *>(oalloc(strlen(fname) + 1));
+	strcpy(logFileName, fname);
+
+	logwFileName = static_cast<char *>(oalloc(strlen(fnamew) + 1));
+	strcpy(logwFileName, fnamew);
+}
+
+/**
+ * \brief Services log destructor
+ */
+SLogfile::~SLogfile()
+{
+	if (!fp_noclose)
+		fclose(fp);
+	free(logFileName);
+	free(logwFileName);
+	if (fpw && !fpw_noclose) fclose(fpw);
+	/*if (db)
+	  db->dbclose(db);*/
+}
+
+/**
+ * \brief Flush services log output buffer
+ */
+void SLogfile::flush()
+{
+	if (logwFileName && !fpw_noclose) {
+		if ( fclose(fpw) < 0 )
+			dlogEntry("ERROR encountered in closing working log %s, %d",
+				  logwFileName, errno);
+		fpw = 0;
+		fpw = fopen(logwFileName, "a");
+	}
+
+	if (fp) fflush(fp);
+}
+
+/**
  * \brief Handle the logging of an event/command
  * \param Pointer to nick item who caused event/command or a null pointer
  * \param cmd command id number of type #interp::services_cmd_id
  * \param flags Additional logging flags (ex: #LOGF_NORMAL)
- * \return 0 on success, -1 on failure
  */
-int
+void
 SLogfile::log(UserList *sender,
 			  interp::services_cmd_id cmd,
 			  const char *target,
@@ -97,7 +199,7 @@ SLogfile::log(UserList *sender,
 /**
  * @brief Same as log() but only writes to 'working' (temporary) log
  */
-int
+void
 SLogfile::logw(UserList *sender,
 			  interp::services_cmd_id cmd,
 			  const char *target,
@@ -109,7 +211,7 @@ SLogfile::logw(UserList *sender,
 	va_end(ap);
 }
 
-int
+void
 SLogfile::logx(UserList *sender, int zb,
 			  interp::services_cmd_id cmd,
 			  const char *target,
@@ -130,13 +232,12 @@ SLogfile::logx(UserList *sender, int zb,
 		strcpy(senderblock, "-");
 	fprintf(zb ? fpw : fp, "%s %lu %s %lu %s",
 			interp::cmd_name(cmd), time(NULL),
-			*senderblock ? senderblock : "<???>",
+			*senderblock ? senderblock : "<\?\?\?>",
 			(unsigned long int)flags, target ? target : "");
 	if (*buffer)
 		fprintf(zb ? fpw : fp, " %s\n", buffer);
 	else
 		putc('\n', zb ? fpw : fp);
-	return 0;
 }
 
 // Quick reference, remove this comment later
