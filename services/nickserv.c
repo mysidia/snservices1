@@ -4610,7 +4610,7 @@ NCMD(ns_setopflags)
 			return RET_EFAULT;
 		}
 		if (regnick->opflags) {
-			sSend(":%s NOTICE %s :%s already has opflags.", NickServ, from,
+			sSend(":%s NOTICE %s :%s already has opflags.", OperServ, from,
 				  args[2]);
 			return RET_FAIL;
 		}
@@ -4642,7 +4642,7 @@ NCMD(ns_setopflags)
 				&& !opFlagged(nick, OOPER | OROOT))) {
 			sSend
 				(":%s NOTICE %s :%s holds one or more flags that you cannot remove.",
-				 NickServ, from, args[2]);
+				 OperServ, from, args[2]);
 			return RET_EFAULT;
 		}
 		regnick->opflags = 0;
