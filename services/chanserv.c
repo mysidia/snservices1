@@ -948,17 +948,21 @@ cNickList *getChanUserData(ChanList * chan, UserList * data)
  * This macro is used by getMiscChanop to process access
  * items in a channel.
  */
-#define process_op_item(x) { \
+#define process_op_item_level(x, l) { \
 	if (x) { \
 		if (checkAccessNick) \
 		{ \
 			strncpyzt(checkAccessNick, tmpNickName, NICKLEN); \
 		} \
-		if (highest < (x)->uflags) { \
-			highest = (x)->uflags; \
+		if (highest < (l)) { \
+			highest = (l); \
 		} \
 	} \
 }
+
+#define process_op_item(x) \
+		process_op_item_level((x), (x)->uflags)
+		
 
 /**
  * \brief Get the channel access level
@@ -1012,13 +1016,24 @@ int getMiscChanOp(RegChanList * chan, char *nick, int id,
 		UserList *check = getNickData(nick);
 		RegNickList *reg2;
 		if (check && check->reg) {
-			if (isIdentified(check, check->reg) || hasValidModeR(check)) {
+			if (isIdentified(check, check->reg)) {
 				tmpnick = getChanOpData(chan, nick);
 
 				if (tmpnick) {
 					tmpNickName = tmpnick->nickId.getNick();
 					if (tmpNickName)
 						process_op_item(tmpnick);
+				}
+			}
+			else if (hasValidModeR(check)) {
+				tmpnick = getChanOpData(chan, nick);
+
+				if (tmpnick) {
+					tmpNickName = tmpnick->nickId.getNick();
+
+					if (tmpNickName) {
+						process_op_item_level(tmpnick, MIN(5, tmpnick->uflags));
+					}
 				}
 			}
 		}
@@ -1042,11 +1057,15 @@ int getMiscChanOp(RegChanList * chan, char *nick, int id,
 			&& (tmpnick = getChanOpData(chan, reg2->nick))
 			&& (tmpNickName = ((tmpnick->nickId).getNick())))
 			process_op_item(tmpnick);
-		if ((isRecognized(tmp, tmp->reg) || hasValidModeR(tmp))
+		if ((isRecognized(tmp, tmp->reg))
 			&& (tmpnick = getChanOpData(chan, nick))
 			&& (tmpNickName = ((tmpnick->nickId).getNick()))) 
 		{
 			process_op_item(tmpnick);
+		} else if (hasValidModeR(tmp) 
+			   && (tmpnick = getChanOpData(chan, nick))
+			 && (tmpNickName = ((tmpnick->nickId).getNick())) ) {
+			process_op_item_level(tmpnick, MIN(5, tmpnick->uflags));
 		} else {
 			for (tmpnick = chan->firstOp; tmpnick; tmpnick = tmpnick->next) {
 				if (!(tmpNickName = (tmpnick->nickId).getNick()))
@@ -3326,12 +3345,19 @@ CCMD(cs_access)
 			 ChanServ, from, (numargs >= 3) ? args[2] : "You",
 			 (numargs >= 3) ? "has" : "have", level, tmp->name,
 			 checkAccessNick);
-	else
+	else if (tmprnick && tmpnick && isRecognized(tmpnick, tmprnick))
 		sSend
 			(":%s NOTICE %s :%s %s access level %i on %s from access list of %s",
 			 ChanServ, from, (numargs >= 3) ? args[2] : "You",
 			 (numargs >= 3) ? "has" : "have", level, tmp->name,
 			 checkAccessNick);
+	else
+                sSend
+			(":%s NOTICE %s :%s %s access level %i on %s from mode (+r) on nick %s",
+	                 ChanServ, from, (numargs >= 3) ? args[2] : "You",
+	                 (numargs >= 3) ? "has" : "have", level, tmp->name,
+	                 checkAccessNick);
+      		
 	return RET_OK;
 }
 
