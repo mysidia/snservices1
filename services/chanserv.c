@@ -281,8 +281,8 @@ void kick_for_akick(const char* kicker, const char* nick,
 	else
 	{
 		sSend
-			(":%s KICK %s %s :You are effected by an autokick "
-			 "set by the channel staff: (%s)", ChanServ, 
+			(":%s KICK %s %s :Autokick set by a channel "
+			 "operator: (%s)", ChanServ, 
 			 chan->name, nick, record->reason);
 	}
 }

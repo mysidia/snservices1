@@ -60,7 +60,8 @@ WFLAGS  = -Wpointer-arith -Wcast-qual -Wcast-align \
 services_SOURCES = akill.c chanserv.c clone.c db.c hash.c help.c \
 main.c parse.cc memoserv.c nickserv.c operserv.c server.c stuff.c \
 timer.c infoserv.c credits.c gameserv.c passwd.c interp.cc log.cc \
-email.cc string.cc conf.c mass.c signal.c chantrig.c sipc.cc
+email.cc string.cc conf.c mass.c signal.c chantrig.c sipc.cc timestr.cc \
+timestr.h
 
 services_ef_SOURCES = $(services_SOURCES)
 #services_LDADD = hash/libmd5.a
