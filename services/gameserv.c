@@ -151,11 +151,12 @@ GCMD(gs_help)
  */
 GCMD(gs_ww)
 {
-	const char* from = nick->nick, *to = nick->nick;
-	const char* chan_name = 0;
+	const char* from = nick->nick;
+	char* chan_name = 0, *to = nick->nick;
 	int base = 1, num_rolls, num_difficulty = 5;
 	int flood_multiplier = 1, flood_modifier, botches = 0;
 	int i = 0, roll_value, die_size = 10, successes = 0;
+	ChanList* chan;
 	
 	if (numargs < 2) {
 		sSend(":%s NOTICE %s :Not enough parameters.",
@@ -167,6 +168,24 @@ GCMD(gs_ww)
 	if (args[base][0] == '#') {
 		chan_name = to = args[base++];
 		flood_multiplier = 5;
+
+		if ((chan = getChanData(chan_name)) == NULL || chan->reg == NULL) {
+			sSend(":%s NOTICE %s :%s: No such registered channel is open.",
+					GameServ, from, chan_name);
+			return RET_NOTARGET;
+		}
+
+		if (!getChanUserData(chan, nick)) {
+			sSend(":%s NOTICE %s :%s: You are not on that channel.",
+					GameServ, from, chan_name);
+			return RET_NOTARGET;
+		}
+
+		if (getChanOp(chan->reg, nick->nick) < 4 && !isRoot(nick)) {
+			sSend(":%s NOTICE %s :%s: You must be a channel operator to do this.",
+				 GameServ, from, chan_name);
+			return RET_EFAULT;
+		}
 	}
 
 	if (base >= numargs) {
@@ -190,6 +209,7 @@ GCMD(gs_ww)
 		if (num_difficulty <= 1 || num_difficulty >= die_size) {
 			sSend(":%s NOTICE %s :Invalid difficulty level, should range from 1 to %d.",
 					GameServ, from, die_size);
+			return RET_INVALID;
 		}
 		base++;
 	}
@@ -236,7 +256,7 @@ GCMD(gs_ww)
 		}
 	}	
 	sSend(":%s NOTICE %s :WW: %d dice, size %d, difficulty %d, success=%d/botches=%d [%d/%d]",
-		GameServ, from, num_rolls, die_size, num_difficulty, successes, botches,
+		GameServ, to, num_rolls, die_size, num_difficulty, successes, botches,
 		successes, botches);
 	return RET_OK;
 }
