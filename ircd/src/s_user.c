@@ -4151,13 +4151,12 @@ tokenEncode(char *str)
 {
 	static char strn[HOSTLEN + 255];
 	unsigned char *p;
-	unsigned long m, v;
+	u_int32_t v;
 
-	m = 0;
 	v = 0x55555;
 	for (p = str ; *p ; p++ )
 		v = (31 * v) + (*p);
-	sprintf(strn, "%lx", v);
+	sprintf(strn, "%x", v);
 	return strn;
 }
 	
