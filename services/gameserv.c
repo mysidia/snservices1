@@ -156,6 +156,7 @@ GCMD(gs_ww)
 	int base = 1, num_rolls, num_difficulty = 5;
 	int flood_multiplier = 1, flood_modifier, botches = 0;
 	int i = 0, roll_value, die_size = 10, successes = 0;
+	char r_buf[256]="DEBUG: Rolls [";
 	ChanList* chan;
 	cNickList* chanUser;
 

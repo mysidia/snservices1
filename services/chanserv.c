@@ -3391,15 +3391,19 @@ CCMD(cs_register)
 	nick->reg->chans++;
 	reg = (RegChanList *) oalloc(sizeof(RegChanList));
 	initRegChanData(reg);
-	chan->reg = reg;
-	strcpy(reg->name, chan->name);
+	if (chan != 0) {
+		chan->reg = reg;
+	}
+	strcpy(reg->name, chan ? chan->name : args[1]);
 	reg->founderId = nick->reg->regnum;
 	reg->flags |= CENCRYPT;
 	pw_enter_password(args[2], reg->password, ChanGetEnc(reg));
 
 	reg->timereg = CTime;
 	reg->timestamp = CTime;
-	sendToChanOpsAlways(chan, "%s just registered %s", from, args[1]);
+	if (chan != 0) {
+		sendToChanOpsAlways(chan, "%s just registered %s", from, args[1]);
+	}
 	sSend
 		(":%s NOTICE %s :%s is now registered under your nick: \002%s\002",
 		 ChanServ, from, args[1], from);
