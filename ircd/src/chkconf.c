@@ -17,42 +17,56 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef lint
+static  char sccsid[] = "@(#)chkconf.c	1.9 1/30/94 (C) 1993 Darren Reed";
+#endif
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "numeric.h"
+#ifndef _WIN32
 #include <sys/socket.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef __hpux
+#include "inet.h"
+#endif
+#ifdef PCS
+#include <time.h>
+#endif
 #ifdef	R_LINES
 #include <signal.h>
 #endif
 
-#include "ircd/memory.h"
-#include "ircd/string.h"
-
-IRCD_SCCSID("@(#)chkconf.c	1.9 1/30/94 (C) 1993 Darren Reed");
-IRCD_RCSID("$Id$");
+#ifdef DYNIXPTX
+#include <sys/types.h>
+#include <time.h>
+#endif
 
 /* for the connect rule patch..  these really should be in a header,
 ** but i see h.h isn't included for some reason..  so they're here */
-char *crule_parse(char *rule);
-void crule_free(char **elem);
+char *crule_parse PROTO((char *rule));
+void crule_free PROTO((char **elem));
 
-static	void	new_class(int cn);
-static	char	*chkconf_getfield(char *newline), confchar(u_int status);
-static	int	openconf(void), validate(aConfItem *top);
-static	aClass	*get_class(int cn);
-static aConfItem *chkconf_initconf(int opt);
-int dgets(int fd, char *buf, int num);
+#undef	free
+#define	MyMalloc(x)	malloc(x)
+
+static	void	new_class();
+static	char	*getfield(), confchar ();
+static	int	openconf(), validate();
+static	aClass	*get_class();
+static	aConfItem	*initconf();
 
 static	int	numclasses = 0, *classarr = (int *)NULL, debugflag = 0;
 static	char	*configfile = CONFIGFILE;
 static	char	nullfield[] = "";
 static	char	maxsendq[12];
 
-int
-main(int argc, char *argv[])
+main(argc, argv)
+int	argc;
+char	*argv[];
 {
 	new_class(0);
 
@@ -70,51 +84,18 @@ main(int argc, char *argv[])
 	    }
 	if (argc > 1)
 		configfile = argv[1];
-	return validate(chkconf_initconf(0));
+	return validate(initconf());
 }
 
 /*
  * openconf
  *
  * returns -1 on any error or else the fd opened from which to read the
- * configuration file from.  This may either be th4 file direct or one end
- * of a pipe from m4.
+ * configuration file from.
  */
-static int
-openconf(void)
+static	int	openconf()
 {
-#ifdef	M4_PREPROC
-	int	pi[2];
-
-	if (pipe(pi) == -1)
-		return -1;
-	switch(fork())
-	{
-	case -1 :
-		return -1;
-	case 0 :
-		(void)close(pi[0]);
-		if (pi[1] != 1)
-		    {
-			(void)dup2(pi[1], 1);
-			(void)close(pi[1]);
-		    }
-		(void)dup2(1,2);
-		/*
-		 * m4 maybe anywhere, use execvp to find it.  Any error
-		 * goes out with report_error.  Could be dangerous,
-		 * two servers running with the same fd's >:-) -avalon
-		 */
-		(void)execlp("m4", "m4", "ircd.m4", configfile, 0);
-		perror("m4");
-		exit(-1);
-	default :
-		(void)close(pi[1]);
-		return pi[0];
-	}
-#else
 	return open(configfile, O_RDONLY);
-#endif
 }
 
 static int oper_access[] = {
@@ -149,8 +130,8 @@ static int oper_access[] = {
 **             0, if file opened
 */
 
-static aConfItem *
-chkconf_initconf(int opt)
+static	aConfItem 	*initconf(opt)
+int	opt;
 {
 	int	fd;
 	char	line[512], *tmp, c[80], *s, *crule;
@@ -161,9 +142,6 @@ chkconf_initconf(int opt)
 	(void)fprintf(stderr, "initconf(): ircd.conf = %s\n", configfile);
 	if ((fd = openconf()) == -1)
 	    {
-#ifdef	M4_PREPROC
-		(void)wait(0);
-#endif
 		return NULL;
 	    }
 
@@ -187,10 +165,10 @@ chkconf_initconf(int opt)
 		aconf->passwd = (char *)NULL;
 		aconf->name = (char *)NULL;
 		aconf->class = (aClass *)NULL;
-		if ((tmp = index(line, '\n')))
+		if (tmp = (char *)index(line, '\n'))
 			*tmp = 0;
 		else while(dgets(fd, c, sizeof(c) - 1))
-			if ((tmp = (char *)index(c, '\n')))
+			if (tmp = (char *)index(c, '\n'))
 			    {
 				*tmp = 0;
 				break;
@@ -223,7 +201,7 @@ chkconf_initconf(int opt)
 				if (!*(tmp+1))
 					break;
 				else
-					for (s = tmp ; (*s = *++s) ; )
+					for (s = tmp; *s = *++s; )
 						;
 				tmp++;
 			    }
@@ -245,7 +223,7 @@ chkconf_initconf(int opt)
 			(void)printf("\n%s\n",line);
 		(void)fflush(stdout);
 
-		tmp = chkconf_getfield(line);
+		tmp = getfield(line);
 		if (!tmp)
 		    {
                         (void)fprintf(stderr, "\tERROR: no fields found\n");
@@ -353,16 +331,16 @@ chkconf_initconf(int opt)
 
 		for (;;) /* Fake loop, that I can use break here --msa */
 		    {
-			if ((tmp = chkconf_getfield(NULL)) == NULL)
+			if ((tmp = getfield(NULL)) == NULL)
 				break;
-			aconf->host = irc_strdup(tmp);
-			if ((tmp = chkconf_getfield(NULL)) == NULL)
+			DupString(aconf->host, tmp);
+			if ((tmp = getfield(NULL)) == NULL)
 				break;
-			aconf->passwd = irc_strdup(tmp);
-			if ((tmp = chkconf_getfield(NULL)) == NULL)
+			DupString(aconf->passwd, tmp);
+			if ((tmp = getfield(NULL)) == NULL)
 				break;
-			aconf->name = irc_strdup(tmp);
-			if ((tmp = chkconf_getfield(NULL)) == NULL)
+			DupString(aconf->name, tmp);
+			if ((tmp = getfield(NULL)) == NULL)
 				break;
 			if (aconf->status & CONF_OPERATOR) {
 			  int   *i, flag;
@@ -387,7 +365,7 @@ chkconf_initconf(int opt)
 			}
 			else
 				aconf->port = atoi(tmp);
-			if ((tmp = chkconf_getfield(NULL)) == NULL)
+			if ((tmp = getfield(NULL)) == NULL)
 				break;
 			if (!(aconf->status & CONF_CLASS))
 				aconf->class = get_class(atoi(tmp));
@@ -420,6 +398,8 @@ chkconf_initconf(int opt)
                 */
 		if (aconf->status & CONF_CLASS)
 		    {
+			int	class = 0;
+
 			if (!aconf->host)
 			    {
 				(void)fprintf(stderr,"\tERROR: no class #\n");
@@ -502,9 +482,9 @@ chkconf_initconf(int opt)
 				int	len = 3;	/* *@\0 = 3 */
 
 				len += strlen(aconf->host);
-				newhost = irc_malloc(len);
+				newhost = (char *)MyMalloc(len);
 				(void)sprintf(newhost, "*@%s", aconf->host);
-				irc_free(aconf->host);
+				(void)free(aconf->host);
 				aconf->host = newhost;
 			    }
 
@@ -531,7 +511,7 @@ chkconf_initconf(int opt)
 			if (flags & aconf->status)
 				(void)fprintf(stderr,
 					"ERROR: multiple %c-lines\n",
-					irc_toupper(confchar(aconf->status)));
+					toupper(confchar(aconf->status)));
 			else
 				flags |= aconf->status;
 		    }
@@ -550,9 +530,6 @@ print_confline:
 	    }
         printf("\n");
 	(void)close(fd);
-#ifdef	M4_PREPROC
-	(void)wait(0);
-#endif
 	return ctop;
 }
 
@@ -588,8 +565,8 @@ int	cn;
 /*
  * field breakup for ircd.conf file.
  */
-static char *
-chkconf_getfield(char *newline)
+static	char	*getfield(newline)
+char	*newline;
 {
 	static	char *line = NULL;
 	char	*end, *field;
@@ -625,8 +602,9 @@ chkconf_getfield(char *newline)
 **	dgets(x,y,0);
 ** to mark the buffer as being empty.
 */
-int
-dgets(int fd, char *buf, int num)
+int	dgets(fd, buf, num)
+int	fd, num;
+char	*buf;
 {
 	static	char	dgbuf[8192];
 	static	char	*head = dgbuf, *tail = dgbuf;
@@ -723,8 +701,8 @@ dgetsreturnbuf:
 }
 
 
-static int
-validate(aConfItem *top)
+static	int	validate(top)
+aConfItem *top;
 {
 	aConfItem *aconf, *bconf;
 	u_int	otype = 0, valid = 0;
@@ -783,8 +761,8 @@ validate(aConfItem *top)
 	return valid ? 0 : -1;
 }
 
-static char
-confchar(u_int status)
+static	char	confchar(status)
+u_int	status;
 {
 	static	char	letrs[] = "QICNoOMKARYSLPH";
 	char	*s = letrs;
@@ -796,3 +774,11 @@ confchar(u_int status)
 			return *s;
 	return '-';
 }
+
+outofmemory()
+{
+	(void)write(2, "Out of memory\n", 14);
+	exit(-1);
+}
+
+

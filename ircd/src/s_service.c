@@ -1,6 +1,6 @@
 /*
- *   IRCD - Internet Relay Chat Daemon, src/s_service.c
- *   Copyright (C) 1998 Mysidia
+ *   IRC - Internet Relay Chat, src/s_service.c
+ *   Copyright (C) 1998 James Hess -- All Rights Reserved
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -27,17 +27,10 @@
 #include <sys/stat.h>
 #include "h.h"
 
-#include "ircd/send.h"
-#include "ircd/string.h"
-
-IRCD_RCSID("$Id$");
-
 /* these are only considered services when the nicks are U-lined. */
 /* this array is an evil hack so pointer comparisons will do... */
-const char *service_nick[] = {
-	"NickServ", "ChanServ", "MemoServ", "OperServ", 
-	"InfoServ", "GameServ", (char *)0, (char *)0, (char *)0
-};
+const char *service_nick[] = { "NickServ", "ChanServ", "MemoServ", "OperServ", 
+                               "InfoServ", "GameServ", (char *)0, (char *)0, (char *)0 };
 
 extern __inline int    m_sendto_service();
 
@@ -177,4 +170,20 @@ const	char *sService;
                sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name,
                        parv[0], sService);
        return 0;
+}
+
+int   m_svcstamp(aClient *cptr, aClient *sptr, int parc, char *parv[])
+{
+	aClient *acptr;
+
+	if (IsPerson(sptr) || !IsULine(cptr, sptr)) {
+		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+		return 0;
+	}
+	if (parc < 4)
+	    return 0;
+	if (!(acptr = find_person(parv[1], (aClient *)0)) || !acptr->user)
+	    return 0;
+	acptr->user->auth_a = base64toint(parv[2]);
+	acptr->user->auth_b = base64toint(parv[3]);
 }

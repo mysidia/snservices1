@@ -76,6 +76,13 @@ struct state {
 extern struct state _res;
 extern char *p_cdname(), *p_rr(), *p_type(), *p_class(), *p_time();
 
-#ifdef SOL20
+/*
+ * Different name on NetBSD, FreeBSD, and BSDI
+ */
+#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(REDHAT6) || defined(LINUX_GLIBC) || defined(SOL20)
 #define dn_skipname __dn_skipname
+#endif
+
+#ifdef LINUX_GLIBC
+#define res_init __res_init
 #endif
