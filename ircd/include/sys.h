@@ -87,6 +87,8 @@ extern	char	*rindex PROTO((char *, char));
 #  define MyFree(x)       if ((x) != NULL) GlobalFree(x)
 # endif
 #else
+void    dumpcore(const char *msg, ...);
+void    MyFree(void *x);
 #define	free(x)		MyFree(x)
 #endif
 
@@ -121,9 +123,7 @@ typedef	unsigned long	u_long;
 typedef	unsigned int	u_int;
 #endif
 
-#ifdef	USE_VARARGS
-#include <varargs.h>
-#endif
+#include <stdarg.h>
 
 #ifdef USE_DES
 #include <des.h>

@@ -219,7 +219,7 @@
  *       the maintainer.
  */
 
-#undef	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
+#define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
 
 /*
  * defining FORCE_CORE will automatically "unlimit core", forcing the

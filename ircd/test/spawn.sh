@@ -8,5 +8,5 @@ for i in test1.conf test2.conf test3.conf ; do
 done
 echo ""
 echo "Test servers should be running..."
-ps axwu |fgrep 'ircd.testbin' |fgrep -v fgrep
+ps axwu |fgrep 'ircd.testbin' |fgrep -v fgrep |tee test.lst
 echo ""

@@ -230,7 +230,7 @@ void	send_usage(aClient *cptr, char *nick)
 		/* extern char *sys_errlist[]; */
 #endif
 		sendto_one(cptr,":%s NOTICE %s :Getruseage error: %s.",
-			   me.name, nick, sys_errlist[errno]);
+			   me.name, nick, strerror(errno));
 		return;
 	    }
 	secs = rus.ru_utime.tv_sec + rus.ru_stime.tv_sec;

@@ -86,6 +86,7 @@ BUFFERPOOL="(9 * MAXSENDQLENGTH)"
 NICKNAMEHISTORYLENGTH="750"
 MAXCONNECTIONS="1024"
 ENABLE_SOCKSCHECK=''
+ENABLE_IPV6=''
 
 #
 # load $OPTIONS if present
@@ -1217,6 +1218,53 @@ done
 fi
 
 ############################################################
+# IP Version 6
+
+FOO=''
+runonce=''
+
+while [ -z "$FOO" ] ; do
+	FOO="$ENABLE_IPV6"
+	if [ -n "$ENABLE_IPV6" ] ; then
+		FOO="Yes"
+	else
+		FOO="No"
+	fi
+cat <<EOF
+ENABLE_IPV6 (NEW) (EXPERIMENTAL)
+
+Support for binding and accepting connections over ipv6 interfaces
+EOF
+
+	echo $n "[$FOO] -> $c"
+	if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+		read cc
+		runonce=Yes
+	else
+		cc=""
+	fi
+
+	if [ -z "$cc" ] ; then
+		cc="$FOO"
+	fi
+
+    case "$cc" in
+	            [Yy]*)
+	                ENABLE_IPV6="1"
+	            ;;
+	            [Nn]*)
+	                ENABLE_IPV6=""
+	            ;;
+	            *)
+			echo ""
+		        echo "You need to enter either Yes or No here..."
+			echo ""
+			FOO=""
+	            ;;
+		    esac
+done
+
+############################################################
 FOO=''
 runonce=''
 
@@ -2146,6 +2194,12 @@ if [ -n "$CRYPT_OPER_PASSWORD" ] ; then
     echo "#define CRYPT_OPER_PASSWORD 1" >> $OPTIONS_H
 else
     echo "#undef CRYPT_OPER_PASSWORD" >> $OPTIONS_H
+fi
+
+if [ -n "$ENABLE_IPV6" ] ; then
+	echo "#define ENABLE_IPV6 1"  >> $OPTIONS_H
+else
+	echo "#undef ENABLE_IPV6" >> $OPTIONS_H
 fi
 
 if [ -n "$ENABLE_SOCKSCHECK" ] ; then

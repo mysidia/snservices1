@@ -226,11 +226,17 @@ Link	*lp;
 		bzero((char *)&nreq->cinfo, sizeof(Link));
 	nreq->timeout = 4;	/* start at 4 and exponential inc. */
 #ifndef _WIN32
+#ifndef ENABLE_IPV6
+/*	nreq->he.h_addrtype = AF_INET;*/
+#endif	
 	nreq->he.h_name = NULL;
 	nreq->he.h_aliases[0] = NULL;
 #else
 	nreq->he = (struct HostEnt *)MyMalloc(MAXGETHOSTSTRUCT);
 	bzero((char *)nreq->he, MAXGETHOSTSTRUCT);
+#ifndef ENABLE_IPV6
+/*	nreq->he->h_addrtype = AF_INET;*/
+#endif	
 	nreq->he->h_name = NULL;
 #endif
 	(void)add_request(nreq);
@@ -455,9 +461,11 @@ ResRQ	*rptr;
 			case AF_INET:
 				rptr->type = T_A;
 				break;
+#ifdef ENABLE_IPV6				
 			case AF_INET6:
 				rptr->type = T_AAAA;
 				break;
+#endif				
 		}
 		rptr->name = (char *)MyMalloc(strlen(name) + 1);
 		(void)strcpy(rptr->name, name);
@@ -467,8 +475,10 @@ ResRQ	*rptr;
 	{
 		case AF_INET:
 			return (query_name(hname, C_IN, T_A, rptr));
+#ifdef ENABLE_IPV6			
 		case AF_INET6:
 			return (query_name(hname, C_IN, T_AAAA, rptr));
+#endif			
 	}
 #else
 
@@ -498,6 +508,7 @@ ResRQ	*rptr;
 				(u_int)(cp[3]), (u_int)(cp[2]),
 				(u_int)(cp[1]), (u_int)(cp[0]));
 			break;
+#ifdef ENABLE_IPV6
 		case AF_INET6:
 			cp = (u_char *)&numb->in6.sin6_addr.s6_addr[15];
 			cp2 = (u_char *)ipbuf;
@@ -509,6 +520,7 @@ ResRQ	*rptr;
 			}
 			sprintf(cp2,"ip6.int.");
 			break;
+#endif			
 	}
 #endif
 	if (!rptr)
@@ -595,8 +607,10 @@ ResRQ	*rptr;
 	case T_A:
 		(void)do_query_name(NULL, rptr->name, AF_INET, rptr);
 		break;
+#ifdef ENABLE_IPV6		
 	case T_AAAA:
 		(void)do_query_name(NULL, rptr->name, AF_INET6, rptr);
+#endif		
 	default:
 		break;
 	}
@@ -650,7 +664,7 @@ HEADER	*hptr;
 		cp += sizeof(rptr->ttl);
 		dlen =  (int)_getshort(cp);
 		cp += sizeof(short);
-		rptr->type = type;
+		/* rptr->type = type; */
 
 		len = strlen(hostbuf);
 		/* name server never returns with trailing '.' */
@@ -663,6 +677,19 @@ HEADER	*hptr;
 			len = MIN(len + strlen(_res.defdname),
 				  sizeof(hostbuf) - 1);
 		    }
+
+		switch(type)
+		{
+			default: ; break;
+			case T_A:
+#ifdef ENABLE_IPV6
+			case T_AAAA:
+#endif				 
+			case T_PTR:
+			case T_CNAME:
+				 rptr->type = type;
+				 break;
+		}
 
 		switch(type)
 		{
@@ -689,6 +716,7 @@ HEADER	*hptr;
 			adr++;
 			cp += dlen;
  			break;
+#ifdef ENABLE_IPV6
 		case T_AAAA:
                                  /* from Christophe Kalt <kalt@stealth.net> */
                                  if (dlen != sizeof(struct in6_addr)) {
@@ -712,6 +740,7 @@ HEADER	*hptr;
 			adr++;
 			cp += dlen;
  			break;
+#endif			
 		case T_PTR :
 			if((n = dn_expand(buf, eob, cp, hostbuf,
 					  sizeof(hostbuf) )) < 0)
@@ -864,9 +893,13 @@ char	*lp;
 		    }
 		goto getres_err;
 	    }
+#ifdef DEBUGMODE
+	Debug((DEBUG_INFO, "get_res: proc_answer [pre] rptr->type = %d",
+		rptr->type));
+#endif
 	a = proc_answer(rptr, hptr, buf, buf+rc);
-#ifdef DEBUG
-	Debug((DEBUG_INFO,"get_res:Proc answer = %d",a));
+#ifdef DEBUGMODE
+	Debug((DEBUG_INFO,"get_res:Proc answer = %d, rptr->type = %d",a, rptr->type));
 #endif
 	if (a && rptr->type == T_PTR)
 	    {
@@ -1031,6 +1064,7 @@ anAddress *ip;
 			hashv += hashv + (int)*p4++;
 			hashv += hashv + (int)*p4;
 			break;
+#ifdef ENABLE_IPV6
 		case AF_INET6:
 			p6 = (int *)&ip->in6.sin6_addr;
 			hashv = *p6++;
@@ -1038,6 +1072,7 @@ anAddress *ip;
 			hashv += hashv + *p6++;
 			hashv += hashv + *p6;
 			break;
+#endif			
 	}
 	hashv %= ARES_CACSIZE;
 	return (hashv);
@@ -1090,20 +1125,12 @@ aCache	*ocp;
 
 #ifdef	DEBUG
 	Debug((DEBUG_INFO, "add_to_cache:added %s[%08x] cache %#x.",
-# ifndef _WIN32
 		ocp->he.h_name, ocp->he.h_addr_list[0], ocp));
-# else
-		ocp->he->h_name, ocp->he->h_addr_list[0], ocp));
 # endif
  	Debug((DEBUG_INFO,
  		"add_to_cache:h1 %d h2 %x lnext %#x namnext %#x numnext %#x",
-# ifndef _WIN32
 		hash_name(ocp->he.h_name), hashv, ocp->list_next,
-# else
-		hash_name(ocp->he->h_name), hashv, ocp->list_next,
-# endif
 		ocp->hname_next, ocp->hnum_next));
-#endif
 
 	/*
 	 * LRU deletion of excessive cache entries.

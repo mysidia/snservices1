@@ -691,6 +691,7 @@ char	*newline;
 		return(NULL);
 
 	field = line;
+#ifdef ENABLE_IPV6	
 	if (*line == '<')
 	{
 		if ((line = (char *)index(line,'>')) == NULL)
@@ -701,6 +702,7 @@ char	*newline;
 			*line++ = '\0';
 		}
 	}
+#endif	
 	if ((end = (char *)index(line,':')) == NULL)
 	    {
 		line = NULL;
