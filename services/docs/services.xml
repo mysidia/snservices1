@@ -897,7 +897,7 @@ ServOps can be added or removed when services is online using the
 	</para></listitem>
 
 	<listitem><para>
-				+O, services operator access
+			+O, services operator access [not saved across restarts, services.conf needs to be manually updated too]
 	</para></listitem>
 
 	<listitem><para>
