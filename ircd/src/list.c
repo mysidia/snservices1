@@ -518,7 +518,7 @@ void	send_listinfo(aClient *cptr, char *name)
 	inuse += links.inuse,
 	sendto_one(cptr, ":%s %d %s :Classes: inuse: %d(%d)",
 		   me.name, RPL_STATSDEBUG, name, classs.inuse,
-		   tmp = classs.inuse * sizeof(aClass));
+		   tmp = classs.inuse * sizeof(class));
 	mem += tmp;
 	inuse += classs.inuse,
 	sendto_one(cptr, ":%s %d %s :Confs: inuse: %d(%d)",
