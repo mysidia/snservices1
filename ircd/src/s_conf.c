@@ -1359,7 +1359,7 @@ int 	initconf(int opt)
 static	int	lookup_confhost(aConfItem *aconf)
 {
 	char	*s;
-	struct	HostEnt *hp;
+	/* struct	HostEnt *hp;*/
 	Link	ln;
 	struct addrinfo	*res;
 
@@ -1518,7 +1518,7 @@ char    *find_sup_zap(aClient *cptr, int dokillmsg)
 	char *retval = "Reason Unspecified";
 	char u_ip[HOSTLEN + 25], *u_sip;
 	static char supbuf[BUFSIZE];
-	int m = 0;
+	/* int m = 0;*/
 	aConfItem* node;
 
 	supbuf[0] = '\0';
@@ -2222,7 +2222,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	char userhost[512+2]="", *in;
-	int result=0, uline=0, i=0, propo=0, ipv6=0;
+	int uline=0, i=0, propo=0;
 	char *reason, *mask, *server, *person;
 	aClient *acptr;
 	

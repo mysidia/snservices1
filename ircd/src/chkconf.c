@@ -55,7 +55,6 @@ void
 debug(int level, char *form, ...)
 {
 	va_list ap;
-	char* p;
 
 	va_start(ap, form);
 
