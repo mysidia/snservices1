@@ -652,7 +652,7 @@ static void
 NospoofText(aClient* acptr)
 {
 #ifdef NOSPOOF
-	  char* auth_name = "";
+	  char* auth_name = "AUTH";
 
 	  if (!BadPtr(acptr->name))
 		  auth_name = acptr->name;
