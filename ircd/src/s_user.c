@@ -2279,7 +2279,7 @@ static int quoteShowConData(const char* text, char* buf, int length)
 int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 {
 	aClient* ptr;
-	char buf1[BUFSIZE], buf2[BUFSIZE];
+	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
 	int show_unknowns = 0, show_users = 0, i;
 	
@@ -2329,43 +2329,32 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 		quoteShowConData(BadPtr(sptr->name) ? "" : sptr->name, buf1, BUFSIZE);
 		quoteShowConData(BadPtr(sptr->username) ? "" : sptr->username, buf2, BUFSIZE);
+		quoteShowConData(ptr->sockhost, buf3, BUFSIZE);
 		
-		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name> <uid>%s</uid>", 
-				me.name, sptr->name, buf1, buf2);
+		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name><uid>%s</uid>"
+				 "<sockhost rport=\"%d\" lport=\"%d\">%s</sockhost>", 
+				me.name, sptr->name, buf1, buf2, ptr->port, sptr->acpt->port, buf3);
 
-		quoteShowConData(ptr->sockhost, buf1, BUFSIZE);
+		quoteShowConData(BadPtr(ptr->info) ? "" : ptr->info, buf1, BUFSIZE);
 
-		sendto_one(cptr, ":%s NOTICE %s :<sockhost rport=\"%d\">%s</sockhost>",
-				me.name, sptr->name, ptr->port, buf1);
-		sendto_one(sptr, ":%s NOTICE %s : <info>%s</info>",  me.name, sptr->name,
-                                BadPtr(ptr->info) ? "" : ptr->info);
+		sendto_one(sptr, ":%s NOTICE %s : <info>%s</info>%s%s<statuscode>%d</statuscode>"
+				 "<flags client=\"%ld\" user=\"%ld\" />", 
+			         me.name, sptr->name, buf1, 
+				 DoingDNS(ptr) ? "<doingdns />" : "",
+				 !IsNotSpoof(ptr) ? "<maybespoof />" : "",
+				 ptr->status, ClientFlags(ptr), ClientUmode(ptr));
 		
-		sendto_one(cptr, ":%s NOTICE %s :%s%s<statuscode>%d</statuscode>"
-				 "<flags client=\"%ld\" user=\"%ld\" />", me.name, 
-				sptr->name,
-				DoingDNS(ptr) ? "<doingdns />" : "",
-				!IsNotSpoof(ptr) ? "<maybespoof />" : "",
-				ptr->status, ClientFlags(ptr), ClientUmode(ptr));
-
-		if (!BadPtr(ptr->sup_server)) {
-			quoteShowConData(ptr->sup_server, buf1, BUFSIZE);
-			
-			sendto_one(cptr, ":%s NOTICE %s :<sup_server>%s</sup_server>",
-					  me.name, sptr->name, buf1);
-		}
-
-		if (!BadPtr(ptr->sup_host)) {
-			quoteShowConData(ptr->sup_host, buf1, BUFSIZE);
-			
-			sendto_one(cptr, ":%s NOTICE %s :<sup_host>%s</sup_host>",
-					me.name, sptr->name, buf1);
-		}
+		quoteShowConData(ptr->sup_server, buf1, BUFSIZE);
+		quoteShowConData(ptr->sup_host, buf2, BUFSIZE);
+		
+		sendto_one(cptr, ":%s NOTICE %s :<sup_server>%s</sup_server>"
+				                "<sup_host>%s</sup_host>",
+				  me.name, sptr->name, buf1, buf2);
 
 		sendto_one(sptr, ":%s NOTICE %s : <times first=\"%d\" last=\"%d\" since=\"%d\" />",
 			      	me.name, sptr->name, ptr->firsttime, ptr->lasttime, ptr->since);
 		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />", me.name, sptr->name,
 				IsUserVersionKnown(ptr) ? "Known" : "Unknown");
-		
 		sendto_one(sptr, ":%s NOTICE %s : <counts watches=\"%d\" sendM=\"%d\" " 
 				 "sendK=\"%d\" receiveM=\"%d\" receiveK=\"%d\" />", 
 				me.name, sptr->name, ptr->watches, ptr->sendM, ptr->sendK, 
