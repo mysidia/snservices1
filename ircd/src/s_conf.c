@@ -1040,7 +1040,15 @@ int 	initconf(int opt)
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
 			Class(aconf) = find_class(atoi(tmp));
-                        sendq = atoi(tmp);
+			sendq = atoi(tmp);
+			if ((tmp = getfield(NULL)) == NULL)
+			{
+				break;
+			}
+			if (aconf->status & CONF_CONNECT_SERVER)
+			{
+				aconf->string4 = irc_strdup(tmp);
+			}
 		        break;
 		    }
 		       

@@ -166,12 +166,13 @@ sock *network_connect(aConfItem *aconf)
 		aconf->addr = address_make(aconf->host, (aconf->port > 0 ? aconf->port : portnum));
 	}
 
-	sock = socket_connect(localaddr, aconf->addr, SOCKET_STREAM);
+	sock = socket_connect((localaddr->addr->sa_family == aconf->addr->addr->sa_family ? localaddr : NULL), aconf->addr, SOCKET_STREAM | (aconf->string4 != NULL && strcmp(aconf->string4, "ssl") ? 0 : SOCKET_SSL));
 	if (sock == NULL)
 	{
 		return NULL;
 	}
 
+	socket_monitor(sock, MONITOR_ERROR, network_error_handler);
 	socket_monitor(sock, MONITOR_WRITE, network_connect_handler);
 
 	return sock;
