@@ -135,6 +135,7 @@
 #define	RPL_YOURHOST         002
 #define	RPL_CREATED          003
 #define	RPL_MYINFO           004
+#define	RPL_PROTOCTL         005
 
 /*
  * Errors are in the range from 400-599 currently and are grouped by what
@@ -206,8 +207,20 @@
 #define ERR_USERSDONTMATCH   502
 
 #define ERR_SILELISTFULL     511
+#define ERR_TOOMANYWATCH     512
 #define ERR_NEEDPONG         513
 #define ERR_YOURHURT         514
+
+#define	RPL_WHOISMASKED	     550
+
+#define RPL_LOGON	     600
+#define RPL_LOGOFF	     601
+#define RPL_WATCHOFF	     602
+#define RPL_WATCHSTAT	     603
+#define RPL_NOWON	     604
+#define RPL_NOWOFF	     605
+#define RPL_WATCHLIST	     606
+#define RPL_ENDOFWATCHLIST   607
 
 /*
  * Numberic replies from server commands.
@@ -241,6 +254,7 @@
 #define RPL_LIST             322
 #define RPL_LISTEND          323
 #define RPL_CHANNELMODEIS    324
+#define RPL_CHANNELMLOCKIS   325
 #define RPL_CREATIONTIME     329
 
 #define RPL_NOTOPIC          331

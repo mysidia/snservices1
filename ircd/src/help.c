@@ -20,12 +20,96 @@
 static char sccsid[] = "@(#)help.c	6.00 9/22/96 (C) 1996 DALnet";
 #endif
 
+#include <sys/types.h>
+#include <sys/file.h>
+#include <string.h>
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "h.h"
+#include "msg.h"
 
-#define SND(str) sendto_one(sptr, ":%s NOTICE %s :" str "", me.name, name)
+int h_nignores = 0;
+char **h_ignores;
+
+#define HDR(str) sendto_one(sptr, ":%s 290 %s :" str "", me.name, sptr->name)
+#define SND(str) sendto_one(sptr, ":%s 291 %s :" str "", me.name, sptr->name)
+#define FTR(str) sendto_one(sptr, ":%s 292 %s :" str "", me.name, sptr->name)
+#define HLP(str) sendto_one(sptr, ":%s 293 %s :" str "", me.name, sptr->name)
+
+int helpop_ignored(aClient *cptr)
+{
+  char buf[NICKLEN + USERLEN + HOSTLEN + 10] = "";
+  int i = 0;
+
+  if (!cptr->user || !IsPerson(cptr) || !h_nignores)
+      return (0);
+  sprintf(buf, "%s!%s@%s", cptr->name, cptr->user->username, cptr->user->host);
+  for ( i = 0 ; i < h_nignores; i++ )
+        if (!match(h_ignores[i], buf))
+            return (1);
+  return (0);
+}
+
+void helpop_ignore(char *mask)
+{
+   char buf[USERLEN + HOSTLEN + NICKLEN + 10];
+   int i;
+
+   strncpy(buf, mask ? mask : "", sizeof(buf));
+   buf[sizeof(buf) - 1] = '\0';
+
+   for ( i = 0 ; i < h_nignores ; i++ )
+        if (!mycmp(h_ignores[i], mask))
+             return;
+   if (h_ignores)
+       h_ignores = realloc(h_ignores, sizeof(char *) * (h_nignores + 3));
+   else
+       h_ignores = (char **)MyMalloc(sizeof(char *) * (h_nignores + 3));
+   ++h_nignores;
+   DupString(h_ignores[h_nignores-1], buf);
+   h_ignores[h_nignores] = NULL;
+}
+
+void helpop_unignore(int num)
+{
+   int i = 0;
+
+   if (num < 0 || num > h_nignores)
+       return;
+   for (i = num; i < h_nignores; i++)
+   {
+        if (i == num)
+            MyFree(h_ignores[i]);
+        h_ignores[i] = h_ignores[i+1];
+   }
+   --h_nignores;
+   h_ignores[h_nignores] = NULL;
+   h_ignores = realloc(h_ignores, sizeof(char *) * (h_nignores + 3));
+}
+
+
+int nohelp_message(aClient *sptr, int g)
+{
+   int going_nowhere = helpop_ignored(sptr);
+
+     if (going_nowhere || !g)
+        SND("Your request was not forwarded to the helpops.");
+     else
+        SND("Your request has been forwarded to the Helpops!");
+        SND("for further help, please type one of the following");
+        SND("commands:");
+        SND("   \2/join #Help\2             <-- for human assistance");
+        SND("   \2/raw help chanserv\2      <-- for index of channel topics");
+        SND("   \2/raw nickserv nickserv\2  <-- for index of nick topics");
+        SND("   \2/raw memoserv memoserv\2  <-- for index of memo topics");
+        SND("   ircII users use \2/quote\2, pIRCH users use \2/verbose\2");
+        SND("   instead of raw.");
+    return (!going_nowhere);
+}
+
+
 
 /*
  * This is _not_ the final help.c, we're just testing the functionality...
@@ -36,6 +120,19 @@ aClient	*sptr;
 char	*name;
 char	*help;
 {
+int fwdstat = 0;
+
+if (help && *help == '!')
+{
+    ++help;
+    fwdstat = -1;
+}
+else if (help && *help == '?')
+{
+    ++help;
+    fwdstat = 1;
+}
+
   if(!myncmp(help, "NICKSERV", 8)) {
 SND(" ***** NickServ Help *****");
     if(!*(help+8) || !mycmp(help+9, "HELP")) {
@@ -766,12 +863,6 @@ SND("  to begin forwarding to.");
 }
 */
   } else { /* Flood back the user ;) */
-    SND("Your help request has been forwarded to the HelpOp's.");
-    SND("If you need help on SorceryNet services, try...");
-    SND("  /raw help nickserv - for help on registering nicknames.");
-    SND("  /raw help chanserv - for help on registering channels.");
-    SND("  /raw help memoserv - for help on sending short messages.");
-    SND("If you are using ircII, use /quote instead of /raw.");
     return 0;
   }
   SND(" ***** Go to #sorcerynet if you have any further questions *****");

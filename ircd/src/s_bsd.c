@@ -96,6 +96,8 @@ static	void	do_dns_async PROTO(());
 #else
 	void	set_sock_opts PROTO((int, aClient *));
 #endif
+extern	int LogFd(int descriptor);
+
 static	char	readbuf[8192];
 char zlinebuf[BUFSIZE];
 extern	char *version;
@@ -171,11 +173,11 @@ char	*text;
 aClient *cptr;
 {
 #ifndef _WIN32
-	Reg1	int	errtmp = errno; /* debug may change 'errno' */
+	int	errtmp = errno; /* debug may change 'errno' */
 #else
-	Reg1	int	errtmp = WSAGetLastError(); /* debug may change 'errno' */
+	int	errtmp = WSAGetLastError(); /* debug may change 'errno' */
 #endif
-	Reg2	char	*host;
+	char	*host;
 	int	err, len = sizeof(err);
 
 	host = (cptr) ? get_client_name(cptr, FALSE) : "";
@@ -424,9 +426,9 @@ aConfItem *aconf;
  */
 void	close_listeners()
 {
-	Reg1	aClient	*cptr;
-	Reg2	int	i;
-	Reg3	aConfItem *aconf;
+	aClient	*cptr;
+	int	i;
+	aConfItem *aconf;
 
 	/*
 	 * close all 'extra' listening ports we have
@@ -448,7 +450,7 @@ void	close_listeners()
  */
 void	init_sys()
 {
-	Reg1	int	fd;
+	int	fd;
 #ifdef RLIMIT_FD_MAX
 	struct rlimit limit;
 
@@ -508,6 +510,7 @@ void	init_sys()
 #ifndef _WIN32
 	for (fd = 3; fd < MAXCONNECTIONS; fd++)
 	    {
+		if (LogFd(fd)) continue;
 		(void)close(fd);
 		local[fd] = NULL;
 	    }
@@ -523,8 +526,9 @@ void	init_sys()
 	if (((bootopt & BOOT_CONSOLE) || isatty(0)) &&
 	    !(bootopt & (BOOT_INETD|BOOT_OPER)))
 	    {
-		if (fork())
+	        if (fork())
 			exit(0);
+
 #ifdef TIOCNOTTY
 		if ((fd = open("/dev/tty", O_RDWR)) >= 0)
 		    {
@@ -577,8 +581,8 @@ void	write_pidfile()
  * or from the ip# converted into a string. 0 = success, -1 = fail.
  */
 static	int	check_init(cptr, sockn)
-Reg1	aClient	*cptr;
-Reg2	char	*sockn;
+aClient	*cptr;
+char	*sockn;
 {
 	struct	sockaddr_in sk;
 	int	len = sizeof(struct sockaddr_in);
@@ -623,11 +627,11 @@ Reg2	char	*sockn;
  * -2 = Bad socket.
  */
 int	check_client(cptr)
-Reg1	aClient	*cptr;
+aClient	*cptr;
 {
 	static	char	sockname[HOSTLEN+1];
-	Reg2	struct	hostent *hp = NULL;
-	Reg3	int	i;
+	struct	hostent *hp = NULL;
+	int	i;
  
 	ClearAccess(cptr);
 	Debug((DEBUG_DNS, "ch_cl: check access for %s[%s]",
@@ -686,63 +690,46 @@ Reg1	aClient	*cptr;
  *	same as the server name is also acceptable in the host field of a
  *	C/N line.
  *  0 = Success
+ *  1 = SOCKS check in progress
  * -1 = Access denied
  * -2 = Bad socket.
  */
 int	check_server_init(cptr)
 aClient	*cptr;
 {
-	Reg1	char	*name;
-	Reg2	aConfItem *c_conf = NULL, *n_conf = NULL;
+	char	*name, *s;
+	aConfItem *c_conf = NULL, *n_conf = NULL;
 	struct	hostent	*hp = NULL;
 	Link	*lp;
-	char	*s;
-
 
 	name = cptr->name;
-	Debug((DEBUG_DNS, "sv_cl: check access for %s[%s]",
-		name, cptr->sockhost));
+
+	Debug((DEBUG_DNS, "sv_cl: check access for %s[%s]", name, cptr->sockhost));
 
 	if (IsUnknown(cptr) && !attach_confs(cptr, name, CFLAG|NFLAG))
-	    {
-		Debug((DEBUG_DNS,"No C/N lines for %s", name));
-		return -1;
-	    }
-	else if (IsUnknown(cptr) && !(ClientFlags(cptr) & FLAGS_GOTID)) {
-	    Reg1	aConfItem *aconf;
-
-	    aconf = count_cnlines(cptr->confs);
-	    if (aconf) {
-		if ((s = (char *)index(aconf->host, '@')) != NULL &&
-		    *(s-1) != '*') {
-		    ClientFlags(cptr) |= FLAGS_DOID;
-		    SetAuthServ(cptr);
-		    ClientFlags(cptr) |= FLAGS_SOCK;
-		    start_auth(cptr);
-		    /* if (!DoingSocks(cptr)) exit(-1); */
-		    return 1;
-		}
-	    }
+	{
+	  Debug((DEBUG_DNS,"No C/N lines for %s", name));
+	  return -1;
 	}
 
 	lp = cptr->confs;
+
 	/*
 	 * We initiated this connection so the client should have a C and N
 	 * line already attached after passing through the connec_server()
 	 * function earlier.
 	 */
 	if (IsConnecting(cptr) || IsHandshake(cptr))
-	    {
+	{
 		c_conf = find_conf(lp, name, CFLAG);
 		n_conf = find_conf(lp, name, NFLAG);
 		if (!c_conf || !n_conf)
-		    {
-			sendto_ops("Connecting Error: %s[%s]", name,
-				   cptr->sockhost);
+		{
+			sendto_ops("Connecting Error: %s[%s]", name, cptr->sockhost);
 			det_confs_butmask(cptr, 0);
 			return -1;
-		    }
-	    }
+		}
+	}
 
 	/*
 	** If the servername is a hostname, either an alias (CNAME) or
@@ -751,12 +738,12 @@ aClient	*cptr;
 	*/
 	if (!cptr->hostp)
 	    {
-		Reg1	aConfItem *aconf;
+		aConfItem *aconf;
 
 		aconf = count_cnlines(lp);
 		if (aconf)
 		    {
-			Reg1	char	*s;
+			char	*s;
 			Link	lin;
 
 			/*
@@ -783,11 +770,11 @@ aClient	*cptr;
 
 int	check_server(cptr, hp, c_conf, n_conf, estab)
 aClient	*cptr;
-Reg1	aConfItem	*n_conf, *c_conf;
-Reg2	struct	hostent	*hp;
+aConfItem	*n_conf, *c_conf;
+struct	hostent	*hp;
 int	estab;
 {
-	Reg3	char	*name;
+	char	*name;
 	char	abuff[HOSTLEN+USERLEN+2];
 	char	sockname[HOSTLEN+1], fullname[HOSTLEN+1];
 	Link	*lp = cptr->confs;
@@ -798,6 +785,7 @@ int	estab;
 		return -2;
 
 check_serverback:
+
 	if (hp)
 	    {
 		for (i = 0; hp->h_addr_list[i]; i++)
@@ -823,14 +811,13 @@ check_serverback:
 		 * if we are missing a C or N line from above, search for
 		 * it under all known hostnames we have for this ip#.
 		 */
-		for (i=0,name = hp->h_name; name ; name = hp->h_aliases[i++])
+		for (i = 0,name = hp->h_name; name ; name = hp->h_aliases[i++])
 		    {
 			strncpyzt(fullname, name, sizeof(fullname));
 			add_local_domain(fullname, HOSTLEN-strlen(fullname));
 			Debug((DEBUG_DNS, "sv_cl: gethostbyaddr: %s->%s",
 				sockname, fullname));
-			(void)sprintf(abuff, "%s@%s",
-				cptr->username, fullname);
+			(void)sprintf(abuff, "%s@%s", cptr->username, fullname);
 			if (!c_conf)
 				c_conf = find_conf_host(lp, abuff, CFLAG);
 			if (!n_conf)
@@ -862,24 +849,20 @@ check_serverback:
 	 * happen when using DNS in the way the irc server does. -avalon
 	 */
 	if (!hp)
-	    {
-		if (!c_conf)
-			c_conf = find_conf_ip(lp, (char *)&cptr->ip,
-					      cptr->username, CFLAG);
-		if (!n_conf)
-			n_conf = find_conf_ip(lp, (char *)&cptr->ip,
-					      cptr->username, NFLAG);
-	    }
+	{
+	    if (!c_conf)
+	      c_conf = find_conf_ip(lp, (char *)&cptr->ip, cptr->username, CFLAG);
+	    if (!n_conf)
+	      n_conf = find_conf_ip(lp, (char *)&cptr->ip, cptr->username, NFLAG);
+	}
 	else
-		for (i = 0; hp->h_addr_list[i]; i++)
-		    {
-			if (!c_conf)
-				c_conf = find_conf_ip(lp, hp->h_addr_list[i],
-						      cptr->username, CFLAG);
-			if (!n_conf)
-				n_conf = find_conf_ip(lp, hp->h_addr_list[i],
-						      cptr->username, NFLAG);
-		    }
+	  for (i = 0; hp->h_addr_list[i]; i++)
+	  {
+	      if (!c_conf)
+		c_conf = find_conf_ip(lp, hp->h_addr_list[i], cptr->username, CFLAG);
+	      if (!n_conf)
+		n_conf = find_conf_ip(lp, hp->h_addr_list[i], cptr->username, NFLAG);
+	  }
 	/*
 	 * detach all conf lines that got attached by attach_confs()
 	 */
@@ -948,8 +931,6 @@ aClient	*cptr;
 	    }
 	sendto_one(cptr, "SERVER %s 1 :%s",
 		   my_name_for_link(me.name, aconf), me.info);
-	if (!IsDead(cptr) && ClientFlags(cptr) & FLAGS_DOID)
-		start_auth(cptr);
 
 	return (IsDead(cptr)) ? -1 : 0;
 }
@@ -962,8 +943,8 @@ aClient	*cptr;
 void	close_connection(cptr)
 aClient *cptr;
 {
-        Reg1	aConfItem *aconf;
-	Reg2	int	i,j;
+        aConfItem *aconf;
+        int	i,j;
 	int	empty = cptr->fd;
 
 	if (IsServer(cptr))
@@ -1036,9 +1017,6 @@ aClient *cptr;
 		if (nextconnect > aconf->hold)
 			nextconnect = aconf->hold;
 	    }
-
-	if (cptr->authfd >= 0)
-		(void)closesocket(cptr->authfd);
 
 	if (cptr->fd >= 0)
 	    {
@@ -1229,9 +1207,9 @@ int	fd;
 {
 	Link	lin;
 	aClient *acptr;
-	aConfItem *aconf = NULL;
+	aConfItem *aconf = NULL, *cconf = NULL;
 	char	*message[20];
-	Reg1	char	*s, *t;
+	char	*s, *t;
 	struct	sockaddr_in addr;
 	int	len = sizeof(struct sockaddr_in), iscons = 0;
 
@@ -1337,17 +1315,13 @@ int	fd;
 	add_client_to_list(acptr);
 	set_non_blocking(acptr->fd, acptr);
 	set_sock_opts(acptr->fd, acptr);
-	/*
-	 * Peek at the conf lines and see if we should do an ident
-	 * request.
-	 */
-	if (find_iline_host(acptr->sockhost))
-	    start_auth(acptr);
 	if ((acptr != &me)
            /* && find_socksline_host(acptr->sockhost)*/)
 #ifdef ENABLE_SOCKSCHECK
-         if (!iscons)
+         if (!iscons && (!(cconf = find_iline_host(acptr->sockhost)) || !(cconf->bits & CFLAG_NOSOCKS) ))
             init_socks(acptr);
+#else
+          ;
 #endif
 
 	return acptr;
@@ -1362,10 +1336,10 @@ int	fd;
 ** any flooding >:-) -avalon
 */
 static	int	read_packet(cptr, rfd)
-Reg1	aClient *cptr;
+aClient *cptr;
 fd_set	*rfd;
 {
-	Reg1	int	dolen = 0, length = 0, done;
+	int	dolen = 0, length = 0, done;
 	time_t	now = NOW;
 
 	if (FD_ISSET(cptr->fd, rfd) &&
@@ -1400,8 +1374,7 @@ fd_set	*rfd;
 	** For server connections, we process as many as we can without
 	** worrying about the time of day or anything :)
 	*/
-	if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr) ||
-	    IsService(cptr))
+	if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr) || IsService(cptr))
 	    {
 		if (length > 0)
 			if ((done = dopacket(cptr, readbuf, length)))
@@ -1491,8 +1464,8 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 		* you have to have sleep/wait somewhere else in the code.--msa
 		*/
 {
-	Reg1	aClient	*cptr;
-	Reg2	int	nfds;
+	aClient	*cptr;
+	int	nfds;
 	struct	timeval	wait;
 #ifdef	pyr
 	struct	timeval	nowt;
@@ -1506,7 +1479,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 	time_t	delay2 = delay, now;
 	u_long	usec = 0;
 	int	res, length, fd, i;
-	int	auth = 0, socks = 0;
+	int	socks = 0;
 	int	sockerr;
 	struct sockaddr_in	sock_sin;
 	int			sock_len;
@@ -1619,7 +1592,9 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 						free_socks(cptr->socks);
 						cptr->socks = NULL;
 
-//						exit_client(cptr, cptr, &me, "connection rejected: open socks/proxy server");
+#if 0
+						exit_client(cptr, cptr, &me, "connection rejected: open socks/proxy server");
+#endif
 						FD_CLR(cptr->fd, &read_set);
 						FD_CLR(cptr->fd, &write_set);
 #ifdef _WIN32
@@ -1638,20 +1613,8 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                                   socks++;
                         }
 
-			if (DoingAuth(cptr))
-			    {
-				auth++;
-				Debug((DEBUG_NOTICE,"auth on %x %d", cptr, i));
-				FD_SET(cptr->authfd, &read_set);
-#ifdef _WIN32
-				FD_SET(cptr->authfd, &excpt_set);
-#endif
-				if (ClientFlags(cptr) & FLAGS_WRAUTH)
-					FD_SET(cptr->authfd, &write_set);
-			    }
-			if (DoingDNS(cptr) || DoingAuth(cptr) ||
-                            (ClientFlags(cptr) & FLAGS_SOCK))
-				continue;
+			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
+			  continue;
 
 			if (IsMe(cptr) && IsListening(cptr))
 			    {
@@ -1721,7 +1684,9 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 			return -1;
 		else if (nfds >= 0)
 			break;
-//		report_error("select %s:%s", &me);
+#if 0
+		report_error("select %s:%s", &me);
+#endif
 		res++;
 		if (res > 5)
 			restart("too many select errors");
@@ -1773,89 +1738,6 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 			FD_CLR(resfd, &read_set);
 	    }
 #endif
-	/*
-	 * Check fd sets for the auth fd's (if set and valid!) first
-	 * because these can not be processed using the normal loops below.
-	 * -avalon
-	 */
-	for (i = highest_fd; (auth > 0) && (i >= 0); i--)
-	    {
-		if (!(cptr = local[i]))
-			continue;
-		if (cptr->authfd < 0)
-			continue;
-		auth--;
-#ifdef _WIN32
-		/*
-		 * Because of the way windows uses select(), we have to use
-		 * the exception FD set to find out when a connection is
-		 * refused.  ie Auth ports and /connect's.  -Cabal95
-		 */
-		if (FD_ISSET(cptr->authfd, &excpt_set))
-		    {
-			/*
-			 * Don't check getsockerr, it doesn't seem to
-			 * work on win32.. peice of....... -Cabal95
-			 */
-                        sendto_one(cptr, ":%s NOTICE AUTH :*** Unable to get ident", me.name);
-			ircstp->is_abad++;
-			closesocket(cptr->authfd);
-			if (cptr->authfd == highest_fd)
-				while (!local[highest_fd])
-					highest_fd--;
-			cptr->authfd = -1;
-			ClientFlags(cptr) &= ~(FLAGS_AUTH|FLAGS_WRAUTH);
-                        ClientFlags(cptr) &= ~FLAGS_GOTID;
-			if (!DoingDNS(cptr) && !DoingSocks(cptr))
-				SetAccess(cptr);
-			if (nfds > 0)
-				nfds--;
-			continue;
-		    }
-#endif
-		if ((nfds > 0) && FD_ISSET(cptr->authfd, &write_set))
-		    {
-			nfds--;
-			send_authports(cptr);
-			if (IsAuthServ(cptr) && cptr->authfd == -1) {
-			    /*
-			     * We don't bother doing a check_server()
-			     * call here because it MUST have had a
-			     * valid auth reply. -Cabal95
-			     */
-			    SetUnknown(cptr);
-			    exit_client(cptr, cptr, &me,
-					"No authorization");
-			    sendto_ops("Received unauthorized "
-				       "connection from %s.",
-				       get_client_host(cptr));
-			    sendto_serv_butone(&me,
-					":%s GLOBOPS :Received unauthorized "
-					"connection from %s.", me.name,
-					get_client_host(cptr));
-			}
-		    }
-		else if ((nfds > 0) && FD_ISSET(cptr->authfd, &read_set))
-		    {
-			nfds--;
-			read_authports(cptr);
-			if (IsAuthServ(cptr) && DoAccess(cptr)) {
-			    SetUnknown(cptr);
-			    if (check_server(cptr, cptr->hostp, NULL,
-					     NULL, 1)) {
-				exit_client(cptr, cptr, &me,
-					    "No authorization");
-				sendto_ops("Received unauthorized "
-					   "connection from %s.",
-					   get_client_host(cptr));
-				sendto_serv_butone(&me,
-					":%s GLOBOPS :Received unauthorized "
-					"connection from %s.", me.name,
-					get_client_host(cptr));
-			    }
-			}
-		    }
-	    }
 
        for (i = highest_fd;  i >= 0; i--)
            {
@@ -1893,15 +1775,8 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 
 
                socks--;
-        sock_len = sizeof(struct sockaddr_in);
-        if (!(cptr->socks->status & SOCK_CONNECTED))
-         if (getpeername(cptr->socks->fd, (struct sockaddr *) &sock_sin, &sock_len)!=-1)
-         {
-                   cptr->socks->status |= SOCK_CONNECTED;
-         }      
-/*          else if (cptr->socks->status & SOCK_CONNECTED)
-                    cptr->socks->status &= ~SOCK_CONNECTED;*/
-	if (!(cptr->socks->status & SOCK_SENT) && (cptr->socks->status & SOCK_CONNECTED)
+	if (!(cptr->socks->status & SOCK_SENT)  && (cptr->socks->fd >= 0)
+                  /*&& (cptr->socks->status & SOCK_CONNECTED)*/
                   && (nfds > 0) && FD_ISSET(cptr->socks->fd, &write_set))
                    {
 #ifdef ENABLE_SOCKSCHECK
@@ -1909,6 +1784,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                        cptr->socks->status |= SOCK_CONNECTED;
                        send_socksquery(cptr);
 #else
+                       nfds--;
                        cptr->socks->status = SOCK_GO|SOCK_DESTROY;
 #endif
                    }
@@ -1919,6 +1795,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                        cptr->socks->status |= SOCK_CONNECTED;
                        read_socks(cptr);
 #else
+                       nfds--;
                        cptr->socks->status = SOCK_GO|SOCK_DESTROY;
 #endif
                    }
@@ -1935,14 +1812,12 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 				if (cptr->socks->fd == highest_fd)
 					while(!local[highest_fd])
 						highest_fd--;
-				 close(cptr->socks->fd);
+				 closesocket(cptr->socks->fd);
 			}
                       cptr->socks->fd = -1;
                   }
 
            }
-
-
 
 
 	for (i = highest_fd; i >= 0; i--)
@@ -2089,9 +1964,9 @@ aConfItem *aconf;
 aClient	*by;
 struct	hostent	*hp;
 {
-	Reg1	struct	sockaddr *svp;
-	Reg2	aClient *cptr, *c2ptr;
-	Reg3	char	*s;
+	struct	sockaddr *svp;
+	aClient *cptr, *c2ptr;
+	char	*s;
 	int	errtmp, len;
 
 	Debug((DEBUG_NOTICE,"Connect to %s[%s] @%s",
@@ -2259,12 +2134,12 @@ struct	hostent	*hp;
 }
 
 static	struct	sockaddr *connect_inet(aconf, cptr, lenp)
-Reg1	aConfItem	*aconf;
-Reg2	aClient	*cptr;
+aConfItem	*aconf;
+aClient	*cptr;
 int	*lenp;
 {
 	static	struct	sockaddr_in	server;
-	Reg3	struct	hostent	*hp;
+	struct	hostent	*hp;
 	char	*s;
 
 
@@ -2291,9 +2166,6 @@ int	*lenp;
 		report_error("opening stream socket to server %s:%s", cptr);
 		return NULL;
 	    }
-	if ((s = index(aconf->host, '@')) != NULL &&
-	    *(s-1) != '*')
-	    ClientFlags(cptr) |= FLAGS_DOID;
 	get_sockhost(cptr, aconf->host);
 	server.sin_port = 0;
 	server.sin_addr = me.ip;
@@ -2348,166 +2220,6 @@ int	*lenp;
 	*lenp = sizeof(server);
 	return	(struct sockaddr *)&server;
 }
-
-/*
- * The following section of code performs summoning of users to irc.
- */
-#if defined(ENABLE_SUMMON) || defined(ENABLE_USERS)
-int	utmp_open()
-{
-#ifdef O_NOCTTY
-	return (open(UTMP, O_RDONLY|O_NOCTTY));
-#else
-	return (open(UTMP, O_RDONLY));
-#endif
-}
-
-int	utmp_read(fd, name, line, host, hlen)
-int	fd, hlen;
-char	*name, *line, *host;
-{
-	struct	utmp	ut;
-	while (read(fd, (char *)&ut, sizeof (struct utmp))
-               == sizeof (struct utmp))
-	    {
-		strncpyzt(name, ut.ut_name, 9);
-		strncpyzt(line, ut.ut_line, 10);
-#ifdef USER_PROCESS
-#  if defined(HPUX) || defined(AIX)
-		strncpyzt(host,(ut.ut_host[0]) ? (ut.ut_host) : me.name, 16);
-#  else
-		strncpyzt(host, me.name, 9);
-#  endif
-		if (ut.ut_type == USER_PROCESS)
-			return 0;
-#else
-		strncpyzt(host, (ut.ut_host[0]) ? (ut.ut_host) : me.name,
-			hlen);
-		if (ut.ut_name[0])
-			return 0;
-#endif
-	    }
-	return -1;
-}
-
-int	utmp_close(fd)
-int	fd;
-{
-	return(close(fd));
-}
-
-#ifdef ENABLE_SUMMON
-void	summon(who, namebuf, linebuf, chname)
-aClient *who;
-char	*namebuf, *linebuf, *chname;
-{
-	static	char	wrerr[] = "NOTICE %s :Write error. Couldn't summon.";
-	int	fd;
-	char	line[120];
-	time_t	now;
-	struct	tm	*tp;
-
-	now = NOW;
-	tp = localtime(&now);
-	if (strlen(linebuf) > (size_t) 9)
-	    {
-		sendto_one(who,"NOTICE %s :Serious fault in SUMMON.",
-			   who->name);
-		sendto_one(who,
-			   "NOTICE %s :linebuf too long. Inform Administrator",
-			   who->name);
-		return;
-	    }
-	/*
-	 * Following line added to prevent cracking to e.g. /dev/kmem if
-	 * UTMP is for some silly reason writable to everyone...
-	 */
-	if ((linebuf[0] != 't' || linebuf[1] != 't' || linebuf[2] != 'y')
-	    && (linebuf[0] != 'c' || linebuf[1] != 'o' || linebuf[2] != 'n')
-#ifdef HPUX
-	    && (linebuf[0] != 'p' || linebuf[1] != 't' || linebuf[2] != 'y' ||
-		linebuf[3] != '/')
-#endif
-	    )
-	    {
-		sendto_one(who,
-		      "NOTICE %s :Looks like mere mortal souls are trying to",
-			   who->name);
-		sendto_one(who,"NOTICE %s :enter the twilight zone... ",
-			   who->name);
-		Debug((0, "%s (%s@%s, nick %s, %s)",
-		      "FATAL: major security hack. Notify Administrator !",
-		      who->username, who->user->host,
-		      who->name, who->info));
-		return;
-	    }
-
-	(void)sprintf(line,"/dev/%s", linebuf);
-	(void)alarm(5);
-#ifdef	O_NOCTTY
-	if ((fd = open(line, O_WRONLY | O_NDELAY | O_NOCTTY)) == -1)
-#else
-	if ((fd = open(line, O_WRONLY | O_NDELAY)) == -1)
-#endif
-	    {
-		(void)alarm(0);
-		sendto_one(who,
-			   "NOTICE %s :%s seems to have disabled summoning...",
-			   who->name, namebuf);
-		return;
-	    }
-#if !defined(O_NOCTTY) && defined(TIOCNOTTY)
-	(void) ioctl(fd, TIOCNOTTY, NULL);
-#endif
-	(void)alarm(0);
-	(void)sprintf(line,"\n\r\007Message from IRC_Daemon@%s at %d:%02d\n\r",
-			me.name, tp->tm_hour, tp->tm_min);
-	if (write(fd, line, strlen(line)) != strlen(line))
-	    {
-		(void)alarm(0);
-		(void)close(fd);
-		sendto_one(who, wrerr, who->name);
-		return;
-	    }
-	(void)alarm(0);
-	(void)strcpy(line, "ircd: You are being summoned to Internet Relay \
-Chat on\n\r");
-	(void)alarm(5);
-	if (write(fd, line, strlen(line)) != strlen(line))
-	    {
-		(void)alarm(0);
-		(void)close(fd);
-		sendto_one(who, wrerr, who->name);
-		return;
-	    }
-	(void)alarm(0);
-	(void)sprintf(line, "ircd: Channel %s, by %s@%s (%s) %s\n\r",
-		chname, who->user->username, who->user->host, who->name, who->info);
-	(void)alarm(5);
-	if (write(fd, line, strlen(line)) != strlen(line))
-	    {
-		(void)alarm(0);
-		(void)close(fd);
-		sendto_one(who, wrerr, who->name);
-		return;
-	    }
-	(void)alarm(0);
-	(void)strcpy(line,"ircd: Respond with irc\n\r");
-	(void)alarm(5);
-	if (write(fd, line, strlen(line)) != strlen(line))
-	    {
-		(void)alarm(0);
-		(void)close(fd);
-		sendto_one(who, wrerr, who->name);
-		return;
-	    }
-	(void)close(fd);
-	(void)alarm(0);
-	sendto_one(who, rpl_str(RPL_SUMMONING), me.name, who->name, namebuf);
-	return;
-}
-#  endif
-#endif /* ENABLE_SUMMON */
 
 /*
 ** find the real hostname for the host running the server (or one which
@@ -2656,7 +2368,7 @@ int	setup_ping()
  */
 static	void	polludp()
 {
-	Reg1	char	*s;
+	char	*s;
 	struct	sockaddr_in	from;
 	int	n, fromlen = sizeof(from);
 	static	time_t	last = 0, now;
@@ -2741,62 +2453,68 @@ int	id;
 #endif
 	while (hp != NULL)
 	{
-	Debug((DEBUG_DNS,"%#x = get_res(%d,%#x)",hp,ln.flags,ln.value.cptr));
+	    Debug((DEBUG_DNS,"%#x = get_res(%d,%#x)", hp, ln.flags, ln.value.cptr));
 
-	switch (ln.flags)
-	{
-	case ASYNC_NONE :
+	    switch (ln.flags)
+	    {
+	      case ASYNC_NONE :
 		/*
 		 * no reply was processed that was outstanding or had a client
 		 * still waiting.
 		 */
 		break;
-	case ASYNC_CLIENT :
+
+	      case ASYNC_CLIENT :
 		if ((cptr = ln.value.cptr))
-		    {
-                        connotice(cptr, REPORT_DONE_DNS);
-			del_queries((char *)cptr);
-			ClearDNS(cptr);
-			if (!DoingAuth(cptr) && !DoingSocks(cptr))
-				SetAccess(cptr);
-			cptr->hostp = hp;
-		    }
+		{
+		    connotice(cptr, REPORT_DONE_DNS);
+		    del_queries((char *)cptr);
+		    ClearDNS(cptr);
+		    if (!DoingSocks(cptr))
+		      SetAccess(cptr);
+		    cptr->hostp = hp;
+		}
 		break;
-	case ASYNC_CONNECT :
+
+	      case ASYNC_CONNECT :
 		aconf = ln.value.aconf;
 		if (hp && aconf)
-		    {
-			bcopy(hp->h_addr, (char *)&aconf->ipnum,
-			      sizeof(struct in_addr));
-			(void)connect_server(aconf, NULL, hp);
-		    }
+		{
+		    bcopy(hp->h_addr, (char *)&aconf->ipnum,
+			  sizeof(struct in_addr));
+		    (void)connect_server(aconf, NULL, hp);
+		}
 		else
-			sendto_ops("Connect to %s failed: host lookup",
-				   (aconf) ? aconf->host : "unknown");
+		  sendto_ops("Connect to %s failed: host lookup",
+			     (aconf) ? aconf->host : "unknown");
 		break;
-	case ASYNC_CONF :
+
+	      case ASYNC_CONF :
 		aconf = ln.value.aconf;
 		if (hp && aconf)
-			bcopy(hp->h_addr, (char *)&aconf->ipnum,
-			      sizeof(struct in_addr));
+		  bcopy(hp->h_addr, (char *)&aconf->ipnum,
+			sizeof(struct in_addr));
 		break;
-	case ASYNC_SERVER :
+
+	      case ASYNC_SERVER :
 		cptr = ln.value.cptr;
 		del_queries((char *)cptr);
 		ClearDNS(cptr);
-		if (check_server(cptr, hp, NULL, NULL, 1))
-			(void)exit_client(cptr, cptr, &me,
-				"No Authorization");
-		break;
-	default :
-		break;
-	}
 
-	ln.flags = -1;
+		if (check_server(cptr, hp, NULL, NULL, 1))
+		  (void)exit_client(cptr, cptr, &me, "No Authorization");
+
+		break;
+
+	      default :
+		break;
+	    }
+
+	    ln.flags = -1;
 #ifndef _WIN32
-	hp = get_res((char *)&ln);
+	    hp = get_res((char *)&ln);
 #else
-	hp = get_res((char *)&ln, id);
+	    hp = get_res((char *)&ln, id);
 #endif
 	} /* while (hp != NULL) */
 }

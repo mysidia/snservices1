@@ -43,25 +43,20 @@ Computing Center and Jarkko Oikarinen";
  */
 
 static	char	*para[MAXPARA+1];
-#ifdef	CLIENT_COMPILE
-static	char	sender[NICKLEN+USERLEN+HOSTLEN+3];
-char	userhost[USERLEN+HOSTLEN+2];
-#else
 static	char	sender[HOSTLEN+1];
 static	int	cancel_clients PROTO((aClient *, aClient *, char *));
 static	void	remove_unknown PROTO((aClient *, char *));
-#endif
 
 /*
 **  Find a user@host (for services purposes).
 */
 aClient *find_userserver(user, server, cptr, count)
-	char	*user, *server;
-	aClient	*cptr;
-	int	*count;
+char	*user, *server;
+aClient	*cptr;
+int	*count;
 {
-	Reg1    aClient *c2ptr;
-	Reg2    aClient *res = cptr;
+	aClient *c2ptr;
+	aClient *res = cptr;
 
 	*count = 0;
 	if (collapse(user))
@@ -89,20 +84,19 @@ aClient *find_userserver(user, server, cptr, count)
 **	the old. 'name' is now assumed to be a null terminated
 **	string and the search is the for server and user.
 */
-#ifndef CLIENT_COMPILE
 aClient *find_client(name, cptr)
 char	*name;
-Reg1	aClient *cptr;
-    {
-	if (name)
-		cptr = hash_find_client(name, cptr);
+aClient *cptr;
+{
+  if (name)
+    cptr = hash_find_client(name, cptr);
 
-	return cptr;
-    }
+  return cptr;
+}
 
 aClient	*find_nickserv(name, cptr)
 char	*name;
-Reg1	aClient *cptr;
+aClient *cptr;
     {
 	if (name)
 		cptr = hash_find_nickserver(name, cptr);
@@ -110,22 +104,6 @@ Reg1	aClient *cptr;
 	return cptr;
     }
 
-#else
-aClient *find_client(name, cptr)
-char *name;
-aClient *cptr;
-    {
-	Reg1 aClient *c2ptr = cptr;
-
-	if (!name)
-		return c2ptr;
-
-	for (c2ptr = client; c2ptr; c2ptr = c2ptr->next) 
-		if (mycmp(name, c2ptr->name) == 0)
-			return c2ptr;
-	return cptr;
-    }
-#endif
 
 /*
 **  Find a user@host (server or user).
@@ -140,8 +118,8 @@ char	*user, *host;
 aClient *cptr;
 int	*count;
     {
-	Reg1	aClient	*c2ptr;
-	Reg2	aClient	*res = cptr;
+	aClient	*c2ptr;
+	aClient	*res = cptr;
 
 	*count = 0;
 	if (collapse(user))
@@ -271,10 +249,9 @@ int msgtab_buildhash()
 **	the old. 'name' is now assumed to be a null terminated
 **	string.
 */
-#ifndef CLIENT_COMPILE
 aClient *find_server(name, cptr)
 char	*name;
-Reg1	aClient *cptr;
+aClient *cptr;
 {
 	if (name)
 		cptr = hash_find_server(name, cptr);
@@ -285,7 +262,7 @@ aClient *find_name(name, cptr)
 char	*name;
 aClient *cptr;
 {
-	Reg1 aClient *c2ptr = cptr;
+	aClient *c2ptr = cptr;
 
 
 	if (!collapse(name))
@@ -307,28 +284,6 @@ aClient *cptr;
 	    }
 	return (c2ptr ? c2ptr : cptr);
 }
-#else
-aClient	*find_server(name, cptr)
-char	*name;
-aClient	*cptr;
-{
-	Reg1	aClient *c2ptr = cptr;
-
-
-	if (!collapse(name))
-		return c2ptr;
-
-	for (c2ptr = client; c2ptr; c2ptr = c2ptr->next)
-	    {
-		if (!IsServer(c2ptr) && !IsMe(c2ptr))
-			continue;
-		if (match(c2ptr->name, name) == 0 ||
-		    match(name, c2ptr->name) == 0)
-			break;
-	    }
-	return (c2ptr ? c2ptr : cptr);
-}
-#endif
 
 /*
 **  Find person by (nick)name.
@@ -337,7 +292,7 @@ aClient *find_person(name, cptr)
 char	*name;
 aClient *cptr;
     {
-	Reg1	aClient	*c2ptr = cptr;
+	aClient	*c2ptr = cptr;
 
 
 	c2ptr = find_client(name, c2ptr);
@@ -358,17 +313,15 @@ aClient *cptr;
 char	*buffer, *bufend;
 struct	Message *mptr;
     {
-	Reg1	aClient *from = cptr;
-	Reg2	char *ch, *s;
-	Reg3	int	len, i, numeric, paramcount, noprefix = 0;
+	aClient *from = cptr;
+	char *ch, *s;
+	int	len, i, numeric, paramcount, noprefix = 0;
         time_t parsetime = NOW;
 
 
 	Debug((DEBUG_DEBUG,"Parsing: %s", buffer));
-#ifndef	CLIENT_COMPILE
 	if (IsDead(cptr))
 		return 0;
-#endif
 
 	s = sender;
 	*s = '\0';
@@ -385,18 +338,6 @@ struct	Message *mptr;
 			if (s < (sender + sizeof(sender)-1))
 				*s++ = *ch; /* leave room for NULL */
 		*s = '\0';
-#ifdef CLIENT_COMPILE
-		if ((s = index(sender, '!')))
-		    {
-			*s++ = '\0';
-			strncpyzt(userhost, s, sizeof(userhost));
-		    }
-		else if ((s = index(sender, '@')))
-		    {
-			*s++ = '\0';
-			strncpyzt(userhost, s, sizeof(userhost));
-		    }
-#endif
 		/*
 		** Actually, only messages coming from servers can have
 		** the prefix--prefix silently ignored, if coming from
@@ -413,10 +354,8 @@ struct	Message *mptr;
  			from = find_client(sender, (aClient *) NULL);
 			if (!from || match(from->name, sender))
 				from = find_server(sender, (aClient *)NULL);
-#ifndef	CLIENT_COMPILE
 			else if (!from && index(sender, '@'))
 				from = find_nickserv(sender, (aClient *)NULL);
-#endif
 
 			para[0] = sender;
 
@@ -432,9 +371,7 @@ struct	Message *mptr;
 					"Unknown prefix (%s)(%s) from (%s)",
 					sender, buffer, cptr->name));
 				ircstp->is_unpf++;
-#ifndef	CLIENT_COMPILE
 				remove_unknown(cptr, sender);
-#endif
 				return -1;
 			    }
 			if (from->from != cptr)
@@ -443,11 +380,7 @@ struct	Message *mptr;
 				Debug((DEBUG_ERROR,
 					"Message (%s) coming from (%s)",
 					buffer, cptr->name));
-#ifndef	CLIENT_COMPILE
 				return cancel_clients(cptr, from, ch);
-#else
-				return -1;
-#endif
 			    }
 		    }
 		while (*ch == ' ')
@@ -623,13 +556,8 @@ struct	Message *mptr;
 					    ":%s %d %s %s :Unknown command",
 					    me.name, ERR_UNKNOWNCOMMAND,
 					    from->name, ch);
-#ifdef	CLIENT_COMPILE
-				Debug((DEBUG_ERROR,"Unknown (%s) from %s[%s]",
-					ch, cptr->name, cptr->sockhost));
-#else
 				Debug((DEBUG_ERROR,"Unknown (%s) from %s",
 					ch, get_client_name(cptr, TRUE)));
-#endif
 			    }
 			ircstp->is_unco++;
 			return(-1);
@@ -656,10 +584,6 @@ struct	Message *mptr;
 
 	/* Note initially true: s==NULL || *(s-1) == '\0' !! */
 
-#ifdef	CLIENT_COMPILE
-	if (me.user)
-		para[0] = sender;
-#endif
 	i = 0;
 	if (s)
 	    {
@@ -745,7 +669,6 @@ char	*newline;
 	return(field);
 }
 
-#ifndef	CLIENT_COMPILE
 static	int	cancel_clients(cptr, sptr, cmd)
 aClient	*cptr, *sptr;
 char	*cmd;
@@ -889,4 +812,3 @@ char	*sender;
 		sendto_one(cptr, ":%s SQUIT %s :(Unknown from %s)",
 			   me.name, sender, get_client_name(cptr, FALSE));
 }
-#endif

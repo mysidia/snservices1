@@ -53,13 +53,10 @@ u_char touppertab[], tolowertab[];
 #define tolowertab2 tolowertab
 #endif
 
-int
-match(mask, string)
-char *mask, *string;
+int match(char *mask, char *string)
 {
- char *rmask=mask;
- char *rstring=string;
- int l,p;
+ char *rmask = mask, *rstring = string;
+ int l, p;
 
 #ifdef USE_CASETABLES
  if(casetable==0)
@@ -110,17 +107,12 @@ char *mask, *string;
  * Written by Douglas A Lewis (dalewis@acsu.buffalo.edu)
  */
 
-int
-r_match(mask, name)
-     char *mask, *name;
+int r_match(char *mask, char *name)
 {
-  u_char *m;
-  u_char *n;
-  char	 *ma;
-  char   *na;
-  int	  wild;
-  int     q;
-  
+  u_char *m, *n;
+  char	 *ma, *na;
+  int	  wild, q;
+
   m = (u_char *)mask;
   n = (u_char *)name;
   ma = mask;
@@ -179,9 +171,7 @@ r_match(mask, name)
  * This particular version is "in place", so that it changes the pattern
  * which is to be reduced to a "minimal" size.
  */
-char *
-collapse(pattern)
-     char *pattern;
+char *collapse(char *pattern)
 {
   char *s;
   char *s1;
@@ -222,10 +212,7 @@ collapse(pattern)
  *		<0, if s1 lexicographically less than s2
  *		>0, if s1 lexicographically greater than s2
  */
-int
-smycmp(s1, s2)
-     char       *s1;
-     char       *s2;
+int smycmp(char *s1, char *s2)
 {
   u_char        *str1;
   u_char        *str2;
@@ -244,14 +231,9 @@ smycmp(s1, s2)
 }
 
 
-int
-myncmp(str1, str2, n)
-     char       *str1;
-     char       *str2;
-     int         n;
+int myncmp(char *str1, char *str2, int n)
 {
-  u_char  *s1;
-  u_char  *s2;
+  u_char  *s1, *s2;
   int      res;
   
   s1 = (u_char *)str1;

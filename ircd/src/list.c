@@ -93,11 +93,10 @@ void	outofmemory()
 **			associated with the client defined by
 **			'from'). ('from' is a local client!!).
 */
-aClient	*make_client(from)
-aClient	*from;
+aClient	*make_client(aClient *from)
 {
-	Reg1	aClient *cptr = NULL;
-	Reg2	unsigned size = CLIENT_REMOTE_SIZE;
+	aClient *cptr = NULL;
+	unsigned size = CLIENT_REMOTE_SIZE;
 
 	/*
 	 * Check freelists first to see if we can grab a client without
@@ -135,13 +134,11 @@ aClient	*from;
 		cptr->confs = NULL;
 		cptr->sockhost[0] = '\0';
 		cptr->buffer[0] = '\0';
-		cptr->authfd = -1;
 	    }
 	return (cptr);
 }
 
-int	free_socks(zap)
-struct Socks	*zap;
+int	free_socks(struct Socks *zap)
 {
 	if (zap == NULL)
 		return (-1);
@@ -156,20 +153,18 @@ struct Socks	*zap;
 	return (0);
 }
 
-void	free_client(cptr)
-aClient	*cptr;
+void	free_client(aClient *cptr)
 {
 	MyFree((char *)cptr);
 }
 
 /*
-** 'make_user' add's an User information block to a client
+** make_user() adds an User information block to a client
 ** if it was not previously allocated.
 */
-anUser	*make_user(cptr)
-aClient *cptr;
+anUser	*make_user(aClient *cptr)
 {
-	Reg1	anUser	*user;
+	anUser	*user;
 
 	user = cptr->user;
 	if (!user)
@@ -192,10 +187,12 @@ aClient *cptr;
 	return user;
 }
 
-aServer	*make_server(cptr)
-aClient	*cptr;
+/* similarly, make_server() creates a nice Server struct
+ * for the client
+ */
+aServer	*make_server(aClient *cptr)
 {
-	Reg1	aServer	*serv = cptr->serv;
+	aServer	*serv = cptr->serv;
 
 	if (!serv)
 	    {
@@ -217,9 +214,7 @@ aClient	*cptr;
 **	Decrease user reference count by one and realease block,
 **	if count reaches 0
 */
-void	free_user(user, cptr)
-Reg1	anUser	*user;
-aClient	*cptr;
+void	free_user(anUser *user, aClient *cptr)
 {
 	if (--user->refcnt <= 0)
 	    {
@@ -259,8 +254,7 @@ aClient	*cptr;
  * taken the code from ExitOneClient() for this and placed it here.
  * - avalon
  */
-void	remove_client_from_list(cptr)
-Reg1	aClient	*cptr;
+void	remove_client_from_list(aClient *cptr)
 {
 	checklist();
 	if (cptr->prev)
@@ -305,8 +299,7 @@ Reg1	aClient	*cptr;
  * in this file, shouldnt they ?  after all, this is list.c, isnt it ?
  * -avalon
  */
-void	add_client_to_list(cptr)
-aClient	*cptr;
+void	add_client_to_list(aClient *cptr)
 {
 	/*
 	 * since we always insert new clients to the top of the list,
@@ -322,9 +315,7 @@ aClient	*cptr;
 /*
  * Look for ptr in the linked listed pointed to by link.
  */
-Link	*find_user_link(lp, ptr)
-Reg1	Link	*lp;
-Reg2	aClient *ptr;
+Link	*find_user_link(Link *lp, aClient *ptr)
 {
   if (ptr)
 	while (lp)
@@ -338,7 +329,7 @@ Reg2	aClient *ptr;
 
 Link	*make_link()
 {
-	Reg1	Link	*lp;
+	Link	*lp;
 
 	lp = (Link *)MyMalloc(sizeof(Link));
 #ifdef	DEBUGMODE
@@ -347,8 +338,7 @@ Link	*make_link()
 	return lp;
 }
 
-void	free_link(lp)
-Reg1	Link	*lp;
+void	free_link(Link *lp)
 {
 	MyFree((char *)lp);
 #ifdef	DEBUGMODE
@@ -359,7 +349,7 @@ Reg1	Link	*lp;
 
 aClass	*make_class()
 {
-	Reg1	aClass	*tmp;
+	aClass	*tmp;
 
 	tmp = (aClass *)MyMalloc(sizeof(aClass));
 #ifdef	DEBUGMODE
@@ -368,8 +358,7 @@ aClass	*make_class()
 	return tmp;
 }
 
-void	free_class(tmp)
-Reg1	aClass	*tmp;
+void	free_class(aClass *tmp)
 {
 	MyFree((char *)tmp);
 #ifdef	DEBUGMODE
@@ -379,7 +368,7 @@ Reg1	aClass	*tmp;
 
 aConfItem	*make_conf()
 {
-	Reg1	aConfItem *aconf;
+	aConfItem *aconf;
 
 	aconf = (struct ConfItem *)MyMalloc(sizeof(aConfItem));
 #ifdef	DEBUGMODE
@@ -392,12 +381,12 @@ aConfItem	*make_conf()
 	aconf->clients = 0;
 	aconf->port = 0;
 	aconf->hold = 0;
+	aconf->bits = 0;
 	Class(aconf) = 0;
 	return (aconf);
 }
 
-void	delist_conf(aconf)
-aConfItem	*aconf;
+void	delist_conf(aConfItem *aconf)
 {
 	if (aconf == conf)
 		conf = conf->next;
@@ -412,8 +401,7 @@ aConfItem	*aconf;
 	aconf->next = NULL;
 }
 
-void	free_conf(aconf)
-aConfItem *aconf;
+void	free_conf(aConfItem *aconf)
 {
 	del_queries((char *)aconf);
 	MyFree(aconf->host);
@@ -429,9 +417,7 @@ aConfItem *aconf;
 }
 
 #ifdef	DEBUGMODE
-void	send_listinfo(cptr, name)
-aClient	*cptr;
-char	*name;
+void	send_listinfo(aClient *cptr, char *name)
 {
 	int	inuse = 0, mem = 0, tmp = 0;
 

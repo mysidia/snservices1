@@ -73,6 +73,7 @@
 /* 	ESIX		ESIX */
 /* 	NEXT		NeXTStep */
 /* 	SVR4 */
+/*	LINUX_GLIBC	Glibc-based Linux distros - sys_errlist */
 
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the

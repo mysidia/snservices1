@@ -8,8 +8,8 @@
 dn_skipname(comp_dn, eom)
 	u_char *comp_dn, *eom;
 {
-	register u_char *cp;
-	register int n;
+	u_char *cp;
+	int n;
 
 	cp = comp_dn;
 	while (cp < eom && (n = *cp++)) {
