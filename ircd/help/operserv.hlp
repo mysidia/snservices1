@@ -1,0 +1,380 @@
+
+^PAGE:operserv autokill
+--- SorceryNet Operator Services Help ---
+  
+ === AUTOKILL ===
+ 
+     SYNTAX:
+     /msg OperServ AUTOKILL <time/-> <nick!user@host> <reason> 
+ 
+     DESCRIPTION:
+     OperServ AUTOKILL can either give a list of current autokills
+     on the network, or if you are a ServOp+, it can be used to add
+     or remove an autokill from the network wide ban list.  The 
+     time field is always in hours.  If - is used in the time 
+     field, the autokill is removed, if a 0 is used the autokill 
+     is permanent.
+ 
+     EXAMPLES:
+     To retrieve a list of autokills:
+       /msg OperServ autokill
+     To add an autokill for *!foo@*.bar.com for 2 hours for 
+     advertising:
+       /msg OperServ autokill 2 *!foo@*.bar.com mass advertising
+ 
+--- End Of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv cloneset
+--- SorceryNet Operator Services Help ---
+ 
+ === CLONESET ===
+ 
+     SYNTAX:
+     /msg OperServ CLONESET <host> <ignore/-ignore/kill/-kill>
+ 
+     DESCRIPTION:
+     The CLONESET command allows you to set how OperServ reacts
+     to clones. OperServ will ignore all clones from a host when
+     IGNORE is set. If KILL is the command set, OperServ will
+     automaticly kill any clone that triggers the clone alert.
+ 
+     See also /msg OperServ help TRIGGER
+ 
+     EXAMPLES:
+     To set OperServ to ignore all clones from the host flame.org,
+     type:
+       /msg OperServ cloneset flame.org ignore
+     To remove the clone ignore from flame.org, type:
+       /msg OperServ cloneset flame.org -ignore
+     To set OperServ to kill any clone from flame.org that triggers
+     the clone alert, type:
+       /msg OperServ cloneset flame.org kill
+     To remove the clone kill from flame.org, type:
+       /msg OperServ cloneset flame.org -kill
+ 
+--- End Of Services Help --
+^operserv
+^Oper
+^END
+
+^PAGE:operserv ignore
+--- SorceryNet Operator Services Help ---
+ 
+ === IGNORE ===
+ 
+     SYNTAX:
+     /msg OperServ IGNORE <time/-> <nick!user@host> <reason>
+ 
+     DESCRIPTION:
+     OperServ IGNORE can be used to give a list of hostmasks
+     currently on the services ignore list, or if you are a 
+     ServOp+, it can be used to add or remove a services
+     ignore.  If - is used in the time field, the ignore is 
+     removed, if a 0 is used the ignore is permanent.
+ 
+     EXAMPLES:
+     To retrieve a list of services ignores:
+       /msg OperServ ignore
+     To add a services ignore for *!foo@*.bar.com for 2 hours for 
+     services abuse:
+       /msg OperServ ignore 2 *!foo@*.bar.com services abuse
+   
+--- End Of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv
+--- SorceryNet Operator Services Help ---
+ 
+    OperServ provides IRCops and ServOps with a range of additional
+    abilities to better help maintain the network and aid the users.
+    
+    Operator Commands:
+        AUTOKILL    CLONESET   IGNORE     MODE     
+        TRIGGER     UPTIME     TEMPAKILL  CLONERULE
+        SETOP       OVERRIDE
+ 
+    Operator Commands in NickServ: 
+    (use /msg NickServ help <command>)
+        GETPASS     LIST
+ 
+    Services Operator Commands in NickServ:
+        BANISH      DELETE     SETFLAG    
+ 
+    Operator Commands in ChanServ: 
+    (use /msg ChanServ help <command>)
+        GETPASS     LIST 
+ 
+    Services Operator Commands in InfoServ:
+    (use /msg InfoServ help <command>)
+        POST        DEL
+    Type /msg OperServ help <command> for more help with each
+    command. For further assistance with OperServ, contact an SRA.
+  
+--- End Of Services help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv mode
+--- SorceryNet Operator Services Help ---
+  
+ === MODE ===
+      
+     SYNTAX:
+     /msg OperServ MODE #<channel> <modes to change>
+   
+     DESCRIPTION:
+     The OperServ MODE command can be used to change modes
+     on any channel on the network.  Please note that when
+     removing the mode +k from a channel, you must include
+     some text after the the -k.
+       
+     EXAMPLE: 
+     To set the nick Raistlin +o in the channel #Tower:
+       /msg OperServ mode #Tower +o Raistlin
+  
+--- End of Services Help --
+^operserv
+^Oper
+^END
+
+^PAGE:operserv tempakill
+--- SorceryNet Operator Services Help ---
+  
+ === TEMPAKILL ===
+ 
+     SYNTAX:
+     /msg OperServ TEMPAKILL <nick|host> <reason> 
+ 
+     DESCRIPTION:
+     OperServ TEMPAKILL allows a normal oper to set an AutoKill on
+     a specific host or IP for one hour.  No wildcards are allowed.
+     This should be used mostly for fighting cloners.  The command
+     is logged, and an email will be sent along with other akills.
+ 
+     EXAMPLES:
+     To tempakill someone from a cloning host:
+       /msg OperServ tempakill ppp-128.bad.host.com Cloning
+     To tempakill all users from the address of a specific nick:
+       /msg OperServ tempakill dave Cloning, as usual
+ 
+--- End Of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv trigger
+--- SorceryNet Operator Services Help ---
+ 
+ === TRIGGER ===
+ 
+     SYNTAX:
+     /msg OperServ TRIGGER <user@host> <#>
+ 
+     DESCRIPTION:
+     The TRIGGER command allows you to set the number of clones 
+     which can be connected from one host before OperServ begins
+     to issue clone warnings. This command can only be set while
+     the hostname in question is connected and sets back to default
+     when the last connection for this host is terminated.
+ 
+     See also /msg OperServ help CLONESET
+  
+     EXAMPLES:
+     To set the trigger for the host luthien@ts1-p6.auracom.com to 
+     5, type:
+       /msg OperServ trigger luthien@ts1-p6.auracom.com 5
+ 
+--- End Of Services Help --
+^operserv
+^Oper
+^END
+
+^PAGE:operserv uptime
+--- SorceryNet Operator Services Help ---
+ 
+ === UPTIME ===
+ 
+     SYNTAX:
+     /msg OperServ UPTIME
+ 
+     DESCRIPTION:
+     The UPTIME command allows you to see how long it has been since
+     the last time services were restarted.
+ 
+     EXAMPLES:
+     To check to see how long services have been up since the last
+     restart, type:
+       /msg OperServ uptime
+ 
+--- End Of Services Help --
+^operserv
+^Oper
+^END
+
+^PAGE:operserv setop
+--- SorceryNet Operator Services Help ---
+ 
+ === IGNORE ===
+ 
+     SYNTAX:
+     /msg OperServ SETOP <nick> [+|-]<flags>
+     /msg OperServ SETOP ADD <nick>
+     /msg OperServ SETOP DEL <nick>
+     /msg OperServ SETOP LIST
+ 
+     DESCRIPTION:
+     OperServ SETOP can be used to give a list of opers with
+     'special flags' for operators who are either services roots
+     or flagged with the 'setop' flag, it can be used to grant
+     and/or revoke certain flags from operators
+     Flags:
+        **R                (Read Only)  Root
+         *s                             Can use Setop command
+         *A                (symbolic)   Admin
+         *O                (deprecated) Services Operator
+          o                (set)        Default Operator flags
+          k                             Restricted AutoKill access
+          a                             Override some user restrictions
+         *K                             Unrestricted AutoKill access
+          p                (unimped)    InfoServ posting ability
+          S                             NickServ Setflag
+         *N                             Banish/Delete nicks
+         *C                (unimped)    Banish/Delete chans
+         *I                             Set services ignores
+         *G                             Getrealpass command
+         *j                             Jupe command
+         *L                             List
+         *C                             Clone/rule commands
+   
+--- End Of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv grpop
+--- SorceryNet Operator Services Help ---
+ === GRPOP ===
+ 
+     SYNTAX:
+     /msg OperServ GRPOP [<add|del> <nick>]
+     /msg OperServ GRPOP list
+ 
+     DESCRIPTION:
+     OperServ GRPOP is cabable of giving a list of the current users
+     on the network who are capable of using getrealpass on a
+     nickname or channel.  If no argument is given, it will assume
+     you want a list of GRP-Ops.
+ 
+     EXAMPLES:
+     To retrieve a list of GRP-Ops:
+       /msg OperServ grpop
+     To add GRP-Op Slvrchair to the list:
+       /msg OperServ grpop add Slvrchair
+ 
+--- End Of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv override
+--- SorceryNet Operator Services Help ---
+ 
+ === OVERRIDE ===
+ 
+     SYNTAX:
+     /msg OperServ OVERRIDE <service> <command>
+ 
+     DESCRIPTION:
+     Some services commands may at times impose restrictions on users
+     that operators can override.  This is the command to invoke
+     a user-level restriction override.
+     Commands that have overridable restrictions:
+ 
+        ChanServ
+         REGISTER          LISTOP             LISTAK
+         CLIST             GETREALPASS
+ 
+        NickServ
+         ACCESS
+        MemoServ
+         SEND
+ 
+     Examples:
+ 
+         /msg operserv override chanserv listop #foo 
+         /msg operserv override chanserv listak #foo
+   
+--- End Of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv clonerule
+--- SorceryNet Operator Services Help ---
+  
+ === CLONERULE ===
+      
+     SYNTAX:
+     /msg OperServ CLONERULE list [mask]
+     /msg OperServ CLONERULE info <rule#|mask>
+     /msg OperServ CLONERULE add <mask>
+     /msg OperServ CLONERULE insert <mask> <before rule#>
+     /msg OperServ CLONERULE set <rule> FLAGS <flag>
+     /msg OperServ CLONERULE set <rule> UTRIGGER <value>
+     /msg OperServ CLONERULE set <rule> HTRIGGER <value>
+     /msg OperServ CLONERULE set <rule> WARNMSG <message>
+     /msg OperServ CLONERULE set <rule> KILLMSG <message>
+     /msg OperServ CLONERULE set <rule> FLAGS <flag>
+     /msg OperServ CLONERULE del <rule>
+ 
+     DESCRIPTION:
+     This command edits services' persistent clone information.
+     Note that this command is not just for allowing
+     clones from a host but also for disallowing them.
+     (required reading before creating perm triggers: 
+      /msg operserv help ptrigger)
+        
+     EXAMPLE: 
+     To add a persistent clone rule to allow foo.com to hold 15 clients:
+     /msg operserv clonerule add *@foo.com
+     /msg operserv clonerule set *@foo.com htrigger 15
+     /msg operserv clonerule set *@foo.com utrigger 15
+     /msg operserv clonerule set *@foo.com warnmsg Please rem the clones
+     /msg operserv clonerule set *@foo.com killmsg none
+     /msg operserv clonerule set *@foo.com flags ignore kill
+ 
+     Note: this command is limited to Services Operators
+--- End of Services Help ---
+^operserv
+^Oper
+^END
+
+^PAGE:operserv ptrigger
+This page documents the creation of permanent triggers:
+    Firstly, the 'rule' is created with:
+        /msg operserv clonerule add <mask>
+    The mask is of the form <user|*>@<hostmask>
+    Then the trigger levels can be set using:
+        /msg operserv clonerule set <rule> HTRIGGER <value>
+        /msg operserv clonerule set <rule> UTRIGGER <value>
+    If you set the value for HTRIGGER, then that will be the host-level
+    trigger for all u@hosts matching rule: meaning, only <value> clients may
+    signon from that host before firing the clones action or warning.
+    If you set the value for UTRIGGER, then that will be the user-level
+    trigger for all u@hosts matching the rule.
+    As a general rule, don't set UTRIGGER unless a username is contained
+    in the mask, and NEVER change the HTRIGGER or flags unless a hostname
+    is contained in the mask.
+    Other issues regarding the CLONERULE command will be placed in this 
+    file.
+^operserv
+^Oper
+^END
+# /* End of OperServ Help */
+

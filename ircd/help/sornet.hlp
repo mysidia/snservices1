@@ -1,0 +1,35 @@
+^COMMAND:HELP
+^USAGE HELP [<message>]
+
+   Sends a message out to all helpops.
+   (Prepend a ! to instead search helpfiles)
+
+USAGE   - %BHELP ignore%B
+
+   Show the HelpOps ignorance list - a list of address masks whose
+   users are not permitted to broadcast a message over helpops.
+
+USAGE   - %BHELP +ignore <address>%B
+
+   Add an address to the HelpOps ignorance list.  If such ignores are
+   managed by services, then this will only be local.
+
+USAGE   - %BHELP -ignore <address>%B
+
+   Remove an address from the HelpOps ignorance list. (see above)
+
+^HelpOp
+^IRC
+^END
+^COMMAND:HELP
+^USAGE HELP [?|!]<topic>
+
+   Requests help on a given topic.
+
+   Prepend a ! to the topic for the request to be simply a search
+   of the server helpfiles.
+
+   Prepend a ? to the topic for the request to ONLY be forwarded
+   to HelpOps.
+^IRC
+^END
