@@ -136,7 +136,7 @@ sock *network_listen(aConfItem *aconf)
 		return NULL;
 	}
 
-	sock = socket_listen(addr, SOCKET_STREAM | (strcmp(aconf->name, "ssl") ? 0 : SOCKET_SSL));
+	sock = socket_listen(addr, SOCKET_STREAM | (aconf->name == NULL || strcmp(aconf->name, "yes") ? 0 : SOCKET_SSL));
 	address_free(addr);
 	if (sock == NULL)
 	{
@@ -166,7 +166,7 @@ sock *network_connect(aConfItem *aconf)
 		aconf->addr = address_make(aconf->host, (aconf->port > 0 ? aconf->port : portnum));
 	}
 
-	sock = socket_connect((localaddr->addr->sa_family == aconf->addr->addr->sa_family ? localaddr : NULL), aconf->addr, SOCKET_STREAM | (aconf->string4 != NULL && !strcmp(aconf->string4, "ssl") ? SOCKET_SSL : 0));
+	sock = socket_connect(NULL, aconf->addr, SOCKET_STREAM | (aconf->string4 != NULL && !strcmp(aconf->string4, "yes") ? SOCKET_SSL : 0));
 	if (sock == NULL)
 	{
 		return NULL;

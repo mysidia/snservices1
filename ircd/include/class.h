@@ -54,7 +54,7 @@ extern	int	get_conf_class(aConfItem *);
 extern	int	get_client_class(aClient *);
 extern	int	get_client_ping(aClient *);
 extern	int	get_con_freq(aClass *);
-extern	void	add_class(int, int, int, int, long);
+extern	aClass	*add_class(int, int, int, int, long);
 extern	void	check_class(void);
 extern	void	initclass(void);
 

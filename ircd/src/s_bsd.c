@@ -103,7 +103,7 @@ int	size;
  * Create a new client which is essentially the stub like 'me' to be used
  * for a socket that is passive (listen'ing for connections to be accepted).
  */
-int	add_listener(aconf)
+aClient	*add_listener(aconf)
 aConfItem *aconf;
 {
 	aClient	*cptr;
@@ -119,7 +119,7 @@ aConfItem *aconf;
 	if (cptr->sock == NULL)
 	{
 		free_client(cptr);
-		return 0;
+		return NULL;
 	}
 	cptr->sock->data = cptr;
 
@@ -127,7 +127,7 @@ aConfItem *aconf;
 	cptr->confs = make_link();
 	cptr->confs->next = NULL;
 	cptr->confs->value.aconf = aconf;
-	return 0;
+	return cptr;
 }
 
 /*

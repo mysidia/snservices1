@@ -53,7 +53,7 @@
 #define SOCKET_HANDLER(name) void name(sock *sock)
 
 typedef struct sock_t sock;
-typedef void (*handler)(sock *);
+typedef void (*socket_handler)(sock *);
 struct sock_t
 {
 	int	fd;
@@ -65,9 +65,9 @@ struct sock_t
 	SSL	*ssl;
 	int	sslstate;
 #endif
-	handler	read_handler;
-	handler	write_handler;
-	handler	error_handler;
+	socket_handler	read_handler;
+	socket_handler	write_handler;
+	socket_handler	error_handler;
 	void	*data;
 };
 
@@ -99,7 +99,7 @@ sock *socket_listen(sock_address *src, int flags);
 sock *socket_accept(sock *sock);
 void socket_close(sock *sock);
 
-void socket_monitor(sock *sock, int type, handler handler);
+void socket_monitor(sock *sock, int type, socket_handler handler);
 void socket_unmonitor(sock *sock, int type);
 void socket_poll(int timeout);
 

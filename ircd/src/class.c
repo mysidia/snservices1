@@ -121,8 +121,7 @@ get_con_freq(aClass *clptr)
  * if no present entry is found, then create a new one and add it in
  * immeadiately after the first one (class 0).
  */
-void
-add_class(int class, int ping, int confreq, int maxli, long sendq)
+aClass *add_class(int class, int ping, int confreq, int maxli, long sendq)
 {
 	aClass *t, *p;
 
@@ -144,6 +143,7 @@ add_class(int class, int ping, int confreq, int maxli, long sendq)
 	MaxSendq(p) = (sendq > 0) ? sendq : MAXSENDQLENGTH;
 	if (p != t)
 		Links(p) = 0;
+	return p;
 }
 
 aClass *

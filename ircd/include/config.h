@@ -199,7 +199,7 @@
 #ifndef SPATH
 #define	SPATH	"/usr/local/bin/ircd"	/* path to server executeable */
 #endif
-#define	CPATH	"ircd.conf"	/* server configuration file */
+#define	CPATH	"ircd.conf.xml"	/* server configuration file */
 #define	MPATH	"ircd.motd"	/* server MOTD file */
 #define	LPATH	"debug.log"	/* Where the debug file lives, if DEBUGMODE */
 #define	PPATH	"ircd.pid"	/* file for server pid */
