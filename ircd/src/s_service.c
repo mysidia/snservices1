@@ -57,7 +57,7 @@ int   m_services(aClient *cptr, aClient *sptr, int parc, char *parv[])
              IsULine(acptr, acptr))
        {
                sendto_one(acptr,":%s PRIVMSG %s@%s :%s%s%s%s%s", parv[0],
-                       sService, SERVICES_NAME,
+                       sService, acptr->user->server,
                        parv[1], nickchan? " " : "", nickchan?nickchan:"",
                        (parc>3&&parv[3])?" ":"", (parc>3&&parv[3])?parv[3]:"");
        }
@@ -90,10 +90,10 @@ int   m_identify(aClient *cptr, aClient *sptr, int parc, char *parv[])
        {
                if (sService == cNickServ)
                sendto_one(acptr,":%s PRIVMSG %s@%s :IDENTIFY %s", parv[0],
-                       sService, SERVICES_NAME, pass);
+                       sService, acptr->user->server, pass);
                else
                sendto_one(acptr,":%s PRIVMSG %s@%s :IDENTIFY %s %s", parv[0],
-                       sService, SERVICES_NAME, nickchan, pass);
+                       sService, acptr->user->server, nickchan, pass);
        }
        else
                sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name,
@@ -147,7 +147,7 @@ m_sendto_service(aClient *cptr, aClient *sptr, int parc, char *parv[], int fOper
                if (fOper && !IsAnOper(sptr) && MyClient(sptr))
                   return -2;
                    sendto_one(acptr,":%s PRIVMSG %s@%s :%s", parv[0],
-                           sService, SERVICES_NAME, parv[1]);
+                           sService, acptr->user->server, parv[1]);
        }
        else
                sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name,

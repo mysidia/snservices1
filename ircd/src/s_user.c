@@ -1631,14 +1631,6 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 		if (server)
 		    acptr = find_server(server + 1, NULL);
 
-		if (!acptr && server && *server) {
-		    if (server[1] == '\0' || !myncmp(server+1, "services", 8))
-			acptr = find_server_const(SERVICES_NAME, NULL);
-		    else
-			acptr = NULL;
-		}
-
-
 		if (acptr && server)
 		    {
 			int count = 0;

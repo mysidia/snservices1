@@ -59,7 +59,6 @@
 #undef	BOOT_MSGS
 #define	HASH_MSGTAB
 #define	ALLOW_MODEHACK	/* enable Modehack operator flag */
-#define SERVICES_NAME	"services.sorcery.net"
 
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the
