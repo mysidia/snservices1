@@ -1153,9 +1153,6 @@ anAddress	*numb;
 {
 	aCache	*cp;
 	int	hashv,i;
-#ifdef	DEBUG
-	anAddress	*ip = numb;
-#endif
 
 	hashv = hash_number(numb);
 

@@ -136,7 +136,7 @@ char	*str;
 	if (retval < 0) {
 		writeb[0]++;
                Debug((DEBUG_ERROR,"write error (%s) to %s",
-                        sys_errlist[errno], cptr->name));
+                        /*sys_errlist[errno]*/ strerror(errno), cptr->name));
 
 	} else if (retval == 0)
 		writeb[1]++;

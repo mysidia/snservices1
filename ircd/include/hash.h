@@ -21,6 +21,7 @@
 #define __hash_include__
 
 extern aChannel *hash_get_chan_bucket(int);
+int hash_nn_name(const char* nname);
 
 #define STRINGHASHSIZE 500
 

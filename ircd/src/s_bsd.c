@@ -2006,8 +2006,8 @@ aClient	*cptr;
 int	*lenp;
 {
 	static	anAddress	server;
-	struct	HostEnt	*hp;
-	char	*s;
+	/* struct	HostEnt	*hp; */
+	/* char	*s; */
 	struct addrinfo	*res;
 
 	/*

@@ -905,8 +905,8 @@ const char* safe_info(int showIp, aClient* acptr)
 				break;
 			}
 			
-			if (acptr->info[i] != '.' && acptr->info[i] != ':' 
-			    && !isxdigit(acptr->info[i]))
+			if ((acptr->info[i] != '.') && (acptr->info[i] != ':')
+			    && (!isxdigit(acptr->info[i])))
 				break;
 		}
 

@@ -110,7 +110,7 @@ static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
  */
 #ifdef OLDHASH
 int hash_nn_name(nname)
-char	*nname;
+const char	*nname;
 {
 	u_char	ch, *name = (u_char *)nname;
 	int	i = 30, hash = 1, *tab;
@@ -123,7 +123,7 @@ char	*nname;
 }
 #else /* OLDHASH */
 int hash_nn_name(hname)
-char	*hname;
+const char	*hname;
 {
 	u_char	*name = (u_char *)hname;
 	int	hash = 0x5555;

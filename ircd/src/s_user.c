@@ -1573,7 +1573,7 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 
 int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-	int i, j;
+	/* int i, j; */
  
 	if (check_registered(sptr))
 		return 0;
@@ -3826,7 +3826,7 @@ char *genHostMask(char *host)
     if (strchr(host, ':'))
     {
         /* ipv6 address */
-	struct in6_addr addr_dst;
+	/* struct in6_addr addr_dst; */
 	u_int32_t	     md5data[16];
 	static u_int32_t     md5hash[4];
 	int k, x[8] = {}, j;
