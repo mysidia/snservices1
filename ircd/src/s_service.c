@@ -27,11 +27,17 @@
 #include <sys/stat.h>
 #include "h.h"
 
+#include "ircd/send.h"
+#include "ircd/string.h"
+
+IRCD_RCSID("$Id$");
 
 /* these are only considered services when the nicks are U-lined. */
 /* this array is an evil hack so pointer comparisons will do... */
-const char *service_nick[] = { "NickServ", "ChanServ", "MemoServ", "OperServ", 
-                               "InfoServ", "GameServ", (char *)0, (char *)0, (char *)0 };
+const char *service_nick[] = {
+	"NickServ", "ChanServ", "MemoServ", "OperServ", 
+	"InfoServ", "GameServ", (char *)0, (char *)0, (char *)0
+};
 
 extern __inline int    m_sendto_service();
 

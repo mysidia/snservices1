@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, ircd/hash.c
  *   Copyright (C) 1991 Darren Reed
  *
@@ -16,9 +16,6 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef lint
-static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
-#endif
 
 /* Optimized for non-debugmode, increased hash table sizes -Donwulff */
 
@@ -35,11 +32,18 @@ static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
 #include "hash.h"
 #include "numeric.h"
 #include "h.h"
+#include "msg.h"
+
+#include "ircd/send.h"
+#include "ircd/string.h"
+
+IRCD_SCCSID("@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed");
+IRCD_RCSID("$Id$");
 
 /* Quick & dirty inline version of mycmp for hash-tables -Donwulff */
 #define thecmp(str1, str2, where) { \
                                     char *st1=str1, *st2=str2; \
-                                    while (tolower(*st1)==tolower(*st2)) \
+                                    while (irc_tolower(*st1)==irc_tolower(*st2)) \
                                     { \
                                       if (!*st1) goto where; \
                                       st1++; st2++; \
@@ -112,7 +116,7 @@ char	*nname;
 	int	i = 30, hash = 1, *tab;
 
 	for (tab = hash_mult; (ch = *name) && --i; name++, tab++)
-		hash += tolower(ch) + *tab + hash + i + i;
+		hash += irc_tolower(ch) + *tab + hash + i + i;
 	if (hash < 0)
 		hash = -hash;
 	return (hash);
@@ -125,7 +129,7 @@ char	*hname;
 	int	hash = 0x5555;
 
 	for (; *name; name++)
-		hash = (hash<<2) ^ tolower(*name);
+		hash = (hash<<2) ^ irc_tolower(*name);
 	if (hash < 0)
 		hash = -hash;
 	return (hash);
@@ -143,8 +147,7 @@ void	clear_client_hash_table()
 	clhits = 0;
 	clmiss = 0;
 	if (!clientTable)
-		clientTable = (aHashEntry *)MyMalloc(HASHSIZE *
-						     sizeof(aHashEntry));
+		clientTable = irc_malloc(HASHSIZE * sizeof(aHashEntry));
 #endif /* DEBUGMODE */
 
 	bzero((char *)clientTable, sizeof(aHashEntry) * HASHSIZE);
@@ -156,8 +159,8 @@ void	clear_channel_hash_table()
 	chmiss = 0;
 	chhits = 0;
 	if (!channelTable)
-		channelTable = (aHashEntry *)MyMalloc(CHANNELHASHSIZE *
-						     sizeof(aHashEntry));
+		channelTable = irc_malloc(CHANNELHASHSIZE
+					  * sizeof(aHashEntry));
 #endif /* DEBUGMODE */
 	bzero((char *)channelTable, sizeof(aHashEntry) * CHANNELHASHSIZE);
 }
@@ -604,7 +607,8 @@ char	*parv[];
 	char	ch;
 	aHashEntry	*table;
 
-        if (!IsOper(sptr) || !MyClient(sptr)) return;
+        if (!IsOper(sptr) || !MyClient(sptr))
+		return 0;
 	if (parc > 1) {
 		ch = *parv[1];
 		if (islower(ch))
@@ -764,13 +768,8 @@ char	*parv[];
 		l = atoi(parv[2]);
 		if (l < 256)
 			return 0;
-#ifndef _WIN32
-		(void)free((char *)clientTable);
-		clientTable = (aHashEntry *)malloc(sizeof(aHashEntry) * l);
-#else
-		(void)MyFree((char *)clientTable);
-		clientTable = (aHashEntry *)MyMalloc(sizeof(aHashEntry) * l);
-#endif
+		irc_free(clientTable);
+		clientTable = irc_malloc(sizeof(aHashEntry) * l);
 		HASHSIZE = l;
 		clear_client_hash_table();
 		for (acptr = client; acptr; acptr = acptr->next)
@@ -790,13 +789,8 @@ char	*parv[];
 		l = atoi(parv[2]);
 		if (l < 256)
 			return 0;
-#ifndef _WIN32
-		(void)free((char *)channelTable);
-		channelTable = (aHashEntry *)malloc(sizeof(aHashEntry) * l);
-#else
-		(void)MyFree((char *)channelTable);
-		channelTable = (aHashEntry *)MyMalloc(sizeof(aHashEntry) * l);
-#endif
+		irc_free(channelTable);
+		channelTable = irc_malloc(sizeof(aHashEntry) * l);
 		CHANNELHASHSIZE = l;
 		clear_channel_hash_table();
 		for (acptr = channel; acptr; acptr = acptr->nextch)
@@ -902,7 +896,7 @@ aClient  *cptr;
 
         /* If found NULL (no header for this nick), make one... */
         if (!anptr) {
-                anptr = (aWatch *)MyMalloc(sizeof(aWatch)+strlen(nick));
+                anptr = irc_malloc(sizeof(aWatch)+strlen(nick));
                 anptr->lasttime = NOW;
                 strcpy(anptr->nick, nick);
 
@@ -1073,7 +1067,7 @@ aClient  *cptr;
                   watchTable[hashv] = anptr->hnext;
                 else
                   nlast->hnext = anptr->hnext;
-                MyFree(anptr);
+                irc_free(anptr);
         }
 
         /* Update count of notifies on nick */
@@ -1139,7 +1133,7 @@ aClient  *cptr;
                                   nl->hnext = anptr->hnext;
                                 else
                                   watchTable[hashv] = anptr->hnext;
-                                MyFree(anptr);
+                                irc_free(anptr);
                         }
                 }
 

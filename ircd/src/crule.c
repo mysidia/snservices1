@@ -37,7 +37,12 @@
 #include "common.h"
 #include "sys.h"
 #include "h.h"
-char *collapse PROTO((char *pattern));
+
+#include "ircd/match.h"
+#include "ircd/string.h"
+
+IRCD_RCSID("$Id$");
+
 extern aClient *client, *local[];
 
 #else
@@ -45,22 +50,6 @@ extern aClient *client, *local[];
 #include <stdio.h>
 #include <string.h>
 #define BadPtr(x) (!(x) || (*(x) == '\0'))
-#define DupString(x,y) do{x=(char *)MyMalloc(strlen(y)+1);(void)strcpy(x,y);}while(0)
-#define mycmp strcasecmp
-#endif
-
-#ifndef PROTO
-#if __STDC__
-#       define PROTO(x) x
-#else
-#       define PROTO(x) ()
-#endif
-#endif
-#if defined(CR_DEBUG) || defined(CR_CHKCONF)
-#define MyMalloc malloc
-#undef MyFree
-#undef free
-#define MyFree free
 #endif
 
 /* some constants and shared data types */
@@ -68,16 +57,18 @@ extern aClient *client, *local[];
 #define CR_MAXARGS 3     /* there's a better way to do this, but not now */
 
 /* some symbols for easy reading */
-enum crule_token
-{CR_UNKNOWN, CR_END, CR_AND, CR_OR, CR_NOT, CR_OPENPAREN, CR_CLOSEPAREN,
-   CR_COMMA, CR_WORD};
-enum crule_errcode
-{CR_NOERR, CR_UNEXPCTTOK, CR_UNKNWTOK, CR_EXPCTAND, CR_EXPCTOR,
-   CR_EXPCTPRIM, CR_EXPCTOPEN, CR_EXPCTCLOSE, CR_UNKNWFUNC, CR_ARGMISMAT};
+enum crule_token {
+	CR_UNKNOWN, CR_END, CR_AND, CR_OR, CR_NOT, CR_OPENPAREN, CR_CLOSEPAREN,
+	CR_COMMA, CR_WORD
+};
+enum crule_errcode {
+	CR_NOERR, CR_UNEXPCTTOK, CR_UNKNWTOK, CR_EXPCTAND, CR_EXPCTOR,
+	CR_EXPCTPRIM, CR_EXPCTOPEN, CR_EXPCTCLOSE, CR_UNKNWFUNC, CR_ARGMISMAT
+};
 
 /* expression tree structure, function pointer, and tree pointer */
 /* local! */
-typedef int (*crule_funcptr) PROTO((int, void **));
+typedef int (*crule_funcptr)(int, void **);
 struct crule_treestruct
 {
   crule_funcptr funcptr;
@@ -89,29 +80,29 @@ typedef struct crule_treestruct crule_treeelem;
 typedef crule_treeelem *crule_treeptr;
 
 /* rule function prototypes - local! */
-int crule_connected PROTO((int, void **));
-int crule_directcon PROTO((int, void **));
-int crule_via PROTO((int, void **));
-int crule_directop PROTO((int, void **));
-int crule__andor PROTO((int, void **));
-int crule__not PROTO((int, void **));
+int crule_connected(int, void **);
+int crule_directcon(int, void **);
+int crule_via(int, void **);
+int crule_directop(int, void **);
+int crule__andor(int, void **);
+int crule__not(int, void **);
 
 /* parsing function prototypes - local! */
-int crule_gettoken PROTO((int *, char **));
-void crule_getword PROTO((char *, int *, int, char **));
-int crule_parseandexpr PROTO((crule_treeptr *, int *, char **));
-int crule_parseorexpr PROTO((crule_treeptr *, int *, char **));
-int crule_parseprimary PROTO((crule_treeptr *, int *, char **));
-int crule_parsefunction PROTO((crule_treeptr *, int *, char **));
-int crule_parsearglist PROTO((crule_treeptr, int *, char **));
+int crule_gettoken(int *, char **);
+void crule_getword(char *, int *, int, char **);
+int crule_parseandexpr(crule_treeptr *, int *, char **);
+int crule_parseorexpr(crule_treeptr *, int *, char **);
+int crule_parseprimary(crule_treeptr *, int *, char **);
+int crule_parsefunction(crule_treeptr *, int *, char **);
+int crule_parsearglist(crule_treeptr, int *, char **);
 
 #if defined(CR_DEBUG) || defined(CR_CHKCONF)
 /* prototypes for the test parser; if not debugging, these are
  * defined in h.h */
-char *crule_parse PROTO((char *));
-void crule_free PROTO((char **));
+char *crule_parse(char *);
+void crule_free(char **);
 #ifdef CR_DEBUG
-void print_tree PROTO((crule_treeptr));
+void print_tree(crule_treeptr);
 #endif
 #endif
 
@@ -163,8 +154,8 @@ void *crulearg[];
 	continue;
       return (1);
     }
-  return (0);
 #endif
+  return (0);
 }
 
 int crule_directcon (numargs, crulearg)
@@ -184,8 +175,8 @@ void *crulearg[];
 	continue;
       return (1);
     }
-  return (0);
 #endif
+  return (0);
 }
 
 int crule_via (numargs, crulearg)
@@ -206,8 +197,8 @@ void *crulearg[];
 	continue;
       return (1);
     }
-  return (0);
 #endif
+  return (0);
 }
 
 int crule_directop (numargs, crulearg)
@@ -225,8 +216,8 @@ void *crulearg[];
 	continue;
       return (1);
     }
-  return (0);
 #endif
+  return (0);
 }
 
 int crule__andor (numargs, crulearg)
@@ -365,38 +356,40 @@ char **ruleptr;
  *    word , arglist
  */
 
-char *crule_parse (rule)
-char *rule;
+char *
+crule_parse(char *rule)
 {
-  char *ruleptr = rule;
-  int next_tok;
-  crule_treeptr ruleroot = NULL;
-  int errcode = CR_NOERR;
+	char *ruleptr = rule;
+	int next_tok;
+	crule_treeptr ruleroot = NULL;
+	int errcode = CR_NOERR;
 
-  if ((errcode = crule_gettoken (&next_tok, &ruleptr)) == CR_NOERR)
-    if ((errcode = crule_parseorexpr (&ruleroot, &next_tok,
-				      &ruleptr)) == CR_NOERR)
-      if (ruleroot != NULL)
-	if (next_tok == CR_END)
-	  return ((char *) ruleroot);
-	else
-	  errcode = CR_UNEXPCTTOK;
-      else
-	errcode = CR_EXPCTOR;
-  if (ruleroot != NULL)
-    crule_free ((char **) &ruleroot);
+	if ((errcode = crule_gettoken (&next_tok, &ruleptr)) == CR_NOERR) {
+		if ((errcode = crule_parseorexpr(&ruleroot, &next_tok,
+						 &ruleptr)) == CR_NOERR) {
+			if (ruleroot != NULL) {
+				if (next_tok == CR_END) {
+					return ((char *) ruleroot);
+				} else {
+					errcode = CR_UNEXPCTTOK;
+				}
+			} else {
+				errcode = CR_EXPCTOR;
+			}
+		}
+	}
+	if (ruleroot != NULL)
+		crule_free((char **)&ruleroot);
 #if !defined(CR_DEBUG) && !defined(CR_CHKCONF)
-  Debug ((DEBUG_ERROR, "%s in rule: %s", crule_errstr[errcode], rule));
+	Debug((DEBUG_ERROR, "%s in rule: %s", crule_errstr[errcode], rule));
 #else
-  (void) fprintf (stderr, "%s in rule: %s\n", crule_errstr[errcode], rule);
+	(void)fprintf(stderr, "%s in rule: %s\n", crule_errstr[errcode], rule);
 #endif
-  return NULL;
+	return NULL;
 }
 
-int crule_parseorexpr (orrootp, next_tokp, ruleptr)
-crule_treeptr *orrootp;
-int *next_tokp;
-char **ruleptr;
+int
+crule_parseorexpr(crule_treeptr *orrootp, int *next_tokp, char **ruleptr)
 {
   int errcode = CR_NOERR;
   crule_treeptr andexpr;
@@ -408,7 +401,7 @@ char **ruleptr;
       errcode = crule_parseandexpr (&andexpr, next_tokp, ruleptr);
       if ((errcode == CR_NOERR) && (*next_tokp == CR_OR))
 	{
-	  orptr = (crule_treeptr) MyMalloc (sizeof (crule_treeelem));
+	  orptr = irc_malloc (sizeof (crule_treeelem));
 #ifdef CR_DEBUG
 	  (void) fprintf (stderr, "allocating or element at %ld\n", orptr);
 #endif
@@ -464,7 +457,7 @@ char **ruleptr;
       errcode = crule_parseprimary (&primary, next_tokp, ruleptr);
       if ((errcode == CR_NOERR) && (*next_tokp == CR_AND))
 	{
-	  andptr = (crule_treeptr) MyMalloc (sizeof (crule_treeelem));
+	  andptr = irc_malloc (sizeof (crule_treeelem));
 #ifdef CR_DEBUG
 	  (void) fprintf (stderr, "allocating and element at %ld\n", andptr);
 #endif
@@ -538,7 +531,7 @@ char **ruleptr;
 	  errcode = crule_gettoken (next_tokp, ruleptr);
 	  break;
 	case CR_NOT:
-	  *insertionp = (crule_treeptr) MyMalloc (sizeof (crule_treeelem));
+	  *insertionp = irc_malloc (sizeof (crule_treeelem));
 #ifdef CR_DEBUG
 	  (void) fprintf (stderr,
 			  "allocating primary element at %ld\n", *insertionp);
@@ -590,7 +583,7 @@ char **ruleptr;
 	}
       if ((errcode = crule_gettoken (next_tokp, ruleptr)) != CR_NOERR)
 	return (errcode);
-      *funcrootp = (crule_treeptr) MyMalloc (sizeof (crule_treeelem));
+      *funcrootp = irc_malloc (sizeof (crule_treeelem));
 #ifdef CR_DEBUG
       (void) fprintf (stderr, "allocating function element at %ld\n",
 		      *funcrootp);
@@ -651,11 +644,11 @@ char **ruleptr;
 	  break;
 	default:
 #if !defined(CR_DEBUG) && !defined(CR_CHKCONF)
-	  (void) collapse (currarg);
+	  (void)collapse(currarg);
 #endif
 	  if (!BadPtr (currarg))
 	    {
-	      DupString (argelemp, currarg);
+	      argelemp = irc_strdup(currarg);
 	      argrootp->arg[argrootp->numargs++] = (void *) argelemp;
 	    }
 	  if (*next_tokp != CR_COMMA)
@@ -695,12 +688,12 @@ char **elem;
     {
       numargs = (*((crule_treeptr *) elem))->numargs;
       for (arg = 0; arg < numargs; arg++)
-	MyFree ((char *) (*((crule_treeptr *) elem))->arg[arg]);
+	irc_free ((*((crule_treeptr *) elem))->arg[arg]);
     }
 #ifdef CR_DEBUG
   (void) fprintf (stderr, "freeing element at %ld\n", *elem);
 #endif
-  MyFree (*elem);
+  irc_free (*elem);
   *elem = NULL;
 }
 

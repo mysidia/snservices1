@@ -18,8 +18,6 @@
 #*/
 DIRCHG=(cd ../;make)
 CC=danger will robinson
-#CC=gcc
-#normal
 
 LINTFLAGS=-hba
 
@@ -27,7 +25,7 @@ OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
 	class.o hash.o ircd.o list.o res.o s_auth.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
 	whowas.o userload.o crule.o md5.o help.o version.o s_sock.o \
-	snprintf.o $(RES) $(STRTOUL)
+	snprintf.o memory.o string.o $(RES) $(STRTOUL)
 
 SRC=$(OBJS:%.o=%.c)
 
@@ -57,10 +55,10 @@ ircd: $(OBJS)
 	@chmod $(IRCDMODE) ircd
 
 chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
-	 ../include/common.h crule.c chkconf.c
+	 ../include/common.h crule.c chkconf.c memory.o
 	$(CC) $(DFLAGS) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
 	$(CC) -ggdb $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
-	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o \
+	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o memory.o string.o \
 	$(LDFLAGS) $(IRCDLIBS) -o chkconf
 
 saber: $(SRC)
@@ -70,21 +68,21 @@ lint:
 	lint $(LINTFLAGS) -I../include $(SRC) | egrep -v 'sendto_|debug'
 
 parse.o: parse.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o parse.o -c parse.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o parse.o -c parse.c
 bsd.o: bsd.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o bsd.o -c bsd.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o bsd.o -c bsd.c
 dbuf.o: dbuf.c $(INCLUDES) ../include/dbuf.h
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o dbuf.o -c dbuf.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o dbuf.o -c dbuf.c
 packet.o: packet.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o packet.o -c packet.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o packet.o -c packet.c
 send.o: send.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o send.o -c send.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o send.o -c send.c
 match.o: match.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o match.o -c match.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o match.o -c match.c
 support.o: support.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o support.o -c support.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o support.o -c support.c
 userload.o: userload.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS)      -o userload.o -c userload.c
+	$(CC) $(XCFLAGS) $(CFLAGS) -o userload.o -c userload.c
 help.o: help.c $(INCLUDES)
 
 #install: all
@@ -106,7 +104,7 @@ clean:
 cleandir: clean
 
 depend:
-	makedepend -I${INCLUDEDIR} ${SRC}
+	makedepend -Y -I${INCLUDEDIR} ${SRC}
 
 channel.o: channel.c $(INCLUDES) ../include/channel.h
 	$(CC) $(CFLAGS) -c channel.c

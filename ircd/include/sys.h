@@ -19,82 +19,31 @@
 
 #ifndef	__sys_include__
 #define __sys_include__
-#ifdef ISC202
-#include <net/errno.h>
-#else
-# ifndef _WIN32
-#include <sys/errno.h>
-# else
+
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/time.h>
+
 #include <errno.h>
-# endif
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "setup.h"
-#include <stdio.h>
-#include <sys/types.h>
-#ifndef _WIN32
-#include <sys/param.h>
-#else
-#include <stdarg.h>
-#endif
 
-#ifdef	UNISTDH
-#include <unistd.h>
-#endif
-#ifdef	STDLIBH
-#include <stdlib.h>
-#endif
-
-#ifdef	STRINGH
-#include <string.h>
-#else
-# ifdef	STRINGSH
-# include <strings.h>
-# endif
-#endif
 #define	strcasecmp	mycmp
 #define	strncasecmp	myncmp
-#ifdef NOINDEX
+
 #define   index   strchr
 #define   rindex  strrchr
-/*
-extern	char	*index PROTO((char *, char));
-extern	char	*rindex PROTO((char *, char));
-*/
-#endif
-#ifdef NOBCOPY
+
 #define bcopy(x,y,z)	memcpy(y,x,z)
 #define bcmp(x,y,z)	memcmp(x,y,z)
 #define bzero(p,s)	memset(p,0,s)
-#endif
 
-#ifdef AIX
-#include <sys/select.h>
-#endif
-#if defined(HPUX )|| defined(AIX) || defined(_WIN32)
-#include <time.h>
-#ifdef AIX
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
 
-#if !defined(DEBUGMODE)
-# ifndef _WIN32
-#  define MyFree(x)	if ((x) != NULL) free(x)
-# else
-#  define MyFree(x)       if ((x) != NULL) GlobalFree(x)
-# endif
-#else
-#define	free(x)		MyFree(x)
-#endif
-
-#ifdef NEXT
-#define VOIDSIG int	/* whether signal() returns int of void */
-#else
 #define VOIDSIG void	/* whether signal() returns int of void */
-#endif
 
 #ifdef SOL20
 #define OPT_TYPE char	/* opt type for get/setsockopt */
@@ -102,17 +51,18 @@ extern	char	*rindex PROTO((char *, char));
 #define OPT_TYPE void
 #endif
 
-#ifndef _WIN32
-extern	VOIDSIG	dummy();
+/*
+ * Different name on NetBSD, FreeBSD, and BSDI
+ */
+#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__bsdi__) || defined(REDHAT6) || defined(LINUX_GLIBC)
+#define dn_skipname  __dn_skipname
 #endif
 
-#ifdef	DYNIXPTX
-#define	NO_U_TYPES
-typedef unsigned short n_short;         /* short as received from the net */
-typedef unsigned long   n_long;         /* long as received from the net */
-typedef unsigned long   n_time;         /* ms since 00:00 GMT, byte rev */
-#define _NETINET_IN_SYSTM_INCLUDED
+#ifdef LINUX_GLIBC_RRES
+#define res_init __res_init
 #endif
+
+extern	VOIDSIG	dummy();
 
 #ifdef	NO_U_TYPES
 typedef	unsigned char	u_char;
@@ -121,18 +71,11 @@ typedef	unsigned long	u_long;
 typedef	unsigned int	u_int;
 #endif
 
-#ifdef	USE_VARARGS
-#include <varargs.h>
-#endif
-
 #ifdef USE_DES
 #include <des.h>
 #endif
 
-#ifndef _WIN32
 #define closesocket(x) close(x)
-#endif
 #define closefile(x) close(x)
-
 
 #endif /* __sys_include__ */

@@ -21,14 +21,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)s_misc.c	2.42 3/1/94 (C) 1988 University of Oulu, \
-Computing Center and Jarkko Oikarinen";
-#endif
-
-#ifndef _WIN32
 #include <sys/time.h>
-#endif
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
@@ -37,39 +30,31 @@ Computing Center and Jarkko Oikarinen";
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#if !defined(ULTRIX) && !defined(SGI) && !defined(sequent) && \
-    !defined(__convex__) && !defined(_WIN32)
-# include <sys/param.h>
-#endif
-#if defined(PCS) || defined(AIX) || defined(SVR3)
-# include <time.h>
-#endif
-#ifdef HPUX
-#include <unistd.h>
-#endif
-#ifdef DYNIXPTX
-#include <sys/types.h>
-#include <time.h>
-#endif
-#ifdef _WIN32
-# include <io.h>
-#endif
+#include <sys/param.h>
 #include "h.h"
+#include "msg.h"
 
 #ifdef SYSLOGH
 #include <syslog.h>
 #endif
+
+#include "ircd/send.h"
+#include "ircd/string.h"
+
+IRCD_SCCSID("@(#)s_misc.c	2.42 3/1/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
+IRCD_RCSID("$Id$");
+
 #undef LOG_USER
 
-static	void	exit_one_client PROTO((aClient *,aClient *,aClient *,char *));
+static void exit_one_client(aClient *,aClient *,aClient *,char *);
 
-static	char	*months[] = {
+static char *months[] = {
 	"January",	"February",	"March",	"April",
 	"May",	        "June",	        "July",	        "August",
 	"September",	"October",	"November",	"December"
 };
 
-static	char	*weekdays[] = {
+static char *weekdays[] = {
 	"Sunday",	"Monday",	"Tuesday",	"Wednesday",
 	"Thursday",	"Friday",	"Saturday"
 };
@@ -79,7 +64,8 @@ static	char	*weekdays[] = {
  */
 struct	stats	ircst, *ircstp = &ircst;
 
-char	*date(time_t clock)
+char *
+date(time_t clock)
 {
 	static	char	buf[80], plus;
 	struct	tm *lt, *gm;
@@ -587,11 +573,7 @@ void	tstats(aClient *cptr, char *name)
 
 	sp = &tmp;
 	bcopy((char *)ircstp, (char *)sp, sizeof(*sp));
-#ifndef _WIN32
 	for (i = 0; i < MAXCONNECTIONS; i++)
-#else
-	for (i = 0; i < highest_fd; i++)
-#endif
 	    {
 		if (!(acptr = local[i]))
 			continue;
@@ -672,11 +654,11 @@ int set_hurt(aClient *acptr, const char *from, int ht)
 #ifdef  KEEP_HURTBY
   if (acptr->user && acptr->user->hurtby)
     {
-      MyFree(acptr->user->hurtby);
+      irc_ree(acptr->user->hurtby);
       acptr->user->hurtby = NULL;
     }
   if (acptr->user)
-    DupString(acptr->user->hurtby, from);
+    acptr->user->hurtby = irc_strdup(from);
 #endif
 
   SetHurt(acptr);
@@ -694,7 +676,7 @@ int remove_hurt(aClient *acptr)
 
 #ifdef  KEEP_HURTBY
        if (acptr->user && acptr->user->hurtby) {
-	       MyFree(acptr->user->hurtby);
+	       irc_free(acptr->user->hurtby);
 	       acptr->user->hurtby = NULL;
        }
 #endif
@@ -722,26 +704,23 @@ static char *logfile_n[] = {
 #define O_NBVAR
 #endif
 
-int open_logs( )
+void
+open_logs(void)
 {
 #ifdef IRC_LOGGING
-    int i = 0;
-    for ( i = 0 ; i <= LOG_HI; i++) slogfiles[i] = -1;
-    for ( i = 0 ; i <= LOG_HI; i++)
-    {
-         if (!logfile_n[i])
-         {
-             slogfiles[i] = -1;
-             continue;
-         }
-#ifndef _WIN32
-         slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND|O_NBVAR);    
-#else
-         slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND);
+	int i;
+
+	for (i = 0 ; i <= LOG_HI ; i++)
+		slogfiles[i] = -1;
+	for (i = 0 ; i <= LOG_HI ; i++) {
+		if (!logfile_n[i]) {
+			slogfiles[i] = -1;
+			continue;
+		}
+		slogfiles[i] = open(logfile_n[i],
+				    O_WRONLY|O_APPEND|O_NBVAR);    
+	}
 #endif
-    }
- #endif
-    return 0;
 }
 
 /* descriptor used for logging ? */
@@ -754,19 +733,19 @@ int LogFd(int descriptor)
     return 0;
 }
 
-int close_logs( )
+void
+close_logs(void)
 {
 #ifdef IRC_LOGGING
-    int i = 0;
-return 0;
-    for ( i = 0 ; i <= LOG_HI && logfile_n[i]; i++)
-    {
-          if (slogfiles[i] < 0) continue;    
-          (void)close(slogfiles[i]);
-          slogfiles[i] = -1;
-    }
+	int i = 0;
+	return;  /* XXXMLG Why is this here? */
+
+	for (i = 0 ; i <= LOG_HI && logfile_n[i] ; i++) {
+		if (slogfiles[i] < 0) continue;    
+		(void)close(slogfiles[i]);
+		slogfiles[i] = -1;
+	}
 #endif
-   return 0;
 }
 
 int tolog( int logtype, char *fmt, ... )
@@ -808,7 +787,8 @@ int tolog( int logtype, char *fmt, ... )
         return 0;
 }
 
-int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
+int
+m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
   char *message = (parc > 1) ? parv[1] : NULL;
 
@@ -840,4 +820,6 @@ int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
       return 0;
 
   sendto_serv_butone(sptr, ":%s LOG :%s", parv[0], message);
+
+  return 0;
 }

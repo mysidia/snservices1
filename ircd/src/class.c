@@ -17,14 +17,15 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef	lint
-static char sccsid[] = "@(#)class.c	1.4 6/28/93 (C) 1990 Darren Reed";
-#endif
-
 #include "struct.h"
 #include "common.h"
 #include "numeric.h"
 #include "h.h"
+
+#include "ircd/send.h"
+
+IRCD_SCCSID("@(#)class.c	1.4 6/28/93 (C) 1990 Darren Reed");
+IRCD_RCSID("$Id$");
 
 #define BAD_CONF_CLASS		-1
 #define BAD_PING		-2
@@ -60,7 +61,7 @@ int	get_client_class(aClient *acptr)
 {
 	Link	*tmp;
 	aClass	*cl;
-	int	i = 0, retc = BAD_CLIENT_CLASS;
+	int	retc = BAD_CLIENT_CLASS;
 
 	if (acptr && !IsMe(acptr)  && (acptr->confs))
 		for (tmp = acptr->confs; tmp; tmp = tmp->next)

@@ -18,14 +18,14 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)s_debug.c	2.30 1/3/94 (C) 1988 University of Oulu, \
-Computing Center and Jarkko Oikarinen";
-#endif
-
 #include "struct.h"
 
 #include <errno.h>
+
+#include "ircd/send.h"
+
+IRCD_SCCSID("@(#)s_debug.c	2.30 1/3/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
+IRCD_RCSID("$Id$");
 
 /*
  * Option string.  Must be before #ifdef DEBUGMODE.
@@ -74,14 +74,8 @@ char	serveropts[] = {
 #ifdef	NPATH
 'N',
 #endif
-#ifdef	IRCII_KLUDGE
-'u',
-#endif
 #ifdef	VALLOC
 'V',
-#endif
-#ifdef	_WIN32
-'W',
 #endif
 #ifdef	UNIXPORT
 'X',
@@ -99,20 +93,8 @@ char	serveropts[] = {
 #include "sys.h"
 #include "whowas.h"
 #include "hash.h"
-#ifndef _WIN32
 #include <sys/file.h>
-#endif
-#ifdef HPUX
-#include <fcntl.h>
-#endif
-#if !defined(ULTRIX) && !defined(SGI) && !defined(sequent) && \
-    !defined(__convex__) && !defined(_WIN32)
-# include <sys/param.h>
-#endif
-#ifdef HPUX
-# include <sys/syscall.h>
-# define getrusage(a,b) syscall(SYS_GETRUSAGE, a, b)
-#endif
+#include <sys/param.h>
 #ifdef GETRUSAGE_2
 # ifdef SOL20
 #  include <sys/time.h>
@@ -122,19 +104,6 @@ char	serveropts[] = {
 # endif
 # include <sys/resource.h>
 #else
-#  ifdef TIMES_2
-#   include <sys/times.h>
-#  endif
-#endif
-#ifdef PCS
-# include <time.h>
-#endif
-#ifdef HPUX
-#include <unistd.h>
-#ifdef DYNIXPTX
-#include <sys/types.h>
-#include <time.h>
-#endif
 #endif
 #include "h.h"
 
@@ -145,57 +114,26 @@ char	serveropts[] = {
 #ifdef DEBUGMODE
 static	char	debugbuf[1024];
 
-#ifndef	USE_VARARGS
-/*VARARGS2*/
-void	debug(level, form, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
-int	level;
-char	*form, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10;
+void
+debug(int level, char *form, ...)
 {
-# ifndef _WIN32
-	int	err = errno;
-# else
-	int	err = WSAGetLastError();
-# endif
-#else
-void	debug(level, form, va_alist)
-int	level;
-char	*form;
-va_dcl
-{
-	va_list	vl;
-# ifndef _WIN32
-	int	err = errno;
-# else
-	int	err = WSAGetLastError();
-# endif
+	va_list	ap;
+	int err = errno;
 
-	va_start(vl);
-#endif
+	va_start(ap, form);
 
-	if ((debuglevel >= 0) && (level <= debuglevel))
-	    {
-#ifndef	USE_VARARGS
-		(void)sprintf(debugbuf, form,
-				p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
-#else
-		(void)vsprintf(debugbuf, form, vl);
-#endif
-#ifndef _WIN32
-		if (local[2])
-		    {
+	if ((debuglevel >= 0) && (level <= debuglevel)) {
+		(void)vsprintf(debugbuf, form, ap);
+
+		if (local[2]) {
 			local[2]->sendM++;
 			local[2]->sendB += strlen(debugbuf);
-		    }
+		}
 		(void)fprintf(stderr, "%s", debugbuf);
 		(void)fputc('\n', stderr);
-	    }
+	}
 	errno = err;
-#else
-		strcat(debugbuf, "\r");
-		Cio_Puts(hCio, debugbuf, strlen(debugbuf));
-	    }
-	WSASetLastError(err);
-#endif
+	va_end(ap);
 }
 
 /*
@@ -281,12 +219,7 @@ void	send_usage(aClient *cptr, char *nick)
 	if (times(&tmsbuf) == -1)
 	    {
 		sendto_one(cptr,":%s %d %s :times(2) error: %s.",
-#  ifndef _WIN32
 			   me.name, RPL_STATSDEBUG, nick, strerror(errno));
-#  else
-			   me.name, RPL_STATSDEBUG, nick,
-				   strerror(WSAGetLastError()));
-#  endif
 		return;
 	    }
 	secs = tmsbuf.tms_utime + tmsbuf.tms_stime;
@@ -481,13 +414,7 @@ void	count_memory(aClient *cptr, char *nick)
 
 	sendto_one(cptr, ":%s %d %s :Total: ww %d ch %d cl %d co %d db %d",
 		   me.name, RPL_STATSDEBUG, nick, totww, totch, totcl, com, db);
-#ifndef _WIN32
 	sendto_one(cptr, ":%s %d %s :TOTAL: %d sbrk(0)-etext: %u",
 		   me.name, RPL_STATSDEBUG, nick, tot,
 		   (u_int)((char *)sbrk((size_t)0)-(char *)sbrk0));
-#else
-	sendto_one(cptr, ":%s %d %s :TOTAL: %d",
-		   me.name, RPL_STATSDEBUG, nick, tot);
-#endif
-	return;
 }

@@ -29,13 +29,15 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#if !defined(va_copy) && defined(SOL20)
+#define va_copy(dst, src) ((dst) = (src))
+#endif
+
 #include "snprintf.h"
 
 #include <sys/types.h>
-#ifndef _WIN32
 #include <netinet/in.h>
 #include <netdb.h>
-#endif
 #ifdef STDDEFH
 # include <stddef.h>
 #endif
@@ -81,9 +83,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
-#ifndef _WIN32
 /*#define ENABLE_SOCKSCHECK*/	/* enable socks check */
-#endif
 
 #define SOCKSPORT		1080
 
