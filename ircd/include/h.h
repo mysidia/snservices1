@@ -49,8 +49,6 @@ aClient	*find_client(char *, aClient *);
 aClient	*find_name(char *, aClient *);
 aClient	*find_person(char *, aClient *);
 aClient	*find_server(char *, aClient *);
-aClient	*find_service(char *, aClient *);
-aClient	*find_userhost(char *, char *, aClient *, int *);
 
 int	conf_xbits(aConfItem *aconf, char *field);
 int	attach_conf(aClient *, aConfItem *);

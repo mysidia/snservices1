@@ -61,34 +61,6 @@ find_nickserv(char *name, aClient *cptr)
 	return cptr;
 }
 
-/*
-**  Find a user@host (server or user).
-**
-**  *Note*
-**	Semantics of this function has been changed from
-**	the old. 'name' is now assumed to be a null terminated
-**	string and the search is the for server and user.
-*/
-aClient *
-find_userhost(char *user, char *host, aClient *cptr, int *count)
-{
-	aClient	*c2ptr;
-	aClient	*res = cptr;
-
-	*count = 0;
-	if (collapse(user))
-		for (c2ptr = client; c2ptr; c2ptr = c2ptr->next) {
-			if (!MyClient(c2ptr)) /* implies mine and a user */
-				continue;
-			if ((!host || !match(host, c2ptr->user->host)) &&
-			    mycmp(user, c2ptr->user->username) == 0) {
-				(*count)++;
-				res = c2ptr;
-			}
-		}
-	return res;
-}
-
 #ifdef HASH_MSGTAB
 #define MSG_HASH_SIZE  255
 #define MHASH(x)       (irc_toupper(*x)%MSG_HASH_SIZE)
