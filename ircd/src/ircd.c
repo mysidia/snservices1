@@ -538,30 +538,25 @@ char	*argv[];
 {
 	time_t	delay = 0, now;
 	int	portarg = 0;
+	aConfItem *aconf;
+
 #ifdef  FORCE_CORE
 	struct  rlimit corelim;
 #endif
 
         update_time();
 	sbrk0 = (char *)sbrk((size_t)0);
-# ifdef	PROFIL
-	(void)monstartup(0, etext);
-	(void)moncontrol(1);
-	(void)signal(SIGUSR1, s_monitor);
-# endif
 
 #ifdef	CHROOTDIR
-	if (chdir(dpath))
-	    {
+	if (chdir(dpath)) {
 		perror("chdir");
 		exit(-1);
-	    }
+	}
 	res_init();
-	if (chroot(DPATH))
-	  {
-	    (void)fprintf(stderr,"ERROR:  Cannot chdir/chroot\n");
-	    exit(5);
-	  }
+	if (chroot(DPATH)) {
+		(void)fprintf(stderr,"ERROR:  Cannot chdir/chroot\n");
+		exit(5);
+	}
 #endif /*CHROOTDIR*/
 
 	myargv = argv;
@@ -712,24 +707,22 @@ char	*argv[];
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
 #endif
 	if (initconf(bootopt) == -1) {
-		fprintf(stderr, "error opening ircd config file: %s\n", configfile);
+		fprintf(stderr, "error opening ircd config file: %s\n",
+			configfile);
 		Debug((DEBUG_FATAL, "Failed in reading configuration file %s",
 		       configfile));
 		(void)printf("Couldn't open configuration file %s\n",
 			     configfile);
 		exit(-1);
 	}
-	{
-		aConfItem	*aconf;
 
-		if ((aconf = find_me()) && portarg <= 0 && aconf->port > 0)
-			portnum = aconf->port;
-		Debug((DEBUG_ERROR, "Port = %d", portnum));
-		if (inetport(&me, aconf->passwd, portnum)) {
-			fprintf(stderr,
-				"Error listening on port %d\n", portnum);
-			exit(1);
-		}
+	if ((aconf = find_me()) && portarg <= 0 && aconf->port > 0)
+		portnum = aconf->port;
+	Debug((DEBUG_ERROR, "Port = %d", portnum));
+	if (inetport(&me, aconf->passwd, portnum)) {
+		fprintf(stderr,
+			"Error listening on port %d\n", portnum);
+		exit(1);
 	}
 
 	(void)setup_ping();
