@@ -162,7 +162,6 @@ MCMD(ms_read)
 	MemoList *tmp;
 	struct tm *tm;
 	char temp[30];
-	RegNickList *sender;
 
 	if (numargs < 2) {
 		PutReply(MemoServ, nick, ERR_NEEDMEMONUM_1ARG, "read", 0, 0);
@@ -186,15 +185,11 @@ MCMD(ms_read)
 				  (tmp->flags & MEMO_FWD ? 'f' : ' '),
 				  (tmp->flags & MEMO_REPLY ? 'r' : ' '));
 			sSend(":%s NOTICE %s :%s", MemoServ, from, tmp->memotxt);
-			if (tmp->flags & MEMO_UNREAD) {
-				tmp->flags &= ~MEMO_UNREAD;
-				sender = getRegNickData(tmp->from);
-				if (sender)
-				{
-					LIST_REMOVE(tmp, ml_sent);
-					/* We're not on a list anymore. */
-					tmp->ml_sent.le_prev = NULL;
-				}
+			tmp->flags &= ~MEMO_UNREAD;
+			if (tmp->ml_sent.le_prev != NULL) {
+				LIST_REMOVE(tmp, ml_sent);
+				/* We're not on a list anymore. */
+				tmp->ml_sent.le_prev = NULL;
 			}
 		}
 		return RET_OK;
@@ -234,15 +229,11 @@ MCMD(ms_read)
 		  (tmp->flags & MEMO_REPLY ? 'r' : ' '));
 	sSend(":%s NOTICE %s :%s", MemoServ, from, tmp->memotxt);
 
-	if (tmp->flags & MEMO_UNREAD) {
-		tmp->flags &= ~MEMO_UNREAD;
-		sender = getRegNickData(tmp->from);
-		if (sender)
-		{
-			LIST_REMOVE(tmp, ml_sent);
-			/* We're not on a list anymore. */
-			tmp->ml_sent.le_prev = NULL;
-		}
+	tmp->flags &= ~MEMO_UNREAD;
+	if (tmp->ml_sent.le_prev != NULL) {
+		LIST_REMOVE(tmp, ml_sent);
+		/* We're not on a list anymore. */
+		tmp->ml_sent.le_prev = NULL;
 	}
 	return RET_OK;
 }
@@ -662,7 +653,7 @@ MCMD(ms_delete)
 		while (tmp) {
 			tmp_next = LIST_NEXT(tmp, ml_lst);
 			tmp->flags |= MEMO_DELETE;
-			if (tmp->flags & MEMO_UNREAD)
+			if (tmp->ml_sent.le_prev != NULL)
 			{
 				LIST_REMOVE(tmp, ml_sent);
 				/* We're not on a list anymore. */
@@ -678,8 +669,9 @@ MCMD(ms_delete)
 		tmp = LIST_FIRST(&nick->reg->memos->mb_memos);
 		while (tmp) {
 			tmp_next = LIST_NEXT(tmp, ml_lst);
-			if (tmp->flags & MEMO_UNREAD) {
-				tmp->flags |= MEMO_DELETE;
+			tmp->flags |= MEMO_DELETE;
+			if (tmp->ml_sent.le_prev != NULL)
+			{
 				LIST_REMOVE(tmp, ml_sent);
 				/* We're not on a list anymore. */
 				tmp->ml_sent.le_prev = NULL;
@@ -718,7 +710,7 @@ MCMD(ms_delete)
 		idx++;
 		if (idx == i) {
 			tmp->flags |= MEMO_DELETE;
-			if (tmp->flags & MEMO_UNREAD)
+			if (tmp->ml_sent.le_prev != NULL)
 			{
 				LIST_REMOVE(tmp, ml_sent);
 				/* We're not on a list anymore. */
