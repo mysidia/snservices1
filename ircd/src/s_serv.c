@@ -2323,8 +2323,8 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		}
 
 		if (parc <= 1) {
-			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s] [n:%s] [%s]", me.name,
-				       	sptr->name, i, acptr->sockhost,
+			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s.%d] [n:%s] [%s]", me.name,
+				       	sptr->name, i, acptr->sockhost, acptr->port,
 				       	BadPtr(acptr->name) ? "" : acptr->name,
 					DoingDNS(acptr) ? "DoingDNS" : "");
 			continue;
