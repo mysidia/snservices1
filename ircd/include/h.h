@@ -236,7 +236,10 @@ extern	int	get_client_class PROTO((aClient *));
 extern	int	get_conf_class PROTO((aConfItem *));
 extern	void	report_classes PROTO((aClient *));
 
+#ifndef _WIN32
 extern	struct	hostent	*get_res PROTO((char *));
+#endif
+
 extern	struct	hostent	*gethost_byaddr PROTO((char *, Link *));
 extern	struct	hostent	*gethost_byname PROTO((char *, Link *));
 extern	void	flush_cache PROTO(());
