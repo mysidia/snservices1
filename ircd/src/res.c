@@ -396,7 +396,7 @@ static	int	do_query_name(Link *lp, char *name, int af, ResRQ *rptr)
  */
 static	int	do_query_number(Link *lp, sock_address *numb, ResRQ *rptr)
 {
-	char	ipbuf[73];
+	char	ipbuf[74];
 	u_char	*cp;
 #ifdef AF_INET6
 	u_char  *cp2;
@@ -420,7 +420,14 @@ static	int	do_query_number(Link *lp, sock_address *numb, ResRQ *rptr)
 				cp--;
 				cp2++; cp2++; cp2++; cp2++;
 			}
-			sprintf(cp2,"ip6.int.");
+			if (ntohs(*(short int *) &numb->in6.sin6_addr.s6_addr[0]) == 0x3ffe)
+			{
+				sprintf(cp2,"ip6.int.");
+			}
+			else
+			{
+				sprintf(cp2,"ip6.arpa.");
+			}
 			break;
 #endif
 	}
