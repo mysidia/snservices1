@@ -1330,7 +1330,7 @@ fi;
 # Check whether --with-expat or --without-expat was given.
 if test "${with_expat+set}" = set; then
   withval="$with_expat"
-  CFLAGS="-I$withval/include" LDFLAGS="-L$withval/lib"
+  CFLAGS="-I$withval/include $CFLAGS" LDFLAGS="-L$withval/lib $LDFLAGS"
 fi;
 
 # Check whether --with-network or --without-network was given.
@@ -1339,7 +1339,7 @@ if test "${with_network+set}" = set; then
   socket="$acfunc"
 fi;
 
-# Default options.
+# Default options. Most of these will move to the runtime configuration file.
 cat >>confdefs.h <<\_ACEOF
 #define BASENAME "ircd"
 _ACEOF
