@@ -1686,7 +1686,7 @@ m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0;
 		if (strtoul((parv[1])+5, NULL, 16) != (cptr->nospoof ^ 0xbeefdead))
 			return 0;
-		if (myncmp(parv[2], "\001VERSION ", 9))
+		if (myncmp(parv[2], "\001VERSION ", 9) || strlen(parv[2]) >= 265)
 			return 0;
 		if (!IsRegistered(cptr) && !IsNotSpoof(cptr) && !SentNoSpoof(cptr)) {
 			NospoofText(cptr);
@@ -1703,7 +1703,7 @@ m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 		version_length = strlen(parv[2]) - 9;
 
-		if ((version_length > 0) && (version_length < BUFSIZE)) 
+		if ((version_length > 0) && (version_length < 256)) 
 		{
 			strncpyzt(version_buf, parv[2]+9, version_length);
 
@@ -2290,18 +2290,22 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		if (show_users && !IsPerson(ptr))
 			continue;
 
-		sendto_one(sptr, ":%s NOTICE %s :%d. [%s!%s@%s,%s,%d] [%s/%s/%d]", me.name, sptr->name, i,
+		sendto_one(sptr, ":%s NOTICE %s :%d. [%s!%s@%s,%s%s,%d] [%s/%s/%d]", me.name, sptr->name, i,
 				(BadPtr(ptr->name) ? "-" : ptr->name),
 				 BadPtr(ptr->username) ? "-" : ptr->username,
 				BadPtr( ptr->sockhost) ? "-" : ptr->sockhost,
 				DoingDNS(ptr) ? "DNS" : "",
+				IsNotSpoof( ptr )  ? "" : "Spoof?"
 				ptr->status,
 				BadPtr(ptr->sup_server) ? "-" : ptr->sup_server,
 				BadPtr(ptr->sup_host) ? "-" : ptr->sup_host,
 				ptr->port
 				);
-		sendto_one(sptr, ":%s NOTICE %s : [%ld/%ld]  [%s] ",  me.name, sptr->name,
+		sendto_one(sptr, ":%s NOTICE %s : [%ld/%ld]  [%s:%s] [%s] ",  me.name, sptr->name,
 			              ptr->firsttime, ptr->lasttime,
+				      IsUserVersionKnown( ptr ) ? "V" : "NV",
+				      ((BadPtr(ptr->user) || BadPtr(ptr->user->sup_version))
+				                ? "-" : ptr->user->sup_version),
 			              BadPtr(ptr->info) ? "" : ptr->info );
 	}
 	sendto_one(sptr, ":%s NOTICE %s :End of List", me.name, sptr->name);
