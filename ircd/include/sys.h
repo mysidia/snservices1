@@ -105,9 +105,14 @@ extern	char	*rindex PROTO((char *, char));
 /*
  * Different name on NetBSD, FreeBSD, and BSDI
  */
-#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__bsdi__) || defined(REDHAT6)
+#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__bsdi__) || defined(REDHAT6) || defined(LINUX_GLIBC)
 #define dn_skipname  __dn_skipname
 #endif
+
+#ifdef LINUX_GLIBC_RRES
+#define res_init __res_init
+#endif
+
 
 #ifndef _WIN32
 extern	VOIDSIG	dummy();

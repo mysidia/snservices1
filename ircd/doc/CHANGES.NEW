@@ -1,2 +1,51 @@
-Mon Dec 29 11:12:36 CST 1997 Mysidia
-	visual improvements to the Makefiles/compilation scripts
+IRCD is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 1, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+CHANGES SINCE sorircd1.3.3
+
+Wed Mar  5 21:15:19 CST 2003 - Mysidia - sor1.3.4
+       * the $b ban type is now $q
+       * we now have $!r (negated r-type bans)
+         which allow you to require a user not be in a channel,
+         ie: /mode #chan +b $!r:#test
+         prevents people from joining while in #test.
+       * Buffer overflow bugfix to p1 involving client registration
+       * Fix to register_user that involved `strncpy' being passed
+         the same pointer in both paramaters (to username)
+       * Channels with just one user will now appear in /list again
+       * 'm' bans can now be set by regular users
+         masked bans, ie $m:*!*@*.imsk bans all +m imsk'ed users.
+       * +H and +k have been setup as mutually exclusive (like +p
+         and +s)
+       * Network name and Help URL can now be set in Config script (Milambar)
+       * ENABLE_SOCKSCHECK is now off by default and is added to Config
+       
+
+
+
+
+Sat Aug  7 18:42:34 CDT 2001 - Mysidia - sor1.3.3-p1
+       * Backporting some features from sor1.4:
+          * Safe /list to help stop sendQ exceeds/dead sockets
+          * List options features (from dreamforge)
+          * +H channel mode to block +m users (/join unmask)
+          * Hiding of the keys in +k mode resets from non-ops to help
+            protect key security (ChanServ MLOCK)
+          * Ban caching for channel members to reduce the CPU cost of
+            BQUIET
+          * Prevent a user from switching to a nickname banned
+            on a channel, block nick changes while moderated
+          * Shortcut for /msg service@services.sorcery.net,
+            /msg service@ or /msg service@services
+          * +c channel mode to block colors
+          * Fixed many holes in the ip masking scheme
