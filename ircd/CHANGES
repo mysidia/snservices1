@@ -1,4 +1,6 @@
 Wed Jul 16 13:39:51 CDT 2003  sor1.3.5 - Mysidia
+ * REQ_VERSION_RESPONSE now separate from NO_VERSION_CHECK
+ * Show version reply in whois [Onno]
  * Bugfix [channel.c] rule-based bans, ban list could prevously be truncated 
    during net.merge; this change allows spaces in bans to work properly
  * Don't allow \033, \037, \026, \017, \b, \t, \003, \002, \001, or \240

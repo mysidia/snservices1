@@ -618,6 +618,20 @@ struct	ConfItem	{
 #define	IsCNLine(x)	((x)->status & CONF_SERVER_MASK)
 #define IsTemp(x)	((x)->tmpconf)
 
+#define GetUserSupVersion(x)	((x)->sup_version)
+
+struct  StringHash
+{
+	struct StringHashElement* ptr;
+};
+
+struct	StringHashElement {
+	char* str;
+	int   refct;
+
+	struct StringHashElement* next;
+};
+
 /*
  * Client structures
  */
@@ -634,6 +648,9 @@ struct	User	{
 	char	username[USERLEN+1];
 	char	host[HOSTLEN+1];
         char	server[HOSTLEN+1];
+#if !defined(NO_VERSION_CHECK) 
+        char    *sup_version;
+#endif
 #ifdef  KEEP_HURTBY
 	char    *hurtby;
 #endif

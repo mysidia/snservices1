@@ -595,6 +595,10 @@
 #define	CONFIGFILE CPATH
 #define	IRCD_PIDFILE PPATH
 
+#if defined(NO_VERSION_CHECK) && defined(REQ_VERSION_RESPONSE)
+error No_version_check and req_version_response are mutually exclusive
+#endif
+
 #ifdef	__osf__
 #define	OSF
 /* OSF defines BSD to be its version of BSD */

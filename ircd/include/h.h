@@ -37,6 +37,9 @@ extern	void	*hCio;
 
 extern int expr_match (const char *pattern, const char *text);
 
+extern void dup_sup_version(anUser* user, const char* text);
+extern void free_sup_version(char* text);
+
 extern	aChannel *find_channel PROTO((char *, aChannel *));
 extern	void	remove_user_from_channel PROTO((aClient *, aChannel *));
 extern	void	del_invite PROTO((aClient *, aChannel *));
