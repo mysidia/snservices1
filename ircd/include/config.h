@@ -236,17 +236,6 @@
  */
 #undef SHOW_PASSWORD
 
-/* CHROOTDIR
- *
- * Define for value added security if you are a rooter.
- *
- * All files you access must be in the directory you define as DPATH.
- * (This may effect the PATH locations above, though you can symlink it)
- *
- * You may want to define IRC_UID and IRC_GID
- */
-/* #define CHROOTDIR */
-
 /* NO_DEFAULT_INVISIBLE
  *
  * When defined, your users will not automatically be attributed with user
@@ -398,16 +387,6 @@
 #ifndef BUFFERPOOL
 #define	BUFFERPOOL     (9 * MAXSENDQLENGTH)
 #endif
-
-/*
- * IRC_UID
- *
- * If you start the server as root but wish to have it run as another user,
- * define IRC_UID to that UID.  This should only be defined if you are running
- * as root and even then perhaps not.
- */
-/* #undef	IRC_UID */
-/* #undef	IRC_GID */
 
 /*
  * CLIENT_FLOOD

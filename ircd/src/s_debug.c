@@ -31,9 +31,6 @@ IRCD_RCSID("$Id$");
  * Option string.  Must be before #ifdef DEBUGMODE.
  */
 char	serveropts[] = {
-#ifdef	CHROOTDIR
-'c',
-#endif
 #ifdef	DEBUGMODE
 'D',
 #endif

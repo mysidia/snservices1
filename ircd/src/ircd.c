@@ -490,18 +490,6 @@ main(int argc, char **argv)
         update_time();
 	sbrk0 = (char *)sbrk((size_t)0);
 
-#ifdef	CHROOTDIR
-	if (chdir(dpath)) {
-		perror("chdir");
-		exit(-1);
-	}
-	res_init();
-	if (chroot(DPATH)) {
-		(void)fprintf(stderr,"ERROR:  Cannot chdir/chroot\n");
-		exit(5);
-	}
-#endif /*CHROOTDIR*/
-
 	myargv = argv;
 	(void)umask(077);                /* better safe than sorry --SRB */
 	bzero((char *)&me, sizeof(me));
@@ -610,12 +598,10 @@ main(int argc, char **argv)
 	    }
 	fprintf(stderr, "\n");
 
-#ifndef	CHROOT
 	if (chdir(dpath)) {
 		perror("chdir");
 		exit(-1);
 	}
-#endif
 
         /* read_help (0); */ /* read the helpfile and attach it into memory... */
 	open_logs();
