@@ -41,20 +41,26 @@ sub Connect
 			while ($line = $sock->getline) {
 				print $line;
 
-				if (grep(/AUTH SYSTEM LOGIN irc\/services/, $line)) {
+				if (grep(/^AUTH SYSTEM LOGIN irc\/services/, $line)) {
 					$sock->print("AUTH SYSTEM LOGIN " . $user . "\n");
 				}
-				elsif ($line =~ /AUTH COOKIE ([0-9A-F]+)/) {
+				elsif ($line =~ /^AUTH COOKIE ([0-9A-F]+)/) {
 					$hashcode = md5_hex($1 . ":" . $password);
 					$sock->print("AUTH SYSTEM PASS " . $hashcode . "\n");
 				}
-				elsif ($line =~ /ERR-BADLOGIN AUTH SYSTEM LOGIN - (.*)/) {
+				elsif ($line =~ /^ERR-BADLOGIN AUTH SYSTEM LOGIN - (.*)/) {
 					$SIPC::ERRORTEXT = 'Login failed :' . $1 . "\n";
 					$sel->remove($sock);
 					$sock->close;
-					return undeF;
+					return undef;
 				}
-				elsif ($line =~ /OK AUTH SYSTEM PASS/) {
+				elsif ($line =~ /^ERR-\S+\s(\S\s+)+- (.*)/) {
+					$SIPC::ERRORTEXT = 'Login failed :' . $2 . "\n";
+					$sel->remove($sock);
+					$sock->close;
+					return undef;
+				}
+				elsif ($line =~ /^OK AUTH SYSTEM PASS/) {
 					return (bless $self, $x);
 				}
 			}
