@@ -186,8 +186,4 @@ install: all
 	@chmod $(IRCDMODE) ${IRCDDIR}/chkconf
 	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
 	$(CP) doc/example.conf ${IRCDDIR}
-	chmod +x src/buildm4
-	@$(RM) -f ${IRCDDIR}/ircd.m4
-	@$(TOUCH) ${IRCDDIR}/ircd.m4
-	src/buildm4 ${IRCDDIR}
 	@echo "done!"
