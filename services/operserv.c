@@ -602,7 +602,7 @@ OCMD(os_tempakill)
 			break;
 		count +=
 			snprintf(akreason + count, AKREASON_LEN - count, " %s",
-					 , args[i]);
+					 args[i]);
 	}
 	addakill(3600, addr, from, A_AKILL, akreason);
 	return RET_OK_DB;
