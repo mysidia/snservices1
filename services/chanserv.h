@@ -92,6 +92,7 @@
 					///< at the moment for drop command.
 #define CENCRYPT	0x00002000	///< Channel password encrypted
 #define CGAMESERV	0x00004000	///< Enable GameServ
+#define CAKICKREASONS   0x00008000      ///< Use akick reasons
 
 /************************************************************************/
 

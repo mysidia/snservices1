@@ -948,15 +948,19 @@ cNickList *getChanUserData(ChanList * chan, UserList * data)
  *         value is that of their present chanop access.
  */
 int getMiscChanOp(RegChanList * chan, char *nick, int id,
-                  char *checkAccessNick)
+                  char *checkAccessNick, cAkickList** akickRecord)
 {
 	int highest = 0;
 	UserList *tmp;
 	cAccessList *tmpnick;
+	cAkickList* matchingAk = 0;
 	const char *tmpNickName;
 
 	if (!nick || !chan)
 		return 0;
+
+	if (akickRecord)
+		*akickRecord = 0;
 
 	tmp = getNickData(nick);
 
@@ -1039,6 +1043,8 @@ int getMiscChanOp(RegChanList * chan, char *nick, int id,
 			if (!match(tmpak->mask, hostmask)
 				|| !match(tmpak->mask, hostmask2)) {
 				highest = -1;
+				matchingAk = tmpak;
+				
 				break;
 			}
 		}
@@ -1049,6 +1055,10 @@ int getMiscChanOp(RegChanList * chan, char *nick, int id,
     /* If forced xfer then no access other than oper using DMOD/Override */
 	if ((chan->flags & CFORCEXFER) && !opFlagged(tmp, OVERRIDE))
 		return 0;
+
+	if (highest == -1 && matchingAk && akickRecord) {
+		*akickRecord = matchingAk;
+	}
 
 	return highest;
 #undef process_op_item
@@ -1069,7 +1079,7 @@ int getChanOp(RegChanList * chan, char *nick)
 		return 0;
 
 	return getMiscChanOp(chan, nick, (chan->flags & CIDENT) == CIDENT,
-						 NULL);
+						 NULL, NULL);
 }
 
 /**
@@ -1087,7 +1097,7 @@ int getChanOpId(RegChanList * chan, char *nick)
 	/* Get Chanop level, but require identification */
 	if (!chan || !nick)
 		return 0;
-	return getMiscChanOp(chan, nick, 1, NULL);
+	return getMiscChanOp(chan, nick, 1, NULL, NULL);
 }
 
 /**
@@ -1656,8 +1666,11 @@ void addUserToChan(UserList * nick, char *channel)
 				if (tmp->reg) {
 					char mode[20];
 					char themask[NICKLEN + USERLEN + HOSTLEN + 3];
+					cAkickList* akickRecord = 0;
 
-					a = getChanOp(tmp->reg, nick->nick);
+					a = getMiscChanOp(tmp->reg, nick->nick,
+					        (tmp->reg->flags & CIDENT) == CIDENT,						
+						NULL, &akickRecord);
 
 					if (a == -1) {
 						cAkickList *blah;
@@ -1691,9 +1704,20 @@ void addUserToChan(UserList * nick, char *channel)
 						createGhostChannel(tmp->name);
 						timer(10, deleteTimedGhostChannel,
 							  strdup(tmp->name));
+						if (!(tmp->reg->flags &
+                                                       CAKICKREASONS)
+                                                    || akickRecord == NULL
+						    || akickRecord->reason[0] == '\0')
 						sSend
 							(":%s KICK %s %s :You have been permanently banned from this channel.",
 							 ChanServ, tmp->reg->name, nick->nick);
+						else
+						{
+						sSend
+							(":%s KICK %s %s :You are effected by an autokick set by the channel staff: (%s)",
+							ChanServ, tmp->reg->name,
+							nick->nick, akickRecord->reason);
+						}
 						delChanUser(tmp, person, 1);
 						return;
 					}
@@ -2830,7 +2854,7 @@ CCMD(cs_mdeop)
 		return RET_NOTARGET;
 	}
 
-	aclvl = getMiscChanOp(chan->reg, from, ChanGetIdent(chan->reg), accNick);
+	aclvl = getMiscChanOp(chan->reg, from, ChanGetIdent(chan->reg), accNick, NULL);
 	if (opFlagged(nick, OVERRIDE | OSERVOP)
 		|| opFlagged(nick, OVERRIDE | ODMOD)) aclvl = FOUNDER + 1;
 
@@ -2893,7 +2917,7 @@ CCMD(cs_mkick)
 		return RET_NOTARGET;
 	}
 
-	aclvl = getMiscChanOp(chan->reg, from, 1, accNick);
+	aclvl = getMiscChanOp(chan->reg, from, 1, accNick, NULL);
 
 	if ((SOP > aclvl) && (!isOper(nick))) {
 		sSend
@@ -2976,7 +3000,7 @@ void sendChannelInfo(UserList *nick, RegChanList *chan, int fTerse)
 
 	if (hidden_details) {
 		if (isOper(nick) || 
-		    getMiscChanOp(chan, nick->nick, 1, NULL) >= MAOP)
+		    getMiscChanOp(chan, nick->nick, 1, NULL, NULL) >= MAOP)
 		hidden_details = 0;
 	}
 
@@ -3254,7 +3278,7 @@ CCMD(cs_access)
 
 	level =
 		getMiscChanOp(tmp, (numargs >= 3) ? args[2] : nick->nick,
-					  ChanGetIdent(tmp), checkAccessNick);
+					  ChanGetIdent(tmp), checkAccessNick, NULL);
 	tmpnick = getNickData((numargs >= 3) ? args[2] : nick->nick);
 	tmprnick = getRegNickData(checkAccessNick);
 
@@ -3689,7 +3713,7 @@ static cmd_return do_chanop_add(UserList * isfrom,
 	int currentlevel;
 	int maxEdit = FOUNDER;
 
-	int mylevel = getMiscChanOp(chan, isfrom->nick, ChanGetIdent(chan), accNick);
+	int mylevel = getMiscChanOp(chan, isfrom->nick, ChanGetIdent(chan), accNick, NULL);
 
 	if ((mylevel < FOUNDER) && isOper(isfrom) && cTargetNick
 		&& opFlagged(isfrom, ODMOD | OVERRIDE)) {
@@ -5303,6 +5327,7 @@ CCMD(cs_set)
 		{"quiet", cs_set_bool, FOUNDER + 1, CSO(flags), "quiet changes",
 		 CQUIET},
 		{"gs_roll", cs_set_bool, FOUNDER, CSO(flags), "+v gameserv roll", CGAMESERV},
+		{"akickreasons", cs_set_bool, FOUNDER, CSO(flags), "use akick reasons"},
 		{"passw*d", cs_set_passwd, FOUNDER + 1},
 		{"memo*", cs_set_memolvl, FOUNDER},
 		{"desc*", cs_set_fixed, FOUNDER, CSO(desc), "description",
