@@ -18,30 +18,25 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef lint
-static  char sccsid[] = "@(#)bsd.c	2.14 1/30/94 (C) 1988 University of Oulu, \
-Computing Center and Jarkko Oikarinen";
-#endif
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <signal.h>
+#include <errno.h>
 
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "h.h"
 
-#include <signal.h>
-#include <errno.h>
+#include "ircd/send.h"
 
-#ifndef _WIN32
-extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
-#endif
-#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(REDHAT5) && !defined(LINUX_GLIBC)
-extern	char	*sys_errlist[];
-#endif
+IRCD_SCCSID("@(#)bsd.c	2.14 1/30/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
+IRCD_RCSID("$Id$");
 
 #ifdef DEBUGMODE
 int	writecalls = 0, writeb[10] = {0,0,0,0,0,0,0,0,0,0};
 #endif
-#ifndef _WIN32
 VOIDSIG dummy()
 {
 #ifndef HAVE_RELIABLE_SIGNALS
@@ -72,7 +67,6 @@ VOIDSIG dummy()
 # endif
 #endif
 }
-#endif /* _WIN32 */
 
 
 /*
@@ -123,13 +117,8 @@ char	*str;
 	**
 	** ...now, would this work on VMS too? --msa
 	*/
-# ifndef _WIN32
 	if (retval < 0 && (errno == EWOULDBLOCK || errno == EAGAIN ||
 			   errno == ENOBUFS))
-# else
-	if (retval < 0 && (WSAGetLastError() == WSAEWOULDBLOCK ||
-	    WSAGetLastError() == WSAENOBUFS))
-# endif
 	    {
 		retval = 0;
 		ClientFlags(cptr) |= FLAGS_BLOCKED;
@@ -146,13 +135,8 @@ char	*str;
 #ifdef DEBUGMODE
 	if (retval < 0) {
 		writeb[0]++;
-# ifndef _WIN32
                Debug((DEBUG_ERROR,"write error (%s) to %s",
                         sys_errlist[errno], cptr->name));
-# else
-               Debug((DEBUG_ERROR,"write error (%s) to %s",
-			sys_errlist[WSAGetLastError()], cptr->name));
-# endif
 
 	} else if (retval == 0)
 		writeb[1]++;

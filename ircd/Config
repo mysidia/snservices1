@@ -58,7 +58,7 @@ trap "rm -f $TMP $EXEC $PLATE; rm -f $EXEC;echo '';echo \"deleting $TMP\";exit "
 #
 # Some reasonable defaults
 #
-DEFOPT="-O -g -Wuninitialized -Wcomment"
+DEFOPT="-O -g -Wuninitialized -Wcomment -Wall"
 DEFCFLAGS="$DEFOPT"
 DEFLIBS="none"
 OSNAME="an unrecgonized operating system"

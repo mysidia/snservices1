@@ -46,6 +46,8 @@
 
 #include "struct.h"
 
+#include "ircd/md5.h"
+
 /*
  * MD5 transform algorithm, taken from code written by Colin Plumb,
  * and put into the public domain
@@ -53,7 +55,8 @@
  * QUESTION: Replace this with SHA, which as generally received better
  * reviews from the cryptographic community?
  */
-void MD5Init(u_int32_t buf[4])
+void
+ircd_MD5Init(u_int32_t buf[4])
 {
 	buf[0] = 0x67452301;
 	buf[1] = 0xefcdab89;
@@ -77,7 +80,8 @@ void MD5Init(u_int32_t buf[4])
  * The core of the MD5 algorithm, this alters an existing MD5 hash to
  * reflect the addition of 16 longwords of new data.
  */
-void MD5Transform(u_int32_t buf[4], u_int32_t in[16])
+void
+ircd_MD5Transform(u_int32_t buf[4], u_int32_t in[16])
 {
 	u_int32_t a, b, c, d;
 
