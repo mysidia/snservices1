@@ -169,7 +169,7 @@ INCLUDES = -I./ -I../ -I- -I/usr/include -I@includedir@
 
 EXTRA_PROGRAMS = tests tool_cmd
 tests_SOURCES = email_test.cc stuff_test.cc chanserv_test.cc run_test.cc \
-timestr_test.cc
+timestr_test.cc passwd_test.cc
 
 
 tests_LDADD = -lcppunit $(SVOBJS)
@@ -186,7 +186,7 @@ CONFIG_CLEAN_FILES =
 EXTRA_PROGRAMS = tests$(EXEEXT) tool_cmd$(EXEEXT)
 am_tests_OBJECTS = email_test.$(OBJEXT) stuff_test.$(OBJEXT) \
 	chanserv_test.$(OBJEXT) run_test.$(OBJEXT) \
-	timestr_test.$(OBJEXT)
+	timestr_test.$(OBJEXT) passwd_test.$(OBJEXT)
 tests_OBJECTS = $(am_tests_OBJECTS)
 tests_DEPENDENCIES = ../akill.o ../db.o ../help.o ../parse.o ../stuff.o \
 	../chanserv.o ../email.o ../infoserv.o ../memoserv.o \
@@ -207,7 +207,8 @@ tool_cmd_LDFLAGS =
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/chanserv_test.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/email_test.Po ./$(DEPDIR)/run_test.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/email_test.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/passwd_test.Po ./$(DEPDIR)/run_test.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/stuff_test.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/timestr_test.Po ./$(DEPDIR)/tool_cmd.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -247,6 +248,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chanserv_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/email_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/passwd_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stuff_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timestr_test.Po@am__quote@

@@ -42,7 +42,7 @@ INCLUDES = -I./ -I../ -I- -I/usr/include -I@includedir@
 
 EXTRA_PROGRAMS = tests tool_cmd
 tests_SOURCES = email_test.cc stuff_test.cc chanserv_test.cc run_test.cc \
-timestr_test.cc
+timestr_test.cc passwd_test.cc
 
 tests_LDADD = -lcppunit $(SVOBJS)
 
