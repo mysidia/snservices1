@@ -560,8 +560,8 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  (void)m_lusers(sptr, sptr, 1, parv);
 	  update_load();
 	  (void)m_motd(sptr, sptr, 1, parv);
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	  
-	  
+
+#if defined(NOSPOOF)
           if (!IsUserVersionKnown(sptr)) {
 	      if (!IsHurt(sptr)) {
 #if defined(REQ_VERSION_RESPONSE)		      
@@ -1159,12 +1159,8 @@ nickkilldone:
 	  if (sptr->nospoof == 0)
 	    sptr->nospoof = 0xdeadbeef;
 
-#ifndef NO_VERSION_CHECK
           if (!IsUserVersionKnown(sptr))
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
-#endif
-
-/*	  sendto_one(sptr, "PING :%X", sptr->nospoof);*/
 
           NospoofText(cptr);
           SetSentNoSpoof(cptr);
@@ -1549,7 +1545,7 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF)
 	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0])
 	   && cptr->nospoof && (parc > 1) && !myncmp(parv[1], "Auth-", 5))
 	{
@@ -2001,7 +1997,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				sendto_one(sptr, rpl_str(RPL_WHOISHURT),
 					   me.name, parv[0], name);
 			}
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF)
 			if (acptr->user && MyConnect(acptr) && IsAnOper(sptr)
 			    && !BadPtr(acptr->user->sup_version))
 				sendto_one(sptr, rpl_str(RPL_WHOISVERSION),

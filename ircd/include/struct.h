@@ -657,9 +657,7 @@ struct	User	{
 	char	username[USERLEN+1];
 	char	host[HOSTLEN+1];
         char	server[HOSTLEN+1];
-#if !defined(NO_VERSION_CHECK) 
         char    *sup_version;
-#endif
 #ifdef  KEEP_HURTBY
 	char    *hurtby;
 #endif
