@@ -153,6 +153,45 @@ rnickQueryTable[] =
 	{ NULL }
 };
 
+
+/* For Channels */
+
+int queryRchanString(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int queryRchanStringFixed(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int queryRchanFlag(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int queryRchanLong(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int queryRchanUint(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int queryRchanUchar(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int queryRchanTime(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+
+int alterRchanStringD(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanStringFixed(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanEmail(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanFlag(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanLong(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanUint(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanUchar(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+int alterRchanTime(RegChanList *rnl, IpcConnectType *p, parse_t *pb, int x);
+
+#define ORCL(q)  (((size_t) &((RegChanList *)0)->q))
+
+struct
+{
+	const char *field;
+	int (* func)(RegChanList *, IpcConnectType *p, parse_t *pb, int x);
+	size_t off;
+	flag_t priv, a_priv;
+	int (* a_func)(RegChanList *, IpcConnectType *p, parse_t *pb, int x);
+}
+rchanQueryTable[] =
+{
+	{ "DESC", queryRchanStringFixed,	ORCL(desc),
+	   PRIV_QUERY_CHAN_PUBLIC, PRIV_ALTER_RCHAN_2, 0 /*alterRchanStringFixed*/ },
+        { "TIMEREG",    queryRchanTime,         ORCL(timereg),
+          PRIV_QUERY_CHAN_PUBLIC, PRIV_ALTER_RNICK_3, 0 /*alterRchanTime*/ },
+	{ NULL }
+};
+
 /********************************************************************/
 
 int IpcConnectType::CheckPriv(flag_t pSys, flag_t pObj)
@@ -175,6 +214,8 @@ int IpcConnectType::CheckOrPriv(flag_t pSys, flag_t pObj)
 		return 0;
 	return 1;
 }
+
+/********************************************************************/
 
 int queryRnickString(RegNickList *rnl, IpcConnectType *p, parse_t *pb, int x)
 {
@@ -360,6 +401,180 @@ int alterRnickTime(RegNickList *rnl, IpcConnectType *p, parse_t *pb, int x)
 	            rnickQueryTable[x].field, *c);
 	return 1;
 }
+/********************************************************************/
+
+int queryRchanString(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	char *c;
+        if (!rcl || !rcl->name) return 0;
+
+    	c = *(char **)((size_t)rcl + rchanQueryTable[x].off);
+
+	if (c != NULL)
+		p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %s", rcl->name,
+		            rchanQueryTable[x].field, c);
+	else
+		p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %s", rcl->name,
+		            rchanQueryTable[x].field, "");
+	return 1;
+}
+
+int queryRchanStringFixed(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	char *c;
+        if (!rcl || !rcl->name) return 0;
+
+    	c = (char *)((size_t)rcl + rchanQueryTable[x].off);
+
+	if (c != NULL)
+		p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %s", rcl->name,
+		            rchanQueryTable[x].field, c);
+	else
+		p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %s", rcl->name,
+		            rchanQueryTable[x].field, "");
+	return 1;
+}
+
+int queryRchanFlag(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	flag_t *c = (flag_t *)((size_t)rcl + rchanQueryTable[x].off);
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int queryRchanLong(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	long *c = (long *)((size_t)rcl + rchanQueryTable[x].off);
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int queryRchanUint(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	u_int *c = (u_int *)((size_t)rcl + rchanQueryTable[x].off);
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int queryRchanUchar(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	u_char *c = (u_char *)((size_t)rcl + rchanQueryTable[x].off);
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int queryRchanTime(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	time_t *c = (time_t *)((size_t)rcl + rchanQueryTable[x].off);
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int alterRchanStringD(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	char *c = *(char **)((size_t)rcl + rchanQueryTable[x].off);
+	char *d = parse_getarg(pb);
+
+	if (c)
+		free(c);
+	c = (char *)0;
+
+	if (d != NULL) {
+		c = str_dup(d);
+	}
+	*(char **)((size_t)rcl + rchanQueryTable[x].off) = c;
+		
+	p->fWriteLn("OK ALTER OBJECT RCHAN=%s %sx %s", rcl->name,
+	            rchanQueryTable[x].field, c);
+	return 1;
+}
+
+int alterRchanFlag(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	flag_t *c = (flag_t *)((size_t)rcl + rchanQueryTable[x].off);
+	char *d = parse_getarg(pb);
+
+	if (d == NULL) return 0;
+
+	*c = atol(d);
+
+	p->fWriteLn("OK ALTER OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int alterRchanLong(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	long *c = (long *)((size_t)rcl + rchanQueryTable[x].off);
+	char *d = parse_getarg(pb);
+
+	if (d == NULL) return 0;
+
+	*c = atol(d);
+
+	p->fWriteLn("OK ALTER OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int alterRchanUint(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	u_int *c = (u_int *)((size_t)rcl + rchanQueryTable[x].off);
+	char *d = parse_getarg(pb);
+	int j;
+
+	if (d == NULL) return 0;
+
+	j = atoi(d);
+
+	if (j < 0) j = 0;
+	*c = j;
+
+	p->fWriteLn("OK ALTER OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int alterRchanUchar(RegChanList *rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	u_char *c = (u_char *)((size_t)rcl + rchanQueryTable[x].off);
+	char *d = parse_getarg(pb);
+	int X;
+
+	if (d == 0) return 0;
+	X = MIN(UCHAR_MAX, MAX(0, atoi(d)));
+	*c = X;
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
+int alterRchanTime(RegChanList* rcl, IpcConnectType *p, parse_t *pb, int x)
+{
+	time_t *c = (time_t *)((size_t)rcl + rchanQueryTable[x].off);
+	char *d = parse_getarg(pb);
+	time_t e;
+
+	if (d == 0) return 0;
+	e = atol(d);
+	*c = e;
+
+	p->fWriteLn("OK QUERY OBJECT RCHAN=%s %sx %ld", rcl->name,
+	            rchanQueryTable[x].field, *c);
+	return 1;
+}
+
 /*$$*/
 
 /**
@@ -422,6 +637,48 @@ IpcType::alterRegNickMessage(RegNickList *rnl, const char *req, IpcConnectType *
 
 	if (rnickQueryTable[i].field)
 		return (* rnickQueryTable[i].a_func)(rnl, p, pb, i);
+	return 0;
+}
+
+
+/**
+ * @brief Handle QUERY OBJECT RCHAN
+ */
+int
+IpcType::queryRegChanMessage(RegChanList *rcl, const char *req, IpcConnectType *p, parse_t *pb)
+{
+	int i = 0;
+
+	if (req == NULL)
+		req = "<unknown>";
+	if (rcl == NULL)
+		return 0;
+
+	if (!(p->GetPriv() & PRIV_QUERY_CHAN_PUBLIC)) {
+		p->fWriteLn("ERR-NOPRIV QUERY OBJECT RCHAN=%s %s "
+				"- User %s Not authorized to query RCHAN %s.",
+				rcl->name, req, p->user, req);
+		return 1;
+	}
+
+	for(i = 0; rchanQueryTable[i].field; i++) {
+		if (strcmp(req, rchanQueryTable[i].field) == 0) {
+			if (rchanQueryTable[i].priv && (p->GetPriv() & rchanQueryTable[i].priv) != rchanQueryTable[i].priv)
+			{
+				p->fWriteLn("ERR-NOPRIV QUERY OBJECT RCHAN=%s %s"
+				            "- User %s Not authorized to query RCHAN %s.",
+					    rcl->name, p->user, req, req);
+				return 1;
+			}
+			break;
+		}
+	}
+
+	if (rchanQueryTable[i].field) {
+		return (* rchanQueryTable[i].func)(rcl, p, pb, i);
+	}
+
+
 	return 0;
 }
 
@@ -1590,11 +1847,28 @@ IpcType::queryObjMessage(IpcConnectType *p, parse_t *pb)
 		}
 		else if (strcmp(buf, "RCHAN") == 0)
 		{
+			char* req;
+			RegChanList* reg_chan;
+
 			if ((buf = parse_getarg(pb)) == NULL) {
 				p->sWrite("ERR-BADSYNTAX QUERY OBJECT RCHAN - channel/attribute pair missing.\n");
 				return;
 			}
 
+			req = parse_getarg(pb);
+
+			if ((reg_chan = getRegChanData(buf)) == NULL) {
+				if (req && strcmp(req, "ISREG"))
+					p->fWriteLn("ERR-BADTARGET QUERY OBJECT RCHAN=%s - NOT_REGISTERED", buf);
+				else
+					p->fWriteLn("OK QUERY OBJECT RCHAN=%s ISREG=FALSE - Channel is not registered.", buf);
+				return;
+			}
+
+			if (queryRegChanMessage(reg_chan, req, p, pb))
+				return;			
+
+			p->fWriteLn("ERR-BADATT QUERY OBJECT RCHAN EATTR - Unknown attribute for that channel");
 			return;
 		}
 	}
