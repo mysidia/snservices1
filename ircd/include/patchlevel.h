@@ -127,4 +127,4 @@
 
 /* Do NOT edit below this line */
 
-#define BASE_VERSION "sor1.1.2"
+#define BASE_VERSION "sor1.2"

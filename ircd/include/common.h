@@ -72,7 +72,9 @@ extern	int	match PROTO((char *, char *));
 extern int     smycmp PROTO((char *, char *));
 extern	int	myncmp PROTO((char *, char *, int));
 #ifdef NEED_STRTOK
+#if !defined(REDHAT5)
 extern	char	*strtok PROTO((char *, char *));
+#endif
 #endif
 #ifdef NEED_STRTOKEN
 extern	char	*strtoken PROTO((char **, char *, char *));
@@ -177,4 +179,24 @@ _inline	void	alarm(unsigned int seconds) { }
 
 time_t NOW, tm_offset;
 #define update_time() NOW=(time(NULL)+tm_offset)
+
+#define REPORT_START_DNS "*** Looking up your hostname..."
+#define REPORT_DONE_DNS "*** Found your hostname"
+#define REPORT_DONEC_DNS "*** Found your hostname (cached)"
+#define REPORT_FAIL_DNS "*** Couldn't resolve your hostname; using IP address instead"
+
+#define REPORT_START_AUTH "*** Checking ident..."
+#define REPORT_FIN_AUTH "*** Received ident response"
+#define REPORT_FAIL_AUTH "*** No ident response; username prefixed with ~"
+#define REPORT_ERR_AUTH  "*** Unable to get ident; username prefixed with ~"
+
+#define REPORT_START_SOCKS "*** Checking for open socks server..."
+#define REPORT_FAIL_SOCKS "*** No socks server found (good)"
+#define REPORT_FIN_SOCKS "*** Open socks server found (bad)"
+#define REPORT_OK_SOCKS "*** Secure socks server found (ok)"
+  /* remote closed inbetween our non-blocking connect() and send()  ::  tcp wrappers ? */
+#define REPORT_ERR_SOCKS "*** Secure socks server found (unsure)"
+#define connotice(x, y) ( sendto_one(x, ":%s NOTICE AUTH :" y "", me.name) )
+#define UNSURE 2
+
 #endif /* __common_include__ */

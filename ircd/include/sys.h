@@ -136,4 +136,10 @@ typedef	unsigned int	u_int;
 #include <des.h>
 #endif
 
+#ifndef _WIN32
+#define closesocket(x) close(x)
+#endif
+#define closefile(x) close(x)
+
+
 #endif /* __sys_include__ */

@@ -624,7 +624,7 @@ char	*parv[];
  	 	return 0;
 	    }
 
-	sptr->flags&=~FLAGS_TS8;
+	ClientFlags(sptr) &=~FLAGS_TS8;
 
 	clean_channelname(parv[1]);
 	if (check_channelmask(sptr, cptr, parv[1]))
@@ -847,7 +847,7 @@ char	*parv[], *mbuf, *pbuf;
 				lp = &chops[opcnt++];
 				lp->value.cptr = who;
 				if ((IsServer(sptr) &&
-				    (!(who->flags & FLAGS_TS8) ||
+				    (!(ClientFlags(who) & FLAGS_TS8) ||
 				    ((*curr == 'o') && !(member->flags &
 				    (CHFL_SERVOPOK|CHFL_CHANOP))) ||
 				    who->from != sptr->from)) ||
@@ -1731,7 +1731,7 @@ char	*parv[];
 		  else continue; }
 		if (!zombie)
 		{ if (!MyConnect(sptr)) flags = CHFL_DEOPPED;
-		  if (sptr->flags & FLAGS_TS8) flags|=CHFL_SERVOPOK; }
+		  if (ClientFlags(sptr) & FLAGS_TS8) flags|=CHFL_SERVOPOK; }
 		if (!chptr ||
 		    (MyConnect(sptr) && (i = can_join(sptr, chptr, key))))
 		    {
@@ -1803,7 +1803,7 @@ char	*parv[];
 	if (check_registered_user(sptr))
 		return 0;
 
-        sptr->flags&=~FLAGS_TS8;
+        ClientFlags(sptr) &=~FLAGS_TS8;
 
 	if (parc < 2 || parv[1][0] == '\0')
 	    {
@@ -1893,7 +1893,7 @@ char	*parv[];
 	if (check_registered(sptr))
 		return 0;
 
-	sptr->flags&=~FLAGS_TS8;
+	ClientFlags(sptr) &=~FLAGS_TS8;
 
 	if (parc < 3 || *parv[1] == '\0')
 	    {
@@ -2180,10 +2180,9 @@ char	*parv[];
 		return 0;
 	if (!(chptr = find_channel(parv[2], NullChn)))
 	    {
-
-		sendto_prefix_one(acptr, sptr, ":%s INVITE %s :%s",
-				  parv[0], parv[1], parv[2]);
-		return 0;
+		sendto_one(sptr, err_str(ERR_NOTONCHANNEL),
+			   me.name, parv[0], parv[2]);
+		return -1;
 	    }
 
 	if (chptr && !IsMember(sptr, chptr) && !IsULine(cptr,sptr))
