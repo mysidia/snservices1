@@ -70,10 +70,8 @@ char *urlEncode(const char *);
 const char *GetAuthChKey(const char*, const char*pass, time_t,
                          u_int32_t code_arg);
 const char *PrintPass(u_char pI[], char enc);
-struct akill* getAkill(char *nick, char *user, char *host);
 char* applyAkill(char* nick, char* user, char* host, struct akill* ak);
 char* getAkReason(struct akill *ak);
-struct akill* getAhurt(char *nick, char *user, char *host);
 long getAkillId(struct akill* ak);
 void enforce_nickname (char* nick);
 int isPasswordAcceptable(const char* password, char* reason);
@@ -495,7 +493,7 @@ void addNewUser(char **args, int numargs)
 
 	newnick->reg = getRegNickData(args[1]);
 	newnick->timestamp = (time_t) atol(args[3]);
-	if ((ak = getAkill(newnick->nick, newnick->user, newnick->host)) &&
+	if ((ak = getBanInfo(newnick->nick, newnick->user, newnick->host, A_AKILL)) != NULL &&
             (reason = getAkReason(ak))) {
 
 		sSend(":%s KILL %s :%s!%s (AKilled: %s)", services[1].name,
@@ -510,7 +508,7 @@ void addNewUser(char **args, int numargs)
 
 	newnick->idnum.SetNext(top_user_idnum);
 
-	if (((CTime - 240) <= (newnick->timestamp)) && (ahitem = getAhurt(newnick->nick, newnick->user, newnick->host))) {
+	if (((CTime - 240) <= (newnick->timestamp)) && (ahitem = getBanInfo(newnick->nick, newnick->user, newnick->host, A_AHURT)) != NULL) {
 #ifdef IRCD_HURTSET
 		sSend(":%s HURTSET %s 2 :[#%.6x] Subject to a selective user ban.",
 			  OperServ, newnick->nick, getAkillId(ahitem));
@@ -672,7 +670,7 @@ void changeNick(char *from, char *to, char *ts)
 
 	addNick(tmp);
 	delNick(changeme);
-	if (isAKilled(tmp->nick, tmp->user, tmp->host)) {
+	if (getBanInfo(tmp->nick, tmp->user, tmp->host, A_AKILL) != NULL) {
 		sSend(":%s KILL %s :%s!%s (AKilled user)", services[1].name,
 			  tmp->nick, services[1].host, services[1].name);
 		remUser(to, 1);
@@ -2159,8 +2157,10 @@ int addFlood(UserList * tmp, int addtoflood)
 		return 0;
 	}
 
-	if (tmp->nick && tmp->user && tmp->host)
-		fIsIgnored = isIgnored(tmp->nick, tmp->user, tmp->host);
+	if (tmp->nick && tmp->user && tmp->host && 
+		(getBanInfo(tmp->nick, tmp->user, tmp->host, A_IGNORE) != NULL)) {
+		    fIsIgnored = 1;
+	}
 
 	tmp->floodlevel.Event(addtoflood, timenow);
 
@@ -2182,7 +2182,7 @@ int addFlood(UserList * tmp, int addtoflood)
 
 		mask(user, host, 0, theirmask);
 		sprintf(tmpstr, "*!%.*s", USERLEN + HOSTLEN + 4, theirmask);
-		if (!isIgnored(tmp->nick, tmp->user, tmp->host))
+		if (getBanInfo(tmp->nick, tmp->user, tmp->host, A_IGNORE) == NULL)
 			addakill((10 * 3600), tmpstr, OperServ, A_IGNORE,
 					 "Flooding Services");
 		remUser(tmp->nick, 1);
@@ -3525,11 +3525,9 @@ NCMD(ns_register)
 
 	if (nick->oflags & NOISMASK)
 		nick->reg->flags |= NDBISMASK;
-#if defined(AHURT_BYPASS_BY_DEFAULT)
-	if (!
-		(isAHurt(tmp->nick, tmp->user, tmp->host)
-		 || isAKilled(tmp->nick, tmp->user,
-					  tmp->host))) nick->reg->flags |= NBYPASS;
+#ifdef AHURT_BYPASS_BY_DEFAULT
+	if (getBanInfo(tmp->nick, tmp->user, tmp->host, A_AHURT | A_AKILL) == NULL) 
+	    nick->reg->flags |= NBYPASS;
 	else {
 		sSend
 			(":%s NOTICE %s :Warning: you will not be able to use this registration to bypass select bans without further assistance.",

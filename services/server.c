@@ -384,7 +384,7 @@ parseLine(char *line)
 		if (addFlood(tmp, 1))
 			return;
 
-		if (isIgnored(tmp->nick, tmp->user, tmp->host)) {
+		if (getBanInfo(tmp->nick, tmp->user, tmp->host, A_IGNORE) != NULL) {
 			if (tmp->floodlevel.GetLev() < 2)
 				sSend
 					(":%s NOTICE %s :You are on services ignore, you may not use any Service",
@@ -553,9 +553,9 @@ parseLine(char *line)
 				hurtwho->oflags |= (NISAHURT);
 			}
 			else if (args[3] && isdigit(*args[3])
-					 && isAHurt(hurtwho->nick, hurtwho->user,
-								hurtwho->host)) hurtwho->oflags |=
-					(NISAHURT);
+					 && (getBanInfo(hurtwho->nick, hurtwho->user,
+							hurtwho->host, A_AHURT) != NULL)) 
+			    hurtwho->oflags |= (NISAHURT);
 		}
 	}
 #endif

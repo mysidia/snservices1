@@ -232,51 +232,34 @@ void listAkills(char *from, char type)
  * \param nick The user's nickname
  * \param user The users's username
  * \param host The user's hostname
+ * \param type The type of ban (A_AKILL, A_AHURT, A_IGNORE), can be 
+ *	bitwise or'ed together to check for multiple types
  * \pre Nick, user, and host each point to separate, valid
  *      NUL-terminated character arrays.  Nick is a valid
  *      IRC nickname, user is a valid IRC username, and host
- *      is a valid IRC hostname.
+ *      is a valid IRC hostname. Type is one of the above ban types,
+ *	or a combination of them bitwise or'ed together.
  */
-int isAKilled(char *nick, char *user, char *host)
+struct akill* getBanInfo(char *nick, char *user, char *host, char type)
 {
+#ifndef ENABLE_AHURT
+	if(type == A_AHURT)
+	    return NULL;
+#endif
+	
 	struct akill *ak;
 
 	for (ak = firstBanItem; ak; ak = ak->next) {
 		if (!match(ak->nick, nick) && !match(ak->user, user)
-			&& !match(ak->host, host) && (ak->type == A_AKILL))
-			return 1;
-	}
-	return 0;
-}
-
-
-struct akill* getAkill(char *nick, char *user, char *host)
-{
-	struct akill *ak;
-
-	for (ak = firstBanItem; ak; ak = ak->next) {
-		if (!match(ak->nick, nick) && !match(ak->user, user)
-			&& !match(ak->host, host) && (ak->type == A_AKILL))
+			&& !match(ak->host, host) && (ak->type & type))
 			return ak;
 	}
-	return (struct akill*)0;
+	return NULL;
 }
 
 long getAkillId(struct akill* ak)
 {
 	return ak->id;
-}
-
-struct akill* getAhurt(char *nick, char *user, char *host)
-{
-	struct akill *ak;
-
-	for (ak = firstBanItem; ak; ak = ak->next) {
-		if (!match(ak->nick, nick) && !match(ak->user, user)
-			&& !match(ak->host, host) && (ak->type == A_AHURT))
-			return ak;
-	}
-	return (struct akill*)0;
 }
 
 char* getAkReason(struct akill *ak)
@@ -350,53 +333,6 @@ char* applyAkill(char* nick, char* user, char* host, struct akill* ak)
 
 	return NULL;
 }
-
-/**
- * \brief Returns #TRUE if a user is autohurt
- * \param nick The user's nickname
- * \param user The users's username
- * \param host The user's hostname
- * \pre Nick, user, and host each point to separate
- *      NUL-terminated character arrays.  Respectively,
- *      a valid nickname, a valid username, and a valid IRC
- *      hostname.
- */
-int isAHurt(char *nick, char *user, char *host)
-{
-#ifdef ENABLE_AHURT
-	struct akill *ak;
-
-	for (ak = firstBanItem; ak; ak = ak->next) {
-		if (!match(ak->nick, nick) && !match(ak->user, user)
-			&& !match(ak->host, host) && (ak->type == A_AHURT))
-			return 1;
-	}
-#endif
-	return 0;
-}
-
-/**
- * \brief Returns #TRUE if a user is ignored
- * \param nick The user's nickname
- * \param user The users's username
- * \param host The user's hostname
- * \pre Nick, user, and host each point to separate
- *      NUL-terminated character arrays.  Respectively,
- *      a valid nickname, a valid username, and a valid IRC
- *      hostname.
- */
-int isIgnored(char *nick, char *user, char *host)
-{
-	struct akill *ak;
-
-	for (ak = firstBanItem; ak; ak = ak->next) {
-		if (!match(ak->nick, nick) && !match(ak->user, user)
-			&& !match(ak->host, host) && (ak->type == A_IGNORE))
-			return 1;
-	}
-	return 0;
-}
-
 
 /** \brief Apply a new autokill/ban to online users
  *  \param Pointer to an akill item (struct akill) to be applied
