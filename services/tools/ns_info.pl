@@ -6,9 +6,17 @@ use Sipc;
 print "Logging in to services...\n";
 $h = Sipc->Connect("127.0.0.1", 2050, "mysid/test", "test") || die 'Unable to connect';
 
-if (!($x = $h->queryNick("Mysidia", "TIMEREG"))) {
-   print "Error: " . $h->Errmsg() . "\n";
+print "Enter a nick to look up: ";
+my $nick = <>;
+chomp($nick); 
+
+if (!($x = $h->getPublicNickInfo($nick))) {
+   die "Error: " . $h->Errmsg() . "\n";
 }
 
+print "Information for " . $x->{NICK} . " : \n";
 
-print $x . "\n";
+
+for (keys %$x) {
+print $x->{$_} . "\n";
+}
