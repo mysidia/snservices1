@@ -336,10 +336,10 @@ namespace interp
 
 			stuff[0] = '\0';
 			if (numargs>1) {
-				parse_str(args, numargs, 2, stuff, IRCBUF);
+				parse_str(args, numargs, 1, stuff, IRCBUF);
 			} else strcpy(stuff, "-");
 
-			operlog->log(nick, theCmd->cmd_id, args[1],
+			operlog->log(nick, theCmd->cmd_id, args[0],
 						 (retval == RET_OK_DB
 						  || retval == RET_OK) ? LOGF_OK : 0, "%s", stuff);
 			sSend(":%s NOTICE %s :This command has been logged.", theService,
