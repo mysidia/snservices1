@@ -188,7 +188,7 @@ dbuf_get(dbuf *dyn, char *buf, int length)
 		if (chunk > length)
 			chunk = length;
 		bcopy(b, buf, (int)chunk);
-		(void)dbuf_delete(dyn, chunk);
+		dbuf_delete(dyn, chunk);
 		buf += chunk;
 		length -= chunk;
 		moved += chunk;
@@ -236,7 +236,7 @@ getmsg_init:
 			** -avalon
 			*/
 			if (copy == 1) {
-				(void)dbuf_delete(dyn, 1);
+				dbuf_delete(dyn, 1);
 				goto getmsg_init;
 			}
 			break;
@@ -262,7 +262,7 @@ getmsg_init:
 	** and delete the rest of it!
 	*/
 	if (copy - i > 0)
-		(void)dbuf_delete(dyn, copy - i);
+		dbuf_delete(dyn, copy - i);
 	if (i >= 0)
 		*(buf+i) = '\0';	/* mark end of messsage */
 

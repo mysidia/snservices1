@@ -169,7 +169,7 @@ send_queued(aClient *to)
 		if ((rlen = deliver_it(to, msg, len)) < 0)
 			return dead_link(to,
 					 "Write error to %s, closing link");
-		(void)dbuf_delete(&to->sendQ, rlen);
+		dbuf_delete(&to->sendQ, rlen);
 		to->lastsq = DBufLength(&to->sendQ)/1024;
 		if (rlen < len)
 			break;
@@ -203,7 +203,7 @@ sendto_one(aClient *to, char *fmt, ...)
 void
 vsendto_one(aClient *to, char *fmt, va_list ap)
 {
-	(void)vsprintf(sendbuf, fmt, ap);
+	vsprintf(sendbuf, fmt, ap);
 
 	Debug((DEBUG_SEND, "Sending [%s] to %s", sendbuf, to->name));
 
@@ -218,11 +218,11 @@ vsendto_one(aClient *to, char *fmt, va_list ap)
 		sendto_ops("Trying to send [%s] to myself!", sendbuf);
 		return;
 	}
-	(void)strcat(sendbuf, NEWLINE);
+	strcat(sendbuf, NEWLINE);
 	sendbuf[510] = '\r';
 	sendbuf[511] = '\n';
 	sendbuf[512] = '\0';
-	(void)send_message(to, sendbuf, strlen(sendbuf));
+	send_message(to, sendbuf, strlen(sendbuf));
 }
 
 void
@@ -637,9 +637,9 @@ sendto_ops(char *fmt, ...)
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    SendServNotice(cptr)) {
-			(void)sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
-				      me.name, cptr->name);
-			(void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
+			sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
+				me.name, cptr->name);
+			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
@@ -666,9 +666,9 @@ sendto_failops(char *fmt, ...)
         for (cptr = &me; cptr; cptr = cptr->lnext)
                 if (!IsServer(cptr) && !IsMe(cptr) &&
                     SendFailops(cptr)) {
-                        (void)sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
-				      me.name, cptr->name);
-                        (void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
+                        sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
+				me.name, cptr->name);
+                        strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
                         vsendto_one(cptr, nbuf, ap2);
@@ -694,10 +694,10 @@ sendto_helpops(char *fmt, ...)
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    IsHelpOp(cptr)) {
-			(void)sprintf(nbuf, ":%s NOTICE %s :*** HelpOp -- ",
-				      me.name, cptr->name);
-			(void)strncat(nbuf, fmt,
-			              sizeof(nbuf) - strlen(nbuf));
+			sprintf(nbuf, ":%s NOTICE %s :*** HelpOp -- ",
+				me.name, cptr->name);
+			strncat(nbuf, fmt,
+				sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
@@ -732,7 +732,7 @@ sendto_flag_norep(int flags, int max, char *fmt, ...)
 		num_sent = 13;
 
 	va_start(ap, fmt);
-	(void)vsprintf(next_pattern, fmt, ap);
+	vsprintf(next_pattern, fmt, ap);
 	va_end(ap);
 
 	if (strcmp(last_pattern, next_pattern)==0)
@@ -777,7 +777,7 @@ sendto_umode_norep(int flags, int max, char *fmt, ...)
 	 * Print the text to the output buffer.
 	 */
 	va_start(ap, fmt);
-	(void)vsnprintf(outbuf, sizeof(buff1), fmt, ap);
+	vsnprintf(outbuf, sizeof(buff1), fmt, ap);
 	va_end(ap);
 
 	/*
@@ -825,9 +825,9 @@ sendto_flag(int flags, char *fmt, ...)
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    (ClientFlags(cptr) & flags)==flags) {
-			(void)sprintf(nbuf, ":%s NOTICE %s :",
-				      me.name, cptr->name);
-			(void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
+			sprintf(nbuf, ":%s NOTICE %s :",
+				me.name, cptr->name);
+			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
@@ -850,9 +850,9 @@ sendto_umode(int flags, char *fmt, ...)
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    (ClientUmode(cptr) & flags)==flags) {
-                       (void)sprintf(nbuf, ":%s NOTICE %s :",
-				     me.name, cptr->name);
-                       (void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
+                       sprintf(nbuf, ":%s NOTICE %s :",
+			       me.name, cptr->name);
+                       strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 		       va_copy(ap2, ap);
                        vsendto_one(cptr, nbuf, ap2);
@@ -877,10 +877,10 @@ sendto_umode_except(int flags, int notflags, char *fmt, ...)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    ((ClientUmode(cptr) & flags)==flags) &&
                     !((ClientUmode(cptr) & notflags) == notflags)) {
-			(void)sprintf(nbuf, ":%s NOTICE %s :",
-				      me.name, cptr->name);
-			(void)strncat(nbuf, fmt,
-				      sizeof(nbuf) - strlen(nbuf));
+			sprintf(nbuf, ":%s NOTICE %s :",
+				me.name, cptr->name);
+			strncat(nbuf, fmt,
+				sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
@@ -906,9 +906,9 @@ sendto_failops_whoare_opers(char *fmt, ...)
         for (cptr = &me; cptr; cptr = cptr->lnext)
                 if (!IsServer(cptr) && !IsMe(cptr) &&
                     SendFailops(cptr) && OPCangmode(cptr)) {
-                        (void)sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
-                                        me.name, cptr->name);
-                        (void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
+                        sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
+				me.name, cptr->name);
+                        strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
                         vsendto_one(cptr, nbuf, ap2);
@@ -934,10 +934,10 @@ sendto_locfailops(char *fmt, ...)
         for (cptr = &me; cptr; cptr = cptr->lnext)
                 if (!IsServer(cptr) && !IsMe(cptr) &&
                     SendFailops(cptr) && IsAnOper(cptr)) {
-                        (void)sprintf(nbuf, ":%s NOTICE %s :*** LocOps -- ",
-                                        me.name, cptr->name);
-                        (void)strncat(nbuf, fmt,
-                                        sizeof(nbuf) - strlen(nbuf));
+                        sprintf(nbuf, ":%s NOTICE %s :*** LocOps -- ",
+				me.name, cptr->name);
+                        strncat(nbuf, fmt,
+				sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
                         vsendto_one(cptr, nbuf, ap2);
@@ -963,9 +963,9 @@ sendto_opers(char *fmt, ...)
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    IsAnOper(cptr)) {
-			(void)sprintf(nbuf, ":%s NOTICE %s :*** Oper -- ",
-				      me.name, cptr->name);
-			(void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
+			sprintf(nbuf, ":%s NOTICE %s :*** Oper -- ",
+				me.name, cptr->name);
+			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap);
@@ -1112,15 +1112,15 @@ vsendto_prefix_one(aClient *to, aClient *from, char *fmt, va_list ap)
 	if (to && from && MyClient(to) && IsPerson(from) &&
 	    !mycmp(par, from->name)) {
 		user = from->user;
-		(void)strcpy(sender, from->name);
+		strcpy(sender, from->name);
 		if (user) {
 			if (*user->username) {
-				(void)strcat(sender, "!");
-				(void)strcat(sender, user->username);
+				strcat(sender, "!");
+				strcat(sender, user->username);
 			}
 			if (*user->host && !MyConnect(from)) {
-				(void)strcat(sender, "@");
-				(void)strcat(sender, UGETHOST(to, user));
+				strcat(sender, "@");
+				strcat(sender, UGETHOST(to, user));
 				flag = 1;
 			}
 		}
@@ -1129,12 +1129,12 @@ vsendto_prefix_one(aClient *to, aClient *from, char *fmt, va_list ap)
 		 * also since username/nick may have had a '@' in them. -avalon
 		 */
 		if (!flag && MyConnect(from) && *user->host) {
-			(void)strcat(sender, "@");
+			strcat(sender, "@");
                         if (!IsMasked(from) || !user->mask
 			    || to == from || IsOper(to))
-				(void)strcat(sender, from->sockhost);
+				strcat(sender, from->sockhost);
 			else
-				(void)strcat(sender, user->mask);
+				strcat(sender, user->mask);
 		}
 		par = sender;
 	}
@@ -1178,9 +1178,9 @@ sendto_realops(char *pattern, ...)
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    IsOper(cptr)) {
-			(void)sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
+			sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
 				      me.name, cptr->name);
-			(void)strncat(nbuf, pattern,
+			strncat(nbuf, pattern,
 				      sizeof(nbuf) - strlen(nbuf));
 
 

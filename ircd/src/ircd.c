@@ -68,7 +68,7 @@ VOIDSIG s_die(int sig)
 	IRCD_UNUSED(sig);
 
 #ifdef	USE_SYSLOG
-	(void)syslog(LOG_CRIT, "Server Killed By SIGTERM");
+	syslog(LOG_CRIT, "Server Killed By SIGTERM");
 #endif
 	flush_connections(&me);
 	close_logs();
@@ -81,15 +81,15 @@ static VOIDSIG s_rehash()
 	dorehash = 1;
 	act.sa_handler = s_rehash;
 	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGHUP);
-	(void)sigaction(SIGHUP, &act, NULL);
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGHUP);
+	sigaction(SIGHUP, &act, NULL);
 }
 
 void	restart(char *mesg)
 {
 #ifdef	USE_SYSLOG
-	(void)syslog(LOG_WARNING, "Restarting Server because: %s",mesg);
+	syslog(LOG_WARNING, "Restarting Server because: %s",mesg);
 #endif
 	server_reboot(mesg);
 }
@@ -99,7 +99,7 @@ VOIDSIG s_restart()
 	static int restarting = 0;
 
 #ifdef	USE_SYSLOG
-	(void)syslog(LOG_WARNING, "Server Restarting on SIGHUP");
+	syslog(LOG_WARNING, "Server Restarting on SIGHUP");
 #endif
 	if (restarting == 0)
 	    {
@@ -110,8 +110,7 @@ VOIDSIG s_restart()
 	    }
 }
 
-void	server_reboot(mesg)
-char	*mesg;
+void	server_reboot(char *mesg)
 {
         int	i;
 
@@ -125,9 +124,9 @@ char	*mesg;
 	 * Close any FDs we may have open.
 	 */
 	for (i = 3; i < MAXCONNECTIONS; i++)
-		(void)close(i);
+		close(i);
 
-	(void)execv(MYNAME, myargv);
+	execv(MYNAME, myargv);
 
 #ifdef USE_SYSLOG
 	syslog(LOG_CRIT, "execv(%s,%s) failed: %m\n", MYNAME, myargv[0]);
@@ -146,8 +145,7 @@ char	*mesg;
 **	function should be made latest. (No harm done if this
 **	is called earlier or later...)
 */
-static	time_t	try_connections(currenttime)
-time_t	currenttime;
+static	time_t	try_connections(time_t currenttime)
 {
 	aConfItem *aconf, **pconf;
 	aConfItem *con_conf = NULL;
@@ -279,7 +277,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		** already done when "FLAGS_DEADSOCKET" is set.
 		*/
 		if (ClientFlags(cptr) & FLAGS_DEADSOCKET) {
-			(void)exit_client(cptr, cptr, &me, "Dead socket");
+			exit_client(cptr, cptr, &me, "Dead socket");
 			continue;
 		}
 
@@ -343,8 +341,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 					   get_client_name(cptr, FALSE));
 
                          if (killflag)
-                                (void)exit_client(cptr, cptr, &me,
-                                  "User has been banned");
+                                exit_client(cptr, cptr, &me,
+					    "User has been banned");
                          else {
 #if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE) 
 				 if (IsRegisteredUser(cptr) &&
@@ -354,8 +352,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 				 }
 				 else
 #endif					 
-                                (void)exit_client(cptr, cptr, &me,
-                                  "Ping timeout");
+				   exit_client(cptr, cptr, &me,
+					       "Ping timeout");
 			 }
 			continue;
 		    }
@@ -395,8 +393,8 @@ ping_timeout:
 static void
 bad_command(void)
 {
-	(void)printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
-	(void)printf("Server not started\n\n");
+	printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
+	printf("Server not started\n\n");
 	exit(-1);
 }
 
@@ -409,7 +407,7 @@ main(int argc, char **argv)
 	sbrk0 = (char *)sbrk((size_t)0);
 
 	myargv = argv;
-	(void)umask(077);                /* better safe than sorry --SRB */
+	umask(077);                /* better safe than sorry --SRB */
 	bzero((char *)&me, sizeof(me));
 	fprintf(stderr, "Setting up signals...");
 	setup_signals();
@@ -492,7 +490,7 @@ main(int argc, char **argv)
 
 		case 'v':
 			fprintf(stderr, "\n");
-			(void)printf("ircd %s\n", version);
+			printf("ircd %s\n", version);
 			exit(0);
 
 		case 'x':
@@ -502,9 +500,9 @@ main(int argc, char **argv)
 			bootopt |= BOOT_DEBUG;
 			break;
 #else
-			(void)fprintf(stderr,
-				      "%s: DEBUGMODE must be defined for -x\n",
-				      myargv[0]);
+			fprintf(stderr,
+				"%s: DEBUGMODE must be defined for -x\n",
+				myargv[0]);
 			exit(0);
 #endif
 
@@ -547,7 +545,7 @@ main(int argc, char **argv)
 	initstats();
 	fprintf(stderr, "done\n");
 	fprintf(stderr, "Pre-socket startup done.\n");
-	(void)init_sys();
+	init_sys();
 
 	socket_init(MAXCONNECTIONS);
 	resolver_init();
@@ -562,12 +560,12 @@ main(int argc, char **argv)
 			configfile);
 		Debug((DEBUG_FATAL, "Failed in reading configuration file %s",
 		       configfile));
-		(void)printf("Couldn't open configuration file %s\n",
+		printf("Couldn't open configuration file %s\n",
 			     configfile);
 		exit(-1);
 	}
 
-	(void)get_my_name(&me, me.sockhost, sizeof(me.sockhost)-1);
+	get_my_name(&me, me.sockhost, sizeof(me.sockhost)-1);
 	if (me.name[0] == '\0')
 		strncpyzt(me.name, me.sockhost, sizeof(me.name));
 	me.hopcount = 0;
@@ -577,11 +575,11 @@ main(int argc, char **argv)
 	me.from = &me;
 	SetMe(&me);
 	make_server(&me);
-	(void)strcpy(me.serv->up, me.name);
+	strcpy(me.serv->up, me.name);
 
 	update_time();
 	me.lasttime = me.since = me.firsttime = NOW;
-	(void)add_to_client_hash_table(me.name, &me);
+	add_to_client_hash_table(me.name, &me);
 
 	check_class();
 	write_pidfile();
@@ -656,7 +654,7 @@ main(int argc, char **argv)
 
 		if (dorehash)
 		    {
-			(void)rehash(&me, &me, 1);
+			rehash(&me, &me, 1);
 			dorehash = 0;
 		    }
 		/*
@@ -678,28 +676,28 @@ setup_signals(void)
 	 */
 	act.sa_handler = SIG_IGN;
 	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGPIPE);
-	(void)sigaddset(&act.sa_mask, SIGALRM);
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGPIPE);
+	sigaddset(&act.sa_mask, SIGALRM);
 # ifdef	SIGWINCH
-	(void)sigaddset(&act.sa_mask, SIGWINCH);
-	(void)sigaction(SIGWINCH, &act, NULL);
+	sigaddset(&act.sa_mask, SIGWINCH);
+	sigaction(SIGWINCH, &act, NULL);
 # endif
-	(void)sigaction(SIGPIPE, &act, NULL);
+	sigaction(SIGPIPE, &act, NULL);
 
 	act.sa_handler = dummy_sig;
-	(void)sigaction(SIGALRM, &act, NULL);
+	sigaction(SIGALRM, &act, NULL);
 
 	act.sa_handler = s_rehash;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGHUP);
-	(void)sigaction(SIGHUP, &act, NULL);
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGHUP);
+	sigaction(SIGHUP, &act, NULL);
 
 	act.sa_handler = s_restart;
-	(void)sigaddset(&act.sa_mask, SIGINT);
-	(void)sigaction(SIGINT, &act, NULL);
+	sigaddset(&act.sa_mask, SIGINT);
+	sigaction(SIGINT, &act, NULL);
 
 	act.sa_handler = s_die;
-	(void)sigaddset(&act.sa_mask, SIGTERM);
-	(void)sigaction(SIGTERM, &act, NULL);
+	sigaddset(&act.sa_mask, SIGTERM);
+	sigaction(SIGTERM, &act, NULL);
 }

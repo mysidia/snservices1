@@ -84,7 +84,7 @@ date(time_t clock)
 	if (minswest < 0)
 		minswest = -minswest;
 
-	(void)sprintf(buf, "%s %s %d %04d -- %02d:%02d %c%02d:%02d",
+	sprintf(buf, "%s %s %d %04d -- %02d:%02d %c%02d:%02d",
 		weekdays[lt->tm_wday], months[lt->tm_mon],lt->tm_mday,
 		1900 + lt->tm_year, lt->tm_hour, lt->tm_min,
 		plus, minswest/60, minswest%60);
@@ -109,7 +109,7 @@ char	*myctime(time_t value)
 	static	char	buf[30];
 	char	*p;
 
-	(void)strncpy(buf, ctime(&value), 28);
+	strncpy(buf, ctime(&value), 28);
         buf[27] = 0;
 	if ((p = (char *)index(buf, '\n')) != NULL)
 		*p = '\0';
@@ -197,9 +197,9 @@ char	*get_client_name(aClient *sptr, int showip)
       {
 	  if (mycmp(sptr->name, sptr->sockhost)) {
 		  if (!IsServer(sptr))
-		  	  (void)sprintf(nbuf, "%s[%s]", sptr->name, sptr->sockhost);
+		  	  sprintf(nbuf, "%s[%s]", sptr->name, sptr->sockhost);
 		  else
-			  (void)sprintf(nbuf, "%s[ip-masked]", sptr->name);
+			  sprintf(nbuf, "%s[ip-masked]", sptr->name);
 	  }
 	  else
 	    return sptr->name;
@@ -227,7 +227,7 @@ char	*get_client_name_mask(aClient *sptr, int showip, int showport, int mask)
       else
       {
 	  if (mycmp(sptr->name, sptr->sockhost))
-	    (void)sprintf(nbuf, "%s[%s]", sptr->name, mask ? genHostMask(sptr->sockhost) : sptr->sockhost);
+	    sprintf(nbuf, "%s[%s]", sptr->name, mask ? genHostMask(sptr->sockhost) : sptr->sockhost);
 	  else
 	    return sptr->name;
       }
@@ -248,7 +248,7 @@ char	*get_client_host(aClient *cptr)
   if (!cptr->hostp)
     return get_client_name(cptr, FALSE);
 
-  (void)sprintf(nbuf, "%s[%-.*s@%-.*s]", cptr->name, USERLEN,
+  sprintf(nbuf, "%s[%-.*s@%-.*s]", cptr->name, USERLEN,
 		(ClientFlags(cptr) & FLAGS_GOTID) ? cptr->username : "",
 		HOSTLEN, cptr->hostp->h_name);
 
@@ -291,7 +291,7 @@ char	*my_name_for_link(char *name, aConfItem *aconf)
 		return start;
 
 	namebuf[0] = '*';
-	(void)strncpy(&namebuf[1], name, HOSTLEN - 1);
+	strncpy(&namebuf[1], name, HOSTLEN - 1);
 	namebuf[HOSTLEN - 1] = '\0';
 
 	return namebuf;
@@ -401,9 +401,9 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 		** together into exit_one_client() to provide some useful
 		** information about where the net is broken.      Ian 
 		*/
-		(void)strcpy(comment1, me.name);
-		(void)strcat(comment1," ");
-		(void)strcat(comment1, sptr->name);
+		strcpy(comment1, me.name);
+		strcat(comment1," ");
+		strcat(comment1, sptr->name);
 		for (acptr = client; acptr; acptr = next)
 		    {
 			next = acptr->next;
@@ -555,7 +555,7 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 
 			/* Clean up silencefield */
 			while ((lp = sptr->user->silence))
-				(void)del_silence(sptr, lp->value.cp);
+				del_silence(sptr, lp->value.cp);
 		    }
 	    }
 
@@ -746,7 +746,7 @@ close_logs(void)
 
 	for (i = 0 ; i <= LOG_HI && logfile_n[i] ; i++) {
 		if (slogfiles[i] < 0) continue;    
-		(void)close(slogfiles[i]);
+		close(slogfiles[i]);
 		slogfiles[i] = -1;
 	}
 #endif

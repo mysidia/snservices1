@@ -130,12 +130,7 @@ SERVICES_FUNC(m_gameserv, cGameServ);
 
 
 __inline int
-m_sendto_service(cptr, sptr, parc, parv, fOper, sService)
-aClient	*cptr, *sptr;
-	int	parc;
-	char	*parv[];
-	int	fOper;
-const	char *sService;
+m_sendto_service(aClient *cptr, aClient *sptr, int parc, char *parv[], int fOper, const char *sService)
 {
        aClient *acptr;
 

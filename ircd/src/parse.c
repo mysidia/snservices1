@@ -197,18 +197,14 @@ msgtab_buildhash(void)
 **	the old. 'name' is now assumed to be a null terminated
 **	string.
 */
-aClient *find_server(name, cptr)
-char	*name;
-aClient *cptr;
+aClient *find_server(char *name, aClient *cptr)
 {
 	if (name)
 		cptr = hash_find_server(name, cptr);
 	return cptr;
 }
 
-aClient *find_name(name, cptr)
-char	*name;
-aClient *cptr;
+aClient *find_name(char *name, aClient *cptr)
 {
 	aClient *c2ptr = cptr;
 
@@ -236,10 +232,8 @@ aClient *cptr;
 /*
 **  Find person by (nick)name.
 */
-aClient *find_person(name, cptr)
-char	*name;
-aClient *cptr;
-    {
+aClient *find_person(char *name, aClient *cptr)
+{
 	aClient	*c2ptr = cptr;
 
 
@@ -249,17 +243,14 @@ aClient *cptr;
 		return c2ptr;
 	else
 		return cptr;
-    }
+}
 
 /*
  * parse a buffer.
  *
  * NOTE: parse() should not be called recusively by any other fucntions!
  */
-int	parse(cptr, buffer, bufend, mptr)
-aClient *cptr;
-char	*buffer, *bufend;
-struct	Message *mptr;
+int	parse(aClient *cptr, char *buffer, char *bufend, struct Message *mptr)
 {
 	aClient *from = cptr;
 	char *ch, *s;
@@ -597,8 +588,7 @@ struct	Message *mptr;
 /*
  * field breakup for ircd.conf file.
  */
-char	*getfield(newline)
-char	*newline;
+char	*getfield(char *newline)
 {
 	static	char *line = NULL;
 	char	*end, *field;
@@ -632,9 +622,7 @@ char	*newline;
 	return(field);
 }
 
-static	int	cancel_clients(cptr, sptr, cmd)
-aClient	*cptr, *sptr;
-char	*cmd;
+static	int	cancel_clients(aClient *cptr, aClient *sptr, char *cmd)
 {
         aChannel *chptr;
 
@@ -750,9 +738,7 @@ char	*cmd;
 	return exit_client(cptr, cptr, &me, "Fake prefix");
 }
 
-static	void	remove_unknown(cptr, sender)
-aClient	*cptr;
-char	*sender;
+static	void	remove_unknown(aClient *cptr, char *sender)
 {
 	if (!IsRegistered(cptr) || IsClient(cptr))
 		return;

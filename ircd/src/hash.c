@@ -103,8 +103,7 @@ static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
  * Remember to take modulus by hash table size to avoid overflow!
  */
 #ifdef OLDHASH
-int hash_nn_name(nname)
-const char	*nname;
+int hash_nn_name(const char *nname)
 {
 	u_char	ch, *name = (u_char *)nname;
 	int	i = 30, hash = 1, *tab;
@@ -116,8 +115,7 @@ const char	*nname;
 	return (hash);
 }
 #else /* OLDHASH */
-int hash_nn_name(hname)
-const char	*hname;
+int hash_nn_name(const char *hname)
 {
 	u_char	*name = (u_char *)hname;
 	int	hash = 0x5555;
@@ -162,9 +160,7 @@ void	clear_channel_hash_table()
 /*
  * add_to_client_hash_table
  */
-int	add_to_client_hash_table(name, cptr)
-char	*name;
-aClient	*cptr;
+int	add_to_client_hash_table(char *name, aClient *cptr)
 {
 	int	hashv;
 
@@ -184,9 +180,7 @@ aClient	*cptr;
 /*
  * add_to_channel_hash_table
  */
-int	add_to_channel_hash_table(name, chptr)
-char	*name;
-aChannel	*chptr;
+int	add_to_channel_hash_table(char *name, aChannel *chptr)
 {
 	int	hashv;
 
@@ -206,9 +200,7 @@ aChannel	*chptr;
 /*
  * del_from_client_hash_table
  */
-int	del_from_client_hash_table(name, cptr)
-char	*name;
-aClient	*cptr;
+int	del_from_client_hash_table(char *name, aClient *cptr)
 {
 	aClient	*tmp, *prev = NULL;
 	int	hashv;
@@ -259,9 +251,7 @@ aClient	*cptr;
 /*
  * del_from_channel_hash_table
  */
-int	del_from_channel_hash_table(name, chptr)
-char	*name;
-aChannel	*chptr;
+int	del_from_channel_hash_table(char *name, aChannel *chptr)
 {
 	aChannel	*tmp, *prev = NULL;
 	int	hashv;
@@ -309,9 +299,7 @@ aChannel	*chptr;
 /*
  * hash_find_client
  */
-aClient	*hash_find_client(name, cptr)
-char	*name;
-aClient	*cptr;
+aClient	*hash_find_client(char *name, aClient *cptr)
 {
 	aClient	*tmp;
 	aClient	*prv = NULL;
@@ -370,9 +358,7 @@ c_move_to_top:
 /*
  * hash_find_nickserver
  */
-aClient	*hash_find_nickserver(name, cptr)
-char	*name;
-aClient *cptr;
+aClient	*hash_find_nickserver(char *name, aClient *cptr)
 {
 	aClient	*tmp;
 	aClient	*prv = NULL;
@@ -438,9 +424,7 @@ c_move_to_top:
 /*
  * hash_find_server
  */
-aClient	*hash_find_server(server, cptr)
-char	*server;
-aClient *cptr;
+aClient	*hash_find_server(char *server, aClient *cptr)
 {
 	aClient	*tmp, *prv = NULL;
 	char	*t;
@@ -530,9 +514,7 @@ s_move_to_top:
 /*
  * hash_find_channel
  */
-aChannel	*hash_find_channel(name, chptr)
-char	*name;
-aChannel *chptr;
+aChannel	*hash_find_channel(char *name, aChannel *chptr)
 {
 	int	hashv;
         aChannel	*tmp;
@@ -585,10 +567,7 @@ c_move_to_top:
  *       -avalon
  */
 
-int	m_hash(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_hash(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 #ifndef DEBUGMODE
 	return 0;
@@ -682,7 +661,7 @@ char	*parv[];
 		sendto_one(sptr,"NOTICE %s :Rehashing Client List.", parv[0]);
 		clear_client_hash_table();
 		for (acptr = client; acptr; acptr = acptr->next)
-			(void)add_to_client_hash_table(acptr->name, acptr);
+			add_to_client_hash_table(acptr->name, acptr);
 		break;
 	    }
 	case 'R' :
@@ -692,7 +671,7 @@ char	*parv[];
 		sendto_one(sptr,"NOTICE %s :Rehashing Channel List.", parv[0]);
 		clear_channel_hash_table();
 		for (acptr = channel; acptr; acptr = acptr->nextch)
-			(void)add_to_channel_hash_table(acptr->chname, acptr);
+			add_to_channel_hash_table(acptr->chname, acptr);
 		break;
 	    }
 	case 'H' :
@@ -769,7 +748,7 @@ char	*parv[];
 		for (acptr = client; acptr; acptr = acptr->next)
 		    {
 			acptr->hnext = NULL;
-			(void)add_to_client_hash_table(acptr->name, acptr);
+			add_to_client_hash_table(acptr->name, acptr);
 		    }
 		sendto_one(sptr, "NOTICE %s :HASHSIZE now %d", parv[0], l);
 		break;
@@ -790,7 +769,7 @@ char	*parv[];
 		for (acptr = channel; acptr; acptr = acptr->nextch)
 		    {
 			acptr->hnextch = NULL;
-			(void)add_to_channel_hash_table(acptr->chname, acptr);
+			add_to_channel_hash_table(acptr->chname, acptr);
 		    }
 		sendto_one(sptr, "NOTICE %s :CHANNELHASHSIZE now %d",
 			   parv[0], l);
@@ -845,9 +824,7 @@ char	*parv[];
 
 static   aWatch  *watchTable[WATCHHASHSIZE];
 
-void  count_watch_memory(count, memory)
-int   *count;
-u_long   *memory;
+void  count_watch_memory(int *count, u_long *memory)
 {
         int   i = WATCHHASHSIZE;
         aWatch  *anptr;
@@ -871,9 +848,7 @@ void  clear_watch_hash_table(void)
 /*
  * add_to_watch_hash_table
  */
-int   add_to_watch_hash_table(nick, cptr)
-char  *nick;
-aClient  *cptr;
+int   add_to_watch_hash_table(char *nick, aClient *cptr)
 {
         int   hashv;
         aWatch  *anptr;
@@ -924,9 +899,7 @@ aClient  *cptr;
 /*
  *  hash_check_watch
  */
-int   hash_check_watch(cptr, reply)
-aClient  *cptr;
-int   reply;
+int   hash_check_watch(aClient *cptr, int reply)
 {
         int   hashv;
         int   is_signon = (reply == RPL_LOGON) ? 1 : 0, fm = 0;
@@ -975,8 +948,7 @@ int   reply;
 /*
  * hash_get_watch
  */
-aWatch  *hash_get_watch(name)
-char  *name;
+aWatch  *hash_get_watch(char *name)
 {
         int   hashv;
         aWatch  *anptr;
@@ -994,9 +966,7 @@ char  *name;
 /*
  * del_from_watch_hash_table
  */
-int   del_from_watch_hash_table(nick, cptr)
-char  *nick;
-aClient  *cptr;
+int   del_from_watch_hash_table(char *nick, aClient *cptr)
 {
         int   hashv;
         aWatch  *anptr, *nlast = NULL;
@@ -1073,8 +1043,7 @@ aClient  *cptr;
 /*
  * hash_del_watch_list
  */
-int   hash_del_watch_list(cptr)
-aClient  *cptr;
+int   hash_del_watch_list(aClient *cptr)
 {
         int   hashv;
         aWatch  *anptr;
@@ -1140,8 +1109,7 @@ aClient  *cptr;
         return 0;
 }
 
-aChannel *hash_get_chan_bucket(hashv)
-int   hashv;
+aChannel *hash_get_chan_bucket(int hashv)
 {
         if (hashv > CHANNELHASHSIZE /*CH_MAX*/)
           return NULL;
@@ -1152,4 +1120,3 @@ int   hashv;
         return (aChannel *)channelTable[hashv];
 #endif
 }
-

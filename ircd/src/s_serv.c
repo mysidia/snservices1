@@ -279,16 +279,16 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (parc > 3 && atoi(parv[2]))
 	    {
 		hop = atoi(parv[2]);
-		(void)strncpy(info, parv[3], REALLEN);
+		strncpy(info, parv[3], REALLEN);
 		info[REALLEN] = '\0';
 	    }
 	else if (parc > 2)
 	    {
-		(void)strncpy(info, parv[2], REALLEN);
+		strncpy(info, parv[2], REALLEN);
 		if (parc > 3 && ((i = strlen(info)) < (REALLEN-2)))
 		    {
-				(void)strcat(info, " ");
-				(void)strncat(info, parv[3], REALLEN - i - 2);
+				strcat(info, " ");
+				strncat(info, parv[3], REALLEN - i - 2);
 				info[REALLEN] = '\0';
 		    }
 	    }
@@ -484,7 +484,7 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		    }
 
 		acptr = make_client(cptr);
-		(void)make_server(acptr);
+		make_server(acptr);
 		acptr->hopcount = hop;
 		strncpyzt(acptr->name, host, sizeof(acptr->name));
 		strncpyzt(acptr->info, info, sizeof(acptr->info));
@@ -492,7 +492,7 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		SetServer(acptr);
 		ClientFlags(acptr) |=FLAGS_TS8;
 		add_client_to_list(acptr);
-		(void)add_to_client_hash_table(acptr->name, acptr);
+		add_to_client_hash_table(acptr->name, acptr);
 		/*
 		** Old sendto_serv_but_one() call removed because we now
 		** need to send different names to different servers
@@ -552,7 +552,7 @@ m_server_estab(aClient *cptr)
 {
 	aClient   *acptr;
 	aConfItem *aconf, *bconf;
-	char      *inpath, *host, *s, *encr;
+	char      *inpath, *host, *encr;
 
 	inpath = get_client_name(cptr,TRUE); /* "refresh" inpath with host */
 	host = cptr->name;
@@ -662,10 +662,10 @@ m_server_estab(aClient *cptr)
 	sendto_realops("Link with %s established.", inpath);
 
 	/* Insert here */
-	(void)add_to_client_hash_table(cptr->name, cptr);
+	add_to_client_hash_table(cptr->name, cptr);
 	/* doesnt duplicate cptr->serv if allocted this struct already */
-	(void)make_server(cptr);
-	(void)strcpy(cptr->serv->up, me.name);
+	make_server(cptr);
+	strcpy(cptr->serv->up, me.name);
 	cptr->serv->nline = aconf;
        if (find_conf_host(cptr->confs, cptr->name, CONF_UWORLD))
                        cptr->flags |= FLAGS_ULINE;
@@ -837,7 +837,7 @@ m_links(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	else
 		mask = parc < 2 ? NULL : parv[1];
 
-	for (acptr = client, (void)collapse(mask); acptr; acptr = acptr->next) 
+	for (acptr = client, collapse(mask); acptr; acptr = acptr->next) 
 	    {
 		if (!IsServer(acptr) && !IsMe(acptr))
 			continue;
@@ -1319,7 +1319,7 @@ int	 m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
         mydom_mask[0] = '*';
         strncpy(&mydom_mask[1], DOMAINNAME, HOSTLEN - 1);
 
-	(void)collapse(parv[1]);
+	collapse(parv[1]);
 	for (acptr = client; acptr; acptr = acptr->next)
 	    {
 		    if (parc>1) {
@@ -1996,21 +1996,21 @@ m_motd(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	 * stop NFS hangs...most systems should be able to open a file in
 	 * 3 seconds. -avalon (curtesy of wumpus)
 	 */
-	(void)alarm(3);
+	alarm(3);
 	fd = open(MOTD, O_RDONLY);
-	(void)alarm(0);
+	alarm(0);
 	if (fd == -1)
 	    {
 		sendto_one(sptr, err_str(ERR_NOMOTD), me.name, parv[0]);
 		return 0;
 	    }
-	(void)fstat(fd, &sb);
+	fstat(fd, &sb);
 	sendto_one(sptr, rpl_str(RPL_MOTDSTART), me.name, parv[0], me.name);
 	tm = localtime(&sb.st_mtime);
 	sendto_one(sptr, ":%s %d %s :- %d/%d/%d %d:%02d", me.name, RPL_MOTD,
 		   parv[0], tm->tm_mday, tm->tm_mon + 1, 1900 + tm->tm_year,
 		   tm->tm_hour, tm->tm_min);
-	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
+	dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
 	while ((nr=dgets(fd, line, sizeof(line)-1)) > 0)
 	    {
 	    	line[nr]='\0';
@@ -2020,9 +2020,9 @@ m_motd(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			*tmp = '\0';
 		sendto_one(sptr, rpl_str(RPL_MOTD), me.name, parv[0], line);
 	    }
-	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
+	dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
 	sendto_one(sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
-	(void)closefile(fd);
+	closefile(fd);
 	return 0;
     }
 
@@ -2063,7 +2063,7 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		
 		sendto_one(sptr, rpl_str(RPL_CLOSING), me.name, parv[0],
 			   get_client_name(acptr, TRUE), acptr->status);
-		(void)exit_client(acptr, acptr, acptr, "Oper Closing");
+		exit_client(acptr, acptr, acptr, "Oper Closing");
 		closed++;
 	    }
 	sendto_one(sptr, rpl_str(RPL_CLOSEEND), me.name, parv[0], closed);
@@ -2125,7 +2125,7 @@ m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				   me.name, get_client_name(sptr, TRUE),
                                    parc > 2 ? parv[2] : "No reason specified");
 	    }
-	(void)s_die(0);
+	s_die(0);
 	return 0;
 }
 
