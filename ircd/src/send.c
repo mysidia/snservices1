@@ -381,12 +381,6 @@ sendto_serv_butone(aClient *one, char *fmt, ...)
 
 	va_start(ap, fmt);
 
-# ifdef NPATH
-	va_copy(ap2, ap);
-        check_command((long)2, fmt, ap2);
-	va_end(ap2);
-# endif
-
 	for (i = 0; i <= highest_fd; i++) {
 		if (!(cptr = local[i]) || (one && cptr == one->from))
 			continue;
@@ -537,9 +531,6 @@ sendto_match_servs(aChannel *chptr, aClient *from, char *fmt, ...)
 
 	va_start(ap, fmt);
 
-# ifdef NPATH
-        check_command((long)3, format, p1, p2, p3);
-# endif
 	if (chptr) {
 		if (*chptr->chname == '&')
 			return;

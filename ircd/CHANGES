@@ -1,3 +1,8 @@
+Sun Nov 23 05:18:41 PST 2003 - Skandranon
+ * Major changes.  Removal of lots of "dead" code that was a #define option
+   but was either always defined or always undefined.  This was done to
+   simplify the common path code.  Examples are CHROOT, SENDQ_ALWAYS, ...
+
 Wed Jul 16 13:39:51 CDT 2003  sor1.3.5 - Mysidia
  * Ipv6 improved masking support
  * Ipv6 patch [Onno]

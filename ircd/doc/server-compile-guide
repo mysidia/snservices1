@@ -190,22 +190,11 @@ as well.
 
 config.h:
 
-#define USE_VARARGS
-For defines like this, you best check the online manual if you have them
-(man vprintf in this case)... I didn't have man page for vscanf() but it
-still worked... (I DO have them for vprintf and vsprinf).
-
 #undef  DEBUGMODE               /* define DEBUGMODE to enable debugging mode.*/
 Debug mode uses a lot more memory and is a lot slower. ONLY define
 when your server gives problems like crashing/coredumping, or other
 things like not wanting to startup etc. In other words: when you are really
 *USING* this feature to do DEBUGing !
-
-#define NPATH "/sb/users/carlo/irc/server/Undernet/.ircdnote"
-The '#ifdef notdef' '#endif' around NPATH mean: notdef = NOT DEFINED.
-You should *never* #define notdef... It is used to "comment out" *examples*.
-By defining it, you enable all examples (like making your server SUI :/)
-Simply *remove* the lines '#ifdef notdef' and '#endif' around the NPATH.
 
 #define DPATH   "/sb/users/carlo/irc/ircd"
 Must be the same as in the Makefile!
@@ -254,13 +243,6 @@ you to recompile later (text file busy).
 
 Compile errors
 ==============
-
-If anything goes wrong with note, it most likely is because you
-1) Didn't define NPATH correctly
-2) Didn't add the note.o to the dependencies.. remove note.o and recompile.
-
-[ For a non-undernet version: irc2.8.19.tar.gz is bugged, get the -note.patch
-  from ftp.undernet.org. ]
 
 If you get problems while linking saying it has undefined _something
 and something is something with 'res', you must add -lresolv to your

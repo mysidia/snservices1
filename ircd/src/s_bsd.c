@@ -1395,9 +1395,6 @@ read_message(time_t delay)
 	int	res, length, fd, i;
 	int	sockerr;
 
-#ifdef NPATH
-	check_command(&delay, NULL);
-#endif
 	now = NOW;
 
 	for (res = 0;;) {

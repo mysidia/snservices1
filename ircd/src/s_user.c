@@ -4002,10 +4002,6 @@ void send_umode_out(aClient *cptr, aClient *sptr, aClient *actptr, int old)
 	   send_umode(NULL, sptr, actptr, old, SEND_UMODES, buf);
         else
 	   send_umode(NULL, sptr, actptr, old, ALL_UMODES, buf);
-# ifdef NPATH
-        check_command((long)4, ":%s MODE %s :%s", sptr->name, actptr->name, buf);
-/*        check_command((long)4, ":%s MODE %s :%s", sptr->name, sptr->name, buf); */
-# endif
 
           /*if (*buf && actptr != sptr)*/
             if (buf && (!MyClient(sptr) && MyClient(actptr)) )

@@ -53,9 +53,6 @@ char	serveropts[] = {
 #ifdef NOSPOOF
 'n',
 #endif
-#ifdef	NPATH
-'N',
-#endif
 #ifdef	USE_SYSLOG
 'Y',
 #endif
