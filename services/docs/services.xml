@@ -1300,17 +1300,30 @@ OK AUTH OBJECT RNICK PASS
 			<listitem><para>QUERY OBJECT <emphasis>AKILL|AHURT|IGNORE</emphasis> LIST</para>
 				</listitem>
 
-			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> ISREG</para>
+				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> ISREG</para>
+                                     <para> Results in, for instance:</para>
+				     <para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> ISREG=TRUE - Nickname is registered.</para>				     
+				     <para>OR</para>
+				     <para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> ISREG=FALSE - Nickname is not registered.</para>
 				</listitem>
-			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> ISBYPASS</para>
+				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> ISBYPASS</para>
+					<para>Example response:</para>
+					 <para>OK QUERY OBJECT RNICK=<emphasis>nick</emphasis> ISBYPASS=TRUE</para>
+                                         <para>ERR-BADTARGET QUERY OBJECT RNICK=<emphasis>nickname</emphasis> - NOT_REGISTERED</para>			
 				</listitem>
-			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> REG-TIME</para>
+				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> REG-TIME</para>
+                                           <para>Sample result: OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> REG-TIME 861620971</para>	
 				</listitem>
-			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> LAST-TIME</para>
+				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> LAST-TIME</para>
+                                        <para>Sample result: OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> LAST-TIME 1067654340</para>					  
 				</listitem>
-			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> MARK</para>
+				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> MARK</para>
+					<para>Sample result: OK QUERY OBJECT RNICK=Mysidia MARK NO</para>
+					<para>OK QUERY OBJECT RNICK=Mysidia MARK YES</para>
 				</listitem>
-			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> LAST-HOST</para>
+				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> LAST-HOST</para>
+					<para>Sample result: OK QUERY OBJECT RNICK=nickname LAST-HOST asdf.com.hmsk</para>
+					<para>ERR-NOPRIV QUERY OBJECT RNICK=<emphasis>nickname</emphasis> LAST-HOST - User WWW/test Not authorized to query RNICK LAST-HOST.</para>		
 				</listitem>
 
 			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> NUM-MASKS</para>
