@@ -2167,6 +2167,11 @@ int   m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
         char  *s, *p, *user;
         char def[2] = "l";
 
+	if (check_registered_user(sptr))
+	{
+		return 0;
+	}
+
         if (parc < 2)
         {
                 /* Default to 'l' - list who's currently online */
