@@ -19,7 +19,6 @@ AUTO_CONFIG=""
 STDDEFH=undef
 SYSSYSLOGH=undef
 PARAMH=undef
-UNISTDH=undef
 STRINGH=undef
 STRINGSH=undef
 RUSAGEH=undef
@@ -414,20 +413,6 @@ if [ "$cc" = "none" ] ; then
 	cc=''
 fi
 
-echo $n "...Looking for /usr/include/sys/param.h...$c"
-if [ -r /usr/include/sys/param.h ] ; then
-	PARAMH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
-echo $n "...Looking for /usr/include/unistd.h...$c"
-if [ -r /usr/include/unistd.h ] ; then
-	UNISTDH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
 echo $n "...Looking for /usr/include/string.h...$c"
 if [ -r /usr/include/string.h ] ; then
 	STRINGH=define
@@ -726,7 +711,6 @@ cat > $SETUP  <<__EOF__
 #ifndef __setup_include__
 #define __setup_include__
 #$PARAMH	PARAMH
-#$UNISTDH	UNISTDH
 #$STRINGH	STRINGH
 #$STRINGSH	STRINGSH
 #$REDHAT6	REDHAT6

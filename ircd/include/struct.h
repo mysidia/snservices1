@@ -118,15 +118,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
                                            we're dead meat as far as hurt timing goes:/  */
 #define HELPOP_CHAN     "#HelpOps"
 
-
-/*
-** 'offsetof' is defined in ANSI-C. The following definition
-** is not absolutely portable (I have been told), but so far
-** it has worked on all machines I have needed it. The type
-** should be size_t but...  --msa
-*/
 #ifndef offsetof
-#define	offsetof(t,m) (int)((&((t *)0L)->m))
+#define offsetof(type, member)  ((size_t)(unsigned long)(&((type *)0)->member))
 #endif
 
 #define	elementsof(x) (sizeof(x)/sizeof(x[0]))

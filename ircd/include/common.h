@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, include/common.h
  *   Copyright (C) 1990 Armin Gruner
  *
@@ -20,13 +20,11 @@
 #ifndef	__common_include__
 #define __common_include__
 
-#include "ircd/cdefs.h"
+#include <sys/param.h>
 
 #include <time.h>
 
-#ifdef	PARAMH
-#include <sys/param.h>
-#endif
+#include "ircd/cdefs.h"
 
 #ifdef TRUE
 #undef TRUE
