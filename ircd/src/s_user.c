@@ -2281,7 +2281,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 	aClient* ptr;
 	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
-	int show_unknowns = 0, show_users = 0, i;
+	int show_unknowns = 0, show_users = 0, need_start = 1, i;
 	
 	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
 		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
@@ -2309,8 +2309,6 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		return 0;
 	}
 
-        sendto_one(cptr, ":%s NOTICE %s :<clients>", me.name, sptr->name);
-		
 	for(i = 0; i <= highest_fd; i++) {
 		if (!(ptr = local[i]))
 			continue;
@@ -2324,8 +2322,9 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		if (show_users && !IsPerson(ptr))
 			continue;
 
-		sendto_one(cptr, ":%s NOTICE %s :<client id=\"%d\">", me.name, sptr->name,
-					i);
+		sendto_one(cptr, ":%s NOTICE %s :%s<client id=\"%d\">", me.name, sptr->name,
+				need_start ? "<clients>" : "", i);
+		need_start = 0;
 
 		quoteShowConData(BadPtr(sptr->name) ? "" : sptr->name, buf1, BUFSIZE);
 		quoteShowConData(BadPtr(sptr->username) ? "" : sptr->username, buf2, BUFSIZE);
@@ -2353,12 +2352,14 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 		sendto_one(sptr, ":%s NOTICE %s : <times first=\"%d\" last=\"%d\" since=\"%d\" />",
 			      	me.name, sptr->name, ptr->firsttime, ptr->lasttime, ptr->since);
-		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />", me.name, sptr->name,
-				IsUserVersionKnown(ptr) ? "Known" : "Unknown");
-		sendto_one(sptr, ":%s NOTICE %s : <counts watches=\"%d\" sendM=\"%d\" " 
-				 "sendK=\"%d\" receiveM=\"%d\" receiveK=\"%d\" />", 
-				me.name, sptr->name, ptr->watches, ptr->sendM, ptr->sendK, 
-				ptr->receiveM, ptr->receiveK);
+		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />"
+				 "<counts watches=\"%d\" sendM=\"%d\" " 
+				 "sendK=\"%d\" sendB=\"%d\" receiveM=\"%d\" receiveK=\"%d\" "
+				 " receiveB=\"%d\" />", 
+				me.name, sptr->name,
+				IsUserVersionKnown(ptr) ? "Known" : "Unknown",
+			       	ptr->watches, ptr->sendM, ptr->sendK, ptr->sendB, 
+				ptr->receiveM, ptr->receiveK, ptr->receiveB);
 		
 		if (ptr->user)
 		{
