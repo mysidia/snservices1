@@ -15,7 +15,7 @@ CHANGES SINCE sorircd1.3.4
 *********************************************************************
 
 Wed Jul 16 13:39:51 CDT 2003  sor1.3.5 - Mysidia
- * Ipv6 masking support
+ * Ipv6 improved masking support
  * Ipv6 patch [Onno]
  * REQ_VERSION_RESPONSE now separate from NO_VERSION_CHECK
  * Show version reply in whois [Onno]

@@ -478,7 +478,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  /* ircstp->is_ref++; */
 	  SetHurt(sptr); 
 	  sptr->hurt = 3;
-          sendto_serv_butone(sptr, ":%s HURTSET %s 3", me.name, sptr->name);
+/*        sendto_serv_butone(sptr, ":%s HURTSET %s 3", me.name, sptr->name); */
 
 	  if (sconf->tmpconf == KLINE_AKILL)
 	    {
@@ -621,7 +621,6 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	      if (!IsHurt(sptr)) {
 		      sptr->hurt = 4;
 		      SetHurt(sptr);
-		      sendto_serv_butone(sptr, ":%s HURTSET %s 4", me.name, sptr->name);
 	      }
 			
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
@@ -685,6 +684,10 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
   sendto_serv_butone(cptr, "NICK %s %d %d %s %s %s :%s", nick,
 		     sptr->hopcount+1, sptr->lastnick, user->username, user->host,
 		     user->server, sptr->info);
+  if (IsHurt(sptr)) {
+       sendto_serv_butone(sptr, ":%s HURTSET %s %d", me.name, sptr->name,
+		            sptr->hurt);
+  }
   if (MyConnect(sptr))
     send_umode_out(cptr, sptr, sptr, 0);
 
