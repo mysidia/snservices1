@@ -396,6 +396,7 @@ OCMD(os_akill)
 	}
 
 	if (!match(args[2], "...!..@...com")
+		    || !match(args[2], ".....!......@...........com")
 		|| !match(args[2], "...!..@...net")
 		|| !match(args[2], "...!..@...edu")
 		|| !match(args[2], "...!..@...org")) {
