@@ -80,7 +80,7 @@ extern	char	*rindex PROTO((char *, char));
 #include <sys/time.h>
 #endif
 
-#if !defined(DEBUGMODE) || defined(CLIENT_COMPILE)
+#if !defined(DEBUGMODE)
 # ifndef _WIN32
 #  define MyFree(x)	if ((x) != NULL) free(x)
 # else

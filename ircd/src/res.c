@@ -271,6 +271,7 @@ time_t	now;
 				switch (rptr->cinfo.flags)
 				{
 				case ASYNC_CLIENT :
+                                        connotice(cptr, REPORT_FAIL_DNS);
 					ClearDNS(cptr);
 					if (!DoingAuth(cptr))
 						SetAccess(cptr);

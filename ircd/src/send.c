@@ -31,6 +31,7 @@ static  char sccsid[] = "@(#)send.c	2.32 2/28/94 (C) 1988 University of Oulu, Co
 #include "sys.h"
 #include "h.h"
 #include <stdio.h>
+#include <assert.h>
 #ifdef _WIN32
 #include <io.h>
 #endif
@@ -40,6 +41,9 @@ static  char sccsid[] = "@(#)send.c	2.32 2/28/94 (C) 1988 University of Oulu, Co
 #else
 #define NEWLINE	"\r\n"
 #endif
+
+static int recurse_send = 0;
+static char last_pattern[2048*2]="";
 
 static	char	sendbuf[2048];
 static	int	send_message PROTO((aClient *, char *, int));
@@ -67,7 +71,7 @@ static	int	dead_link(to, notice)
 aClient *to;
 char	*notice;
 {
-	to->flags |= FLAGS_DEADSOCKET;
+	ClientFlags(to) |= FLAGS_DEADSOCKET;
 	/*
 	 * If because of BUFFERPOOL problem then clean dbuf's now so that
 	 * notices don't hurt operators below.
@@ -75,7 +79,7 @@ char	*notice;
 	DBufClear(&to->recvQ);
 	DBufClear(&to->sendQ);
 #ifndef CLIENT_COMPILE
-	if (!IsPerson(to) && !IsUnknown(to) && !(to->flags & FLAGS_CLOSING))
+	if (!IsPerson(to) && !IsUnknown(to) && !(ClientFlags(to) & FLAGS_CLOSING))
 		sendto_ops(notice, get_client_name(to, FALSE));
 	Debug((DEBUG_ERROR, notice, get_client_name(to, FALSE)));
 #endif
@@ -147,7 +151,7 @@ int	len;
 	*/
 	to->sendM += 1;
 	me.sendM += 1;
-	if (to->acpt != &me)
+	if (to->acpt && to->acpt != &me)
 		to->acpt->sendM += 1;
 	/*
 	** This little bit is to stop the sendQ from growing too large when
@@ -202,7 +206,7 @@ int	len;
 	*/
 	to->sendM += 1;
 	me.sendM += 1;
-	if (to->acpt != &me)
+	if (to->acpt && to->acpt != &me)
 		to->acpt->sendM += 1;
 	return 0;
 }
@@ -291,19 +295,18 @@ va_dcl
 	(void)sprintf(sendbuf, pattern, p1, p2, p3, p4, p5, p6,
 		p7, p8, p9, p10, p11);
 #endif
-	Debug((DEBUG_SEND,"Sending [%s] to %s", sendbuf,to->name));
+	Debug((DEBUG_SEND,"Sending [%s] to %s", sendbuf, to->name));
 
 	if (to->from)
 		to = to->from;
-	if (to->fd < 0)
-	    {
+	if (to->fd < 0) {
+		assert(to->fd >= 0);
 		Debug((DEBUG_ERROR,
 		      "Local socket %s with negative fd... AARGH!",
 		      to->name));
 	    }
 #ifndef	CLIENT_COMPILE
-	else if (IsMe(to))
-	    {
+	else if (IsMe(to)) {
 		sendto_ops("Trying to send [%s] to myself!", sendbuf);
 		return;
 	    }
@@ -846,23 +849,6 @@ va_dcl
 			sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6, p7, p8);
 #endif
 		    }
-#ifdef	USE_SERVICES
-		else if (cptr && IsService(cptr) &&
-			 (cptr->service->wanted & SERVICE_WANT_SERVNOTE))
-		    {
-			(void)sprintf(nbuf, "NOTICE %s :*** Notice -- ",
-					cptr->name);
-			(void)strncat(nbuf, pattern,
-					sizeof(nbuf) - strlen(nbuf));
-# ifdef	USE_VARARGS
-			sendto_one(cptr, nbuf, vl);
-		    }
-	va_end(vl);
-# else
-			sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6, p7, p8);
-		    }
-# endif
-#endif
 	return;
 }
 
@@ -905,24 +891,6 @@ va_dcl
 p7, p8);
 #endif
                     }
-#ifdef  USE_SERVICES
-                else if (cptr && IsService(cptr) &&
-                         (cptr->service->wanted & SERVICE_WANT_SERVNOTE))
-                    {
-                        (void)sprintf(nbuf, "NOTICE %s :*** Notice -- ",
-                                        cptr->name);
-                        (void)strncat(nbuf, pattern,
-                                        sizeof(nbuf) - strlen(nbuf));
-# ifdef USE_VARARGS
-                        sendto_one(cptr, nbuf, vl);
-                    }
-        va_end(vl);
-# else
-                        sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6, 
-p7, p8);
-                    }
-# endif
-#endif
         return;
 }
 
@@ -965,26 +933,117 @@ va_dcl
 				   p7, p8);
 #endif
 		    }
-#ifdef  USE_SERVICES
-		else if (cptr && IsService(cptr) &&
-			 (cptr->service->wanted & SERVICE_WANT_SERVNOTE))
-		{
-			(void)sprintf(nbuf, "NOTICE %s :*** Notice -- ",
-				      cptr->name);
-			(void)strncat(nbuf, pattern,
-				      sizeof(nbuf) - strlen(nbuf));
-# ifdef USE_VARARGS
-			sendto_one(cptr, nbuf, vl);
-		}
-		va_end(vl);
-# else
-		sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6, 
-			   p7, p8);
-		}
-# endif
-#endif
 	return;
 }
+
+
+
+/*
+ *   send to flags very loosely, IOW it's not essential
+ *   that each message makes it, but it is essential not to 
+ *   send out a flood of messages if this routine is called
+ *   very quickly...
+ */
+void sendto_flag_norep(flags, max, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
+int	flags;
+int     max;
+char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+     char next_pattern[2048*2] = "";
+     static time_t last_send = 0;
+     static int    num_sent  = 0;
+
+     if (last_send<1 || ((NOW - last_send) > 7 ))
+                num_sent = 0;
+
+     last_send = NOW;
+
+     if (++num_sent > 15 && (num_sent < 100))
+                 return;
+     else if (num_sent >= 100) /* give another warning */
+                 num_sent = 13;
+
+     (void)sprintf(next_pattern, pattern, p1, p2, p3, p4, p5, p6,
+		   p7, p8);
+      if (strcmp(last_pattern, next_pattern)==0)
+               recurse_send++;
+      else     recurse_send = 0;
+      if (recurse_send == 0) strncpy(last_pattern, next_pattern, sizeof(last_pattern));
+      if (!recurse_send || recurse_send < max)
+       {
+              sendto_flag(flags, next_pattern);
+       }
+       else if ((recurse_send > max) && (((recurse_send-max)) > 10))
+                 recurse_send = 0;
+       else num_sent--;
+}
+
+void
+sendto_umode_norep(flags, max, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
+     int	flags;
+     int     max;
+     char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+	static char   buff1[1024] = "";
+	static char   buff2[1024] = "";
+	static char   *outbuf = buff1;
+	char *lastbuf;
+	static time_t last_send = 0;
+	static int    num_sent  = 0;
+	int same;
+
+	/*
+	 * Rotate buffers.  This sames the last output in the buffer, but
+	 * keeps us from having to strcpy it to the save area.
+	 */
+	if (outbuf == buff1) {
+		outbuf = buff2;
+		lastbuf = buff1;
+	} else {
+		outbuf = buff1;
+		lastbuf = buff2;
+	}
+
+	/*
+	 * Print the text to the output buffer.
+	 */
+	(void)snprintf(outbuf, sizeof(buff1), pattern,
+		       p1, p2, p3, p4, p5, p6, p7, p8);
+
+	/*
+	 * Has it been at least 7 seconds since the last call?
+	 */
+	if (last_send < 1 || ((NOW - last_send) > 7 ))
+                num_sent = 0;
+
+	/*
+	 * Was it the same as last call?
+	 */
+	same = 0;
+	if (num_sent)
+		if (strcmp(lastbuf, outbuf) == 0)
+			same = 1;
+
+	last_send = NOW;
+	if (!same)
+		num_sent = 0;
+
+	/*
+	 * Print no more than "max" messages in a row from this one source.
+	 */
+	if (++num_sent > max && (num_sent < 100))
+		return;
+	else if (num_sent >= 100) /* give another warning */
+		num_sent = max;
+
+	sendto_umode(flags, outbuf);
+}
+
+
+
+
+
+
 
 /*
  * sendto_flag
@@ -1014,7 +1073,7 @@ va_dcl
 #endif
 	for (i = 0; i <= highest_fd; i++)
 		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
-		    (cptr->flags & flags)==flags)
+		    (ClientFlags(cptr) & flags)==flags)
 		    {
 			(void)sprintf(nbuf, ":%s NOTICE %s :",
 				me.name, cptr->name);
@@ -1029,6 +1088,33 @@ va_dcl
 		    }
 	return;
 }
+
+
+void	sendto_umode(flags, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
+int	flags;
+char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+	Reg1	aClient *cptr;
+	Reg2	int	i;
+	char	nbuf[1024];
+
+	for (i = 0; i <= highest_fd; i++)
+		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+		    (ClientUmode(cptr) & flags)==flags)
+		    {
+			(void)sprintf(nbuf, ":%s NOTICE %s :",
+				me.name, cptr->name);
+			(void)strncat(nbuf, pattern,
+				      sizeof(nbuf) - strlen(nbuf));
+			sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6,
+				p7, p8);
+		    }
+	return;
+}
+
+
+
+
 
 /*
  * sendto_failops_whoare_opers
@@ -1069,24 +1155,7 @@ va_dcl
 p7, p8);
 #endif
                     }
-#ifdef  USE_SERVICES
-                else if (cptr && IsService(cptr) &&
-                         (cptr->service->wanted & SERVICE_WANT_SERVNOTE))
-                    {
-                        (void)sprintf(nbuf, "NOTICE %s :*** Notice -- ",
-                                        cptr->name);
-                        (void)strncat(nbuf, pattern,
-                                        sizeof(nbuf) - strlen(nbuf));
-# ifdef USE_VARARGS
-                        sendto_one(cptr, nbuf, vl);
-                    }
-        va_end(vl);
-# else
-                        sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6,
-p7, p8);
-                    }
-# endif
-#endif
+
         return;
 }
 /*
@@ -1128,24 +1197,7 @@ va_dcl
 p7, p8);
 #endif
                     }
-#ifdef  USE_SERVICES
-                else if (cptr && IsService(cptr) &&
-                         (cptr->service->wanted & SERVICE_WANT_SERVNOTE))
-                    {
-                        (void)sprintf(nbuf, "NOTICE %s :*** Notice -- ",
-                                        cptr->name);
-                        (void)strncat(nbuf, pattern,
-                                        sizeof(nbuf) - strlen(nbuf));
-# ifdef USE_VARARGS
-                        sendto_one(cptr, nbuf, vl);
-                    }
-        va_end(vl);
-# else
-                        sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6,
-p7, p8);
-                    }
-# endif
-#endif
+
         return;
 }
 /*
@@ -1187,24 +1239,7 @@ va_dcl
 p7, p8);
 #endif
 		    }
-#ifdef	USE_SERVICES
-		else if (cptr && IsService(cptr) &&
-			 (cptr->service->wanted & SERVICE_WANT_SERVNOTE))
-		    {
-			(void)sprintf(nbuf, "NOTICE %s :*** GLOBAL OPER Notice -- ",
-					cptr->name);
-			(void)strncat(nbuf, pattern,
-					sizeof(nbuf) - strlen(nbuf));
-# ifdef	USE_VARARGS
-			sendto_one(cptr, nbuf, vl);
-		    }
-	va_end(vl);
-# else
-			sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6, p7, 
-p8);
-		    }
-# endif
-#endif
+
 	return;
 }
 
@@ -1423,10 +1458,7 @@ va_dcl
 		if (!flag && MyConnect(from) && *user->host)
 		    {
 			(void)strcat(sender, "@");
-			if (IsUnixSocket(from))
-				(void)strcat(sender, user->host);
-			else
-				(void)strcat(sender, from->sockhost);
+			(void)strcat(sender, from->sockhost);
 		    }
 #ifdef	USE_VARARGS
 		par = sender;

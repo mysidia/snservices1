@@ -27,7 +27,9 @@ Computing Center and Jarkko Oikarinen";
 #include "common.h"
 #include "sys.h"
 #include "h.h"
+
 #include <signal.h>
+#include <errno.h>
 
 #ifndef _WIN32
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
@@ -104,12 +106,8 @@ char	*str;
 	writecalls++;
 #endif
 	(void)alarm(WRITEWAITDELAY);
-#ifdef VMS
-	retval = netwrite(cptr->fd, str, len);
-#else
 	if (IsDead(cptr) || (!IsServer(cptr) && !IsPerson(cptr) &&
-			     !IsHandshake(cptr) && !IsUnknown(cptr) &&
-			     !IsAuthServ(cptr)))
+			     !IsHandshake(cptr) && !IsUnknown(cptr)))
 	{
 	  str[len]='\0';
 	  sendto_ops("* * * DEBUG ERROR * * * !!! Calling deliver_it() for %s, status %d %s, with message: %s",
@@ -144,7 +142,6 @@ char	*str;
 		ClientFlags(cptr) &= ~FLAGS_BLOCKED;
 	    }
 
-#endif
 	(void )alarm(0);
 #ifdef DEBUGMODE
 	if (retval < 0) {
