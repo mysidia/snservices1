@@ -36,7 +36,7 @@ INCLUDES = ../include/struct.h ../include/config.h ../include/options.h \
 
 all:
 	${DIRCHG}
-build: ircd chkconf
+build: ircd
 version.c:
 	$(SHELL) version.c.SH
 
@@ -46,15 +46,6 @@ version.o: version.c ../include/patchlevel.h
 ircd: $(OBJS) 
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) -o ircd
 	@chmod $(IRCDMODE) ircd
-
-chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
-	 ../include/common.h chkconf.c memory.o
-	$(CC) -ggdb $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
-	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o memory.o string.o \
-	$(LDFLAGS) $(IRCDLIBS) -o chkconf
-
-saber: $(SRC)
-	#load -I../include $(SRC) version.c $(IRCDLIBS)
 
 lint:
 	lint $(LINTFLAGS) -I../include $(SRC) | egrep -v 'sendto_|debug'
@@ -77,7 +68,7 @@ userload.o: userload.c $(INCLUDES)
 	$(CC) $(XCFLAGS) $(CFLAGS) -o userload.o -c userload.c
 
 clean:
-	$(RM) -f *.o *~ core ircd version.c chkconf
+	$(RM) -f *.o *~ core ircd version.c
 
 cleandir: clean
 

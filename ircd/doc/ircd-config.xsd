@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ircd="http://www.sorcery.net/ircd" targetNamespace="http://www.sorcery.net/ircd">
+	<xs:element name="ircd">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="config">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="network" type="xs:string"/>
+							<xs:element name="network-kline-address" type="xs:string" minOccurs="0"/>
+							<xs:element name="name" type="xs:string"/>
+							<xs:element name="info" type="xs:string"/>
+							<xs:element name="kline-address" type="xs:string" minOccurs="0"/>
+							<xs:element name="port" type="xs:positiveInteger" minOccurs="0"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="network" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="maxfds" type="xs:positiveInteger" minOccurs="0"/>
+							<xs:element name="address" type="xs:string" minOccurs="0"/>
+							<xs:element name="address6" type="xs:string" minOccurs="0"/>
+							<xs:element name="ssl" minOccurs="0">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="certificate" type="xs:string"/>
+										<xs:element name="key" type="xs:string"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="listener" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="address" type="xs:string"/>
+							<xs:element name="port" type="xs:positiveInteger"/>
+							<xs:element name="ssl" type="xs:string" minOccurs="0" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="class" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="name" type="xs:string"/>
+							<xs:element name="ping-frequency" type="xs:positiveInteger" minOccurs="0"/>
+							<xs:element name="connect-frequency" type="xs:positiveInteger" minOccurs="0"/>
+							<xs:element name="max-connections" type="xs:positiveInteger" minOccurs="0"/>
+							<xs:element name="send-queue" type="xs:positiveInteger" minOccurs="0"/>
+							<xs:element name="max-channels" type="xs:positiveInteger" minOccurs="0"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="server" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="name" type="xs:string"/>
+							<xs:sequence minOccurs="0">
+								<xs:element name="address" type="xs:string"/>
+								<xs:element name="password" type="xs:string"/>
+								<xs:element name="connect" type="xs:string" minOccurs="0"/>
+								<xs:element name="class" type="xs:string"/>
+								<xs:element name="hub" type="xs:string" minOccurs="0"/>
+							</xs:sequence>
+							<xs:element name="services" type="xs:string" minOccurs="0"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="client" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="address-mask" type="xs:string"/>
+							<xs:element name="domain-mask" type="xs:string"/>
+							<xs:element name="password" type="xs:string" minOccurs="0"/>
+							<xs:element name="class" type="xs:string"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="operator" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="nick" type="xs:string"/>
+							<xs:element name="mask" type="xs:string"/>
+							<xs:element name="password" type="xs:string"/>
+							<xs:element name="flags" type="xs:string"/>
+							<xs:element name="class" type="xs:string"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="ban" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="comment" type="xs:string"/>
+							<xs:element name="banexpr" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute name="field" use="required">
+												<xs:simpleType>
+													<xs:restriction base="xs:string">
+														<xs:enumeration value="nick"/>
+														<xs:enumeration value="hostname"/>
+														<xs:enumeration value="username"/>
+														<xs:enumeration value="address"/>
+														<xs:enumeration value="version"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
+
