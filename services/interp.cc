@@ -200,6 +200,7 @@ namespace interp
 		// GameServ Commands
 		TF(GS_HELP, gs_help),
 		TF(GS_ROLL, gs_roll),
+		TF(GS_WW, gs_ww),
 
 		// Services Events
 		TBL(NSE_EXPIRE),

@@ -43,6 +43,9 @@
 #include "log.h"
 #include "interp.h"
 
+const int MAX_ALLOWED_ROLLS = 100;
+const int MAX_ALLOWED_DIE_SIZE = 10000;
+
 /**
  * @brief Dispatch table for GameServ commands.
  */
@@ -50,6 +53,7 @@ interp::service_cmd_t gameserv_commands[] = {
 	/* string             function         Flags      L */
 	{	"help", gs_help, 0, LOG_NO, 0, 1},
 	{	"roll", gs_roll, 0, LOG_NO, 0, 1},
+	{	"ww",	gs_ww, 0, LOG_NO, 0, 5},
 	{	NULL	},
 };
 
@@ -141,6 +145,101 @@ GCMD(gs_help)
 }
 
 
+/**
+ * WW. Dice roll
+ * /gs ww {[<channel>] | ''} {[Number Rolls] [Difficulty]} [die_size]
+ */
+GCMD(gs_ww)
+{
+	const char* from = nick->nick, *to = nick->nick;
+	const char* chan_name = 0;
+	int base = 1, num_rolls, num_difficulty = 5;
+	int flood_multiplier = 1, flood_modifier, botches = 0;
+	int i = 0, roll_value, die_size = 10, successes = 0;
+	
+	if (numargs < 2) {
+		sSend(":%s NOTICE %s :Not enough parameters.",
+				GameServ, from);
+		PutHelpInfo(GameServ, nick, "HELP WOD");
+		return RET_SYNTAX;
+	}
+
+	if (args[base][0] == '#') {
+		chan_name = to = args[base++];
+		flood_multiplier = 5;
+	}
+
+	if (base >= numargs) {
+		sSend(":%s NOTICE %s :Not enough parameters.",
+				GameServ, from);
+		PutHelpInfo(GameServ, nick, "HELP WOD");
+		return RET_SYNTAX;
+	}
+	
+	num_rolls = atoi(args[base]);
+	base++;
+
+	if (num_rolls > MAX_ALLOWED_ROLLS) {
+		sSend(":%s NOTICE %s :Too many dice rolls (Limit = 100)",
+				GameServ, from);
+		return RET_INVALID;
+	}
+
+	if (base < numargs) {
+		num_difficulty = atoi(args[base]);
+		if (num_difficulty <= 1 || num_difficulty >= die_size) {
+			sSend(":%s NOTICE %s :Invalid difficulty level, should range from 1 to %d.",
+					GameServ, from, die_size);
+		}
+		base++;
+	}
+
+	if (base < numargs) {
+		die_size = atoi(args[base]);
+		base++;
+		if (die_size < 1 || die_size > MAX_ALLOWED_DIE_SIZE) {
+			sSend(":%s NOTICE %s :Invalid die size, should range from 1 to %d.",
+					GameServ, from, MAX_ALLOWED_DIE_SIZE);
+			return RET_INVALID;
+		}
+	}
+
+	flood_modifier = flood_multiplier * ((num_rolls / 10) + 1);
+
+	if ((nick->floodlevel.GetLev()+flood_modifier) >= (.75 * MAXFLOODLEVEL)) {
+		sSend(":%s NOTICE %s :Your flood level is too high. "
+		      "Please wait 60 seconds and try again.",
+				GameServ, from);
+		return RET_FAIL;
+	}
+	
+	if (addFlood(nick, flood_modifier))
+		return RET_KILLED;
+
+	for(i = 0; i < num_rolls; i++) {
+		roll_value = dice(1, die_size);
+
+		switch(roll_value)
+		{
+			case 1: botches++; break;
+			default:
+				if (roll_value >= num_difficulty) successes++;
+				
+				if (roll_value > die_size) {
+					logDump(corelog, "In gs_ww(%s,%p,%d) dice() returned %d", 
+							from, args, numargs, roll_value);
+					sSend(":%s NOTICE %s :Internal error in GameServ, di rolled a %d.",
+							GameServ, from, roll_value);
+					return RET_EFAULT;
+				}
+			break;
+		}
+	}	
+	sSend(":%s NOTICE %s :WW: %d dice, size %d, difficulty %d, success=%d/botches=%d [%d/%d]",
+		GameServ, from, num_rolls, die_size, num_difficulty, successes, botches,
+		successes, botches);
+	return RET_OK;
+}
 
 /**
  * [Frequency] # [Number of Dice] D [Number of sides] +/- [Modifier]
