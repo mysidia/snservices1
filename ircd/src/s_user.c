@@ -2241,6 +2241,75 @@ user_finish:
 }
 
 /*
+** m_showcon
+**
+**  List  connections info
+*/
+int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
+{
+	aClient* ptr;
+	int show_unknowns = 0, show_users = 0, i;
+	
+	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
+		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+		return 0;
+	}
+
+	if (parc < 3) {
+		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> (unknowns | users)", me.name, sptr->name);
+		return 0;
+
+	}
+
+        if (hunt_server(cptr,sptr,":%s SHOWCON %s :%s", 1,parc,parv) != HUNTED_ISME)
+            return 0;
+
+	if (!mycmp(parv[2], "unknowns") == 0)
+		show_unknowns = 1;
+	else if (!mycmp(parv[2], "users") == 0)
+		show_users = 1;
+	else if (!mycmp(parv[2], "all") == 0) {
+		 ;
+	}
+	else {
+		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> (unknowns | users)", me.name, sptr->name);
+		return 0;
+	}
+
+	sendto_one(cptr, ":Auth-C NOTICE %s :Client List", me.name, sptr->name);
+	for(i = 0; i <= highest_fd; i++) {
+		if (!(ptr = local[i]))
+			continue;
+
+		if (IsLog(ptr) || IsMe(ptr) || IsServer(ptr) || IsListening(ptr))
+			continue;
+
+		if (show_unknowns && !IsUnknown(ptr))
+			continue;
+
+		if (show_users && !IsPerson(ptr))
+			continue;
+
+		sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s,%s,%d] [%s/%s/%d]", me.name, sptr->name, i,
+				(BadPtr(ptr->name) ? "-" : ptr->name),
+				 BadPtr(ptr->username) ? "-" : ptr->username,
+				BadPtr( ptr->sockhost) ? "-" : ptr->sockhost,
+				DoingDNS(ptr) ? "DNS" : "",
+				ptr->status,
+				BadPtr(ptr->sup_server) ? "-" : ptr->sup_server,
+				BadPtr(ptr->sup_host) ? "-" : ptr->sup_host,
+				ptr->port
+				);
+		sendto_one(cptr, ":%s NOTICE %s : [%ld/%ld]  [%s] ",  me.name, sptr->name,
+			              ptr->firsttime, ptr->lasttime,
+			              BadPtr(ptr->info) ? "" : ptr->info );
+	}
+	sendto_one(cptr, ":Auth-C NOTICE %s :End of List", me.name, sptr->name);
+	return 0;
+}
+
+
+/*
 ** m_quit
 **	parv[0] = sender prefix
 **	parv[1] = comment
