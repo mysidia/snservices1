@@ -1405,7 +1405,7 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 	aClient	*acptr;
 	char	*s;
 	aChannel *chptr;
-	char	*nick, *server, *p, *cmd, *host, *stripped = NULL;
+	char	*nick, *server, *p, *cmd, *stripped = NULL;
 	    {
 		if (check_registered(sptr))
 			return 0;
