@@ -36,6 +36,10 @@
 #include "h.h"
 #include "msg.h"
 
+#ifdef SOL20
+#include "getaddrinfo.h"
+#endif
+
 #include "ircd/match.h"
 #include "ircd/send.h"
 #include "ircd/string.h"
