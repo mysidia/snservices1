@@ -496,6 +496,8 @@ struct	Message *mptr;
 			{
 #if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 			        if (MyClient(from) && !IsUserVersionKnown(from)
+					&& IsHurt(from)
+					&& !IsAnOper(from)
 					&& mptr->func != m_notice && mptr->func != m_mode 
                                         && mptr->func != m_mode  && mptr->func != m_ison
 					&& mptr->func != m_join
