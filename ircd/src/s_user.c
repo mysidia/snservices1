@@ -21,6 +21,13 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <sys/stat.h>
+
+#include <fcntl.h>
+#ifdef SOL20
+#include <crypt.h>
+#endif
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
@@ -28,8 +35,6 @@
 #include "msg.h"
 #include "channel.h"
 #include "userload.h"
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "h.h"
 
 #include "ircd/match.h"
