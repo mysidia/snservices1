@@ -25,15 +25,7 @@
 
 #include "ircd.h"
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "numeric.h"
 #include "whowas.h"
-#include "h.h"
-
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)whowas.c	2.16 08 Nov 1993 (C) 1988 Markku Savela");
 IRCD_RCSID("$Id$");

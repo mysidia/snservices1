@@ -20,11 +20,7 @@
 
 #include "ircd.h"
 
-#include <stdio.h>
 #include <assert.h>
-#include <stdarg.h>
-
-#include "sys.h"
 
 IRCD_SCCSID("@(#)send.c	2.32 2/28/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

@@ -44,6 +44,7 @@
 #include "common.h"
 #include "struct.h"
 #include "h.h"
+#include "numeric.h"
 
 #include "network.h"
 

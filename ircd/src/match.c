@@ -17,14 +17,9 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
+#include "ircd.h"
 
 #include <regex.h> 
-
-#include "ircd/match.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("%W% %G% (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

@@ -21,14 +21,6 @@
 
 #include "ircd.h"
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h" 
-#include "numeric.h"
-#include "h.h"
-
-#include "ircd/send.h"
-
 IRCD_SCCSID("@(#)s_numeric.c	2.14 1/30/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
 

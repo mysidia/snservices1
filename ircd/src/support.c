@@ -17,18 +17,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <stdio.h>
+#include "ircd.h"
 #include <signal.h>
-
-#include "config.h"
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include <sys/socket.h>
-
-#include "h.h"
-
-#include "ircd/send.h"
 
 IRCD_SCCSID("@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner; 1992, 1993 Darren Reed");
 IRCD_RCSID("$Id$");

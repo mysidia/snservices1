@@ -23,20 +23,11 @@
 
 #include "ircd.h"
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "numeric.h"
 #include "msg.h"
 #include "channel.h"
 #include "userload.h"
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "h.h"
-
-#include "ircd/match.h"
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)s_serv.c	2.55 2/7/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

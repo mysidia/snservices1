@@ -26,16 +26,10 @@
  */
 #undef OLDHASH
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "hash.h"
-#include "numeric.h"
-#include "h.h"
-#include "msg.h"
+#include "ircd.h"
 
-#include "ircd/send.h"
-#include "ircd/string.h"
+#include "hash.h"
+#include "msg.h"
 
 IRCD_SCCSID("@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed");
 IRCD_RCSID("$Id$");

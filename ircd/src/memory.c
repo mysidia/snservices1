@@ -17,13 +17,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "h.h"
-
-#include "ircd/memory.h"
+#include "ircd.h"
 
 IRCD_RCSID("$Id$");
 

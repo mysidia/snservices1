@@ -23,11 +23,7 @@
 **
 */
 
-#include <stdio.h>
-#include "struct.h"
-#include "common.h"
-#include "h.h"
-#include "sys.h"
+#include "ircd.h"
 
 IRCD_SCCSID("@(#)dbuf.c	2.17 1/30/94 (C) 1990 Markku Savela");
 IRCD_RCSID("$Id$");

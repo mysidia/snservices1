@@ -20,8 +20,6 @@
 
 #include "ircd.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/resource.h>
 
@@ -40,15 +38,11 @@ int gethostname(char *name, int namelen);
 void setlinebuf(FILE *iop);
 #endif
 
-#include "sys.h"
 #include "res.h"
-#include "numeric.h"
 #include "patchlevel.h"
 #include "inet.h"
 
 #include "ircd/res.h"
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)s_bsd.c	2.78 2/7/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

@@ -17,18 +17,12 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "numeric.h"
+#include "ircd.h"
+
 #include "msg.h"
 #include "channel.h"
 #include "userload.h"
 #include <sys/stat.h>
-#include "h.h"
-
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_RCSID("$Id$");
 

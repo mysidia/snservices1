@@ -18,19 +18,11 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include <limits.h>
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "h.h"
 #include "hash.h"
-#include "numeric.h"
-
-#include "ircd/send.h"
-#include "ircd/string.h"
-#include "ircd/memory.h"
-
 
 IRCD_SCCSID("@(#)list.c	2.24 4/20/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

@@ -27,18 +27,10 @@
 
 #include <fcntl.h>
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "numeric.h"
 #include "msg.h"
 #include "channel.h"
 #include "userload.h"
-#include "h.h"
 
-#include "ircd/match.h"
-#include "ircd/send.h"
-#include "ircd/string.h"
 #include "ircd/md5.h"
 
 IRCD_SCCSID("@(#)s_user.c	2.74 2/8/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
