@@ -1857,20 +1857,20 @@ char	*key;
 	if (*chptr->mode.key && (BadPtr(key) || mycmp(chptr->mode.key, key)))
 		return (ERR_BADCHANNELKEY);
 
-	if (IS_SET(ClientUmode(sptr), U_FULLMASK) &&
-	    IS_SET(chptr->mode.mode, MODE_SHOWHOST) && !IsAnOper(sptr))
+	if (IsSet(ClientUmode(sptr), U_FULLMASK) &&
+	    IsSet(chptr->mode.mode, MODE_SHOWHOST) && !IsAnOper(sptr))
 	    return ERR_NOMASKCHAN;
 
 	if (is_banned(sptr, chptr, &bantype)) {
-           if (IS_SET(bantype, BAN_BLOCK | BAN_GECOS))
+           if (IsSet(bantype, BAN_BLOCK | BAN_GECOS))
                return (ERR_BANNEDFROMCHAN);
-           if (IS_SET(bantype, BAN_RBLOCK | BAN_MASK))
+           if (IsSet(bantype, BAN_RBLOCK | BAN_MASK))
                return (ERR_BANRULE);
-           if (IS_SET(bantype, BAN_REQUIRE))
+           if (IsSet(bantype, BAN_REQUIRE))
                return (ERR_BANREQUIRE);
-           if (IS_SET(bantype, BAN_VERONLY))
+           if (IsSet(bantype, BAN_VERONLY))
 	       return (ERR_NEEDVERNICK);	   
-	   if (IS_SET(bantype, BAN_REGONLY))
+	   if (IsSet(bantype, BAN_REGONLY))
 	       return (ERR_NEEDREGGEDNICK);
 	}
 
@@ -2250,13 +2250,13 @@ char	*parv[];
 		*/
 		if (chptr)
 		{
-			if (IS_SET(ClientUmode(sptr), U_FULLMASK))
+			if (IsSet(ClientUmode(sptr), U_FULLMASK))
 				sendto_channel_butserv(chptr, sptr, ":%s JOIN :%s", parv[0], name);
 			else
 				sendto_channel_butserv_unmask(chptr, sptr, ":%s JOIN :%s", parv[0], name);
                 }
 
-		if (!IsMasked(sptr) || IS_SET(ClientUmode(sptr), U_FULLMASK))
+		if (!IsMasked(sptr) || IsSet(ClientUmode(sptr), U_FULLMASK))
 			sendto_match_servs(chptr, cptr, ":%s JOIN :%s", parv[0], name);
 		else
                         sendto_match_servs(chptr, cptr, ":%s JOIN %s unmask", parv[0], name);
@@ -3475,13 +3475,13 @@ void mlock_buf(aChannel *chptr, char *buf)
    x = 0;
    buf[0] = '\0';
    for (j = 0, i = 0; chan_flags[j]; j += 2)
-        if (IS_SET(chptr->mode.mlock_on, chan_flags[j]))
+        if (IsSet(chptr->mode.mlock_on, chan_flags[j]))
         {
             if (!*buf) buf[x++] = '+';
             buf[x++] = chan_flags[j+1];
         }
    for (j = 0; chan_flags[j]; j += 2)
-        if (IS_SET(chptr->mode.mlock_off, chan_flags[j]))
+        if (IsSet(chptr->mode.mlock_off, chan_flags[j]))
         {
             if (!i) {i = 1; buf[x++] = '-';}
             buf[x++] = chan_flags[j+1];
@@ -3506,8 +3506,8 @@ int legalize_mode(aChannel *chptr, char **curr)
            case '+': whatt =  1;  break;
            case '-': whatt = -1;  break;
            case 'o':
-                   if ((!IS_SET(chptr->mode.mlock_on, MODE_CHANOP)  || whatt > 0) &&
-                       (!IS_SET(chptr->mode.mlock_off, MODE_CHANOP) || whatt < 0))
+                   if ((!IsSet(chptr->mode.mlock_on, MODE_CHANOP)  || whatt > 0) &&
+                       (!IsSet(chptr->mode.mlock_off, MODE_CHANOP) || whatt < 0))
                    {                       
                        if (bset != whatt)
                        {
@@ -3524,8 +3524,8 @@ int legalize_mode(aChannel *chptr, char **curr)
                    if (s[i] == (char)chan_flags[j+1])
                        break;
                {
-                   if (!chan_flags[j] || ((!IS_SET(chptr->mode.mlock_on, chan_flags[j])  || whatt > 0) &&
-                       (!IS_SET(chptr->mode.mlock_off, chan_flags[j]) || whatt < 0)))
+                   if (!chan_flags[j] || ((!IsSet(chptr->mode.mlock_on, chan_flags[j])  || whatt > 0) &&
+                       (!IsSet(chptr->mode.mlock_off, chan_flags[j]) || whatt < 0)))
                    {                       
                        if (bset != whatt)
                        {

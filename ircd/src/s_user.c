@@ -2132,7 +2132,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   me.name, parv[0], name);
 
 			if (IsHelpOp(acptr) && IsPerson(acptr) && !acptr->user->away
-                            && !IS_SET(ClientUmode(acptr), U_INVISIBLE))
+                            && !IsSet(ClientUmode(acptr), U_INVISIBLE))
 				sendto_one(sptr, rpl_str(RPL_WHOISHELPOP),
 					   me.name, parv[0], name);
 
@@ -3939,7 +3939,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
       /*
        * stop users making themselves operators too easily
        */
-      if (!IS_SET(setflags, U_OPER) && IsOper(sptr) && !IsServer(cptr))
+      if (!IsSet(setflags, U_OPER) && IsOper(sptr) && !IsServer(cptr))
 	ClearOper(sptr);
       if (!(setflags & U_LOCOP) && IsLocOp(sptr) && !IsServer(cptr))
 	ClientUmode(sptr) &= ~U_LOCOP;
@@ -3949,7 +3949,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
        * Helpops get all /quote help <mess> globals -Donwulff
        * yeh, but dont -h someone if they're already +h -Mysid
        */
-      if (!IS_SET(setflags, U_HELPOP) && MyClient(sptr) && IsHelpOp(sptr) && !OPCanHelpOp(sptr))
+      if (!IsSet(setflags, U_HELPOP) && MyClient(sptr) && IsHelpOp(sptr) && !OPCanHelpOp(sptr))
           if (!UserOppedOn(sptr, HELPOP_CHAN)) {
  		ClearHelpOp(sptr);
                 sptr->since++;
@@ -3976,13 +3976,13 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
        */
       if (MyClient(sptr) && IsAnOper(sptr))
       {
-	  if (!IS_SET(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
+	  if (!IsSet(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
 	    ClearClientF(sptr);
-	  if (!IS_SET(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
+	  if (!IsSet(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
 	    ClearFloodF(sptr);  
       }
 
-      if (!IS_SET(ClientUmode(sptr), U_MASK))
+      if (!IsSet(ClientUmode(sptr), U_MASK))
 	  REMOVE_BIT(ClientUmode(sptr), U_FULLMASK);
       else
 	  SET_BIT(ClientUmode(sptr), U_FULLMASK);

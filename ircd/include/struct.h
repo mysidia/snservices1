@@ -276,7 +276,7 @@ enum forbidden_result {
 
 #define SET_BIT(x, y)		((x) |= (y))
 #define REMOVE_BIT(x, y)	((x) &= ~(y))
-#define IS_SET(x, y)		((x) & (y))
+#define IsSet(x, y)		((x) & (y))
 #define IS_FLAGGED(x, y)	((x)->flags & (y))
 #define SET_FLAG(x, y)		((x)->flags |= (y))
 #define REMOVE_FLAG(x, y)	((x)->flags &= ~(y))
