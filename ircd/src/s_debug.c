@@ -141,9 +141,6 @@ void	send_usage(aClient *cptr, char *nick)
 #  define hzz HZ
 # else
 	int	hzz = 1;
-#  ifdef HPUX
-	hzz = (int)sysconf(_SC_CLK_TCK);
-#  endif
 # endif
 #endif
 
@@ -188,9 +185,6 @@ void	send_usage(aClient *cptr, char *nick)
 	int	hzz = 1, ticpermin;
 	int	umin, smin, usec, ssec;
 
-#  ifdef HPUX
-	hzz = sysconf(_SC_CLK_TCK);
-#  endif
 	ticpermin = hzz * 60;
 
 	umin = tmsbuf.tms_utime / ticpermin;

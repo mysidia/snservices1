@@ -63,22 +63,6 @@
  */
 #define SOCKSFOUND_URL   "http://www.sorcery.net/help/open_socks.html"
 
-/* Type of host. These should be made redundant somehow. -avalon */
-
-/*	BSD		Nothing Needed 4.{2,3} BSD, SunOS 3.x, 4.x */
-/*	HPUX		Nothing needed (A.08/A.09) */
-/*	OSF		Nothing needed (1.2) */
-/* 	AIX		IBM ugly so-called Unix, AIX */
-/* 	MIPS		MIPS Unix */
-/*	SGI		Nothing needed (IRIX 4.0.4) */
-/*  	SVR3		SVR3 stuff - being worked on where poss. */
-/* 	DYNIXPTX	Sequents Brain-dead Posix implement. */
-/* 	SOL20		Solaris2 */
-/* 	ESIX		ESIX */
-/* 	NEXT		NeXTStep */
-/* 	SVR4 */
-/*	LINUX_GLIBC	Glibc-based Linux distros - sys_errlist */
-
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the
    *most* CPU time in ircd.  They take more time than a WHOIS *as?f?s?d*.
@@ -577,10 +561,6 @@
 #ifndef BSD
 #define BSD
 #endif
-#endif
-
-#ifdef	__hpux
-#define	HPUX
 #endif
 
 #ifndef KLINE_TEMP

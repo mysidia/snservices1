@@ -146,11 +146,6 @@ case "$OS" in
 	DEFLIBS="none"
 	OSNAME="OSF/1 or Digital Unix"
 	;;
-    *SunOS*4.*)
-	DEFCFLAGS="$DEFOPT"
-	DEFLIBS="none"
-	OSNAME="SunOS 4.x"
-	;;
     *SunOS*5.*)
 	DEFCFLAGS="$DEFOPT -DSOL20 -DNEED_SNPRINTF"
 	DEFLIBS="-lsocket -lnsl -lresolv"
@@ -183,16 +178,6 @@ case "$OS" in
 		REDHAT6="define"
         fi
 
-	;;
-    *HP-UX*.09.*)
-	DEFCFLAGS="$DEFOPT"
-	DEFLIBS=""
-	OSNAME="HPUX 9.x"
-	;;
-    *HP-UX*.10.*)
-	DEFCFLAGS="$DEFOPT"
-	DEFLIBS=""
-	OSNAME="HPUX 10.x"
 	;;
 esac
 
