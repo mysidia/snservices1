@@ -393,7 +393,7 @@ typedef	enum {
 #define         SentNoSpoof(x)  ((ClientFlags(x)) & FLAGS_SENT_SPOOFCODE)
 #else
 #define IsNotSpoof(x)           (1)
-#define SetNotSpoof(x)		(1)
+#define SetNotSpoof(x)		do {} while (0)
 #endif
 
 #define IsUserVersionKnown(x)	(ClientFlags(x) & FLAGS_GOT_VERSION)
