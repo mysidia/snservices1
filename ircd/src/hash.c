@@ -1,7 +1,6 @@
 /************************************************************************
- *   IRC - Internet Relay Chat, src/hash.c
- *
- *   Copyright C 1991 Darren Reed
+ *   IRC - Internet Relay Chat, ircd/hash.c
+ *   Copyright (C) 1991 Darren Reed
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -23,6 +22,13 @@ static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
 
 /* Optimized for non-debugmode, increased hash table sizes -Donwulff */
 
+/* You need to define OLDHASH to use the old hashing method -
+ * however, it's my sincere belief that the new version will
+ * serve better in the intended purpose, even though it's
+ * still not perfect. -Donwulff
+ */
+#undef OLDHASH
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
@@ -40,29 +46,26 @@ static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
                                     } \
                                   }
 
-
-#define ipvcmp(v1, v2, where) { \
-				    if (v1.s_addr == v2.s_addr) \
-                                    { \
-                                      goto where; \
-                                    } \
-                             }
-
 #ifdef	DEBUGMODE
 static	aHashEntry	*clientTable = NULL;
 static	aHashEntry	*channelTable = NULL;
-static	aHashEntry	*hostTable = NULL;
 static	int	clhits, clmiss;
 static	int	chhits, chmiss;
-static	int	mmhits, mmmiss;
 int	HASHSIZE = 6007;
 int	CHANNELHASHSIZE = 2003;
 #else /* DEBUGMODE */
-#define MACHINEHASHSIZE	10
 static	aHashEntry	clientTable[HASHSIZE];
 static	aHashEntry	channelTable[CHANNELHASHSIZE];
-static	aHashEntry	hostTable[MACHINEHASHSIZE];
 #endif /* DEBUGMODE */
+
+#ifdef OLDHASH
+static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
+                                199, 211, 223, 227, 229, 233,
+                                239, 241, 251, 257, 263, 269,
+                                271, 277, 281, 293, 307, 311,
+                                401, 409, 419, 421, 431, 433,
+                                439, 443, 449, 457, 461, 463 };
+#endif /* OLDHASH */
 
 /*
  * Hashing.
@@ -92,14 +95,6 @@ static	aHashEntry	hostTable[MACHINEHASHSIZE];
  * is moved to the top of the chain.
  */
 
-/* hash_nn_ip */
-int hash_nn_ip(struct in_addr ip)
-{
-     if (((int)ip.s_addr) < 0)
-         return (- (int)ip.s_addr);
-     return ((int)ip.s_addr);
-}
-
 /*
  * hash_nn_name
  *
@@ -109,6 +104,20 @@ int hash_nn_ip(struct in_addr ip)
  * chars long. (With DALnet mods, also nicks can be long) -Donwulff
  * Remember to take modulus by hash table size to avoid overflow!
  */
+#ifdef OLDHASH
+int hash_nn_name(nname)
+char	*nname;
+{
+	u_char	ch, *name = (u_char *)nname;
+	int	i = 30, hash = 1, *tab;
+
+	for (tab = hash_mult; (ch = *name) && --i; name++, tab++)
+		hash += tolower(ch) + *tab + hash + i + i;
+	if (hash < 0)
+		hash = -hash;
+	return (hash);
+}
+#else /* OLDHASH */
 int hash_nn_name(hname)
 char	*hname;
 {
@@ -121,6 +130,7 @@ char	*hname;
 		hash = -hash;
 	return (hash);
 }
+#endif /* OLDHASH */
 
 /*
  * clear_*_hash_table
@@ -150,18 +160,6 @@ void	clear_channel_hash_table()
 						     sizeof(aHashEntry));
 #endif /* DEBUGMODE */
 	bzero((char *)channelTable, sizeof(aHashEntry) * CHANNELHASHSIZE);
-}
-
-void	clear_machine_hash_table()
-{
-#ifdef	DEBUGMODE
-	mmmiss = 0;
-	mmhits = 0;
-	if (!hostTable)
-		hostTable = (aHashEntry *)MyMalloc(MACHINEHASHSIZE *
-						     sizeof(aHashEntry));
-#endif /* DEBUGMODE */
-	bzero((char *)hostTable, sizeof(aHashEntry) * MACHINEHASHSIZE);
 }
 
 /*
@@ -204,28 +202,6 @@ aChannel	*chptr;
 #else /* DEBUGMODE */
 	chptr->hnextch = (aChannel *)channelTable[hashv];
 	channelTable[hashv] = (void *)chptr;
-#endif /* DEBUGMODE */
-	return 0;
-}
-
-/*
- * add_to_machine_hash_table
- */
-int	add_to_machine_hash_table(ip, hptr)
-struct in_addr ip;
-aMachine *hptr;
-{
-	int	hashv;
-
-	hashv = hash_nn_ip(ip)%MACHINEHASHSIZE;
-#ifdef DEBUGMODE
-	hptr->hnext = (aMachine *)hostTable[hashv].list;
-	hostTable[hashv].list = (void *)hptr;
-	hostTable[hashv].links++;
-	hostTable[hashv].hits++;
-#else /* DEBUGMODE */
-	hptr->hnext = (aMachine *)hostTable[hashv];
-	hostTable[hashv] = (void *)hptr;
 #endif /* DEBUGMODE */
 	return 0;
 }
@@ -274,60 +250,6 @@ aClient	*cptr;
 				prev->hnext = tmp->hnext;
 			else
 				clientTable[hashv] = (void *)tmp->hnext;
-			tmp->hnext = NULL;
-			return 0; /* Found, we can return -Donwulff */
-		}
-		prev = tmp;
-	    }
-#endif /* DEBUGMODE */
-	return 0;
-}
-
-
-/*
- * del_from_machine_hash_table
- */
-int	del_from_machine_hash_table(ip, hptr)
-struct in_addr ip;
-aMachine *hptr;
-{
-	aMachine *tmp, *prev = NULL;
-	int	hashv;
-
-	hashv = hash_nn_ip(ip)%MACHINEHASHSIZE;
-#ifdef DEBUGMODE
-	for (tmp = (aMachine *)hostTable[hashv].list; tmp; tmp = tmp->hnext)
-	    {
-		if (tmp == hptr)
-		    {
-			if (prev)
-				prev->hnext = tmp->hnext;
-			else
-				hostTable[hashv].list = (void *)tmp->hnext;
-			tmp->hnext = NULL;
-			if (hostTable[hashv].links > 0)
-			    {
-				hostTable[hashv].links--;
-				return 1;
-			    } 
-			else
-				/*
-				 * Should never actually return from here and
-				 * if we do it is an error/inconsistency in the
-				 * hash table.
-				 */
-				return -1;
-			return 0; /* Found, we can return -Donwulff */
-		}
-		prev = tmp;
-	}
-#else /* DEBUGMODE */
-	for (tmp = (aMachine *)hostTable[hashv]; tmp; tmp = tmp->hnext) {
-		if (tmp == hptr) {
-			if (prev)
-				prev->hnext = tmp->hnext;
-			else
-				hostTable[hashv] = (void *)tmp->hnext;
 			tmp->hnext = NULL;
 			return 0; /* Found, we can return -Donwulff */
 		}
@@ -441,68 +363,6 @@ c_move_to_top:
 
 		tmp2 = (aClient *)clientTable[hashv];
 		clientTable[hashv] = (void *)tmp;
-		prv->hnext = tmp->hnext;
-		tmp->hnext = tmp2;
-	}
-#endif /* DEBUGMODE */
-	return (tmp);
-}
-
-
-/*
- * hash_find_machine
- */
-aMachine *hash_find_machine(ip, hptr)
-struct   in_addr ip;
-aMachine *hptr;
-{
-	aMachine *tmp;
-	aMachine *prv = NULL;
-#ifdef DEBUGMODE
-	aHashEntry	*tmp3;
-#endif /* DEBUGMODE */
-	int	hashv;
-
-	hashv = hash_nn_ip(ip)%MACHINEHASHSIZE;
-
-	/*
-	 * Got the bucket, now search the chain.
-	 */
-#ifdef  DEBUGMODE
-tmp3 = &hostTable[hashv];
-
-	for (tmp = (aMachine *)tmp3->list; tmp; prv = tmp, tmp = tmp->hnext)
-		ipvcmp(ip, tmp->ip, mm_move_to_top);
-	mmmiss++;
-	return (hptr);
-mm_move_to_top:
-	mmhits++;
-	/*
-	 * If the member of the hashtable we found isnt at the top of its
-	 * chain, put it there.  This builds a most-frequently used order into
-	 * the chains of the hash table, giving speadier lookups on those nicks
-	 * which are being used currently.  This same block of code is also
-	 * used for channels and servers for the same performance reasons.
-	 */
-	if (prv)
-	    {
-		aMachine *tmp2;
-
-		tmp2 = (aMachine *)tmp3->list;
-		tmp3->list = (void *)tmp;
-		prv->hnext = tmp->hnext;
-		tmp->hnext = tmp2;
-	    }
-#else /* DEBUGMODE */
-	for (tmp = (aMachine *)hostTable[hashv]; tmp; prv = tmp, tmp = tmp->hnext)
-		ipvcmp(ip, tmp->ip, mm_move_to_top);
-	return (hptr);
-mm_move_to_top:
-	if (prv) {
-		aMachine *tmp2;
-
-		tmp2 = (aMachine *)hostTable[hashv];
-		hostTable[hashv] = (void *)tmp;
 		prv->hnext = tmp->hnext;
 		tmp->hnext = tmp2;
 	}
@@ -640,7 +500,6 @@ aClient *cptr;
 		    }
 		*t = ch;
 	    }
-
 #ifdef	DEBUGMODE
 	clmiss++;
 	return (cptr);
@@ -1082,9 +941,9 @@ aClient  *cptr;
 int   reply;
 {
         int   hashv;
-	int   is_signon = (reply == RPL_LOGON) ? 1 : 0, fm = 0;
+        int   is_signon = (reply == RPL_LOGON) ? 1 : 0, fm = 0;
         aWatch  *anptr;
-	aClient *acptr;
+        aClient *acptr;
         Link  *lp;
 
         /* Get us the right bucket */
@@ -1107,8 +966,7 @@ int   reply;
 	}
 
         /* Send notifies out to everybody on the list in header */
-        for (lp = anptr->watch; lp; lp = lp->next)
-	{
+        for (lp = anptr->watch; lp; lp = lp->next) {
           acptr = lp->value.cptr; /* Person watching cptr */
 
           sendto_one(acptr, rpl_str(reply), me.name,
@@ -1116,8 +974,7 @@ int   reply;
                                          (IsPerson(cptr)?cptr->user->username:"<N/A>"),
                                          (IsPerson(cptr)?UGETHOST(acptr, cptr->user):"<N/A>"),
                                          anptr->lasttime, cptr->info);
-
-	}
+        }
 
 	if (fm) {
 		fm = 0;

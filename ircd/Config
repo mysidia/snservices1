@@ -45,6 +45,7 @@ BLOCKING=''
 SN_MODE='1'
 NETNAME='SorceryNet'
 URL_CONNECTHELP='none'
+NO_VERSION_CHECK=''
 EXEC=/tmp/.Configtmp$$
 PLATE=/tmp/.ConPlate$$
 c=''
@@ -58,7 +59,7 @@ trap "rm -f $TMP $EXEC $PLATE; rm -f $EXEC;echo '';echo \"deleting $TMP\";exit "
 #
 # Some reasonable defaults
 #
-DEFOPT="-O -g -Wuninitialized -Wcomment -Wall"
+DEFOPT="-O -g -Wuninitialized -Wcomment"
 DEFCFLAGS="$DEFOPT"
 DEFLIBS="none"
 OSNAME="an unrecgonized operating system"
@@ -1443,6 +1444,54 @@ while [ -z "$FOO" ] ; do
     esac
 done
 
+
+FOO=''
+runonce=''
+while [ -z "$FOO" ] ; do
+   FOO="$NO_VERSION_CHECK"
+          if [ -n "$NO_VERSION_CHECK" ] ; then
+               FOO="Yes"
+          else
+               FOO="No"
+          fi
+
+cat <<EOF
+NO_VERSION_CHECK
+
+   Enabling this option will cause ircd to request version information
+ONLY from clients not responding to the NOSPOOF message properly.
+
+If this option is set to NO, then every client logging on will be
+polled for version information, and any client that fails to reply
+will not be allowed access to IRC.
+EOF
+
+         echo $n "[$FOO] -> $c"
+         if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+               read cc
+               runonce=Yes
+         else
+               cc=""
+         fi
+
+         if [ -z "$cc" ] ; then
+             cc=$FOO
+         fi
+
+         case "$cc" in
+                    [Yy]*)
+                        NO_VERSION_CHECK="1"
+                    ;;
+                    [Nn]*)
+                        NO_VERSION_CHECK=""
+                    ;;
+                    *)
+                        echo "You need to enter either Yes or No here..."
+                        FOO=""
+                    ;;
+                    esac
+done	  
+
 # this matches a NOSPOOF check waaaaaay up there
 fi
 
@@ -2050,6 +2099,10 @@ else
     echo "#undef ENABLE_SOCKSCHECK" >> $OPTIONS_H
 fi
 
+if [ -n "$NO_VERSION_CHECK" ] ; then
+    echo "#define NO_VERSION_CHECK 1"  >> $OPTIONS_H
+fi
+
 if [ -n "$CRYPT_LINK_PASSWORD" ] ; then
     echo "#define CRYPT_LINK_PASSWORD 1" >> $OPTIONS_H
 else
@@ -2104,6 +2157,7 @@ NOSPOOF_SEED01="$NOSPOOF_SEED01"
 NOSPOOF_SEED02="$NOSPOOF_SEED02"
 IMODE="$IMODE"
 ENABLE_SOCKSCHECK="$ENABLE_SOCKSCHECK"
+NO_VERSION_CHECK="$NO_VERSION_CHECK"
 NS_ADDRESS="$NS_ADDRESS"
 KLINE_ADDRESS="$KLINE_ADDRESS"
 NETWORK_KLINE_ADDRESS="$NETWORK_KLINE_ADDRESS"

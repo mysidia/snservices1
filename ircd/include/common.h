@@ -105,10 +105,11 @@ extern int inet_netof PROTO((struct in_addr));
 extern char *myctime PROTO((time_t));
 extern char *strtoken PROTO((char **, char *, char *));
 
-#if !defined(HAVE_MINMAX)
+#if !defined(MAX)
 #define MAX(a, b)	((a) > (b) ? (a) : (b))
 #endif
-#if !defined(HAVE_MINMAX)
+
+#if !defined(MIN)
 #define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
 
@@ -205,8 +206,6 @@ time_t NOW, tm_offset;
 #define REPORT_ERR_SOCKS "*** Socks port is firewalled or connection timed out"
 #define connotice(x, y) ( sendto_one(x, ":%s NOTICE AUTH :" y "", me.name) )
 #define UNSURE 2
-
-#define SERVICES_NAME   "services.sorcery.net"
 
 extern const char *service_nick[];
 #define cNickServ       service_nick[0]

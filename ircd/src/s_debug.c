@@ -102,14 +102,14 @@ char	serveropts[] = {
 #ifndef _WIN32
 #include <sys/file.h>
 #endif
-#ifdef OS_HPUX
+#ifdef HPUX
 #include <fcntl.h>
 #endif
 #if !defined(ULTRIX) && !defined(SGI) && !defined(sequent) && \
     !defined(__convex__) && !defined(_WIN32)
 # include <sys/param.h>
 #endif
-#ifdef OS_HPUX
+#ifdef HPUX
 # include <sys/syscall.h>
 # define getrusage(a,b) syscall(SYS_GETRUSAGE, a, b)
 #endif
@@ -129,7 +129,7 @@ char	serveropts[] = {
 #ifdef PCS
 # include <time.h>
 #endif
-#ifdef OS_HPUX
+#ifdef HPUX
 #include <unistd.h>
 #ifdef DYNIXPTX
 #include <sys/types.h>
@@ -218,7 +218,7 @@ void	send_usage(aClient *cptr, char *nick)
 #  define hzz HZ
 # else
 	int	hzz = 1;
-#  ifdef OS_HPUX
+#  ifdef HPUX
 	hzz = (int)sysconf(_SC_CLK_TCK);
 #  endif
 # endif
@@ -265,7 +265,7 @@ void	send_usage(aClient *cptr, char *nick)
 	int	hzz = 1, ticpermin;
 	int	umin, smin, usec, ssec;
 
-#  ifdef OS_HPUX
+#  ifdef HPUX
 	hzz = sysconf(_SC_CLK_TCK);
 #  endif
 	ticpermin = hzz * 60;
@@ -484,7 +484,7 @@ void	count_memory(aClient *cptr, char *nick)
 #ifndef _WIN32
 	sendto_one(cptr, ":%s %d %s :TOTAL: %d sbrk(0)-etext: %u",
 		   me.name, RPL_STATSDEBUG, nick, tot,
-		   (u_int)sbrk((size_t)0)-(u_int)sbrk0);
+		   (u_int)((char *)sbrk((size_t)0)-(char *)sbrk0));
 #else
 	sendto_one(cptr, ":%s %d %s :TOTAL: %d",
 		   me.name, RPL_STATSDEBUG, nick, tot);

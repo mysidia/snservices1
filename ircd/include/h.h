@@ -24,15 +24,6 @@
  * -avalon
  */
 
-#ifdef FLUD
-int               check_for_ctcp();
-int               check_for_flood();
-void              free_fluders();
-void              free_fludees();
-#define MyFludConnect(x)        (((x)->fd >= 0) || ((x)->fd == -2))
-
-#endif /* FLUD */
-
 extern	time_t	nextconnect, nextdnscheck, nextping;
 extern	aClient	*client, me, *local[];
 extern	aChannel *channel;
@@ -43,10 +34,8 @@ extern	time_t	check_pings(time_t now, int check_kills);
 #ifdef _WIN32
 extern	void	*hCio;
 #endif
-extern u_int32_t mask_seed1, mask_seed2, mask_seed3, mask_seed4;
 
 extern int expr_match (const char *pattern, const char *text);
-aClient *hash_find_client(char *, aClient *);
 
 extern	aChannel *find_channel PROTO((char *, aChannel *));
 extern	void	remove_user_from_channel PROTO((aClient *, aChannel *));
@@ -69,8 +58,6 @@ extern	aClient	*find_server PROTO((char *, aClient *));
 extern	aClient	*find_service PROTO((char *, aClient *));
 extern	aClient	*find_userhost PROTO((char *, char *, aClient *, int *));
 
-const char* inttobase64(char* buf, unsigned int v, unsigned int count);
-unsigned int base64toint(const char* s);
 extern	int	conf_xbits(aConfItem *aconf, char *field);
 extern	int	attach_conf PROTO((aClient *, aConfItem *));
 extern	aConfItem *attach_confs PROTO((aClient*, char *, int));
@@ -187,7 +174,6 @@ extern	void	sendto_flag();
 extern	void	sendto_flag_norep();
 /*VARARGS?*/
 extern	void	sendto_umode();
-extern	void	sendto_umode_except();
 /*VARARGS?*/
 extern	void	sendto_socks();
 
@@ -233,8 +219,6 @@ extern	aServer	*make_server PROTO(());
 extern	aClient	*make_client PROTO((aClient *));
 extern	int	free_socks PROTO((struct Socks *zap));
 extern	aSocks	*make_socks PROTO((aClient *to));
-extern	aMachine *make_machine();
-extern	void	free_machine(aMachine *);
 extern	Link	*find_user_link PROTO((Link *, aClient *));
 extern	int	IsMember PROTO((aClient *, aChannel *));
 extern	char	*pretty_mask PROTO((char *, int));
@@ -285,6 +269,8 @@ extern	int	dopacket PROTO((aClient *, char *, int));
 extern void send_socksquery (aSocks *);
 extern void read_socks (aSocks *);
 
+extern const char* safe_info(int hideIp, aClient* acptr);
+
 
 /*VARARGS2*/
 extern	void	debug();
@@ -303,8 +289,12 @@ extern int        hash_del_watch_list(aClient  *);
 extern aWatch    *hash_get_watch(char *);
 #define MAXWATCH       128
 
-void		  free_str_list PROTO ((Link *));
+
 int parse_help (aClient *sptr, char *name, char *help);
+void free_str_list(Link *);
+int find_str_match_link(Link **, char *str);
+void send_list(aClient *, int);
+
 char *crule_parse PROTO((char *));
 int crule_eval PROTO((char *));
 void crule_free PROTO((char **));
@@ -321,3 +311,8 @@ extern char **h_ignores;
  * ahurt stuff
  */
 aConfItem	*find_ahurt(aClient *);
+
+/*
+ * VCcheck stuff
+ */
+int FailClientCheck(aClient* sptr);

@@ -1,8 +1,7 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, common/parse.c
- *   Copyright C 1990 Jarkko Oikarinen and
+ *   Copyright (C) 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
- *   Copyright C 1996-2002 James Hess -- All Rights Reserved
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -264,18 +263,6 @@ aClient *cptr;
 	return cptr;
 }
 
-aClient *find_server_const(const char *name, aClient *cptr)
-{
-	char cname[256];
-
-	strncpy(cname, name, 256);
-	cname[255] = '\0';
-
-	if (name)
-		cptr = hash_find_server(cname, cptr);
-	return cptr;
-}
-
 aClient *find_name(name, cptr)
 char	*name;
 aClient *cptr;
@@ -507,6 +494,17 @@ struct	Message *mptr;
 				    mptr->func != m_heal && mptr->func != m_userhost)*/
 			if (IsPerson(from) && MyConnect(from))
 			{
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+			        if (MyClient(from) && !IsUserVersionKnown(from)
+					&& mptr->func != m_notice && mptr->func != m_mode 
+                                        && mptr->func != m_mode  && mptr->func != m_ison
+					&& mptr->func != m_join
+                                        && (mptr->while_hurt < 1 ||
+					mptr->while_hurt > 1)) {
+	        			        return FailClientCheck(from);
+        			}
+#endif
+
 				if (mptr->while_hurt < 1 
                                    || ((mptr->while_hurt > 1 && (from->hurt < mptr->while_hurt))))
 				{
@@ -831,3 +829,17 @@ char	*sender;
 		sendto_one(cptr, ":%s SQUIT %s :(Unknown from %s)",
 			   me.name, sender, get_client_name(cptr, FALSE));
 }
+
+
+aClient *find_server_const(const char *name, aClient *cptr)
+{
+       char cname[256];
+
+       strncpy(cname, name, 256);
+       cname[255] = '\0';
+
+       if (name)
+               cptr = hash_find_server(cname, cptr);
+       return cptr;
+}
+
