@@ -35,13 +35,15 @@ SVOBJS = ../akill.o ../db.o ../help.o ../parse.o ../stuff.o \
          ../passwd.o ../timer.o ../clone.o ../gameserv.o ../interp.o \
          ../nickserv.o ../server.o ../credits.o ../hash.o ../log.o \
          ../operserv.o ../string.o ../conf.o ../signal.o ../hash/libmd5.a \
-	 ../sipc.o ../mass.o ../chantrig.o
+	 ../sipc.o ../mass.o ../timestr.o ../chantrig.o
 
 DEFAULT_INCLUDES = -I./
 INCLUDES = -I./ -I../ -I- -I/usr/include -I@includedir@
 
 EXTRA_PROGRAMS = tests tool_cmd
-tests_SOURCES = email_test.cc stuff_test.cc chanserv_test.cc run_test.cc
+tests_SOURCES = email_test.cc stuff_test.cc chanserv_test.cc run_test.cc \
+timestr_test.cc
+
 tests_LDADD = -lcppunit $(SVOBJS)
 
 tool_cmd_SOURCES = tool_cmd.c
