@@ -834,7 +834,7 @@ void  count_watch_memory(int *count, u_long *memory)
                 anptr = watchTable[i];
                 while (anptr) {
                         (*count)++;
-                        (*memory) += sizeof(aWatch)+strlen(anptr->nick);
+                        (*memory) += sizeof(aWatch);
                         anptr = anptr->hnext;
                 }
         }
@@ -865,7 +865,7 @@ int   add_to_watch_hash_table(char *nick, aClient *cptr)
 
         /* If found NULL (no header for this nick), make one... */
         if (!anptr) {
-                anptr = irc_malloc(sizeof(aWatch)+strlen(nick));
+                anptr = irc_malloc(sizeof(aWatch));
                 anptr->lasttime = NOW;
                 strcpy(anptr->nick, nick);
 

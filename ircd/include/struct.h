@@ -773,7 +773,7 @@ struct Watch {
            aWatch  *hnext;
            time_t   lasttime;
            Link  *watch;
-           char  nick[1];
+           char  nick[NICKLEN+1];
 };
 
 /* channel structure */
@@ -790,7 +790,7 @@ struct Channel	{
 	Link	*members;
 	Link	*invites;
 	Link	*banlist;
-	char	chname[1];
+	char	chname[CHANNELLEN+1];
 };
 
 /*
