@@ -541,8 +541,13 @@ int *bantype;
 		if (match(tmp->value.ban.banstr, nuhmask) == 0)
 			break;
 
-                if (match(tmp->value.ban.banstr, nuh) == 0)
-	                        break;		
+		if (match(tmp->value.ban.banstr, nuh) == 0)
+			break;
+
+		if (MyClient(cptr) && IsIpMask(tmp->value.ban.banstr) &&
+			(s_ip = make_nick_user_ip(cptr)) &&
+			!match(tmp->value.ban.banstr, s_ip))
+                        break;
 
 		/* important! ordinary bans take precedence */
 		if (*tmp->value.ban.banstr == '$' && BanRuleMatch(tmp->value.ban.banstr, cptr, &typetmp, nuh, nuhmask, s_ip)) {
