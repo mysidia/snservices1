@@ -45,7 +45,6 @@ int	is_zombie(aClient *, aChannel *);
 int	has_voice(aClient *, aChannel *);
 int	count_channels(aClient *);
 Link    *is_banned(aClient *, aChannel *, int *);
-int	parse_help(aClient *, char *, char *);
 
 aClient	*find_client(char *, aClient *);
 aClient	*find_name(char *, aClient *);
@@ -238,26 +237,11 @@ int        hash_del_watch_list(aClient  *);
 aWatch    *hash_get_watch(char *);
 #define MAXWATCH       128
 
-
-int parse_help (aClient *sptr, char *name, char *help);
 void free_str_list(Link *);
 int find_str_match_link(Link **, char *str);
 void send_list(aClient *, int);
 
 u_long cres_mem(aClient *);
-
-int nohelp_message(aClient *sptr, int g);
-
-char *crule_parse(char *);
-int crule_eval(char *);
-void crule_free(char **);
-void helpop_ignore(char *);
-void helpop_unignore(int);
-int helpop_ignored(aClient *);
-extern int nhtopics;
-extern aHelptopic **htopics;
-extern int h_nignores;
-extern char **h_ignores;
 
 
 /*

@@ -156,7 +156,7 @@ static	time_t	try_connections(currenttime)
 time_t	currenttime;
 {
 	aConfItem *aconf, **pconf;
-	aConfItem *cconf, *con_conf = NULL;
+	aConfItem *con_conf = NULL;
 	aClient *cptr;
 #ifndef HUB
 	aClient *xcptr;
@@ -202,19 +202,10 @@ time_t	currenttime;
 		if (!cptr && (Links(cltmp) < MaxLinks(cltmp)) &&
 		    (!connecting || (Class(cltmp) > con_class)))
 		  {
-		    /* Check connect rules to see if we're allowed to try */
-		    for (cconf = conf; cconf; cconf = cconf->next)
-		      if ((cconf->status & CONF_CRULE) &&
-			  (match(cconf->host, aconf->name) == 0))
-			if (crule_eval (cconf->passwd))
-			  break;
-		    if (!cconf)
-		      {
 			con_class = Class(cltmp);
 			con_conf = aconf;
 			/* We connect only one at time... */
 			connecting = TRUE;
-		      }
 		  }
 		if ((next > aconf->hold) || (next == 0))
 			next = aconf->hold;

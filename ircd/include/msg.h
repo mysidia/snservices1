@@ -43,8 +43,6 @@
 #define MSG_LINKS    "LINKS"	/* LINK */
 #define MSG_STATS    "STATS"	/* STAT */
 #define MSG_USERS    "USERS"	/* USER -> USRS */
-#define MSG_HELP     "HELP"	/* HELP */
-#define MSG_HELPOP   "HELPOP"	/* HELP */
 #define MSG_ERROR    "ERROR"	/* ERRO */
 #define MSG_AWAY     "AWAY"	/* AWAY */
 #define MSG_CONNECT  "CONNECT"	/* CONN */
@@ -148,7 +146,6 @@ int m_info(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_links(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_version(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-int m_help(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_showmask(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_squit(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 int m_away(aClient *cptr, aClient *sptr, int parc, char *parv[]);
@@ -250,8 +247,6 @@ struct Message msgtab[] = {
   { MSG_STATS,   m_stats,    0, MAXPARA, 1,        0L, 0 },
   { MSG_LINKS,   m_links,    0, MAXPARA, 1,        0L, 0 },
   { MSG_ADMIN,   m_admin,    0, MAXPARA, 1,        0L, 1 },
-  { MSG_HELP,    m_help,     0, 1      , 1,        0L, 1 },
-  { MSG_HELPOP,  m_help,     0, 1      , 1,        0L, 1 },
   { MSG_INFO,    m_info,     0, MAXPARA, 1,        0L, 0 },
   { MSG_MOTD,    m_motd,     0, MAXPARA, 1,        0L, 0 },
   { MSG_CLOSE,   m_close,    0, MAXPARA, 1,        0L, 0 },

@@ -38,8 +38,6 @@ IRCD_RCSID("$Id$");
  * for the connect rule patch..  these really should be in a header,
  * but i see h.h isn't included for some reason..  so they're here
  */
-char *crule_parse(char *rule);
-void crule_free(char **elem);
 
 static	void	new_class(int cn);
 static	char	*chkconf_getfield(char *newline), confchar(u_int status);
@@ -139,7 +137,7 @@ static aConfItem *
 chkconf_initconf(int opt)
 {
 	int	fd;
-	char	line[512], *tmp, c[80], *s, *crule;
+	char	line[512], *tmp, c[80], *s;
 	int	ccount = 0, ncount = 0, dh, flags = 0;
 	int	lineno;
 	aConfItem *aconf = NULL, *ctop = NULL;
@@ -242,13 +240,6 @@ chkconf_initconf(int opt)
 			aconf->status = CONF_CONNECT_SERVER;
 			break;
 			/* Connect rule */
-		case 'D':
-			aconf->status = CONF_CRULEALL;
-			break;
-			/* Connect rule - autos only */
-		case 'd':
-			aconf->status = CONF_CRULEAUTO;
-			break;
 		case 'H': /* Hub server line */
 		case 'h':
 			aconf->status = CONF_HUB;
@@ -451,11 +442,6 @@ chkconf_initconf(int opt)
 		 * any allocated storage immediately -- we're just looking
 		 * for errors..
 		 */
-		if (aconf->status & CONF_CRULE)
-			if ((crule =
-			     (char *) crule_parse (aconf->name)) != NULL)
-		    crule_free(&crule);
-
 		if (!aconf->class)
 			aconf->class = get_class(0);
 		(void)sprintf(maxsendq, "%d", aconf->class->class);

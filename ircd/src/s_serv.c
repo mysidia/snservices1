@@ -271,7 +271,7 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	int	i;
 	char	info[REALLEN+1], *inpath, *host, *encr;
 	aClient *acptr, *bcptr;
-	aConfItem *aconf, *cconf;
+	aConfItem *aconf;
 	int	hop;
 
 	info[0] = '\0';
@@ -539,19 +539,6 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	strncpyzt(cptr->name, host, sizeof(cptr->name));
 	strncpyzt(cptr->info, info[0] ? info:me.name, sizeof(cptr->info));
 	cptr->hopcount = hop;
-
-	/* check connection rules */
-	for (cconf = conf; cconf; cconf = cconf->next)
-	  if ((cconf->status == CONF_CRULEALL) &&
-	      (match(cconf->host, host) == 0))
-	    if (crule_eval (cconf->passwd))
-	      {
-		ircstp->is_ref++;
-		sendto_ops("Refused connection from %s.",
-			   get_client_host(cptr));
-		return exit_client(cptr, cptr, cptr,
-				   "Disallowed by connection rule");
-	      }
 
 	switch (check_server_init(cptr))
 	{
@@ -828,10 +815,6 @@ m_server_estab(aClient *cptr)
 		   }
 	}
 
-        /* HelpOp ignores */
-        if (h_nignores && h_ignores)
-            for (i = 0 ; i < h_nignores; i++)
-                 sendto_one(cptr, ":%s HELP :+ignore %s", me.name, h_ignores[i]);
 	return 0;
 }
 
@@ -995,8 +978,6 @@ static int report_array[19][3] = {
 		{ CONF_OPERATOR,	  RPL_STATSOLINE, 'O'},
 		{ CONF_HUB,		  RPL_STATSHLINE, 'H'},
 		{ CONF_LOCOP,		  RPL_STATSOLINE, 'o'},
-		{ CONF_CRULEALL,	  RPL_STATSDLINE, 'D'},
-		{ CONF_CRULEAUTO,	  RPL_STATSDLINE, 'd'},
 		{ CONF_SERVICE,		  RPL_STATSSLINE, 'S'},
 		{ CONF_UWORLD,		  RPL_STATSULINE, 'U'},
 		{ CONF_MISSING,		  RPL_STATSXLINE, 'X'},
@@ -1157,10 +1138,6 @@ static	void	report_configured_links(aClient *sptr, int mask)
 					   buf, name, port,
 					   get_conf_class(tmp));
 			}
-			/* connect rules are classless */
-			else if (tmp->status & CONF_CRULE)
-				sendto_one(sptr, rpl_str(p[1]), me.name,
-					   sptr->name, c, host, name);
 			/* Only display on X if server is missing */
 			else if (mask == CONF_MISSING) {
 			    if (!find_server(name, NULL))
@@ -1326,12 +1303,6 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		send_usage(sptr,parv[0]);
 #endif
 		break;
-	case 'D' :
-		report_configured_links(sptr, CONF_CRULEALL);
-		break;
-	case 'd' :
-		report_configured_links(sptr, CONF_CRULE);
-		break;
 	case 'S' : case 's' :
 		report_configured_links(sptr, CONF_SERVICE);
 		break;
@@ -1414,140 +1385,6 @@ m_error(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 	return 0;
     }
-
-/*
-** m_help (help/write to +h currently online) -Donwulff
-**	parv[0] = sender prefix
-**	parv[1] = optional message text
-*/
-int
-m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
-{
-	int i;
-        char    *message;
-
-         if (check_registered(sptr))
-                 return 0;
-  
-	message = parc > 1 ? parv[1] : NULL;
-
-	if (BadPtr(message) || !mycmp(message, "msgtab")) {
-		for (i = 0; msgtab[i].cmd; i++)
-			if ((!IsHurt(sptr) || (msgtab[i].while_hurt > 0))
-			    && !(msgtab[i].flags & MF_H))
-				sendto_one(sptr,":%s NOTICE %s :%s",
-					   me.name, parv[0], msgtab[i].cmd);
-		return 0;
-	}
-        if (!mycmp(message, "ignore")
-	    && (IsHelpOp(sptr) || IsOper(sptr) || IsServer(sptr))) {
-		if (!h_nignores)
-			sendto_one(sptr, ":%s NOTICE %s :There are no help ignores.", me.name, parv[0]);
-		for ( i = 0 ; i < h_nignores ; i++ )
-			sendto_one(sptr, ":%s NOTICE %s :\2%2d\2. %s",
-				   me.name, parv[0], i+1, h_ignores[i]);
-		return (0);
-        }
-        if (!myncmp(message, "+ignore ", 7)
-	    && (IsHelpOp(sptr) || IsOper(sptr) || IsServer(sptr))) {
-		if (BadPtr(message+7) || BadPtr(message+8)) {
-			sendto_one(sptr, ":%s NOTICE %s :Ignore WHAT?",
-				   me.name, parv[0]);
-			return(0);
-		}
-		if (!match(message+8, ".!......@...")     || 
-		    !match(message+8, ".!......@.....")   || 
-		    !match(message+8, ".!......@...net")  ||
-		    !match(message+8, ".!......@...com")  ||
-		    !match(message+8, ".!......@...org")) {
-			sendto_one(sptr, ":%s NOTICE %s :That is not a legal ignore HelpOp mask.", me.name, parv[0]);
-			if (IsServer(cptr))
-				sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message);
-			return (0);
-		}
-		helpop_ignore(message + 8);
-		if (!IsServer(cptr))
-			sendto_one(sptr, ":%s NOTICE %s :Ignore for \2%s\2 set.", me.name, parv[0], message+8);
-		else if (IsServer(sptr)) {
-			sendto_serv_butone(cptr, ":%s HELP %s",
-					   parv[0], message);
-			return (0); /* Don't send helpops for Net.burst */
-		}
-        }
-        if (!myncmp(message, "-ignore ", 7)
-	    && (IsHelpOp(sptr) || IsOper(sptr) || IsServer(sptr))) {
-		for ( i = 0 ; i < h_nignores ; i++ )
-			if (!mycmp(message+8, h_ignores[i]))
-				break;
-		if (i >= h_nignores) {
-			if (MyClient(sptr))
-				sendto_one(sptr, ":%s NOTICE %s :No such ignore.", me.name, parv[0]);
-			return (0);
-		}
-		if (!IsServer(cptr))
-			sendto_one(sptr, ":%s NOTICE %s :Ignore for \2%s\2 removed.", me.name, parv[0], h_ignores[i]);
-		helpop_unignore(i);
-        }
-        if ((!myncmp(message, "-ignore ", 7)
-	     || !myncmp(message, "+ignore ", 7)
-	     || !mycmp(message, "ignore"))
-	    && !(IsOper(sptr) || IsHelpOp(sptr) || IsServer(sptr) )) {
-		sendto_one(sptr, ":%s NOTICE %s :Permission denied -- You must be a helpop to edit help system ignores.", me.name, parv[0]);
-		return (0);
-        }
-
-/* Drags along from wallops code... I'm not sure what it's supposed to do, 
-   at least it won't do that gracefully, whatever it is it does - but
-   checking whether or not it's a person _is_ good... -Donwulff */
-
-	if (!IsServer(sptr) && MyConnect(sptr) && !IsPerson(sptr)) {
-		check_registered(sptr);
-		return 0;
-	}
-
-        if (IsServer(cptr) /*|| IsHelpOp(sptr)*/ ) {
-                sendto_serv_butone(IsServer(cptr) ? cptr : NULL,
-                                   ":%s HELP %s", parv[0], message);
-                sendto_helpops("from %s%s: %s", parv[0], IsHelpOp(sptr) ? " (HelpOp)" : "", message);
-        } else if (message && *message == '!') {
-               if (BadPtr(message+1))
-                   message = "!index";
-               parse_help(sptr, parv[0], message);
-               return 0;
-        } else if ((!BadPtr(message) && *message == '?') || IsHelpOp(sptr)) {
-                int adj = (message && *message == '?' ? 1 : 0);
-
-                if (!IsHelpOp(sptr) && helpop_ignored(sptr))
-                {
-                    sendto_one(sptr, ":%s NOTICE %s :You can't do that.", me.name, parv[0]);
-                    return(0);
-                }
-                else if (BadPtr(message+adj))
-                {
-                    sendto_one(sptr, ":%s NOTICE %s :Nothing to send.", me.name, parv[0]);
-                    return(0);
-                }
-                else if (!IsHelpOp(sptr))
-                    sendto_one(sptr, ":%s NOTICE %s :Your message has been forwarded to the HelpOps.", me.name, parv[0]);
-                sendto_helpops("from %s%s: %s", parv[0], IsHelpOp(sptr) ? " (HelpOp)" : MyClient(sptr) ? " (Local)" : "", message+adj);
-                sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message+adj);
-        } else if (MyClient(sptr) && parse_help(sptr, parv[0], message) > 0) {
-        } else if (!nohelp_message(sptr, 0)) {
-        } else if (MyConnect(sptr)) {
-                sendto_serv_butone(IsServer(cptr) ? cptr : NULL,
-                                   ":%s HELP %s", parv[0], message);
-                sendto_helpops("from %s (Local): %s", parv[0], message);
-        } else
-        {
-                if (!IsHelpOp(sptr))
-                    sendto_helpops("from %s: %s", parv[0], message);
-                else
-                    sendto_helpops("from %s (HelpOp): %s", parv[0], message);
-                sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message);
-        }
-
-	return 0;
-}
 
 /*
  * parv[0] = sender
@@ -1658,7 +1495,7 @@ int
 m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	int	port, tmpport, retval;
-	aConfItem *aconf, *cconf;
+	aConfItem *aconf;
 	aClient *acptr;
 
          if (check_registered(sptr))
@@ -1741,23 +1578,6 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			   me.name, parv[0]);
 		return 0;
 	    }
-
-        /*
-	** Evaluate connection rules...  If no rules found, allow the
-        ** connect.  Otherwise stop with the first true rule (ie: rules
-        ** are ored together.  Oper connects are effected only by D
-        ** lines (CRULEALL) not d lines (CRULEAUTO).
-        */
-	for (cconf = conf; cconf; cconf = cconf->next)
-	  if ((cconf->status == CONF_CRULEALL) &&
-	      (match(cconf->host, aconf->name) == 0))
-	    if (crule_eval (cconf->passwd))
-	      {
-		sendto_one(sptr,
-			   "NOTICE %s :Connect: Disallowed by rule: %s",
-			   parv[0], cconf->name);
-		return 0;
-	      }
 
 	/*
 	** Notify all operators about remote connect requests
