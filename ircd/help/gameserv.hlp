@@ -1,0 +1,49 @@
+
+^PAGE:gameserv
+--- SorceryNet Game Services Help ---
+ 
+    GameServ provides users with functions often
+    required to play games, such as rolling dice.
+    This eliminates the need for channel bots
+    Commands:
+     ROLL      - Returns a random number
+ 
+    Type /msg GameServ help <command> for more help with each
+    command. For further assistance with services, /join #Help.
+ 
+--- End of Services Help  ---
+^gameserv
+^END
+
+^PAGE:gameserv roll
+--- SorceryNet Channel Services Help ---
+ 
+ === ROLL ===
+ 
+     SYNTAX:
+     /msg ChanServ ROLL [<#channel>] a#bDc+d
+ 
+     DESCRIPTION:
+     The ROLL command simulates the throwing of a set of
+     dice, fitting the given criteria.
+     
+     a is the number of separate outputs to give (optional)
+     b is the number of dice to roll (but not output) (optional)
+     c is the number of sides each dice has
+     d is the modifier for each roll (optional)
+     
+     EXAMPLES:
+     
+     To roll 3 die, each with 6 sides, and return 2 results
+     /msg GameServ roll 2#3d6
+     To roll 1 die, with 10 sides, and add 3 to each result
+     /msg GameServ roll d10+3
+     To roll 2 die, with 3 sides, and take 1 from each result
+     /msg GameServ roll #2d3-1
+     
+--- End Of Services Help ---
+^gameserv
+^END
+# /* End of GameServ Help */
+
+

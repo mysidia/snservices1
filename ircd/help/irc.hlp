@@ -1,0 +1,111 @@
+^TOPIC:SorceryNet
+%BSorceryNet%B topics (/raw help <topic>):
+substitute %B/raw%B with %B/quote%B in ircII and %B/verbose%B
+in pIRCH.
+
+   SERVICES                       IRCD
+
+^END
+
+^TOPIC:ircd
+%BAnything useful and/or important that is unique to this ircd%B
+%BWill (eventually) be placed in this file%B
+
+  IRC Commands:
+      MSG        NICK      MODE      NOTICE    JOIN
+      QUIT       PART      TOPIC     INVITE    KICK
+      PING       AWAY      ISON      SERVER    WHOIS
+      WHO        WHOWAS    LIST      NAMES     USERHOST
+      NICKSERV   CHANSERV  MEMOSERV  INFOSERV  IDENTIFY
+      TRACE      VERSION   STATS     LINKS     ADMIN
+      HELP       INFO      MOTD      SILENCE
+
+    (type %B/raw help msgtab%B for the list of server commands)
+
+What follows is technical information:
+
+SorceryNet ircd was based on dal4.4.10 and then adapted to .12
+
+Special Numerics:
+  ERR_YOURHURT         514              RPL_WHOISHURT        309
+  RPL_WHOISHELPOP      310              RPL_CHANNELMLOCKIS   325
+^END
+
+^TOPIC:Services
+type %B/raw help%B for the main help index
+substitute %B/raw%B with %B/quote%B in ircII and %B/verbose%B
+in pIRCH.
+
+%BNickServ%B (/raw help nickserv)
+   NickServ is a mechanism that gives an individual the
+   means to "own" and protect their nickname.
+%BChanServ%B (/raw help chanserv)
+   Similarly to NickServ, ChanServ allows the
+   individual to "form" a channel and be the
+   definitive owner of it.
+%BMemoServ%B (/raw help memoserv)
+   This allows users to send brief messages to one
+   another when both of their nicknames are registered.
+   This allows for offline messaging.
+%BInfoServ%B (/raw help operserv)
+   This service is used by operators to communicate
+   with the userbase.
+
+^END
+
+# Some basic SRA topics (nothing sensitive should be here)
+
+^COMMAND:NickServ GETREALPASS
+^USAGE GETREALPASS <nickname>
+
+This command retrieves the password of a user.
+This should very rarely be used.
+
+%BLimited to Services Root access%B
+^Oper
+^OperServ
+^END
+
+^COMMAND:OperServ JUPE
+^USAGE JUPE <server>
+
+This command jupiters a server.  Use this command
+with great care and discretion.
+
+%BLimited to Services Root access%B
+^Oper
+^OperServ
+^END
+
+^COMMAND:OperServ SYNC
+^USAGE SYNC
+
+Cause services to save all databases.
+
+%BLimited to Services Root access%B
+^Oper
+^OperServ
+^END
+
+^COMMAND:OperServ RAW
+^USAGE RAW <text>
+
+Cause service to send out a message over raw
+IRC.  %VDo NOT toy with this.%V
+
+%BLimited to Services Root access%B
+^Oper
+^OperServ
+^END
+
+^COMMAND:OperServ SHUTDOWN
+^USAGE SHUTDOWN [<reason>]
+
+Shut down services.
+
+%BLimited to Services Root access%B
+^Oper
+^OperServ
+^END
+
+

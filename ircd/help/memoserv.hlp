@@ -1,0 +1,211 @@
+
+^PAGE:memoserv clean
+--- SorceryNet Memo Services Help ---
+ 
+ === CLEAN ===
+ 
+     SYNTAX:
+     /msg MemoServ CLEAN
+ 
+     DESCRIPTION:
+     The MemoServ CLEAN command is used to clear ALL memos which 
+     are marked as deleted from your memobox.
+ 
+     EXAMPLES:
+     To clear all memos marked as deleted from your mailbox:
+       /msg MemoServ clean
+   
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv delete
+--- SorceryNet Memo Services Help ---
+ 
+ === DELETE ===
+   
+     SYNTAX:
+     /msg MemoServ DELETE <#/all/read>
+ 
+     DESCRIPTION:
+     The MemoServ DELETE command is used to mark all, previously 
+     read or specified memos in a memobox as deleted. To get a 
+     list of all memos in your memobox type, /msg MemoServ LIST.
+ 
+     EXAMPLES:
+     To mark all memos in your memobox as deleted, type:
+       /msg MemoServ delete all
+     To mark all previously read memos as deleted, type:
+       /msg MemoServ delete read
+     To mark memo number 3 as deleted, type:
+       /msg MemoServ delete 3
+  
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv forward
+--- SorceryNet Memo Services Help ---
+ 
+ === FORWARD ===
+ 
+     SYNTAX:
+     /msg MemoServ FORWARD <nick> <password>
+ 
+     DESCRIPTION:
+     The MemoServ FORWARD command allows you to forward memos sent
+     to one of your registered nicks to the memobox of another 
+     registered nick. *NOTE* The password used must be the one used
+     to register the nick you want the memos forwarded to.
+ 
+     EXAMPLES:
+     To forward memos sent to you to the nick Niltsiar using the 
+     password GrUmPy type:
+       /msg MemoServ forward Niltsiar GrUmPy
+     To turn memo fowarding off type:
+       /msg MemoServ forward
+ 
+--- End Of Services Help --
+^memoserv
+^END
+
+^PAGE:memoserv
+--- SorceryNet Memo Services Help ---
+ 
+    Memo Services provide users with the ability to send
+    short notes to other users with registered nicknames
+    on SorceryNet.  Memos are limited to 350 characters.
+ 
+    Commands: 
+       SEND     - Sends a Memo to a specific Nickname
+       READ     - Read a Memo
+       LIST     - Lists all Memos
+       DELETE   - Marks Memos as deleted
+ 
+    Other Commands:
+       CLEAN      UNSEND     FORWARD    NOMEMO
+ 
+    Type /msg MemoServ help <command> for more help with each 
+    command.  For further assistance with services, /join #Help. 
+ 
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv list
+--- SorceryNet Memo Services Help ---
+ 
+ === LIST ===
+  
+     SYNTAX:
+     /msg MemoServ LIST
+ 
+     DESCRIPTION:
+     The LIST command returns a list of all memos currently in 
+     your memobox.
+ 
+     EXAMPLES:
+     To get a list of all memos in your memobox type:
+       /msg MemoServ list
+   
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv nomemo
+--- SorceryNet Memo Services Help ---
+ 
+ === NOMEMO ===
+  
+     SYNTAX:
+     /msg MemoServ NOMEMO <on|off>
+ 
+     DESCRIPTION:
+     The NOMEMO command allows you to toggle your ability to
+     receive memos on and off. If it is on, nobody will be able
+     to send you any memos.
+  
+     EXAMPLES:
+     To stop receiving memos, type:
+       /msg MemoServ nomemo on
+     To start receiving memos again, type:
+       /msg MemoServ nomemo off
+ 
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv read
+--- SorceryNet Memo Services Help ---
+ 
+ === READ ===
+   
+     SYNTAX:
+     /msg MemoServ READ #
+   
+     DESCRIPTION:
+     The MemoServ READ command displays the memo specified for 
+     reading. To get a list of all memos currently in your
+     memobox type, /msg MemoServ LIST.
+ 
+     EXAMPLES:
+     To read memo number 4 type:
+       /msg MemoServ read 4
+ 
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv send
+--- SorceryNet Memo Services Help ---
+ 
+ === SEND ===
+  
+     SYNTAX:
+     /msg MemoServ SEND <nick> <memo>
+ 
+     DESCRIPTION:
+     The SEND command allows you to send a short memo to a specified
+     registered nick or all of the operators in a specified channel.
+     Memos can be up to 350 characters in length.
+  
+     EXAMPLES:
+     To send a memo to Carlfish saying "How's life in the bowl?", 
+     type:
+       /msg MemoServ send Carlfish How's life in the bowl?
+     To send a memo to all operators in the channel #Help saying 
+     "Hello.", type:
+       /msg MemoServ send #Help Hello.
+ 
+--- End Of Services Help ---
+^memoserv
+^END
+
+^PAGE:memoserv unsend
+--- SorceryNet Memo Services Help ---
+ 
+ === UNSEND ===
+ 
+     SYNTAX:
+     /msg MemoServ UNSEND <#/ALL>
+ 
+     DESCRIPTION:
+     The MemoServ UNSEND command lets you both list all unread 
+     memos you have sent and delete any unread memos you have 
+     sent.
+ 
+     EXAMPLES:
+     To list all memos that you have sent that have not yet been 
+     read, type:
+       /msg MemoServ unsend
+     To delete all unread memos you have sent type:
+       /msg MemoServ unsend all
+     To delete memo number 2 in the list of memos you have sent 
+     that have not yet been read, type:
+       /msg MemoServ unsend 2
+ 
+--- End Of Services Help --
+^memoserv
+^END
+# /* End of MemoServ Help */
+

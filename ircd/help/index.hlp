@@ -1,0 +1,47 @@
+
+#
+# SorceryNet Help System
+# This file was automatically created by buildhf
+# $Id$
+#
+
+^TOPIC:INDEX
+
+For detailed information on services, type:
+   %B/raw help %N%B
+   %B/raw help %C%B
+   %B/raw help %M%B
+   %B/raw help %I%B
+   %B/raw help GameServ%B
+
+For general services information, type /raw help services
+
+Other Help Resources:
+
+The SorceryNet website is at %Bhttp://www.sorcery.net%B
+Type /raw help msgtab to view the list of available commands
+Type /raw help !<topic> to only search help pages for a topic
+Type /raw help ?<message> to send a message to online %BHelpOps%B
+Type /raw help <question> to make a general help request
+
+ircII users: use %B/quote%B in place of /raw, and
+pIRCH users: use %B/verbose%B in place of /raw.
+^END
+
+#
+# The following help files are to be automatically loaded on startup
+# (Actually.. all .hlp files in help/ are loaded currently)
+#
+
+^INCLUDE "nickserv.hlp"
+^INCLUDE "chanserv.hlp"
+^INCLUDE "memoserv.hlp"
+^INCLUDE "operserv.hlp"
+^INCLUDE "infoserv.hlp"
+^INCLUDE "gamserv.hlp"
+^INCLUDE "oper.hlp"
+^INCLUDE "irc.hlp"
+^INCLUDE "local.hlp"
+^DONE
+
+#EOF

@@ -1,0 +1,121 @@
+
+^PAGE:infoserv del
+--- SorceryNet Information Services Help ---
+ 
+ === DEL ===
+ 
+     SYNTAX:
+     /msg InfoServ DEL <#>
+ 
+     DESCRIPTION:
+     The InfoServ DEL command will remove the chosen article 
+     from InfoServ.  This command is limited to ServOps+ only.
+ 
+     EXAMPLES:
+     To delete article 7 from InfoServ, type:
+       /msg InfoServ del 7
+  
+--- End Of Services Help ---
+^infoserv
+^END
+
+^PAGE:infoserv
+--- SorceryNet Information Services Help ---
+ 
+    SorceryNet's Information Service is a unique service,
+    allowing SorceryNet users to read various pieces of news
+    or urgent bulletins regarding SorceryNet.
+ 
+    Commands:
+        READ      - Read the latest piece of news
+        LIST      - Lists all news
+        POST      - Post a message
+  
+    Type /msg InfoServ help <command> for more help with each
+    command.  For further assistance with services, /join #Help.
+ 
+--- End Of Services Help ---
+^infoserv
+^END
+
+^PAGE:infoserv list
+--- SorceryNet Information Services Help ---
+ 
+ === LIST ===
+   
+     SYNTAX:
+     /msg InfoServ LIST    
+  
+     DESCRIPTION:
+     The InfoServ LIST command returns a list of all
+     currently available articles.
+ 
+     EXAMPLES:
+     To retrieve a list of all currently available 
+     articles, type:
+       /msg InfoServ list
+ 
+--- End Of Services Help ---
+^infoserv
+^END
+
+^PAGE:infoserv post
+--- SorceryNet Information Services Help ---
+ 
+ === POST ===
+ 
+     SYNTAX:
+     /msg InfoServ POST <importance> <header> <content>
+ 
+     DESCRIPTION:
+     The InfoServ POST command allows IRC Operators to add an
+     article to the InfoServ database.  The importance field 
+     must be a number, the header field is a single word that will
+     be used as the subject of the article, and content is the actual
+     article.
+     Importance levels:
+           0 ==>        Oper-only messsage
+           1 ==>        Informational message
+           2 ==>        Info Pertinent right now, send out a notification
+           3 ==>        Announcement, send out notification now and to users
+                        signing on
+           4 ==>        Broadcast message, notify immediately and at signon
+                        with the message
+           5 ==>        _VERY_ important broadcast, notify with privmsg
+                        instead of notice
+           Opers may use priority levels 0-3: 4 is for servops, and 5
+           is currently restricted to root
+ 
+     EXAMPLES:
+     To post an info article announcing a new server, type:
+       /msg InfoServ post 1 new_server Everybody welcome 
+          newserver.sorcery.net to the network.
+     To post a system message:
+       /msg InfoServ post 4 services will be going down for aroud 3 hours
+       tonight for some maintenance
+ 
+--- End Of Services Help ---
+^infoserv
+^END
+
+^PAGE:infoserv read
+--- SorceryNet Information Services Help ---
+ 
+ === READ ===
+ 
+     SYNTAX:
+     /msg InfoServ READ <#>
+ 
+     DESCRIPTION:
+     READ will display the article of your choice.
+     Use LIST to see which article you wish to read.
+ 
+     EXAMPLES:
+     To read InfoServ article 3, type:
+       /msg InfoServ read 3
+ 
+--- End Of Services Help ---
+^infoserv
+^END
+# /* End of InfoServ Help */
+
