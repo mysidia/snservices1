@@ -79,7 +79,10 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
+#ifndef _WIN32
 #define ENABLE_SOCKSCHECK	/* enable socks check */
+#endif
+
 #define SOCKSPORT		1080
 
 #undef	KEEP_HURTBY            /* remember who hurt a user */
@@ -278,6 +281,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define SOCK_REFUSED		BIT09	/* request refused (good) */
 #define SOCK_NEW		BIT10	/* New */
 #define SOCK_CACHED		BIT11	/* cached */
+#define SOCK_W			BIT12	/* Has appeared in W fd set */
 
 typedef	enum {
 	LOG_OPER, 	LOG_USER,        LOG_NET,
