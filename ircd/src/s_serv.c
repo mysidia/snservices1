@@ -30,7 +30,6 @@
 #include "userload.h"
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <utmp.h>
 #include "h.h"
 
 #include "ircd/match.h"

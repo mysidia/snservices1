@@ -31,7 +31,6 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
-#include <utmp.h>
 #include <stdio.h>
 #include <signal.h>
 #include <fcntl.h>

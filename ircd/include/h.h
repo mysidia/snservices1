@@ -113,10 +113,6 @@ void	report_error(char *, aClient *);
 void	set_non_blocking(int, aClient *);
 int	setup_ping();
 void	summon(aClient *, char *, char *, char *);
-int	unixport(aClient *, char *, int);
-int	utmp_open();
-int	utmp_read(int, char *, char *, char *, int);
-int	utmp_close(int);
 
 void	start_auth(aClient *);
 void	read_authports(aClient *);
