@@ -59,10 +59,28 @@ my %nick_flags = (
 	'NFORCEXFER'    => 0x40000   ,  # Suspended for transfer
 	'NENCRYPT'      => 0x80000   ,  # Encrypted password
 	'NAHURT'        => 0x100000  ,  #???
-	'OROOT'         => 0x1       ,
-	'OSERVOP'       => 0x8       ,
-	'OAKILL'        => 0x40      ,
-	'OGRP'          => 0x2000    
+);
+
+my %oper_flags = (
+	'OROOT'         => 0x000001  , # Services Root DONT CHANGE
+	'OSERVOP'       => 0x000008  , # is servop (deprecated)
+	'OOPER'		=> 0x000010  , # basic oper privs
+	'ORAKILL'	=> 0x000020  , # restricted akill priv
+	'OAKILL'        => 0x000040  , # full akill priv
+	'OINFOPOST'	=> 0x000080  , # high-priority info post
+	'OSETOP'	=> 0x000100  , # can use setop/add/del
+	'OSETFLAG'	=> 0x000200  , # can use stflag
+	'ONBANDEL'	=> 0x000400  , # can banish/del nicks
+	'OCBANDEL'	=> 0x000800  , # can banish/del chans
+	'OIGNORE'	=> 0x001000  , # can set services ignores
+	'OGRP'          => 0x002000  , # can getpass -transfer
+	'OLIST'		=> 0x010000  , # can use /cs list & cs whois
+	'OCLONE'	=> 0x020000  , # can edit clonerules
+	'OPROT'		=> 0x080000  , # record locked
+	'OACC'		=> 0x100000  , # override user restrictions
+	'OHELPOP'	=> 0x200000  , # user is a helpop
+	'ODMOD'		=> 0x400000  , # direct modification
+	'OAHURT'	=> 0x800000    # access to AutoHurt commands
 );
 
 $Sipc::revision = '$Id$';
