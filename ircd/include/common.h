@@ -28,10 +28,15 @@
 #include <process.h>
 #include <io.h>
 #include "struct.h"
+
+typedef unsigned long int u_int32_t;
+typedef unsigned char u_int8_t;
 #endif
 
+#ifndef _WIN32
 #ifdef	PARAMH
 #include <sys/param.h>
+#endif
 #endif
 
 #ifndef PROTO

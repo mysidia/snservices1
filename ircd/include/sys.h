@@ -45,11 +45,11 @@
 #include <stdlib.h>
 #endif
 
-#ifdef	STRINGSH
-#include <strings.h>
+#ifdef	STRINGH
+#include <string.h>
 #else
-# ifdef	STRINGH
-# include <string.h>
+# ifdef	STRINGSH
+# include <strings.h>
 # endif
 #endif
 #define	strcasecmp	mycmp
