@@ -2626,7 +2626,7 @@ void sendToChanServ(UserList * nick, char **args, int numargs)
 
 	if ((cmd->getCmdFlags() & CMD_REG) && !nick->reg) {
 		sSend
-			(":%s NOTICE %s :You nick must be registered to use that command.",
+			(":%s NOTICE %s :Your nick must be registered to use that command.",
 			 ChanServ, from);
 		return;
 	}
