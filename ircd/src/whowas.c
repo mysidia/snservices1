@@ -35,26 +35,48 @@ static	int	ww_index = 0;
 
 void	add_history(aClient *cptr)
 {
-	aName	ntmp;
-	aName	*np = &ntmp, *np2;
+	aName	*np;
+	Link	*lp, *chlist;
 
-	strncpyzt(np->ww_nick, cptr->name, NICKLEN+1);
-	strncpyzt(np->ww_info, cptr->info, REALLEN+1);
+        np = &was[ww_index];
+        if (np->ww_user)
+		free_user(np->ww_user, np->ww_online);
+
+	for (lp = np->ww_chans; lp; lp = lp->next)
+	  {
+		irc_free(lp->value.wwcptr);
+		free_link(lp);
+	  }
+
+	bzero(np, sizeof(aName));
+	strncpyzt(np->ww_nick, cptr->name, NICKLEN + 1);
+	strncpyzt(np->ww_info, cptr->info, REALLEN + 1);
 	np->ww_user = cptr->user;
 	np->ww_logout = NOW;
 	np->ww_online = (cptr->from != NULL) ? cptr : NULL;
 	np->ww_user->refcnt++;
 
-	np2 = &was[ww_index];
-	if (np2->ww_user)
-		free_user(np2->ww_user, np2->ww_online);
+	np->ww_chans = NULL;
+	for (lp = cptr->user->channel; lp; lp = lp->next)
+	  {
+		chlist = make_link();
+		chlist->next = np->ww_chans;
+		np->ww_chans = chlist;
+		chlist->value.wwcptr = irc_malloc(sizeof(wwChan));
+	       	strncpyzt(chlist->value.wwcptr->chname,
+			  lp->value.chptr->chname, CHANNELLEN);
+		chlist->value.wwcptr->pub = (unsigned char)PubChannel(lp->value.chptr);
 
-	bcopy((char *)&ntmp, (char *)np2, sizeof(aName));
+		if (is_chan_op(cptr, lp->value.chptr))
+			chlist->value.wwcptr->ucflags |= CHFL_CHANOP;
+
+		else if (has_voice(cptr, lp->value.chptr))
+			chlist->value.wwcptr->ucflags |= CHFL_VOICE;
+	  }
 
 	ww_index++;
 	if (ww_index >= NICKNAMEHISTORYLENGTH)
 		ww_index = 0;
-	return;
 }
 
 /*
@@ -99,7 +121,6 @@ void	off_history(aClient *cptr)
 	for (i = NICKNAMEHISTORYLENGTH, wp = was; i; wp++, i--)
 		if (wp->ww_online == cptr)
 			wp->ww_online = NULL;
-	return;
 }
 
 void	initwhowas()
@@ -107,8 +128,9 @@ void	initwhowas()
 	int	i;
 
 	for (i = 0; i < NICKNAMEHISTORYLENGTH; i++)
+	  {
 		bzero((char *)&was[i], sizeof(aName));
-	return;
+	  }
 }
 
 
@@ -122,8 +144,11 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	aName	*wp, *wp2 = NULL;
 	int	j = 0;
 	anUser	*up = NULL;
-	int	max = -1;
-	char	*p, *nick, *s;
+	char	*chname = NULL;
+	aChannel *chptr = NULL;
+	Link	*lp;
+	int	max = -1, len = 0;
+	char	*p, *nick, *s, buf[BUFSIZE];
 
  	if (parc < 2)
 	    {
@@ -151,6 +176,53 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   me.name, parv[0], wp->ww_nick,
 					   up->username,
 					   UGETHOST(sptr, up), wp->ww_info);
+
+				for (*buf = '\0', len = 0, lp = wp->ww_chans; lp; lp = lp->next)
+				  {
+					chname = lp->value.wwcptr->chname;
+
+					if (lp->value.wwcptr->pub ||
+					    ((chptr = find_channel(lp->value.wwcptr->chname, NULL)) &&
+					     IsMember(sptr, chptr)))
+					  {
+						if (len + strlen(lp->value.wwcptr->chname)
+						    > (size_t) BUFSIZE - 10
+						    - strlen(me.name)
+						    - strlen(parv[0])
+						    - strlen(wp->ww_nick))
+						  {
+							sendto_one(sptr,
+								   ":%s %d %s %s :%s",
+								   me.name,
+								   RPL_WHOISCHANNELS,
+								   parv[0], wp->ww_nick, buf);
+							*buf = '\0';
+							len = 0;
+						  }
+
+						if (lp->value.wwcptr->ucflags & CHFL_CHANOP)
+							*(buf + len++) = '@';
+
+						else if (lp->value.wwcptr->ucflags & CHFL_VOICE)
+							*(buf + len++) = '+';
+
+						if (len)
+							*(buf + len) = '\0';
+
+						strcpy(buf + len, lp->value.wwcptr->chname);
+						len += strlen(lp->value.wwcptr->chname);
+						strcat(buf + len, " ");
+						len++;
+					  }
+				  }
+
+				if (*buf != '\0')
+					sendto_one(sptr,
+						   rpl_str(RPL_WHOISCHANNELS),
+						   me.name, parv[0],
+						   wp->ww_nick,
+						   buf);
+
 				sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
 					   me.name, parv[0], wp->ww_nick,
 					   up->server, myctime(wp->ww_logout));
@@ -210,6 +282,4 @@ void	count_whowas_memory(int *wwu, int *wwa, u_long *wwam)
 	*wwu = u;
 	*wwa = a;
 	*wwam = am;
-
-	return;
 }
