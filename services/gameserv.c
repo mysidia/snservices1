@@ -228,7 +228,7 @@ GCMD(gs_ww)
 
 	if ((nick->floodlevel.GetLev()+flood_modifier) >= (.75 * MAXFLOODLEVEL)) {
 		sSend(":%s NOTICE %s :Your flood level is too high. "
-		      "Please wait 60 seconds and try again.",
+		      "Please wait a few minutes and try again.",
 				GameServ, from);
 		return RET_FAIL;
 	}
