@@ -1,295 +1,57 @@
-<HTML
-><HEAD
-><TITLE
->Administering Services</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.73
-"><LINK
-REL="HOME"
-TITLE="Services installation and operation manual"
-HREF="manual.html"><LINK
-REL="PREVIOUS"
-TITLE="Optional Directives"
-HREF="confopt.html"><LINK
-REL="NEXT"
-TITLE="Administering Permission Flags"
-HREF="admin2.html"></HEAD
-><BODY
-CLASS="CHAPTER"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->Services installation and operation manual</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="confopt.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
-></TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="admin2.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="CHAPTER"
-><H1
-><A
-NAME="ADMS"
->Chapter 4. Administering Services</A
-></H1
-><DIV
-CLASS="TOC"
-><DL
-><DT
-><B
->Table of Contents</B
-></DT
-><DT
-><A
-HREF="adms.html#ADMIN1"
->Basic Administration</A
-></DT
-><DT
-><A
-HREF="admin2.html"
->Administering Permission Flags</A
-></DT
-></DL
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="ADMIN1"
->Basic Administration</A
-></H1
-><P
->				Now we come to the matter of the basic
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 4. Administering Services</title><meta name="generator" content="DocBook XSL Stylesheets V1.61.3"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="index.html" title="Services installation and operation manual"><link rel="previous" href="confopt.html" title="Optional Directives"><link rel="next" href="admin2.html" title="Administering Permission Flags"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 4. Administering Services</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="confopt.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="admin2.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="adms"></a>Chapter 4. Administering Services</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="adms.html#admin1">Basic Administration</a></dt><dt><a href="admin2.html">Administering Permission Flags</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="admin1"></a>Basic Administration</h2></div></div><div></div></div><p>
+				Now we come to the matter of the basic
 			services administrative functions.
 
 			First of all, to perform any administration,
 			you must have administrative access to services.
-			See <A
-HREF="install.html"
->the Section called <I
->Installing Services</I
-> in Chapter 2</A
->&#62; for
+			See <a href="INSTALL.html" title="Installing Services">the section called &#8220;Installing Services&#8221;</a> for
 			information on how to get services to give you
 			full access.
-			</P
-><P
->			Secondly, you must be using the nickname that has
+			</p><p>
+			Secondly, you must be using the nickname that has
 			administrative access and be fully identified with
 			NickServ.  This is true of all commands that require
 			special administrative access to services, including
-			standard oper commands such as <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->autokill</I
-></SPAN
->.
-			</P
-><P
->			Certain changes to services require a restart,
+			standard oper commands such as <span class="emphasis"><em>autokill</em></span>.
+			</p><p>
+			Certain changes to services require a restart,
 			you might also need to shut down services, for
 			example to reboot the host machine, hence to
 			shut down services, you do:
-				<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ SHUTDOWN</I
-></SPAN
->
-			</P
-><P
->			Restarting services requires that you log into the
+				<span class="emphasis"><em>/OperServ SHUTDOWN</em></span>
+			</p><p>
+			Restarting services requires that you log into the
 			machine and re-run the binary after invoking
 			the shutdown command (normally one does a shutdown while
 			already logged in -- sending the process signal 15
 			will result in a clean shutdown as well).
-			</P
-><P
->			Another thing you might need to do while administering
+			</p><p>
+			Another thing you might need to do while administering
 			services is to reload the configuration file.
-			To do this, you send the request: <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ reset</I
-></SPAN
->
-			</P
-><P
->			The <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ RAW</I
-></SPAN
-> request is used to
+			To do this, you send the request: <span class="emphasis"><em>/OperServ reset</em></span>
+			</p><p>
+			The <span class="emphasis"><em>/OperServ RAW</em></span> request is used to
 			cause services to send RAW data over the network.
 
 			This data is sent over a connection that the other servers recognize
-			as a <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->super server</I
-></SPAN
-> (because of the U-line), so use of this
-			should be cautioned.</P
-><P
->			The <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ UPTIME</I
-></SPAN
-> request can be used
+			as a <span class="emphasis"><em>super server</em></span> (because of the U-line), so use of this
+			should be cautioned.</p><p>
+			The <span class="emphasis"><em>/OperServ UPTIME</em></span> request can be used
 			to see how long services have been running since the past
 			restart.
-			</P
-><P
->			The <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/Operserv SYNC</I
-></SPAN
-> request can be used to
+			</p><p>
+			The <span class="emphasis"><em>/Operserv SYNC</em></span> request can be used to
 			force a complete sync of services' databases to disk which
-			is very useful in running full backups.</P
-><P
->			Finally, the <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/NickServ DELETE</I
-></SPAN
-> command
-			can be used to cancel NickServ registrations, <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/NickServ BANISH</I
-></SPAN
->
+			is very useful in running full backups.</p><p>
+			Finally, the <span class="emphasis"><em>/NickServ DELETE</em></span> command
+			can be used to cancel NickServ registrations, <span class="emphasis"><em>/NickServ BANISH</em></span>
 			can be used to permanently block registration and use of a nick, and ChanServ
 			has equivalent commands for channels.
-			</P
-><P
->				The directive <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ HELP</I
-></SPAN
->
+			</p><p>
+				The directive <span class="emphasis"><em>/OperServ HELP</em></span>
 				contains a more complete description of many requests
 				(commands) used to administer services and the databases,
 				that are less important to the general problem of administering
 				services, for example: clonerules, autokills, autohurts,
 				jupes, timers, and triggers.
-			</P
-></DIV
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="confopt.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="manual.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="admin2.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Optional Directives</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
->&nbsp;</TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Administering Permission Flags</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+			</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="confopt.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="index.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="admin2.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Optional Directives </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Administering Permission Flags</td></tr></table></div></body></html>

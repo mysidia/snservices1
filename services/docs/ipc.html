@@ -1,121 +1,9 @@
-<HTML
-><HEAD
-><TITLE
->Services IPC</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.73
-"><LINK
-REL="HOME"
-TITLE="Services installation and operation manual"
-HREF="manual.html"><LINK
-REL="PREVIOUS"
-TITLE="Administering Permission Flags"
-HREF="admin2.html"><LINK
-REL="NEXT"
-TITLE="Authentication"
-HREF="ipcauth.html"></HEAD
-><BODY
-CLASS="CHAPTER"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->Services installation and operation manual</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="admin2.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
-></TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="ipcauth.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="CHAPTER"
-><H1
-><A
-NAME="IPC"
->Chapter 5. Services IPC</A
-></H1
-><DIV
-CLASS="TOC"
-><DL
-><DT
-><B
->Table of Contents</B
-></DT
-><DT
-><A
-HREF="ipc.html#IPCCONTACT"
->Making contact with services</A
-></DT
-><DT
-><A
-HREF="ipcauth.html"
->Authentication</A
-></DT
-><DT
-><A
-HREF="ipcquery.html"
->Query Messages</A
-></DT
-><DT
-><A
-HREF="ipcalter.html"
->Alter Messages</A
-></DT
-></DL
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="IPCCONTACT"
->Making contact with services</A
-></H1
-><P
->				Services' IPC facility (if enabled)
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 5. Services IPC</title><meta name="generator" content="DocBook XSL Stylesheets V1.61.3"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="index.html" title="Services installation and operation manual"><link rel="previous" href="admin2.html" title="Administering Permission Flags"><link rel="next" href="ipcauth.html" title="Authentication"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 5. Services IPC</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="admin2.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ipcauth.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="ipc"></a>Chapter 5. Services IPC</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="ipc.html#ipccontact">Making contact with services</a></dt><dt><a href="ipcauth.html">Authentication</a></dt><dd><dl><dt><a href="ipcauth.html#ipcauthgen">Semantics</a></dt><dt><a href="ipcauth.html#ipcauthdetail">System Authentication Details</a></dt><dt><a href="ipcauth.html#ipcobjauthsyn">Object Authentication Details</a></dt></dl></dd><dt><a href="ipcquery.html">Query Messages</a></dt><dd><dl><dt><a href="ipcquery.html#ipcsysquery">System Queries</a></dt><dt><a href="ipcquery.html#ipcobjquery">Object Queries</a></dt></dl></dd><dt><a href="ipcalter.html">Alter Messages</a></dt><dd><dl><dt><a href="ipcalter.html#ipcalterrnick">Registered Nick Alterations</a></dt><dt><a href="ipcalter.html#ipcoth">Other IPC Commands</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ipccontact"></a>Making contact with services</h2></div></div><div></div></div><p>
+				Services' IPC facility (if enabled)
 				is provided by a TCP Stream listener
 				that binds to the local interface.
-			</P
-><P
->				At this time, the testing services
+			</p><p>
+				At this time, the testing services
 				on SorceryNet are using local port
 				2050 for this purpose, but any
 				other port could be used, as an
@@ -126,104 +14,32 @@ NAME="IPCCONTACT"
 				variable parameter that is supplied
 				when services have been configured
 				to use a particular port number.
-			</P
-><P
->				Contact is initiated by simply
+			</p><p>
+				Contact is initiated by simply
 				connecting to the local TCP port.
-			</P
-><P
->				Once a connection is established,
+			</p><p>
+				Once a connection is established,
 				commands will be read from the
 				connection, although many will be
 				unavailable until you authenticate
 				for some IPC system privileges.
-			</P
-><P
->				All messages are read as commands,
+			</p><p>
+				All messages are read as commands,
 				input is line-by-line much like in
 				IRC; however, unlike in IRC,
 				the commands are case-sensitive.
-				<PRE
-CLASS="PROGRAMLISTING"
->	AUTH SYSTEM LOGIN bob
-				</PRE
->
+				</p><pre class="programlisting">
+	AUTH SYSTEM LOGIN bob
+				</pre><p>
 
 				is a valid command, but
-				<PRE
-CLASS="PROGRAMLISTING"
->	AuTh SyStEm LOGIN bob
-				</PRE
->
+				</p><pre class="programlisting">
+	AuTh SyStEm LOGIN bob
+				</pre><p>
 				is not a valid command and will
 				either be ignored or you may instead
 				receive an error:
-				<PRE
-CLASS="PROGRAMLISTING"
->	ERR-NOAUTH (Allowed: AUTH, HELP, QUIT) - You are not authenticated.
-				</PRE
->				
-			</P
-></DIV
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="admin2.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="manual.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="ipcauth.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Administering Permission Flags</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
->&nbsp;</TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Authentication</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+				</p><pre class="programlisting">
+	ERR-NOAUTH (Allowed: AUTH, HELP, QUIT) - You are not authenticated.
+				</pre><p>				
+			</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="admin2.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="index.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ipcauth.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Administering Permission Flags </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Authentication</td></tr></table></div></body></html>

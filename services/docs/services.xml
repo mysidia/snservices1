@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" "docbook.dtd">
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "docbookx.dtd">
 <book id="manual" lang="en">
 	<bookinfo>
 		<title>Services installation and operation manual</title>
@@ -1301,18 +1301,18 @@ OK AUTH OBJECT RNICK PASS
 				</listitem>
 
 				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> ISREG</para>
-                                     <para> Results in, for instance:</para>
-				     <para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> ISREG=TRUE - Nickname is registered.</para>				     
+				<para> Results in, for instance:</para>
+				<screen><para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> ISREG=TRUE - Nickname is registered.</para></screen> 
 				     <para>OR</para>
-				     <para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> ISREG=FALSE - Nickname is not registered.</para>
+				<screen><para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> ISREG=FALSE - Nickname is not registered.</para></screen>
 				</listitem>
 				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> ISBYPASS</para>
 					<para>Example response:</para>
-					 <para>OK QUERY OBJECT RNICK=<emphasis>nick</emphasis> ISBYPASS=TRUE</para>
-                                         <para>ERR-BADTARGET QUERY OBJECT RNICK=<emphasis>nickname</emphasis> - NOT_REGISTERED</para>			
+					<screen> <para>OK QUERY OBJECT RNICK=<emphasis>nick</emphasis> ISBYPASS=TRUE</para>
+						<para>ERR-BADTARGET QUERY OBJECT RNICK=<emphasis>nickname</emphasis> - NOT_REGISTERED</para></screen>	
 				</listitem>
 				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> REG-TIME</para>
-                                           <para>Sample result: OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> REG-TIME 861620971</para>	
+					<para>Sample result:</para> <screen><para>OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> REG-TIME 861620971</para></screen>
 				</listitem>
 				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> LAST-TIME</para>
                                         <para>Sample result: OK QUERY OBJECT RNICK=<emphasis>nickname</emphasis> LAST-TIME 1067654340</para>					  
@@ -1322,8 +1322,8 @@ OK AUTH OBJECT RNICK PASS
 					<para>OK QUERY OBJECT RNICK=Mysidia MARK YES</para>
 				</listitem>
 				<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> LAST-HOST</para>
-					<para>Sample result: OK QUERY OBJECT RNICK=nickname LAST-HOST asdf.com.hmsk</para>
-					<para>ERR-NOPRIV QUERY OBJECT RNICK=<emphasis>nickname</emphasis> LAST-HOST - User WWW/test Not authorized to query RNICK LAST-HOST.</para>		
+					<para>Sample result:</para> <screen><para>OK QUERY OBJECT RNICK=nickname LAST-HOST asdf.com.hmsk</para>
+						<para>ERR-NOPRIV QUERY OBJECT RNICK=<emphasis>nickname</emphasis> LAST-HOST - User WWW/test Not authorized to query RNICK LAST-HOST.</para></screen>		
 				</listitem>
 
 			<listitem><para>QUERY OBJECT RNICK <emphasis>nick</emphasis> NUM-MASKS</para>

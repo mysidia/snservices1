@@ -1,176 +1,53 @@
-<HTML
-><HEAD
-><TITLE
->Mandatory configuration directives</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.73
-"><LINK
-REL="HOME"
-TITLE="Services installation and operation manual"
-HREF="manual.html"><LINK
-REL="UP"
-TITLE="Configuring Services"
-HREF="config.html"><LINK
-REL="PREVIOUS"
-TITLE="Configuring Services"
-HREF="config.html"><LINK
-REL="NEXT"
-TITLE="Recommended Directives"
-HREF="confrec.html"></HEAD
-><BODY
-CLASS="SECT1"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->Services installation and operation manual</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="config.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
->Chapter 3. Configuring Services</TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="confrec.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="CONFMAN"
->Mandatory configuration directives</A
-></H1
-><P
->				This first set of directives are essnetial
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Mandatory configuration directives</title><meta name="generator" content="DocBook XSL Stylesheets V1.61.3"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="config.html" title="Chapter 3. Configuring Services"><link rel="previous" href="config.html" title="Chapter 3. Configuring Services"><link rel="next" href="confrec.html" title="Recommended Directives"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Mandatory configuration directives</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="config.html">Prev</a> </td><th width="60%" align="center">Chapter 3. Configuring Services</th><td width="20%" align="right"> <a accesskey="n" href="confrec.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="confman"></a>Mandatory configuration directives</h2></div></div><div></div></div><p>
+				This first set of directives are essnetial
 				because any valid services.conf must have
 				at least one of each for services to fully
 				function.
-			</P
-><P
-></P
-><UL
-><LI
-><P
->Host configuration (H line): A H directive (also called H line)
+			</p><div class="itemizedlist"><ul type="disc"><li><p>
+Host configuration (H line): A H directive (also called H line)
 contains the name of the services server.
 Example:
-	<PRE
-CLASS="PROGRAMLISTING"
->		H:services.sorcery.net
-	</PRE
->
-			</P
-></LI
-><LI
-><P
->Port configuration (P line): A P directive tells services what port on the IRC server to
+	</p><pre class="programlisting">
+		H:services.sorcery.net
+	</pre><p>
+			</p></li><li><p>
+Port configuration (P line): A P directive tells services what port on the IRC server to
 connect to (the port number ircd listens on).
 Example:
-	<PRE
-CLASS="PROGRAMLISTING"
->		P:6667
-	</PRE
->
-			</P
-></LI
-><LI
-><P
->Password configuration (W line):
+	</p><pre class="programlisting">
+		P:6667
+	</pre><p>
+			</p></li><li><p>
+Password configuration (W line):
 A W line tells services what password to use when connecting connect to an IRC server.
-			</P
-></LI
-><LI
-><P
->IRC Server configuration (C line): A C line tells services the address of the IRC server to
+			</p></li><li><p>
+IRC Server configuration (C line): A C line tells services the address of the IRC server to
 connect to (note, the IRC server must have a C-line and a
 N-line for services using a password specified in the
 services W line for services to connect to IRC.)
 Example:
-<PRE
-CLASS="PROGRAMLISTING"
->	C:127.0.0.1</PRE
->
-			</P
-></LI
-><LI
-><P
->Services client configuration (XX lines):
-			<P
-></P
-><UL
-><LI
-><P
->An ON-line tells services what OperServ's nickname should be
-				</P
-></LI
-><LI
-><P
->An OU-line tells services what OperServ's username should be
-				</P
-></LI
-><LI
-><P
->An OH-line tells services what OperServ's hostname should be
-				</P
-></LI
-><LI
-><P
->An OR-line tells services what OperServ's realname should be
-				</P
-></LI
-><LI
-><P
->An OM-line tells services what OperServ's usermode should be
-				</P
-></LI
-><LI
-><P
-> Nx, Cx, Mx, and Ix are the same respectively for NickServ, ChanServ,
+</p><pre class="programlisting">
+	C:127.0.0.1
+</pre><p>
+			</p></li><li><p>
+Services client configuration (XX lines):
+			</p><div class="itemizedlist"><ul type="circle"><li><p>
+An ON-line tells services what OperServ's nickname should be
+				</p></li><li><p>
+An OU-line tells services what OperServ's username should be
+				</p></li><li><p>
+An OH-line tells services what OperServ's hostname should be
+				</p></li><li><p>
+An OR-line tells services what OperServ's realname should be
+				</p></li><li><p>
+An OM-line tells services what OperServ's usermode should be
+				</p></li><li><p>
+ Nx, Cx, Mx, and Ix are the same respectively for NickServ, ChanServ,
  MemoServ, and InfoServ. (NN/NU/NH/NR/NM/CN/CU/CH/...)
-				</P
-></LI
-></UL
->
+				</p></li></ul></div><p>
 Example:
-<PRE
-CLASS="PROGRAMLISTING"
->                C:localhost
+</p><pre class="programlisting">
+                C:localhost
                 ### OperServ ###
                 ON:OperServ
                 OU:warlock
@@ -204,74 +81,6 @@ CLASS="PROGRAMLISTING"
                 IU:sorcerer
                 IH:sorcery.net
                 IR:Information Services
-                IM:</PRE
->
-			</P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="config.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="manual.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="confrec.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Configuring Services</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="config.html"
-ACCESSKEY="U"
->Up</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Recommended Directives</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+                IM:
+</pre><p>
+			</p></li></ul></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="config.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="config.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="confrec.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 3. Configuring Services </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Recommended Directives</td></tr></table></div></body></html>
