@@ -203,7 +203,7 @@ namespace interp
 		TF(GS_WW, gs_ww),
 
 		// Services Events
-		TBL(CS_SET_FOUNDER)
+		TBL(CS_SET_FOUNDER),
 		TBL(NSE_EXPIRE),
 		TBL(CSE_EXPIRE),
 		TBL(CSE_IPC),
