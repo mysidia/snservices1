@@ -3770,7 +3770,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  for (s = user_modes; (flag = *s); s += 2)
 	    if (*m == (char)(*(s+1)))
 	      {
-		if (uline == 0 && (flag == U_REGISTERED || flag == U_VERIFIED)) {
+		if (uline == 0 && (flag == U_REGISTERED || flag == U_VERIFIED) && MyClient(sptr)) {
 			   /* TODO: Should have a table of flags + who can set them */
 			break;
 		}
