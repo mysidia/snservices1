@@ -22,9 +22,9 @@ CC=danger will robinson
 LINTFLAGS=-hba
 
 OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
-	class.o hash.o ircd.o list.o res.o s_auth.o s_bsd.o s_conf.o \
+	class.o hash.o ircd.o list.o res.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
-	whowas.o userload.o crule.o md5.o help.o version.o \
+	whowas.o userload.o md5.o version.o \
 	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO)
 
 SRC=$(OBJS:%.o=%.c)
@@ -55,10 +55,9 @@ ircd: $(OBJS)
 	@chmod $(IRCDMODE) ircd
 
 chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
-	 ../include/common.h crule.c chkconf.c memory.o
-	$(CC) $(DFLAGS) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
+	 ../include/common.h chkconf.c memory.o
 	$(CC) -ggdb $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
-	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o memory.o string.o \
+	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o memory.o string.o \
 	$(LDFLAGS) $(IRCDLIBS) -o chkconf
 
 saber: $(SRC)
@@ -83,20 +82,6 @@ support.o: support.c $(INCLUDES)
 	$(CC) $(XCFLAGS) $(CFLAGS) -o support.o -c support.c
 userload.o: userload.c $(INCLUDES)
 	$(CC) $(XCFLAGS) $(CFLAGS) -o userload.o -c userload.c
-help.o: help.c $(INCLUDES)
-
-#install: all
-#	-if [ ! -d ${IRCDDIR} -a ! -f ${IRCDDIR} ] ; then \
-#		mkdir ${IRCDDIR}; \
-#	fi
-#	../bsdinstall -m ${IRCDMODE} ircd ${BINDIR}
-#	../bsdinstall -m 700 chkconf ${BINDIR}
-#	$(CP) ../doc/example.conf ${IRCDDIR}
-#	$(TOUCH) ${IRCDDIR}/ircd.motd
-#	$(RM) -f ${IRCDDIR}/ircd.m4
-#	$(TOUCH) ${IRCDDIR}/ircd.m4
-#	chmod +x buildm4
-#	./buildm4 ${IRCDDIR}
 
 clean:
 	$(RM) -f *.o *~ core ircd version.c chkconf
@@ -123,9 +108,6 @@ res.o: res.c ../include/res.h $(INCLUDES)
 
 s_bsd.o: s_bsd.c ../include/dbuf.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c s_bsd.c
-
-s_auth.o: s_auth.c ../include/dbuf.h $(INCLUDES)
-	$(CC) $(CFLAGS) -c s_auth.c
 
 s_conf.o: s_conf.c ../include/dbuf.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c s_conf.c
@@ -158,12 +140,6 @@ whowas.o: whowas.c ../include/dbuf.h ../include/whowas.h $(INCLUDES)
 
 hash.o: hash.c ../include/hash.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c hash.c
-
-crule.o: crule.c $(INCLUDES)
-	$(CC) $(CFLAGS) -c crule.c
-
-help.o: help.c $(INCLUDES)
-	$(CC) $(CFLAGS) -c help.c
 
 md5.o: md5.c $(INCLUDES)
 	$(CC) $(CFLAGS) -c md5.c

@@ -147,7 +147,6 @@ build:
 		echo "Building $$i"; \
 		( cd $$i; ${MAKE} ${MAKEARGS} build; ) ; \
 	done
-	@./helpdigest NONE
 #	@#./info.sh -m
 
 clean:
@@ -186,7 +185,6 @@ install: all
 	$(CP) src/chkconf ${IRCDDIR}
 	@chmod $(IRCDMODE) ${IRCDDIR}/chkconf
 	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
-	./helpdigest ${IRCDDIR}
 	$(CP) doc/example.conf ${IRCDDIR}
 	chmod +x src/buildm4
 	@$(RM) -f ${IRCDDIR}/ircd.m4

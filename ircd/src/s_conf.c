@@ -739,10 +739,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 		else
 		    {
 			*tmp = tmp2->next;
-			/* free expression trees of connect rules */
-			if ((tmp2->status & (CONF_CRULEALL|CONF_CRULEAUTO))
-			    && (tmp2->passwd != NULL))
-			  crule_free (&(tmp2->passwd));
 			free_conf(tmp2);
 	    	    }
 
@@ -926,14 +922,6 @@ int 	initconf(int opt)
 			case 'c': /* in case of lp failures             */
 				ccount++;
 				aconf->status = CONF_CONNECT_SERVER;
-				break;
-			/* Connect rule */
-			case 'D':
-				aconf->status = CONF_CRULEALL;
-				break;
-			/* Connect rule - autos only */
-			case 'd':
-				aconf->status = CONF_CRULEAUTO;
 				break;
 		        case 'G':
 			case 'g':
@@ -1178,20 +1166,6 @@ int 	initconf(int opt)
 			else
 				(void)lookup_confhost(aconf);
 		    }
-
-                /* Create expression tree from connect rule...
-                ** If there's a parsing error, nuke the conf structure */
-                if (aconf->status & (CONF_CRULEALL | CONF_CRULEAUTO))
-		  {
-		    irc_free (aconf->passwd);
-		    if ((aconf->passwd =
-			 (char *) crule_parse (aconf->name)) == NULL)
-		      {
-			free_conf (aconf);
-			aconf = NULL;
-			continue;
-		      }
-		  }
 
 		/*
 		** Own port and name cannot be changed after the startup.
