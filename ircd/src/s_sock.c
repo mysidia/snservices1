@@ -25,10 +25,12 @@ static char rcsid[] = "$Id$";
 #endif
 
 #include <stdio.h>
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 #include <assert.h>
 #include "struct.h"
 #include "common.h"
@@ -52,7 +54,7 @@ static char rcsid[] = "$Id$";
 #undef SHOW_CACHED_SOCKS 
 
 
-#ifdef ENABLE_SOCKSCHECK
+#if defined(ENABLE_SOCKSCHECK)
 
 #if 0
 #define SOCKS_DEBUG
@@ -326,6 +328,8 @@ void init_socks(aClient *cptr)
 					   get_client_name(cptr, TRUE),
 					   strerror(errno));
 #endif
+				if (cptr->socks->fd >= 0)
+				    closesocket(cptr->socks->fd);
 				cptr->socks->fd = -1;
 				cptr->socks->status |= (SOCK_DONE);
 
@@ -452,6 +456,10 @@ void read_socks(aSocks *sItem)
                 for(i = 0; i < highest_fd; i++)
 		   if (local[i] && !IsLog(local[i]) && local[i]->socks == sItem)
 			ApplySockConn(local[i]);
+                if (sItem->fd >= 0) {
+                    closesocket(sItem->fd);
+                    sItem->fd = -1;
+                }
 		return;
 	}
 
@@ -459,6 +467,15 @@ void read_socks(aSocks *sItem)
 	 * The request failed.  Good.
 	 */
 	sItem->status |= (SOCK_GO);
+
+        for(i = 0; i < highest_fd; i++)
+            if (local[i] && !IsLog(local[i]) && local[i]->socks == sItem)
+	        ApplySockConn(local[i]);
+        if (sItem->fd >= 0) {
+            closesocket(sItem->fd);
+            sItem->fd = -1;
+        }
+
 	/*if (!DoingDNS(cptr))
 		SetAccess(cptr);
 	if (cptr != &me)

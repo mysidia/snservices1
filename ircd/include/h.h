@@ -30,7 +30,7 @@ extern	aChannel *channel;
 extern	struct	stats	*ircstp;
 extern	int	bootopt;
 /* Prototype added to force errors -- Barubary */
-extern	time_t	check_pings(time_t now, int check_kills);
+extern	time_t	check_pings(time_t now, int check_kills, aConfItem *conf_target);
 #ifdef _WIN32
 extern	void	*hCio;
 #endif
@@ -48,7 +48,7 @@ extern	int	is_chan_op PROTO((aClient *, aChannel *));
 extern	int	is_zombie PROTO((aClient *, aChannel *));
 extern	int	has_voice PROTO((aClient *, aChannel *));
 extern	int	count_channels PROTO((aClient *));
-extern  Link    *is_banned PROTO((aClient *, aChannel *));
+extern  Link    *is_banned PROTO((aClient *, aChannel *, int *));
 extern	int	parse_help PROTO((aClient *, char *, char *));
 
 extern	aClient	*find_client PROTO((char *, aClient *));
@@ -77,12 +77,12 @@ extern	aConfItem *find_conf_ip PROTO((Link *, char *, char *, int));
 extern	aConfItem *find_conf_name PROTO((char *, int));
 extern  aConfItem *find_temp_conf_entry PROTO((aConfItem *, u_int));
 extern  aConfItem *find_conf_servern PROTO((char *));
-extern	int	find_kill PROTO((aClient *));
+extern	int	find_kill(aClient *, aConfItem *);
 extern	char	*find_zap PROTO((aClient *, int));
 extern	int	find_restrict PROTO((aClient *));
 extern	int	rehash PROTO((aClient *, aClient *, int));
 extern	int	initconf PROTO((int));
-extern	void	add_temp_conf();
+extern	aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp);
 
 extern	char	*MyMalloc PROTO((int)), *MyRealloc PROTO((char *, int));
 extern	char	*debugmode, *configfile, *sbrk0;
@@ -221,7 +221,7 @@ extern	int	free_socks PROTO((struct Socks *zap));
 extern	aSocks	*make_socks PROTO((aClient *to));
 extern	Link	*find_user_link PROTO((Link *, aClient *));
 extern	int	IsMember PROTO((aClient *, aChannel *));
-extern	char	*pretty_mask PROTO((char *));
+extern	char	*pretty_mask PROTO((char *, int));
 extern	void	add_client_to_list PROTO((aClient *));
 extern	void	checklist PROTO(());
 extern	void	remove_client_from_list PROTO((aClient *));
@@ -269,6 +269,8 @@ extern	int	dopacket PROTO((aClient *, char *, int));
 extern void send_socksquery (aSocks *);
 extern void read_socks (aSocks *);
 
+extern const char* safe_info(int hideIp, aClient* acptr);
+
 
 /*VARARGS2*/
 extern	void	debug();
@@ -289,6 +291,10 @@ extern aWatch    *hash_get_watch(char *);
 
 
 int parse_help (aClient *sptr, char *name, char *help);
+void free_str_list(Link *);
+int find_str_match_link(Link **, char *str);
+void send_list(aClient *, int);
+
 char *crule_parse PROTO((char *));
 int crule_eval PROTO((char *));
 void crule_free PROTO((char **));
@@ -305,3 +311,8 @@ extern char **h_ignores;
  * ahurt stuff
  */
 aConfItem	*find_ahurt(aClient *);
+
+/*
+ * VCcheck stuff
+ */
+int FailClientCheck(aClient* sptr);
