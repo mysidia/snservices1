@@ -46,7 +46,7 @@ unsigned char *toBase64(const unsigned char *stream, size_t left)
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz"
 		"0123456789+/";
 	unsigned int j, k, s_sz = 0, acc;
-	unsigned char temp[3], out[4];
+	unsigned char temp[3] = {}, out[4];
 	char *s = NULL, *p;
 
 	j = acc = 0;
@@ -150,7 +150,7 @@ unsigned char *fromBase64(const char *cStr, int *len)
 	static unsigned char decode_table[255] = {};
 	static int pFlag = 0;
 	int i, j, k, s_sz = 0, hitz = 0;
-	unsigned char temp[4], out[4], c;
+	unsigned char temp[4] = {}, out[4] = {}, c;
 	unsigned char *s = NULL, *p;
 	size_t left = strlen(cStr);
 
