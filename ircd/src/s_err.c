@@ -340,10 +340,10 @@ prepbuf(int num, char *tail)
 	 * Allocate enough space for the string, as well as our additions.
 	 */
 	if (tail == NULL) {
-		s = irc_strdup(":%%s %03d %%s");
+		s = irc_malloc(11);
+		sprintf(s, ":%%s %03d %%s", num);
 	} else {
 		s = irc_malloc(strlen(tail) + 11 + 1);
-
 		sprintf(s, ":%%s %03d %%s %s", num, tail);
 	}
 
