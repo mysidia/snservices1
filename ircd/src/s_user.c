@@ -652,15 +652,20 @@ static void
 NospoofText(aClient* acptr)
 {
 #ifdef NOSPOOF
+	  char* auth_name = "";
+
+	  if (!BadPtr(acptr->name))
+		  auth_name = acptr->name;
+	  
 	  sendto_one(acptr, "NOTICE %s :*** If you are having problems"
 		     " connecting due to ping timeouts, please"
                      " type /notice %X nospoof now.",
-		     acptr->name, acptr->nospoof);
+		     auth_name, acptr->nospoof);
 	  sendto_one(acptr, "NOTICE %s :*** If you still have trouble"
 		     " connecting, please email " NS_ADDRESS " with the"
 		     " name and version of the client you are using,"
 		     " and the server you tried to connect to: (%s)",
-		     acptr->name, me.name);
+		     auth_name, me.name);
          sendto_one(acptr, "PING :%X", acptr->nospoof);
 #endif	 
 }
@@ -1249,7 +1254,9 @@ nickkilldone:
 	    sptr->nospoof = 0xdeadbeef;
 
           if (!IsUserVersionKnown(sptr))
+          {
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
+	  }
 
           NospoofText(cptr);
           SetSentNoSpoof(cptr);
@@ -1710,7 +1717,7 @@ m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
                  (irc_toupper(parv[1][3]) == 'H') &&
                  (parv[1][4] == '-'))
                 return 0;
-#endif
+#endif  /* NOSPOOF */
 
 	if (!IsRegistered(cptr) && (cptr->name[0]) && !IsNotSpoof(cptr))
 	{
