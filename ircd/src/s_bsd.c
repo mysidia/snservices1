@@ -23,9 +23,6 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
-#if defined(SOL20)
-#include <sys/filio.h>
-#endif
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -38,6 +35,7 @@
 
 #ifdef SOL20
 int gethostname(char *name, int namelen);
+void setlinebuf(FILE *iop);
 #endif
 
 #include "struct.h"
