@@ -164,12 +164,23 @@ char *s;
  */
 static int IsIpMask(const char *mask)
 {
+  char *s;
+  
   if (!mask)
     return 0;
+
+  s = strchr(mask, '@');
+
+  if ( s )
+	mask = s;
+  
+  if (strchr(mask, ':'))
+	  return 1;
+
   while (*mask)
     {
       if (isalpha(*mask))
-	return 0;
+		return 0;
       ++mask;
     }
   return 1;
@@ -493,18 +504,20 @@ int *bantype;
 
 		if (*tmp->value.ban.banstr == '%')
 		{
-			if (match(tmp->value.ban.banstr, nuh) == 0)
-			    break;
-			if ((MyClient(cptr) && IsIpMask(tmp->value.ban.banstr+1) &&
-			   (s_ip = make_nick_user_ip(cptr)) && !match(tmp->value.ban.banstr+1, s_ip ) ))
+			int is_an_ipmask = (MyClient(cptr) && 
+				IsIpMask(tmp->value.ban.banstr+1)) ? 1 : 0;
+
+			if ( !is_an_ipmask ) {
+				if (match(tmp->value.ban.banstr, nuh) == 0)
+				    break;
+			}
+			else if ((s_ip = make_nick_user_ip(cptr)) &&
+				 !match(tmp->value.ban.banstr+1, s_ip )) {
 			   break;
+			}
 			continue;
 		}
 
-		if (match(tmp->value.ban.banstr, nuh) == 0 ||
-                   (MyClient(cptr) && IsIpMask(tmp->value.ban.banstr) &&
-                   (s_ip = make_nick_user_ip(cptr)) && !match(tmp->value.ban.banstr, s_ip ) ))
-			break;
 		if (match(tmp->value.ban.banstr, nuhmask) == 0)
 			break;
 

@@ -310,7 +310,7 @@ void init_socks(aClient *cptr)
 				sock.in6.sin6_port = 0;
 				break;
 		}
-		(void)bind(cptr->socks->fd, (struct sockaddr *)&sock, addrlen);
+		(void)bind(cptr->socks->fd, (struct sockaddr *)&sock, sizeof sock);
 
 		/*
 		 * copy the client's address, and do the connect call.

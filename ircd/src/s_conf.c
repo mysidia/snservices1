@@ -2240,7 +2240,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	char userhost[512+2]="", *in;
-	int result=0, uline=0, i=0, propo=0;
+	int result=0, uline=0, i=0, propo=0, ipv6=0;
 	char *reason, *mask, *server, *person;
 	aClient *acptr;
 	
@@ -2299,7 +2299,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  in = &userhost[0];
 	  while(*in) 
 	  { 
-	    if (!isdigit(*in) && !ispunct(*in)) 
+	    if (!isxdigit(*in) && !ispunct(*in)) 
 	    {
 	      sendto_one(sptr, ":%s NOTICE %s :z:lines work only with ip addresses (you cannot specify ident either)", me.name, sptr->name);
 	      return 0;
@@ -2319,7 +2319,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  in = &userhost[0];
 	  while(*in) 
 	  { 
-	    if (!isdigit(*in) && !ispunct(*in)) 
+	    if (!isxdigit(*in) && !ispunct(*in)) 
 	    {
 	       sendto_one(sptr, ":%s NOTICE %s :z:lines work only with ip addresses (you cannot specify ident either)", me.name, sptr->name);
 	       return 0;
@@ -2468,7 +2468,7 @@ int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[])
         in = &userhost[0];
         while(*in) 
         { 
-            if (!isdigit(*in) && !ispunct(*in)) 
+            if (!isxdigit(*in) && !ispunct(*in)) 
             {
                sendto_one(sptr, ":%s NOTICE %s :it's not possible to have a z:line that's not an ip addresss...", me.name, sptr->name);
                return 0;
@@ -2482,7 +2482,7 @@ int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[])
        in = &userhost[0];
        while(*in) 
        { 
-           if (!isdigit(*in) && !ispunct(*in)) 
+           if (!isxdigit(*in) && !ispunct(*in)) 
            {
               sendto_one(sptr, ":%s NOTICE %s :it's not possible to have a z:line that's not an ip addresss...", me.name, sptr->name);
               return 0;
@@ -2553,6 +2553,7 @@ int banmask_check(char *userhost, int ipstat)
    int	retval = TRUE;
    char	*up = NULL, *p, *thisseg;
    int	numdots=0, segno=0, numseg, i=0;
+   int  ipv6=FALSE;
    char	*ipseg[HOSTLEN+1];
    char	safebuffer[512]=""; /* buffer strtoken() can mess up to its heart's content...;>*/
 
@@ -2563,15 +2564,19 @@ int banmask_check(char *userhost, int ipstat)
 #define userhost safebuffer
 #define IP_WILDS_OK(x) ((x)<2? 0 : 1)
 
+  if (strchr(safebuffer, ':')) {
+	  if (ipstat == FALSE)
+		  return FALSE;
+	  ipv6 = TRUE;
+  }
+
    if (ipstat == UNSURE)
    {
-        if (strchr(safebuffer, ':'))
-		return TRUE;
         ipstat=TRUE;
         for (up = userhost;*up;up++) 
         {
            if (*up=='.'||*up==':') numdots++;
-           if (!isdigit(*up) && !ispunct(*up)) {
+           if (!isxdigit(*up) && !ispunct(*up)) {
 		   ipstat=FALSE; 
 		   continue;
 	   }
@@ -2585,13 +2590,8 @@ int banmask_check(char *userhost, int ipstat)
      int l = 0;
 
 
-     if ((ipstat == TRUE) && strchr(safebuffer, ':')) {
-	     /* IPv6 Address */
-	     return TRUE;
-     }
-
-        for (segno = 0, i = 0, thisseg = strtoken(&p, userhost, "."); thisseg;
-             thisseg = strtoken(&p, NULL, "."), i++)
+        for (segno = 0, i = 0, thisseg = strtoken(&p, userhost, (ipv6 ? ":" : ".")); thisseg;
+             thisseg = strtoken(&p, NULL, (ipv6 ? "." : ":")), i++)
         {
             
             l = strlen(thisseg)+2;

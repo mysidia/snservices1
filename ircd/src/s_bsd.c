@@ -287,18 +287,10 @@ int	port;
 		switch(server.addr_family)
 		{
 			case AF_INET:
-#ifdef TESTNET
-				server.in.sin_port = htons(port + 10000);
-#else
 				server.in.sin_port = htons(port);
-#endif
 				break;
 			case AF_INET6:
-#ifdef TESTNET
-				server.in6.sin6_port = htons(port + 10000);
-#else
 				server.in6.sin6_port = htons(port);
-#endif
 				break;
 		}
 		/*
@@ -331,22 +323,12 @@ int	port;
 		switch(server.addr_family)
 		{
 			case AF_INET:
-#ifdef TESTNET
-				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    			ntohs(server.in.sin_port) - 10000);
-#else
 				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
 		    			ntohs(server.in.sin_port));
-#endif
 				break;
 			case AF_INET6:
-#ifdef TESTNET
-				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    			ntohs(server.in6.sin6_port) - 10000);
-#else
 				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
 		    			ntohs(server.in6.sin6_port));
-#endif
 				break;
 		}
 		(void)write(0, buf, strlen(buf));
@@ -357,18 +339,10 @@ int	port;
 	switch(server.addr_family)
 	{
 		case AF_INET:
-#ifdef TESTNET
-			cptr->port = (int)ntohs(server.in.sin_port) - 10000;
-#else
 			cptr->port = (int)ntohs(server.in.sin_port);
-#endif
 			break;
 		case AF_INET6:
-#ifdef TESTNET
-			cptr->port = (int)ntohs(server.in6.sin6_port) - 10000;
-#else
 			cptr->port = (int)ntohs(server.in6.sin6_port);
-#endif
 			break;
 	}
 	(void)listen(cptr->fd, LISTEN_SIZE);
@@ -686,18 +660,10 @@ char	*sockn;
 	switch (sk.addr_family)
 	{
 		case AF_INET:
-#ifdef TESTNET
-			cptr->port = (int)ntohs(sk.in.sin_port) - 10000;
-#else
 			cptr->port = (int)ntohs(sk.in.sin_port);
-#endif
 			break;
 		case AF_INET6:
-#ifdef TESTNET
-			cptr->port = (int)ntohs(sk.in6.sin6_port) - 10000;
-#else
 			cptr->port = (int)ntohs(sk.in6.sin6_port);
-#endif
 			break;
 	}
 
@@ -1367,18 +1333,10 @@ int	fd;
 		switch (addr.addr_family)
 		{
 			case AF_INET:
-#ifdef TESTNET
-				acptr->port = ntohs(addr.in.sin_port) - 10000;
-#else
 				acptr->port = ntohs(addr.in.sin_port);
-#endif
 				break;
 			case AF_INET6:
-#ifdef TESTNET
-				acptr->port = ntohs(addr.in6.sin6_port) - 10000;
-#else
 				acptr->port = ntohs(addr.in6.sin6_port);
-#endif
 				break;
 		}
 #if 0
@@ -2368,23 +2326,17 @@ int	*lenp;
 	switch (server.addr_family)
 	{
 		case AF_INET:
-#ifdef TESTNET
-			server.in.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum)
-	    			+ 10000);
-#else
 			server.in.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum));
-#endif
+			*lenp = sizeof(struct sockaddr_in);
 			break;
 		case AF_INET6:
-#ifdef TESTNET
-			server.in6.sin6_port = htons(((aconf->port > 0) ? aconf->port : portnum)
-	    			+ 10000);
-#else
 			server.in6.sin6_port = htons(((aconf->port > 0) ? aconf->port : portnum));
-#endif
+			*lenp = sizeof(struct sockaddr_in6);
+			break;
+		default:
+			*lenp = sizeof(server);
 			break;
 	}
-	*lenp = sizeof(server);
 	return &server;
 }
 
@@ -2467,19 +2419,11 @@ int	setup_ping()
 	{
 		case AF_INET:
 			len = sizeof(struct sockaddr_in);
-#ifdef TESTNET
-			from.in.sin_port = htons(17007);
-#else
 			from.in.sin_port = htons(7007);
-#endif
 			break;
 		case AF_INET6:
 			len = sizeof(struct sockaddr_in6);
-#ifdef TESTNET
-			from.in6.sin6_port = htons(17007);
-#else
 			from.in6.sin6_port = htons(7007);
-#endif
 			break;
 	}
 
