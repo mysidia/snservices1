@@ -515,55 +515,6 @@ else
 fi
 $RM -f $EXEC $TMP
 
-cat >$TMP<<__EOF__
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-
-int main()
-{
-	_res.retry;
-	res_init();
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-	echo $n " res_init$c"
-	sed -e "s@^RES=\(.*\)@RES=res_init.o \1@" Makefile > Makefile.tmp
-	cp Makefile.tmp Makefile
-	$RM -f Makefile.tmp
-fi
-
-cat > $TMP <<__EOF__
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-
-main()
-{
-	dn_skipname("","");
-	exit(0);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ -n "$NEEDSKIPNAME" ] ;
-then
-    NEEDSKIPNAME="define";
-    echo $n " dn_skipname$c"
-    $RM -f Makefile.tmp
-    sed -e "s@^RES=\(.*\)@RES=res_comp.o res_mkquery.o@" Makefile > Makefile.tmp
-
-    cp Makefile.tmp Makefile
-    $RM -f Makefile.tmp
-#else
-#    $RM -f Makefile.tmp
-#    sed -e "s@^RES=\(.*\)@RES=@" Makefile > Makefile.tmp
-#    cp Makefile.tmp Makefile
-#    $RM -f Makefile.tmp
-fi
-$RM -f $EXEC $TMP
 cat > $TMP <<__EOF__
 #include <sys/types.h>
 main()

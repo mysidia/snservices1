@@ -18,8 +18,8 @@
 
 #include <signal.h>
 
-#include "nameser.h"
-#include "resolv.h"
+#include <arpa/nameser.h>
+#include <resolv.h>
 
 #include "ircd/send.h"
 #include "ircd/string.h"
@@ -30,11 +30,6 @@ IRCD_RCSID("$Id$");
 
 //#undef	DEBUG	/* because there is a lot of debug code in here :-) */
 #define DEBUG
-
-extern	int	dn_expand(char *, char *, char *, char *, int);
-extern	int	dn_skipname(char *, char *);
-extern	int	res_mkquery(int, char *, int, int, char *, int,
-				   struct rrec *, char *, int);
 
 extern	int	errno, h_errno;
 extern	int	highest_fd;
@@ -584,14 +579,10 @@ HEADER	*hptr;
 			break;
 
 		cp += n;
-		type = (int)_getshort(cp);
-		cp += sizeof(short);
-		class = (int)_getshort(cp);
-		cp += sizeof(short);
-		rptr->ttl = _getlong(cp);
-		cp += sizeof(rptr->ttl);
-		dlen =  (int)_getshort(cp);
-		cp += sizeof(short);
+		GETSHORT(type, cp);
+		GETSHORT(class, cp);
+		GETLONG(rptr->ttl, cp);
+		GETSHORT(dlen, cp);
 		/* rptr->type = type; */
 
 		len = strlen(hostbuf);
@@ -629,7 +620,6 @@ HEADER	*hptr;
 			    }
 			ans++;
 			adr++;
-			cp += dlen;
  			break;
 #ifdef AF_INET6
 		case T_AAAA:
