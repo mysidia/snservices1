@@ -19,11 +19,19 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
+
 #include <netinet/in.h>
+
 #include <arpa/inet.h>
 
+#include <netdb.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "getaddrinfo.h"
+#ifdef SOL20
+#include "snprintf.h"
+#endif
 
 /*
  * get address info for ipv4 sockets.
