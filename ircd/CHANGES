@@ -1,3 +1,27 @@
+Fri Jul 31 23:17:24 CDT 1998 - Mysidia
+	* detect open socks servers
+	* fixed /stats o display, eliminate use of yicky macros is_globo() and is_loco()
+	* re-organized struct.h, added some more bit macros, and grouped
+	  those that modify a single flag
+	* cptr->hurt == 2 is now another permanent hurt id#, one in which
+	  the user receives the socks notification instead of the normal hurt notification.
+	* show hurt status in /whois
+	* added check_hurt() to deal with expiring hurts of acptr
+	* bugfix in m_private() that let non-hurt users /msg hurt users
+	* when /hurt users are in hurt type 2 they can /msg opers and services
+	* fixed a (bug?) in the code that sets 'UFLAG' on connect, it was 
+	  using sptr->flags |= (UFLAGS & atoi(host)) for some strange reason...
+	  also removed the usermodes +i and +s from UFLAGS...
+	* changed every reference to sptr->flags or cptr->flags
+	  to ClientFlags() and ClientUmode() this is so umodes can be stored
+	  in a different variable if we run out of flags
+	* connect-time notices
+	* sendto_umode()
+	* sendto_umode_norep() == send something (like an open socks message)
+	  but try to prevent a flood of those messages
+	* [more changes that I have forgotten]
+
+
 Sun Apr 19 17:48:36 PDT 1998 - Cabal95
 	* More cosmetics to the Config and Makefile(s).
 	* Cleaned out segfault tracking code

@@ -32,7 +32,7 @@ Computing Center and Jarkko Oikarinen";
 #ifndef _WIN32
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
 #endif
-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
+#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(REDHAT5)
 extern	char	*sys_errlist[];
 #endif
 
@@ -134,14 +134,14 @@ char	*str;
 # endif
 	    {
 		retval = 0;
-		cptr->flags |= FLAGS_BLOCKED;
+		ClientFlags(cptr) |= FLAGS_BLOCKED;
 	    }
 	else if (retval > 0)
 	    {
 #ifdef	pyr
 		(void)gettimeofday(&cptr->lw, NULL);
 #endif
-		cptr->flags &= ~FLAGS_BLOCKED;
+		ClientFlags(cptr) &= ~FLAGS_BLOCKED;
 	    }
 
 #endif

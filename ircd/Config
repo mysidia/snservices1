@@ -4,7 +4,7 @@
 # You may distribute this file without changes freely providing this notice
 # remains intact.
 #
-IRCD_VERSION="sor1.1.2"
+IRCD_VERSION="sor1.2"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #
@@ -29,6 +29,7 @@ NOINDEX=undef
 NSTRERROR=undef
 NSTRTOKEN=undef
 NSTRTOK=undef
+REDHAT5=undef
 NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
@@ -63,20 +64,19 @@ NOSPOOF_SEED01="0x12345678"
 NOSPOOF_SEED02="0x9abcdef0"
 NS_ADDRESS="nospoof@sorcery.net"
 KLINE_ADDRESS="kline@sorcery.net"
+DOMAINNAME="sorcery.net"
 IMODE="700"
 DPATH="/usr/local/lib/ircd"
 SPATH="/usr/local/bin/ircd"
 HUB=""
+CHECKPORT='19000'
 CRYPT_OPER_PASSWORD="1"
 CRYPT_LINK_PASSWORD=""
 LISTEN_SIZE="5"
 MAXSENDQLENGTH="3000000"
 BUFFERPOOL="(9 * MAXSENDQLENGTH)"
-NICKNAMEHISTORYLENGTH="2000"
-UNIXPORT=""
+NICKNAMEHISTORYLENGTH="750"
 MAXCONNECTIONS="1024"
-
-
 
 #
 # load $OPTIONS if present
@@ -106,8 +106,8 @@ fi
 if [ "$1" = "-n" ] ; then
     if [ "$LAST_VERSION" != "$IRCD_VERSION" ] ; then
 	echo "You specified the no-questions-asked configure, but the version"
-	echo "of Config which created your Options file was $LAST_VERSION,"
-	echo "And the current version is $IRCD_VERSION."
+	echo "of Config which created your Options file was [1m$LAST_VERSION[0m,"
+	echo "And the current version is [1m$IRCD_VERSION[0m."
 	echo " "
 	echo "Please read the prompts carefully since some of them may have"
 	echo "changed."
@@ -124,8 +124,8 @@ OS=`uname -a`
 case "$OS" in
     *NetBSD*)
 	DEFCFLAGS="$DEFOPT"
-        DESCRYPT="-lcrypt"
-#	DEFLIBS="-lcrypt"
+        DESCRYPT="fcrypt.o"
+	DEFLIBS="-lcrypt"
 	OSNAME="NetBSD"
 	;;
     *FreeBSD*)
@@ -153,6 +153,12 @@ case "$OS" in
 	DEFCFLAGS="$DEFOPT"
 	DEFLIBS=""
 	OSNAME="Linux"
+        if [ -r /etc/redhat-release -a -n "`grep \"release 5.\" /etc/redhat-release`" ]
+        then
+                OSNAME="Linux RedHat 5.x"
+                DEFLIBS="-lcrypt -lresolv"
+		REDHAT5="define"
+        fi
 	;;
     *HP-UX*.09.*)
 	DEFCFLAGS="$DEFOPT"
@@ -175,8 +181,8 @@ if [ ! -f Makefile ] ; then
   cp Makefile.dist Makefile
 fi
 cat << __EOF__
-Welcome to autoconfigure for the DALnet-derived IRC server
-version $IRCD_VERSION.
+Welcome to autoconfigure for the SorceryNet-derived IRC server
+version [1m$IRCD_VERSION[0m.
 
 Config will generate a system-specific $SETUP file, a top
 level Makefile, $OPTIONS_H, and a persistant options file named
@@ -267,6 +273,7 @@ sed -e "s@^XCFLAGS=\(.*\)@XCFLAGS=$XCFLAGS@" Makefile > Makefile.tmp
 cp Makefile.tmp Makefile
 $RM -f Makefile.tmp
 #
+
 cat <<__EOF__
 
 If you need to use any extra libraries when compiling the server,
@@ -378,10 +385,10 @@ $RM -f Makefile.tmp
 
 
 
-
 #
 COMP="$CCPATH $XCFLAGS $TMP -o $EXEC $LIBS"
 #
+
 echo 'Checking out /usr/include'
 echo $n "...Looking for /usr/include/stdlib.h...$c"
 if [ -r /usr/include/stdlib.h ] ; then
@@ -404,17 +411,13 @@ if [ -r /usr/include/sys/syslog.h ] ; then
 else
 	echo 'not found :('
 fi
-#echo $n "...Looking for malloc.h...$c"
-#if [ -r /usr/include/malloc.h ] ; then
-#	MALLOCH=malloc.h
-#	echo  'found!'
-#elif [ -r /usr/include/sys/malloc.h ] ; then
-#	MALLOCH=sys/malloc.h
-#	echo  'found!'
-#else
-#	echo 'not found :('
-#	MALLOCH=undef
-#fi
+
+if [ -z "$cc" ] ; then
+	cc="$LIBS"
+fi
+if [ "$cc" = "none" ] ; then
+	cc=''
+fi
 
 echo $n "...Looking for /usr/include/sys/param.h...$c"
 if [ -r /usr/include/sys/param.h ] ; then
@@ -741,7 +744,8 @@ main()
 }
 __EOF__
 $COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
+if [ $? -ne 0 -o "$OSNAME" = "Linux RedHat 5.x" -o -n "$NEEDSKIPNAME" ] ;
+then
     echo $n " dn_skipname$c"
     $RM -f Makefile.tmp
     sed -e "s@^RES=\(.*\)@RES=res_skipname.o@" Makefile > Makefile.tmp
@@ -947,6 +951,7 @@ cat > $SETUP  <<__EOF__
 #$UNISTDH	UNISTDH
 #$STRINGH	STRINGH
 #$STRINGSH	STRINGSH
+#$REDHAT5	REDHAT5
 #$STDLIBH	STDLIBH
 #$STDDEFH	STDDEFH
 #$SYSSYSLOGH	SYSSYSLOGH
@@ -1369,17 +1374,14 @@ while [ -z "$FOO" ] ; do
     esac
 done
 
+
+#    echo "#define CHECKPORT $CHECKPORT" >> $OPTIONS_H
 FOO=""
 runonce=""
 while [ -z "$FOO" ] ; do
-    if [ -n "$UNIXPORT" ] ; then
-	FOO="Yes"
-    else
-	FOO="No"
-    fi
+    FOO="$CHECKPORT"
     echo ""
-    echo "Would you like clients local to the SERVER MACHINE to be able to"
-    echo "use Unix domain sockets?"
+    echo "What local port should socks requests be checked with ? [must be >1024]"
     echo $n "[$FOO] -> $c"
     if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
 	read cc
@@ -1391,15 +1393,12 @@ while [ -z "$FOO" ] ; do
 	cc=$FOO
     fi
     case "$cc" in
-	[Yy]*)
-	    UNIXPORT="1"
-	    ;;
-	[Nn]*)
-	    UNIXPORT=""
+	[1-9]*)
+	    CHECKPORT="$cc"
 	    ;;
 	*)
 	    echo ""
-	    echo "You need to enter either Yes or No here..."
+	    echo "You need to enter a number here."
 	    echo ""
 	    FOO=""
 	    ;;
@@ -1743,12 +1742,15 @@ cat > $OPTIONS_H << __EOF__
 #define BUFFERPOOL $BUFFERPOOL
 #define MAXCONNECTIONS $MAXCONNECTIONS
 #define NICKNAMEHISTORYLENGTH $NICKNAMEHISTORYLENGTH
+#define CHECKPORT $CHECKPORT
 __EOF__
 if [ -n "$HUB" ] ; then
     echo "#define HUB 1" >> $OPTIONS_H
 else
     echo "#undef HUB" >> $OPTIONS_H
 fi
+
+
 if [ -n "$CRYPT_OPER_PASSWORD" ] ; then
     echo "#define CRYPT_OPER_PASSWORD 1" >> $OPTIONS_H
 else
@@ -1758,11 +1760,6 @@ if [ -n "$CRYPT_LINK_PASSWORD" ] ; then
     echo "#define CRYPT_LINK_PASSWORD 1" >> $OPTIONS_H
 else
     echo "#undef CRYPT_LINK_PASSWORD" >> $OPTIONS_H
-fi
-if [ -n "$UNIXPORT" ] ; then
-    echo "#define UNIXPORT 1" >> $OPTIONS_H
-else
-    echo "#undef UNIXPORT" >> $OPTIONS_H
 fi
 if [ -n "$NOSPOOF" ] ; then
     echo "#define NOSPOOF 1" >> $OPTIONS_H
@@ -1815,20 +1812,19 @@ CRYPT_LINK_PASSWORD="$CRYPT_LINK_PASSWORD"
 LISTEN_SIZE="$LISTEN_SIZE"
 MAXSENDQLENGTH="$MAXSENDQLENGTH"
 BUFFERPOOL="$BUFFERPOOL"
-UNIXPORT="$UNIXPORT"
 MAXCONNECTIONS="$MAXCONNECTIONS"
 DOMAINNAME="$DOMAINNAME"
 NICKNAMEHISTORYLENGTH="$NICKNAMEHISTORYLENGTH"
 NICK_DELAY="$NICK_DELAY"
-
+CHECKPORT="$CHECKPORT"
 __EOF__
 
 cat <<__EOF__
 
  Config is complete.
 
- Before compiling, check the contents of include/config.h for any strange
+ Before compiling, check the contents of [1minclude/config.h[0m for any strange
  things you usually set.  If you want them to be included in the future,
- ask them to be moved to the options.h file on ircd-src@sorcery.net.
+ ask them to be moved to the [1moptions.h[0m file on [1mircd-src@sorcery.net[0m.
 
 __EOF__
