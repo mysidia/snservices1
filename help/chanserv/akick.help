@@ -3,7 +3,7 @@
  === ADDAK ===
  
      SYNTAX:
-     /ChanServ AKICK <#channel> <list|add|del|wipe>; [<mask>]
+     /ChanServ AKICK <#channel> <list|add|del> [<mask>]
  
      DESCRIPTION:
      AKICK is a command used to maintain channel autokick lists.
