@@ -1010,7 +1010,7 @@ int getMiscChanOp(RegChanList * chan, char *nick, int id,
 		UserList *check = getNickData(nick);
 		RegNickList *reg2;
 		if (check && check->reg) {
-			if (isIdentified(check, check->reg)) {
+			if (isIdentified(check, check->reg) || (check->oflags & NOISREG)) {
 				tmpnick = getChanOpData(chan, nick);
 
 				if (tmpnick) {
@@ -1040,7 +1040,7 @@ int getMiscChanOp(RegChanList * chan, char *nick, int id,
 			&& (tmpnick = getChanOpData(chan, reg2->nick))
 			&& (tmpNickName = ((tmpnick->nickId).getNick())))
 			process_op_item(tmpnick);
-		if (isRecognized(tmp, tmp->reg)
+		if ((isRecognized(tmp, tmp->reg) || (tmp->oflags & NOISREG))
 			&& (tmpnick = getChanOpData(chan, nick))
 			&& (tmpNickName = ((tmpnick->nickId).getNick()))) 
 		{
