@@ -3405,7 +3405,8 @@ CCMD(cs_register)
 		return RET_EFAULT;
 	}
 
-	if (nick->reg->chans >= ChanLimit && !opFlagged(nick, OVERRIDE)) {
+	if (nick->reg->chans >= ChanLimit && !opFlagged(nick, OVERRIDE)
+            && !(nick->opflags & OROOT)) {
 		sSend(":%s NOTICE %s :You have registered too many channels",
 			  ChanServ, from);
 #ifdef REGLIMITYELL
