@@ -605,7 +605,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  (void)m_lusers(sptr, sptr, 1, parv);
 	  update_load();
 	  (void)m_motd(sptr, sptr, 1, parv);
-#ifndef NO_VERSION_CHECK
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
           if (!IsUserVersionKnown(sptr))
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
 #endif
