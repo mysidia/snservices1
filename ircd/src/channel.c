@@ -456,7 +456,7 @@ int BanRuleMatch(const char *text, aClient *cptr, int *result,
 	/* Ban flags +q,  NV, and NR  match nick!user@host  like any other ban */
 	if ((ban_flags == BAN_BQUIET || ban_flags == BAN_VERONLY || ban_flags == BAN_REGONLY)
 	      && pattern_start) {
-	    if (
+	    if (  text[pattern_start] != '\0' &&
                   (match(text+pattern_start, nuh)) &&
                   (!nuhmask || match(text+pattern_start, nuhmask)) &&
                   (!sip || match(text+pattern_start, sip))
@@ -1872,6 +1872,10 @@ char	*key;
                return (ERR_BANRULE);
            if (IS_SET(bantype, BAN_REQUIRE))
                return (ERR_BANREQUIRE);
+	   if (IS_SET(bantype, BAN_REGONLY))
+	       return (ERR_NEEDREGGEDNICK);
+           if (IS_SET(bantype, BAN_VERONLY))
+               return (ERR_NEEDVERNICK);
 	}
 
 	if (chptr->mode.limit && chptr->users >= chptr->mode.limit)
