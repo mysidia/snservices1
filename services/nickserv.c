@@ -3363,7 +3363,7 @@ NCMD(ns_register)
 #endif
 	nick->caccess = 3;
 	nick->reg->flags |= NENCRYPT;
-	pw_enter_password(args[1], nick->reg->password, NickGetEnc(nick));
+	pw_enter_password(args[1], nick->reg->password, NickGetEnc(nick->reg));
 
 	nicklog->log(nick, NS_REGISTER, nick->nick);
 	ADD_MEMO_BOX(nick->reg);
