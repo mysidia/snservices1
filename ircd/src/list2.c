@@ -99,11 +99,10 @@ void	outofmemory()
 **			associated with the client defined by
 **			'from'). ('from' is a local client!!).
 */
-aClient	*make_client(from)
-aClient	*from;
+aClient	*make_client(aClient *from)
 {
-	Reg1	aClient *cptr = NULL;
-	Reg2	unsigned size = CLIENT_REMOTE_SIZE;
+	aClient *cptr = NULL;
+	unsigned size = CLIENT_REMOTE_SIZE;
 
 	/*
 	 * Check freelists first to see if we can grab a client without
@@ -160,7 +159,6 @@ aClient	*from;
 		cptr->confs = NULL;
 		cptr->sockhost[0] = '\0';
 		cptr->buffer[0] = '\0';
-		cptr->authfd = -1;
 	    }
 	return (cptr);
 }
@@ -168,9 +166,9 @@ aClient	*from;
 
 checksanity()
 {
-	register aClient *c;
-	register anUser	*u;
-	register aServer *s;
+	aClient *c;
+	anUser	*u;
+	aServer *s;
 
 	for (c = client; c; c = c->next)
 #ifdef	LIST_DEBUG
@@ -185,8 +183,7 @@ checksanity()
 }
 
 
-void	free_client(cptr)
-aClient	*cptr;
+void	free_client(aClient *cptr)
 {
 	Debug((DEBUG_LIST, "free_client(%#x) %d", cptr, cptr->fd));
 	if (cptr->fd != -1)
@@ -209,10 +206,9 @@ aClient	*cptr;
 ** 'make_user' add's an User information block to a client
 ** if it was not previously allocated.
 */
-anUser	*make_user(cptr)
-aClient *cptr;
+anUser	*make_user(aClient *cptr)
 {
-	Reg1	anUser	*user;
+	anUser	*user;
 	char	c;
 
 	user = cptr->user;
@@ -243,10 +239,9 @@ aClient *cptr;
 	return user;
 }
 
-aServer	*make_server(cptr)
-aClient	*cptr;
+aServer	*make_server(aClient *cptr)
 {
-	Reg1	aServer	*serv = cptr->serv;
+	aServer	*serv = cptr->serv;
 	char	c;
 
 	if (!serv)
@@ -280,9 +275,7 @@ aClient	*cptr;
 **	Decrease user reference count by one and realease block,
 **	if count reaches 0
 */
-void	free_user(user, cptr)
-Reg1	anUser	*user;
-aClient	*cptr;
+void	free_user(anUser *user, aClient *cptr)
 {
 	if (cptr && user->bcptr && (user->bcptr != cptr))
 	{
@@ -309,8 +302,7 @@ aClient	*cptr;
  * taken the code from ExitOneClient() for this and placed it here.
  * - avalon
  */
-void	remove_client_from_list(cptr)
-Reg1	aClient	*cptr;
+void	remove_client_from_list(aClient *cptr)
 {
 	checklist();
 	if (cptr->prev)
@@ -347,8 +339,7 @@ Reg1	aClient	*cptr;
  * in this file, shouldnt they ?  after all, this is list.c, isnt it ?
  * -avalon
  */
-void	add_client_to_list(cptr)
-aClient	*cptr;
+void	add_client_to_list(aClient *cptr)
 {
 	/*
 	 * since we always insert new clients to the top of the list,
@@ -364,9 +355,7 @@ aClient	*cptr;
 /*
  * Look for ptr in the linked listed pointed to by link.
  */
-Link	*find_user_link(lp, ptr)
-Reg1	Link	*lp;
-Reg2	aClient *ptr;
+Link	*find_user_link(Link *lp, aClient *ptr)
 {
 	while (lp && ptr)
 	   {
@@ -379,7 +368,7 @@ Reg2	aClient *ptr;
 
 Link	*make_link()
 {
-	Reg1	Link	*lp;
+	Link	*lp;
 	char	c;
 
 	if ((lp = lfree))
@@ -404,8 +393,7 @@ Link	*make_link()
 	return lp;
 }
 
-void	free_link(lp)
-Reg1	Link	*lp;
+void	free_link(Link *lp)
 {
 	bzero((char *)lp, sizeof(*lp));
 	lp->next = lfree;
@@ -417,7 +405,7 @@ Reg1	Link	*lp;
 
 aClass	*make_class()
 {
-	Reg1	aClass	*tmp;
+	aClass	*tmp;
 
 	if ((tmp = clfree))
 	    {
@@ -434,8 +422,7 @@ aClass	*make_class()
 	return tmp;
 }
 
-void	free_class(tmp)
-Reg1	aClass	*tmp;
+void	free_class(aClass *tmp)
 {
 	bzero((char *)tmp, sizeof(*tmp));
 	tmp->next = clfree;
@@ -446,7 +433,7 @@ Reg1	aClass	*tmp;
 
 aConfItem	*make_conf()
 {
-	Reg1	aConfItem *aconf;
+	aConfItem *aconf;
 	char	c;
 
 	if ((aconf = cofree))
@@ -470,8 +457,7 @@ aConfItem	*make_conf()
 	return (aconf);
 }
 
-void	free_conf(aconf)
-aConfItem *aconf;
+void	free_conf(aConfItem *aconf)
 {
 	MyFree(aconf->host);
 	if (aconf->passwd)
@@ -486,9 +472,7 @@ aConfItem *aconf;
 	return;
 }
 
-void	send_listinfo(cptr, name)
-aClient	*cptr;
-char	*name;
+void	send_listinfo(aClient *cptr, char *name)
 {
 	static	char	*labels[] = { "Local", "Remote", "Servs", "Links",
 				      "Users", "Confs", "Classes", "dbufs" };

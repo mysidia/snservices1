@@ -9,7 +9,7 @@ Please remember:
 * PLEASE remember to add these U lines to your conf. BEFORE starting your
   server: 
 
-U:warlock.sorcery.net:*:*
+U:services.sorcery.net:*:*
 
 * All the information you need on the patches is in the file README.patches
 

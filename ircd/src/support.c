@@ -36,9 +36,7 @@ static  char sccsid[] = "@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner;\
 
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
 #endif
-#ifndef	CLIENT_COMPILE
 extern	void	outofmemory();
-#endif
 
 #ifdef NEED_STRTOKEN
 /*
@@ -48,12 +46,10 @@ extern	void	outofmemory();
 **
 */
 
-char *strtoken(save, str, fs)
-char **save;
-char *str, *fs;
+char *strtoken(char **save, char *str, char *fs)
 {
     char *pos = *save;	/* keep last position across calls */
-    Reg1 char *tmp;
+    char *tmp;
 
     if (str)
 	pos = str;		/* new string scan */
@@ -88,8 +84,7 @@ char *str, *fs;
 ** NOT encouraged to use!
 */
 
-char *strtok(str, fs)
-char *str, *fs;
+char *strtok(char *str, char *fs)
 {
     static char *pos;
 
@@ -105,8 +100,7 @@ char *str, *fs;
 **		   argv 11/90
 */
 
-char *strerror(err_no)
-int err_no;
+char *strerror(int err_no)
 {
 	extern	char	*sys_errlist[];	 /* Sigh... hopefully on all systems */
 	extern	int	sys_nerr;
@@ -148,12 +142,11 @@ int err_no;
 **	inet_ntoa --	its broken on some Ultrix/Dynix too. -avalon
 */
 
-char	*inetntoa(in)
-char	*in;
+char	*inetntoa(char *in)
 {
 	static	char	buf[16];
-	Reg1	u_char	*s = (u_char *)in;
-	Reg2	int	a,b,c,d;
+	u_char	*s = (u_char *)in;
+	int	a,b,c,d;
 
 	a = (int)*s++;
 	b = (int)*s++;
@@ -171,8 +164,7 @@ char	*in;
 **
 */
 
-int inet_netof(in)
-struct in_addr in;
+int inet_netof(struct in_addr in)
 {
     int addr = in.s_net;
 
@@ -187,9 +179,8 @@ struct in_addr in;
 #endif /* NEED_INET_NETOF */
 
 
-#if defined(DEBUGMODE) && !defined(CLIENT_COMPILE)
-void	dumpcore(msg, p1, p2, p3, p4, p5, p6, p7, p8, p9)
-char	*msg, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9;
+#if defined(DEBUGMODE)
+void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char *p6, char *p7, char *p8, char *p9)
 {
 	static	time_t	lastd = 0;
 	static	int	dumps = 0;
@@ -235,11 +226,10 @@ static	int	mindex = 0;
 #define	SZ_CH	(sizeof(char *))
 #define	SZ_ST	(sizeof(size_t))
 
-char	*MyMalloc(x)
-size_t	x;
+char	*MyMalloc(size_t x)
 {
-	register int	i;
-	register char	**s;
+	int	i;
+	char	**s;
 	char	*ret;
 
 #ifndef _WIN32
@@ -250,12 +240,7 @@ size_t	x;
 
 	if (!ret)
 	    {
-# ifndef	CLIENT_COMPILE
 		outofmemory();
-# else
-		perror("malloc");
-		exit(-1);
-# endif
 	    }
 	bzero(ret, (int)x + SZ_EX);
 	bcopy((char *)&ret, ret, SZ_CH);
@@ -273,12 +258,10 @@ size_t	x;
 	return ret + SZ_CHST;
     }
 
-char    *MyRealloc(x, y)
-char	*x;
-size_t	y;
-    {
-	register int	l;
-	register char	**s;
+char    *MyRealloc(char *x, size_t y)
+{
+        int	l;
+	char	**s;
 	char	*ret, *cp;
 	size_t	i;
 	int	k;
@@ -288,7 +271,8 @@ size_t	y;
 	bcopy(x + SZ_CH, (char *)&i, SZ_ST);
 	bcopy(x + (int)i + SZ_CHST, (char *)&k, 4);
 	if (bcmp((char *)&k, "VAVA", 4) || (x != cp))
-		dumpcore("MyRealloc %#x %d %d %#x %#x", x, y, i, cp, k);
+		dumpcore("MyRealloc %#x %d %d %#x %#x", x, y, i, cp, k,
+			 NULL, NULL, NULL, NULL);
 #ifndef _WIN32
 	ret = (char *)realloc(x, y + (size_t)SZ_EX);
 #else
@@ -297,12 +281,7 @@ size_t	y;
 
 	if (!ret)
 	    {
-# ifndef	CLIENT_COMPILE
 		outofmemory();
-# else
-		perror("realloc");
-		exit(-1);
-# endif
 	    }
 	bcopy((char *)&ret, ret, SZ_CH);
 	bcopy((char *)&y, ret + SZ_CH, SZ_ST);
@@ -325,14 +304,13 @@ size_t	y;
 	return ret + SZ_CHST;
     }
 
-void	MyFree(x)
-char	*x;
+void	MyFree(char *x)
 {
 	size_t	i;
 	char	*j;
 	u_char	k[4];
-	register int	l;
-	register char	**s;
+	int	l;
+	char	**s;
 
 	if (!x)
 		return;
@@ -344,7 +322,8 @@ char	*x;
 
 	if (bcmp((char *)k, "VAVA", 4) || (j != x))
 		dumpcore("MyFree %#x %ld %#x %#x", x, i, j,
-			 (k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0]);
+			 (k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0],
+			 NULL, NULL, NULL, NULL, NULL);
 
 #undef	free
 #ifndef _WIN32
@@ -364,8 +343,7 @@ char	*x;
 }
 
 #else
-char	*MyMalloc(x)
-size_t	x;
+char	*MyMalloc(size_t x)
 {
 #ifndef _WIN32
 	char *ret = (char *)malloc(x);
@@ -375,20 +353,13 @@ size_t	x;
 
 	if (!ret)
 	    {
-# ifndef	CLIENT_COMPILE
 		outofmemory();
-# else
-		perror("malloc");
-		exit(-1);
-# endif
 	    }
 	return	ret;
 }
 
-char	*MyRealloc(x, y)
-char	*x;
-size_t	y;
-    {
+char	*MyRealloc(char *x, size_t y)
+{
 #ifndef _WIN32
 	char *ret = (char *)realloc(x, y);
 #else
@@ -397,12 +368,7 @@ size_t	y;
 
 	if (!ret)
 	    {
-# ifndef CLIENT_COMPILE
 		outofmemory();
-# else
-		perror("realloc");
-		exit(-1);
-# endif
 	    }
 	return ret;
     }
@@ -421,14 +387,12 @@ size_t	y;
 **	dgets(x,y,0);
 ** to mark the buffer as being empty.
 */
-int	dgets(fd, buf, num)
-int	fd, num;
-char	*buf;
+int	dgets(int fd, char *buf, int num)
 {
 	static	char	dgbuf[8192];
 	static	char	*head = dgbuf, *tail = dgbuf;
-	register char	*s, *t;
-	register int	n, nr;
+	char	*s, *t;
+	int	n, nr;
 
 	/*
 	** Sanity checks.

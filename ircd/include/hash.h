@@ -20,6 +20,8 @@
 #ifndef	__hash_include__
 #define __hash_include__
 
+#define WATCHHASHSIZE 300
+
 /* Ditch the stats if not running in debugmode */
 #ifdef DEBUGMODE
 typedef	struct	hashentry {

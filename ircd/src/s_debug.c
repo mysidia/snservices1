@@ -24,6 +24,9 @@ Computing Center and Jarkko Oikarinen";
 #endif
 
 #include "struct.h"
+
+#include <errno.h>
+
 /*
  * Option string.  Must be before #ifdef DEBUGMODE.
  */
@@ -49,14 +52,9 @@ char	serveropts[] = {
 #ifdef	HUB
 'H',
 #endif
-#ifdef	SHOW_INVISIBLE_LUSERS
-'i',
-#endif
+'i', /* SHOW_INVISIBLE_LUSERS */
 #ifndef	NO_DEFAULT_INVISIBLE
 'I',
-#endif
-#ifdef	LEAST_IDLE
-'L',
 #endif
 #ifdef	M4_PREPROC
 'm',
@@ -76,14 +74,8 @@ char	serveropts[] = {
 #ifdef	NPATH
 'N',
 #endif
-#ifdef	ENABLE_SUMMON
-'S',
-#endif
 #ifdef	IRCII_KLUDGE
 'u',
-#endif
-#ifdef	ENABLE_USERS
-'U',
 #endif
 #ifdef	VALLOC
 'V',
@@ -213,9 +205,7 @@ va_dcl
  * different field names for "struct rusage".
  * -avalon
  */
-void	send_usage(cptr, nick)
-aClient *cptr;
-char	*nick;
+void	send_usage(aClient *cptr, char *nick)
 {
 
 #ifdef GETRUSAGE_2
@@ -323,19 +313,17 @@ char	*nick;
 }
 #endif
 
-void	count_memory(cptr, nick)
-aClient	*cptr;
-char	*nick;
+void	count_memory(aClient *cptr, char *nick)
 {
 	extern	aChannel	*channel;
 	extern	aClass	*classes;
 	extern	aConfItem	*conf;
 
-	Reg1 aClient *acptr;
-	Reg2 Link *link;
-	Reg3 aChannel *chptr;
-	Reg4 aConfItem *aconf;
-	Reg5 aClass *cltmp;
+	aClient *acptr;
+	Link *link;
+	aChannel *chptr;
+	aConfItem *aconf;
+	aClass *cltmp;
 
 	int	lc = 0,		/* local clients */
 		ch = 0,		/* channels */

@@ -41,13 +41,9 @@ Computing Center and Jarkko Oikarinen";
 **	with cptr of "local" variation, which contains all the
 **	necessary fields (buffer etc..)
 */
-int	dopacket(cptr, buffer, length)
-Reg3	aClient *cptr;
-char	*buffer;
-Reg4	int	length;
+int	dopacket(aClient *cptr, char *buffer, int length)
 {
-	Reg1	char	*ch1;
-	Reg2	char	*ch2;
+	char	*ch1, *ch2;
 	aClient	*acpt = cptr->acpt;
  
 	me.receiveB += length; /* Update bytes received */
@@ -103,7 +99,6 @@ Reg4	int	length;
 				** structure *does* not exist anymore!!! --msa
 				*/
 				return FLUSH_BUFFER;
-#ifndef CLIENT_COMPILE
 			/*
 			** Socket is dead so exit (which always returns with
 			** FLUSH_BUFFER here).  - avalon
@@ -111,7 +106,6 @@ Reg4	int	length;
 			if (ClientFlags(cptr) & FLAGS_DEADSOCKET)
 				return exit_client(cptr, cptr, &me,
 						   "Dead Socket");
-#endif
 			ch1 = cptr->buffer;
 		    }
 		else if (ch1 < cptr->buffer + (sizeof(cptr->buffer)-1))

@@ -48,7 +48,7 @@ struct load_entry *load_list_head = NULL, *load_list_tail = NULL,
 void update_load()
 {
   static struct timeval now, last;
-  register struct load_entry *cur_load_entry;
+  struct load_entry *cur_load_entry;
 
   /* This seems to get polluted on startup by an exit_client()
    * before any connections have been recorded.
@@ -104,11 +104,9 @@ void update_load()
 }
 
 
-void calc_load(sptr, parv)
-aClient *sptr;
-char    *parv;  /* we only get passed the original parv[0] */
+void calc_load(aClient *sptr, char *parv) /* we only get passed the original parv[0] */
 {
-  register struct load_entry *cur_load_entry;
+  struct load_entry *cur_load_entry;
   struct load_entry *last;
   u_long secs = 0, adj_secs, total[3], adj[3];/*[local,client,conn]*/
   int i, times[5][3]; /* [min,hour,day,Yest,YYest][local,client,conn] */

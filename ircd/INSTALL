@@ -6,6 +6,8 @@ by Alexei Kosut (Lefler) <lefler@dal.net>
 with changes for dal4.3.6 by Mikko Hänninen (Wizzu) <wizzu@dal.net>
 with changes for dal4.4.11 by Cabal95 (cabal95@dal.net)
              and sor1.1.2 by Cabal95 (cabal95@sorcery.net)
+with changes for sor1.2.6 by Andy (andy@sorcery.net)
+with changes for sor1.3.0 by Mysidia (mysidia@sorcery.net)
 =======================================================================
 
 This document describes how to install ircd, the unix daemon that acts as 
@@ -55,14 +57,13 @@ If you are reading this, you have most likely already done this, but to
 recap:
 
 The SorceryNet server
-<ftp://ftp.sorcery.net/sorcery/server/ircd-sor1.2.4.tar.gz> comes tarred
+<ftp://ftp.sorcery.net/sorcery/server/ircd-sor1.3.0.tar.gz> comes tarred
 and gzipped. To uncompress it and expand it, use the following commands at
 the UNIX prompt:
 
-gzip -d ircd-sor1.2.4.tar.gz
-tar -xf ircd-sor1.2.4.tar.gz
+tar zxf ircd-sor1.3.0.tar.gz
 
-This will create a new directory called ircd-sor1.2.4, and unpack the
+This will create a new directory called ircd-sor1.3.0, and unpack the
 source into it.
 
 If you use Windows NT/95, you may need to find a program to extract
@@ -135,7 +136,7 @@ Now edit this file to reflect your server. The file is mainly
 self-explanatory. Note that if you plan to use your server on SorceryNet, 
 make sure that you have the following line:
 
-U:warlock.sorcery.net:*:*
+U:services.sorcery.net:*:*
 
 =======================================================================
 Starting Your Server
