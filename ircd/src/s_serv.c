@@ -913,7 +913,7 @@ static	void	report_configured_links(aClient *sptr, int mask)
 			host = BadPtr(tmp->host) ? null : tmp->host;
 			pass = BadPtr(tmp->passwd) ? null : tmp->passwd;
 			name = BadPtr(tmp->name) ? null : tmp->name;
-			cl = BadPtr(tmp->class) ? null : tmp->class->name;
+			cl = (tmp->class == NULL) ? null : tmp->class->name;
 
 			port = (int)tmp->port;
 
