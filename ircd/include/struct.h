@@ -228,6 +228,10 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 /* usermode flags
      NOTE: these are still held in sptr->flags */
+#define U_VERONLY	BIT14
+#define U_REGONLY	BIT15
+#define U_VERIFIED	BIT16
+#define U_REGISTERED	BIT17
 #define U_FULLMASK	BIT18
 #define U_MASK		BIT21 /* Masked */
 #define	U_OPER		BIT22 /* Global IRCop */
@@ -243,7 +247,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define U_LOG           BIT32 /* See network-level server logging */
 
 /* list of usermodes that are propogated/passed on to other servers*/
-#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP|U_MASK)
+#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP|U_MASK| \
+		         U_REGISTERED|U_REGONLY|U_VERIFIED|U_VERONLY)
 /* list of all usermodes except those that are in send_umodes*/
 #define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
 #define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
@@ -338,6 +343,24 @@ enum forbidden_result {
 #define	IsLocOp(x)		(ClientUmode(x) & U_LOCOP)
 #define	SetLocOp(x)    		(ClientUmode(x) |= U_LOCOP)
 #define	ClearLocOp(x)		(ClientUmode(x) &= ~U_LOCOP)
+
+#define IsRegNick(x)		(ClientUmode(x) & U_REGISTERED)
+#define SetRegNick(x)		(ClientUmode(x) |= U_REGISTERED)
+#define ClearRegNick(x)		(ClientUmode(x) &= ~U_REGISTERED)
+
+#define IsVerNick(x)		(ClientUmode(x) & U_VERIFIED)
+#define SetVerNick(x)		(ClientUmode(x) |= U_VERIFIED)
+#define ClearVerNick(x)		(ClientUmode(x) &= ~U_VERIFIED)
+
+#define IsRegOnly(x)            (ClientUmode(x) & U_REGONLY)
+#define SetRegOnly(x)           (ClientUmode(x) |= U_REGONLY)
+#define ClearRegOnly(x)         (ClientUmode(x) &= ~U_REGONLY)
+
+#define IsVerOnly(x)            (ClientUmode(x) & U_VERONLY)
+#define SetVerOnly(x)           (ClientUmode(x) |= U_VERONLY)
+#define ClearVerOnly(x)         (ClientUmode(x) &= ~U_VERONLY)
+
+
 
 #define	IsInvisible(x)		(ClientUmode(x) & U_INVISIBLE)
 #define	SetInvisible(x)		(ClientUmode(x) |= U_INVISIBLE)
@@ -869,6 +892,8 @@ struct Channel	{
 #define BAN_REQUIRE    0x0008
 #define BAN_RBLOCK     0x0010
 #define BAN_GECOS      0x0020
+#define BAN_REGONLY    0x0040
+#define BAN_VERONLY    0x0080
 
 #define BAN_STD                (BAN_BLOCK|BAN_BQUIET)
 
