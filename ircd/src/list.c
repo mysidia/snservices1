@@ -123,11 +123,6 @@ void	free_client(aClient *cptr)
 {
 	if (cptr->from == cptr)
 	{
-		cptr->lprev->lnext = cptr->lnext;
-		if (cptr->lnext)
-		{
-			cptr->lnext->lprev = cptr->lprev;
-		}
 		if (cptr->lopt)
 		{
 			free_str_list(cptr->lopt->yeslist);

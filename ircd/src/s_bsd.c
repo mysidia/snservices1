@@ -115,6 +115,7 @@ aConfItem *aconf;
 	aClient	*cptr;
 
 	cptr = make_client(NULL);
+	cptr->hopcount = 0;
         ClientFlags(cptr) = FLAGS_LISTEN;
 	cptr->acpt = cptr;
 	SetMe(cptr);
@@ -651,6 +652,17 @@ aClient *cptr;
 
 	det_confs_butmask(cptr, 0);
 
+	/* MyConnect() should be false as there's no connection anymore */
+	cptr->hopcount = -1;
+
+	/* and for the same reason, this client should be removed from
+	 * the linked list of local clients */
+	cptr->lprev->lnext = cptr->lnext;
+	if (cptr->lnext)
+	{
+		cptr->lnext->lprev = cptr->lprev;
+	}
+
 	return;
 }
 
@@ -667,6 +679,7 @@ aClient	*add_connection(aClient *cptr, sock *sock)
 	aConfItem *aconf = NULL;
 
 	acptr = make_client(NULL);
+	acptr->hopcount = 1;
 
 	if (cptr != &me)
 		aconf = cptr->confs->value.aconf;
@@ -887,6 +900,7 @@ struct	HostEnt	*hp;
 		}
 	    }
 	cptr = make_client(NULL);
+	cptr->hopcount = 1;
 	cptr->hostp = hp;
 	/*
 	 * Copy these in so we have something for error detection.
