@@ -3655,8 +3655,6 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	      {
 		if (uline == 0 && (flag == U_REGISTERED || flag == U_VERIFIED)) {
 			   /* TODO: Should have a table of flags + who can set them */
-			flag = 0;
-
 			break;
 		}
 		if (what == MODE_ADD)
