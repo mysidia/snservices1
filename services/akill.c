@@ -779,6 +779,7 @@ void timed_akill_queue(char *)
 				
 				ops_email.body.add(buf2);
 			}
+			ops_email.body.add("\n");
 		}
 		if (ops_enforce_buf.length() > 0) {
 			ops_email.body.add("");
