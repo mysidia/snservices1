@@ -34,7 +34,7 @@ Computing Center and Jarkko Oikarinen";
 #ifndef _WIN32
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
 #endif
-#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(REDHAT5) && !defined(LINUX_GLIBC)
+#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(REDHAT5)
 extern	char	*sys_errlist[];
 #endif
 

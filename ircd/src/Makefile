@@ -47,10 +47,7 @@ version.c:
 	$(SHELL) version.c.SH
 
 version.o: version.c ../include/patchlevel.h
-	$(CC) $(CFLAGS) $(DFLAGS) -c version.c
-
-# XXX on RH6 i get -lresolv and -lcrypt linked twice
-# this is b/c of $(IRCDLIBS) $(DESCRYPT)
+	$(CC) $(CFLAGS) -c version.c
 
 ircd: $(OBJS) 
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) $(DESCRYPT) -o ircd
@@ -58,9 +55,9 @@ ircd: $(OBJS)
 
 chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
 	 ../include/common.h crule.c chkconf.c
-	$(CC) $(DFLAGS) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
-	$(CC) -ggdb $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
-	$(CC) $(DFLAGS) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o \
+	$(CC) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
+	$(CC) $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
+	$(CC) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o \
 	$(LDFLAGS) $(IRCDLIBS) -o chkconf
 
 saber: $(SRC)

@@ -743,7 +743,7 @@ static	int	validate(top)
 aConfItem *top;
 {
 	aConfItem *aconf, *bconf;
-	u_int	otype = 0, valid = 0;
+	u_int	otype, valid = 0;
 
 	if (!top)
 		return 0;

@@ -4,7 +4,7 @@
 # You may distribute this file without changes freely providing this notice
 # remains intact.
 #
-IRCD_VERSION="sor1.3.0"
+IRCD_VERSION="sor1.2.4"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #
@@ -29,8 +29,7 @@ NOINDEX=undef
 NSTRERROR=undef
 NSTRTOKEN=undef
 NSTRTOK=undef
-REDHAT6=undef
-LINUX_GLIBC=undef
+REDHAT5=undef
 NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
@@ -54,7 +53,7 @@ trap "rm -f $TMP $EXEC $PLATE; rm -f $EXEC;echo '';echo \"deleting $TMP\";exit "
 #
 # Some reasonable defaults
 #
-DEFOPT="-O -g -Wuninitialized -Wcomment"
+DEFOPT="-O -g"
 DEFCFLAGS="$DEFOPT"
 DEFLIBS="none"
 OSNAME="an unrecgonized operating system"
@@ -154,19 +153,12 @@ case "$OS" in
 	DEFCFLAGS="$DEFOPT"
 	DEFLIBS=""
 	OSNAME="Linux"
-        if [ -e /lib/libc.so.6 ]
+        if [ -r /etc/redhat-release -a -n "`grep \"release 5.\" /etc/redhat-release`" ]
         then
-                OSNAME="Linux Glibc"
+                OSNAME="Linux RedHat 5.x"
                 DEFLIBS="-lcrypt -lresolv"
-		LINUX_GLIBC="define"
+		REDHAT5="define"
         fi
-        if [ -r /etc/redhat-release -a -n "`grep \"release 6.\" /etc/redhat-release`" ]
-        then
-                OSNAME="Linux RedHat 6.x"
-                DEFLIBS="-lcrypt -lresolv"
-		REDHAT6="define"
-        fi
-
 	;;
     *HP-UX*.09.*)
 	DEFCFLAGS="$DEFOPT"
@@ -725,7 +717,6 @@ else
     $RM -f Makefile.tmp
 fi
 $RM -f $EXEC $TMP
-
 cat > $TMP <<__EOF__
 main()
 {
@@ -752,13 +743,11 @@ main()
 }
 __EOF__
 $COMP >/dev/null 2>&1
-if [ "$LINUX_GLIBC" = "define" -o -n "$NEEDSKIPNAME" ] ;
+if [ $? -ne 0 -o "$OSNAME" = "Linux RedHat 5.x" -o -n "$NEEDSKIPNAME" ] ;
 then
-    NEEDSKIPNAME="define";
     echo $n " dn_skipname$c"
     $RM -f Makefile.tmp
-    sed -e "s@^RES=\(.*\)@RES=res_comp.o res_mkquery.o@" Makefile > Makefile.tmp
-
+    sed -e "s@^RES=\(.*\)@RES=res_skipname.o@" Makefile > Makefile.tmp
     cp Makefile.tmp Makefile
     $RM -f Makefile.tmp
 else
@@ -830,8 +819,7 @@ cat > $TMP <<__EOF__
 #endif
 main()
 {
-	char t[2] = "a";
-	char *s = strtok(t, ",");
+	char  *t = "a", *s = strtok(t, ",");
 	if (!strcmp(t, s))
 		exit(0);
 	exit(1);
@@ -962,8 +950,7 @@ cat > $SETUP  <<__EOF__
 #$UNISTDH	UNISTDH
 #$STRINGH	STRINGH
 #$STRINGSH	STRINGSH
-#$REDHAT6	REDHAT6
-#$LINUX_GLIBC	LINUX_GLIBC
+#$REDHAT5	REDHAT5
 #$STDLIBH	STDLIBH
 #$STDDEFH	STDDEFH
 #$SYSSYSLOGH	SYSSYSLOGH
@@ -1837,6 +1824,6 @@ cat <<__EOF__
 
  Before compiling, check the contents of [1minclude/config.h[0m for any strange
  things you usually set.  If you want them to be included in the future,
- ask them to be moved to the [1moptions.h[0m file on [1mircd@sorcery.net[0m.
+ ask them to be moved to the [1moptions.h[0m file on [1mircd-src@sorcery.net[0m.
 
 __EOF__

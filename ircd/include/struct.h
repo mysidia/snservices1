@@ -58,7 +58,6 @@ typedef	struct	User	anUser;
 typedef	struct	Server	aServer;
 typedef	struct	SLink	Link;
 typedef	struct	SMode	Mode;
-typedef struct	Watch	aWatch;
 
 typedef struct  CloneItem aClone;
 
@@ -71,7 +70,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #include "dbuf.h"	/* THIS REALLY SHOULDN'T BE HERE!!! --msa */
 #endif
 
-#define NETWORK                 "SorceryNet"
 #define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"
 #define SOCKS_TIMEOUT	30	/* number of seconds to wait before giving
 				   up on a socks request */
@@ -118,7 +116,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	USERHOST_REPLYLEN	(NICKLEN+HOSTLEN+USERLEN+5)
 #define MAXTIME			0x7FFFFFFF /* largest thing time() returns, when time() exceeds this,
                                            we're dead meat as far as hurt timing goes:/  */
-#define HELPOP_CHAN     "#HelpOps"
 
 
 /*
@@ -242,7 +239,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 /* usermode flags
      NOTE: these are still held in sptr->flags */
-#define U_MASK		BIT21 /* Masked */
 #define	U_OPER		BIT22 /* Global IRCop */
 #define	U_LOCOP		BIT23 /* Local IRCop */
 #define	U_INVISIBLE	BIT24 /* Invisible user, not shown in user searches */
@@ -250,15 +246,15 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	U_SERVNOTICE	BIT26 /* User has selected to receive server notices */
 #define U_FAILOP	BIT27 /* Shows GNOTICE messages */
 #define U_HELPOP	BIT28 /* 'HelpOp' */
-#define U_KILLS		BIT29 /* Show server-kills/nick collisions... */
+#define U_KILLS		BIT29  /* Show server-kills/nick collisions... */
 #define U_CLIENT	BIT30 /* Show client information [connects/exits/errors] */
 #define U_FLOOD		BIT31 /* Receive flood warnings */
-#define U_LOG           BIT32 /* See network-level server logging */
+/*#define FLAGS_ADMIN	BIT32  Admin  I really hope nothing cared about this...-Mysid*/
 
 /* list of usermodes that are propogated/passed on to other servers*/
-#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP|U_MASK)
+#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP)
 /* list of all usermodes except those that are in send_umodes*/
-#define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
+#define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD)
 #define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
 #define FLAGSET_FLOOD   (U_OPER|U_FLOOD)  /* what clients should flood notices be sent to ? */
@@ -273,14 +269,12 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define SOCK_FOUND		BIT05	/* found a socks server;/ */
 #define SOCK_DESTROY		BIT06	/* destroy the ->socks structure and free() it very soon */
 #define SOCK_DONE		SOCK_GO
-#define SOCK_ERROR		BIT07	/* got an error message */
+#define SOCK_ERROR		BIT07
 #define SOCK_SENT		BIT08	/* sent data already */
-#define SOCK_REFUSED		BIT09	/* request refused (good) */
-#define SOCK_NEW		BIT10	/* New */
-#define SOCK_CACHED		BIT11	/* cached */
 
 typedef	enum {
-	LOG_OPER, 	LOG_USER,        LOG_NET,
+	LOG_OPER, 
+	LOG_USER,
 	LOG_HI
 } loglevel_value_t;
 
@@ -292,7 +286,7 @@ typedef	enum {
 #define REMOVE_FLAG(x, y)	((x)->flags &= ~(y))
 
 /* flags macros. */
-#define ClientUmode(x)		(x)->uflags
+#define ClientUmode(x)		(x)->flags
 #define ClientFlags(x)		(x)->flags
 
 #define	IsListening(x)		((x)->flags & FLAGS_LISTEN)
@@ -366,14 +360,6 @@ typedef	enum {
 #define	SendServNotice(x)	(ClientUmode(x) & U_SERVNOTICE)
 #define SetServNotice(x)	(ClientUmode(x) |= U_SERVNOTICE)
 
-#define IsLogMode(x)		(ClientUmode(x) & U_LOG)
-#define SetLogMode(x)		(ClientUmode(x) |= U_LOG)
-#define ClearLogMode(x)		(ClientUmode(x) &= ~U_LOG)
-
-#define IsMasked(x)		(ClientUmode(x) & U_MASK)
-#define SetMasked(x)		(ClientUmode(x) |= U_MASK)
-#define ClearMasked(x)		(ClientUmode(x) &= ~U_MASK)
-#define UGETHOST(s, x)		(((s)->user == (x) || !(x)->mask || ((s) && IsOper((s)))) ? (x)->host : (x)->mask)
 
 #ifdef NOSPOOF
 #define	IsNotSpoof(x)		((x)->nospoof == 0)
@@ -437,43 +423,6 @@ typedef	enum {
 #else
 #define	OPCanModeHack(x) (0)
 #endif
-
-/********************************************************************
- * help system flags/structs
- */
-
-typedef struct help_struct {
-	int flags;
-	int ndesc;
-	int naliases;
-	char *command;
-	char *usage;
-	char **desc;
-	char **aliases;
-} aHelptopic;
-
-
-#define H_NICK    0x00001     /* NickServ command */
-#define H_MEMO    0x00002     /* MemoServ command */
-#define H_CHAN    0x00004     /* ChanServ command */
-#define H_OSERV   0x00008     /* OperServ Command */
-#define H_ISERV   0x00010     /* InfoServ Command */
-#define H_IRC     0x00020     /* non-services command/help */
-#define H_GS	  0x00040     /* GameServ Command */
-
-#define H_AOP     0x00100     /* requires AOP/higher access*/
-#define H_SOP     0x00200     /* requires SOP/higher access*/
-#define H_FOUNDER 0x00400     /* requires founder access*/
-
-#define H_ACC3    0x01000     /* requires ACC3 */
-
-#define H_HELPOP  0x10000     /* only helpops can need this help */
-#define H_OPER    0x20000     /* only opers can need this help */
-#define H_GOPER   0x40000     /* only global opers can need this help */
-
-#define H_TOPIC   0x100000    /* help on a topic, not a command */
-#define H_PAGE    0x200000    /* a raw help page */
-
 
 #define OPSetRehash(x)	((x)->oflag |= OFLAG_REHASH)
 #define OPSetDie(x)	((x)->oflag |= OFLAG_DIE)
@@ -606,7 +555,6 @@ struct	User	{
 	Link	*invited;	/* chain of invite pointer blocks */
 	Link	*silence;	/* chain of silence pointer blocks */
 	char	*away;		/* pointer to away message */
-        char    *mask;          /* masked host */
 	time_t	last;
 	int	refcnt;		/* Number of times this block is referenced */
 	int	joined;		/* number of channels joined */
@@ -644,8 +592,6 @@ struct Socks {
 	int fd;
 	int status;
 	time_t start;
-	struct in_addr in_addr;
-	struct Socks *next;
 };
 
 struct Client	{
@@ -660,11 +606,9 @@ struct Client	{
 	time_t	since;		/* last time we parsed something */
 	time_t	lastnick;	/* TimeStamp on nick */
 	long	flags;		/* client flags */
-	long	uflags;		/* client usermode */
 	aClient	*from;		/* == self, if Local Client, *NEVER* NULL! */
 	int	fd;		/* >= 0, for local clients */
 	int	hopcount;	/* number of servers to this 0 = local */
-	int	watches;	/* How many watches user has set */
 	short	status;		/* Client type */
 	char	name[HOSTLEN+1]; /* Unique name of the client, nick or host */
 	char	username[USERLEN+1]; /* username here now for auth stuff */
@@ -693,7 +637,6 @@ struct Client	{
 	u_short	receiveB;	/* sent and received. */
 	aClient	*acpt;		/* listening client which we accepted from */
 	Link	*confs;		/* Configuration record associated */
-	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
 	struct	in_addr	ip;	/* keep real ip# too */
 	u_short	port;	/* and the remote port# too :-) */
@@ -747,7 +690,6 @@ struct	stats {
 
 struct	SMode	{
 	unsigned int	mode;
-	unsigned int	mlock_on, mlock_off;
 	int	limit;
 	char	key[KEYLEN+1];
 };
@@ -780,7 +722,6 @@ struct	SLink	{
 		aClient	*cptr;
 		aChannel *chptr;
 		aConfItem *aconf;
-		aWatch *wptr;
 		char	*cp;
 		struct {
 		  char *banstr;
@@ -789,13 +730,6 @@ struct	SLink	{
 		} ban;
 	} value;
 	int	flags;
-};
-
-struct Watch {
-           aWatch  *hnext;
-           time_t   lasttime;
-           Link  *watch;
-           char  nick[1];
 };
 
 /* channel structure */
@@ -863,9 +797,8 @@ struct Channel	{
 #define	PubChannel(x)		((!x) || ((x)->mode.mode &\
 				 (MODE_PRIVATE | MODE_SECRET)) == 0)
 
-#define	IsChannelName(name) ((name) && (*(name) == '#' || *(name) == '&'))
-#define IsModelessChannel(name) (0 && (name) && (*(name) == '+'))
-#define IsSystemChannel(name) ((name) && (*name) && (!mycmp((name)+1, HELPOP_CHAN+1)))
+#define	IsChannelName(name) ((name) && (*(name) == '#' || *(name) == '&' || *(name) == '+'))
+#define IsModelessChannel(name) ((name) && (*(name) == '+'))
 
 /* Misc macros */
 

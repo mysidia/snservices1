@@ -105,7 +105,7 @@ extern	char	*rindex PROTO((char *, char));
 /*
  * Different name on NetBSD, FreeBSD, and BSDI
  */
-#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__bsdi__) || defined(REDHAT6)
+#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__bsdi__)
 #define dn_skipname  __dn_skipname
 #endif
 

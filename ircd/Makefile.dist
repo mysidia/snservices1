@@ -94,8 +94,6 @@ IRCDDIR=
 #RES=res_init.o res_comp.o res_mkquery.o
 # BSDI systems want this.
 #RES=res_skipname.o
-# Glibc Linux systems want this.
-#RES=res_comp.o res_mkquery.o
 # The rest are perfectly content with this.
 RES=
 
@@ -154,7 +152,6 @@ build:
 		echo "Building $$i"; \
 		( cd $$i; ${MAKE} ${MAKEARGS} build; ) ; \
 	done
-	@./helpdigest NONE
 #	@#./info.sh -m
 
 clean:
@@ -192,8 +189,6 @@ install: all
 	@chmod $(IRCDMODE) ${IRCDDIR}/ircd
 	$(CP) src/chkconf ${IRCDDIR}
 	@chmod $(IRCDMODE) ${IRCDDIR}/chkconf
-	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
-	./helpdigest ${IRCDDIR}
 	$(CP) doc/example.conf ${IRCDDIR}
 	chmod +x src/buildm4
 	@$(RM) -f ${IRCDDIR}/ircd.m4

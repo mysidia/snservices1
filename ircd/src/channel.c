@@ -59,14 +59,9 @@ static  int     is_deopped PROTO((aClient *, aChannel *));
 static	int	set_mode PROTO((aClient *, aClient *, aChannel *, int,\
 			        char **, char *,char *, int *, int));
 static	void	sub1_from_channel PROTO((aChannel *));
-char		*genHostMask(char *host);
-
 
 void	clean_channelname PROTO((char *));
 void	del_invite PROTO((aClient *, aChannel *));
-
-void mlock_buf PROTO((aChannel *chptr, char *buf));
-int legalize_mode PROTO((aChannel *chptr, char **curr));
 
 static	char	*PartFmt = ":%s PART %s";
 static	char	*PartFmt2 = ":%s PART %s :%s";
@@ -75,19 +70,6 @@ static	char	*PartFmt2 = ":%s PART %s :%s";
  */
 static	char	nickbuf[BUFSIZE], buf[BUFSIZE];
 static	char	modebuf[MODEBUFLEN], parabuf[MODEBUFLEN];
-static  char    mlockbuf[MODEBUFLEN];
-
-static	int	chan_flags[] = {
-	MODE_PRIVATE,    'p', 
-	MODE_SECRET,     's',
-	MODE_MODERATED,  'm',
-	MODE_NOPRIVMSGS, 'n',
-	MODE_TOPICLIMIT, 't', 
-	MODE_INVITEONLY, 'i',
-	MODE_VOICE,      'v',
-	MODE_KEY,        'k',
-	0x0, 0x0 
-};
 
 /*
  * return the length (>=0) of a chain of links.
@@ -345,39 +327,19 @@ aClient *cptr;
 aChannel *chptr;
 {
 	Link	*tmp;
-	char    nuh[NICKLEN+USERLEN+HOSTLEN+7];
-	char    nuhmask[NICKLEN+USERLEN+HOSTLEN+7];
-	char	*s_ip;
+	char	*s, *s_ip;
         
 	if (!IsPerson(cptr))
 		return NULL;
 
-	strcpy(nuh, make_nick_user_host(cptr->name, cptr->user->username,
-				  cptr->user->host));
-	strcpy(nuhmask, make_nick_user_host(cptr->name, cptr->user->username,
-				  genHostMask(cptr->user->host)));
+	s = make_nick_user_host(cptr->name, cptr->user->username,
+				  cptr->user->host);
 
 	for (tmp = chptr->banlist; tmp; tmp = tmp->next)
-        {
-		char *mskchk;
-
-		if (*tmp->value.ban.banstr == '%')
-		{
-			if (match(tmp->value.ban.banstr, nuh) == 0)
-			    break;
-			if ((MyClient(cptr) && IsIpMask(tmp->value.ban.banstr+1) &&
-			   (s_ip = make_nick_user_ip(cptr)) && !match(tmp->value.ban.banstr+1, s_ip ) ))
-			   break;
-			continue;
-		}
-
-		if (match(tmp->value.ban.banstr, nuh) == 0 ||
+		if (match(tmp->value.ban.banstr, s) == 0 ||
                    (MyClient(cptr) && IsIpMask(tmp->value.ban.banstr) &&
                    (s_ip = make_nick_user_ip(cptr)) && !match(tmp->value.ban.banstr, s_ip ) ))
 			break;
-		if (match(tmp->value.ban.banstr, nuhmask) == 0)
-			break;
-        }
 	return (tmp);
 }
 
@@ -460,7 +422,6 @@ aChannel *chptr;
         }
 	return 0;
 }
-
 
 int	is_chan_op(cptr, chptr)
 aClient *cptr;
@@ -624,20 +585,18 @@ char	*parv[];
                       me.name, parv[0], parv[1]);
            return 0;
       }
-      ClientFlags(sptr) &=~FLAGS_TS8;
+      sptr->flags&=~FLAGS_TS8;
       clean_channelname(parv[1]);
       if (check_channelmask(sptr, cptr, parv[1]))
            return 0;
       sendts = set_mode(cptr, sptr, chptr, parc - 2, parv + 2,
                modebuf, parabuf, &badop, 1);
-      if (BadPtr(modebuf))
-          return 0;
-      sendto_realops("%s[%s]!%s@%s forced mode change of channel %s: \2%s %s\2",
+      sendto_realops("%s[%s]!%s@%s Forced Mode Change of channel %s: \2%s %s\2",
                   sptr->name, MyClient(sptr) ? me.name :
                   sptr->user->server ? sptr->user->server : "",
                   sptr->user->username, sptr->user->host, 
                   chptr->chname, modebuf, parabuf);
-      tolog(LOG_OPER, "%s[%s]!%s@%s forced mode change of channel %s: %s %s",
+      tolog(LOG_OPER, "%s[%s]!%s@%s Forced Mode Change of channel %s: %s %s",
                   sptr->name, MyClient(sptr) ? me.name :
                   sptr->user->server ? sptr->user->server : "",
                   sptr->user->username, sptr->user->host, 
@@ -794,12 +753,6 @@ char	*parv[];
 		channel_modes(sptr, modebuf, parabuf, chptr);
 		sendto_one(sptr, rpl_str(RPL_CHANNELMODEIS), me.name, parv[0],
 			   chptr->chname, modebuf, parabuf);
-                if (chptr->mode.mlock_on || chptr->mode.mlock_off)
-                {
-			mlock_buf(chptr, mlockbuf);
- 			sendto_one(sptr, rpl_str(RPL_CHANNELMLOCKIS), me.name, parv[0],
-			   chptr->chname, mlockbuf);
-		}
 		sendto_one(sptr, rpl_str(RPL_CREATIONTIME), me.name, parv[0],
 				 chptr->chname, chptr->creationtime);
 		return 0;
@@ -906,13 +859,20 @@ char	*parv[], *mbuf, *pbuf;
 int	modehack;
 {
 	static	Link	chops[MAXMODEPARAMS];
+	static	int	flags[] = {
+				MODE_PRIVATE,    'p', MODE_SECRET,     's',
+				MODE_MODERATED,  'm', MODE_NOPRIVMSGS, 'n',
+				MODE_TOPICLIMIT, 't', MODE_INVITEONLY, 'i',
+				MODE_VOICE,      'v', MODE_KEY,        'k',
+				0x0, 0x0 };
+
 	Link	*lp;
-	char	*curr = parv[0], *cp = NULL;
+	char	*curr = parv[0], *cp;
 	int	*ip;
 	Link    *member, *tmp = NULL;
 	u_int	whatt = MODE_ADD, bwhatt = 0;
 	int	limitset = 0, chasing = 0, bounce;
-	int	nusers = 0, new, len, blen, keychange = 0, opcnt = 0, banlsent = 0;
+	int	nusers, new, len, blen, keychange = 0, opcnt = 0, banlsent = 0;
 	int     doesdeop = 0, doesop = 0, hacknotice = 0, change, gotts = 0;
 	char	fm = '\0';
 	aClient *who;
@@ -974,9 +934,6 @@ int	modehack;
 		}
 
 	new = mode->mode;
-
-        if (MyClient(sptr) && !IsULine(cptr, sptr) && !modehack)
-            (void)legalize_mode(chptr, &curr);
 
 	while (curr && *curr)
 	    {
@@ -1160,7 +1117,7 @@ int	modehack;
 				while (lp = chptr->invites)
 					del_invite(lp->value.cptr, chptr);
 		default:
-			for (ip = chan_flags; *ip; ip += 2)
+			for (ip = flags; *ip; ip += 2)
 				if (*(ip+1) == *curr)
 					break;
 
@@ -1257,7 +1214,7 @@ int	modehack;
 	if (IsULine(cptr,sptr) || modehack) bounce = 0;
 
         whatt = 0;
-	for (ip = chan_flags; *ip; ip += 2)
+	for (ip = flags; *ip; ip += 2)
 		if ((*ip & new) && !(*ip & oldm.mode))
 		    {
 			if (bounce)
@@ -1273,7 +1230,7 @@ int	modehack;
 			  *mbuf++ = *(ip+1); }
 		    }
 
-	for (ip = chan_flags; *ip; ip += 2)
+	for (ip = flags; *ip; ip += 2)
 		if ((*ip & oldm.mode) && !(*ip & new))
 		    {
 			if (bounce)
@@ -1317,9 +1274,9 @@ int	modehack;
 	if (opcnt)
 	    {
 		int	i = 0;
-		char	c = 0;
+		char	c;
 		char	*user, *host;
-		u_int prev_whatt = 0;
+		u_int prev_whatt;
 
 		for (; i < opcnt; i++)
 		    {
@@ -1876,7 +1833,7 @@ char	*parv[];
 			** channel so make them (rightfully) the Channel
 			** Operator.
 			*/
-			if (!IsModelessChannel(name) && (OPCanHelpOp(sptr) || !IsSystemChannel(name)))
+			if (!IsModelessChannel(name))
 			    flags = (ChannelExists(name)) ? CHFL_DEOPPED :
 							    CHFL_CHANOP;
 			else
@@ -2694,186 +2651,3 @@ aClient	*cptr, *user;
 
 	return;
 }
-
-/*
-** m_mlock
-**	parv[0] = sender prefix
-**	parv[1] = channel
-**	parv[2] = channel modes
-**	parv[3] = timestamp
-*/
-int	m_mlock(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
-{
-   void mlock_buf();
-   char *name = (parc > 2) ? parv[1] : NULL;
-   char *modes = (parc > 2) ? parv[2] : NULL;
-   aChannel *chptr;
-   char buf[1024];
-   int i = 0, j = 0, x = 0;
-   int what = 1;
-
-   if (parc < 3)
-   {
-       sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
-                  me.name, parv[0], "MLOCK");
-       return 0;
-   }
-   if (!(chptr = find_channel(parv[1], NULL)))
-   {
-       sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL),
-                  me.name, parv[0], parv[1]);
-       return 0;
-   }
-
-/* For now at least, opers can't do /mlock on global chans except 
-   for test purposes */
-#ifdef IRCD_TEST
-   if (MyClient(sptr) && (!IsOper(sptr) || !OPCanModeHack(sptr)))
-#else
-   if (MyClient(sptr) && !IsULine(cptr, sptr) && 
-       (!IsOper(sptr) || !OPCanModeHack(sptr) || *parv[1] != '&') )
-#endif
-   {
-       sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
-       return 0;
-   }
-
-   /*if (parc > 3 && isdigit(*parv[3]) && (ts = atoi(parv[3]))
-       if (ts < chptr->creationtime)
-       {
-           sendto_one(cptr, ":%s MLOCK %s %s %ld", me.name, parv[1], parv[2],
-                      chptr->creationtime);
-           return 0;
-       }*/
-
-   chptr->mode.mlock_on = 0;
-   chptr->mode.mlock_off = 0;
-
-   for (i = 0 ; modes[i]; i++)
-   {
-        switch(modes[i])
-        {
-           case '+':  what = 1; break;
-           case '*':  what = 0; break;
-           case '-':  what = -1; break;
-           default:
-              if (!isalpha(modes[i]))
-                  break;
-              for (j = 0; chan_flags[j]; j += 2)
-                   if (modes[i] == (char)chan_flags[j+1])
-                       break;
-              if (chan_flags[j])
-              {
-                  REMOVE_BIT(chptr->mode.mlock_on, chan_flags[j]);
-                  REMOVE_BIT(chptr->mode.mlock_off, chan_flags[j]);
-                  if (what > 0)
-                      SET_BIT(chptr->mode.mlock_on, chan_flags[j]);
-                  else if (what < 0)
-                      SET_BIT(chptr->mode.mlock_off, chan_flags[j]);
-              }
-       }
-   }
-
-   mlock_buf(chptr, buf);
-   sendto_match_servs(chptr, cptr, ":%s MLOCK %s %s :%s", parv[0], parv[1], buf,
-                      parc > 3 ? parv[3] : "");
-   /* send out op messages if it wasn't done by a ulined client */
-   if (!IsULine(cptr, sptr) && (!IsServer(sptr) || IsPerson(sptr)))
-   {
-       if (!IsPerson(sptr) || !sptr->user)
-           tolog(LOG_NET, "%s set ircd mlock for %s to %s", parv[0], parv[1], buf);
-       else
-           tolog(LOG_NET, "%s[%s]!%s@%s set ircd mlock for %s to %s", 
-                          sptr->name, MyClient(sptr) ? me.name : sptr->user->server ? sptr->user->server : "<null>",
-                          sptr->user->username, sptr->user->host, parv[1], buf);
-       if (MyClient(sptr))
-           sendto_one(sptr, ":%s NOTICE %s :Enforced modes for %s are now: \2%s\2.", me.name, parv[0], parv[1], buf);
-   }
-}
-
-/* fill a buffer with a channel's modelock information */
-void mlock_buf(aChannel *chptr, char *buf)
-{
-   int i = 0, j = 0, x = 0;
-   int what = 1;
-
-   x = 0;
-   buf[0] = '\0';
-   for (j = 0, i = 0; chan_flags[j]; j += 2)
-        if (IS_SET(chptr->mode.mlock_on, chan_flags[j]))
-        {
-            if (!*buf) buf[x++] = '+';
-            buf[x++] = chan_flags[j+1];
-        }
-   for (j = 0; chan_flags[j]; j += 2)
-        if (IS_SET(chptr->mode.mlock_off, chan_flags[j]))
-        {
-            if (!i) {i = 1; buf[x++] = '-';}
-            buf[x++] = chan_flags[j+1];
-        }
-   buf[x++] = '\0';
-}
-
-/* make a mode legal under a channel's modelock */
-int legalize_mode(aChannel *chptr, char **curr)
-{
-    static char buf[2048] = "";
-    char *s;
-    int i = 0, j = 0, x = 0, whatt = 1, bset = 1;
-    int retval = 0;
-    
-    s = *curr;
-
-    for (i = 0 ; s[i]; i++)
-    {
-        switch(s[i])
-        {
-           case '+': whatt =  1;  break;
-           case '-': whatt = -1;  break;
-           case 'o':
-                   if ((!IS_SET(chptr->mode.mlock_on, MODE_CHANOP)  || whatt > 0) &&
-                       (!IS_SET(chptr->mode.mlock_off, MODE_CHANOP) || whatt < 0))
-                   {                       
-                       if (bset != whatt)
-                       {
-                           if (whatt < 0) buf[x++] = '-';
-                           else           buf[x++] = '+';
-                           bset = whatt;
-                       }
-                       buf[x++] = s[i];
-                  }
-                  else retval = 1;
-           break;
-           default:
-               for (j = 0; chan_flags[j]; j += 2)
-                   if (s[i] == (char)chan_flags[j+1])
-                       break;
-               {
-                   if (!chan_flags[j] || ((!IS_SET(chptr->mode.mlock_on, chan_flags[j])  || whatt > 0) &&
-                       (!IS_SET(chptr->mode.mlock_off, chan_flags[j]) || whatt < 0)))
-                   {                       
-                       if (bset != whatt)
-                       {
-                           if (whatt < 0) buf[x++] = '-';
-                           else           buf[x++] = '+';
-                           bset = whatt;
-                       }
-                       if (chan_flags[j])
-                           buf[x++] = chan_flags[j+1];
-                       else
-                           buf[x++] = s[i];
-                   }
-                   else retval = 1;
-               }
-           break;
-        }
-    }
-    buf[x++] = '\0';
-    /* *curr = buf; */
-    strcpy(*curr, buf);
-    return retval;
-}
-	

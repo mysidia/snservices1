@@ -69,12 +69,10 @@ void	free();
 extern	int	match PROTO((char *, char *));
 #define mycmp(a,b) \
  ( (toupper((a)[0])!=toupper((b)[0])) || (((a)[0]!=0) && smycmp((a)+1,(b)+1)) )
-extern int     smycmp PROTO((const char *, const char *));
-#if !defined(REDHAT6) && !defined(LINUX_GLIBC)
-extern	int	myncmp PROTO((const char *, const char *, int));
-#endif
+extern int     smycmp PROTO((char *, char *));
+extern	int	myncmp PROTO((char *, char *, int));
 #ifdef NEED_STRTOK
-#if !defined(REDHAT5) && !defined(REDHAT6) && !defined(LINUX_GLIBC)
+#if !defined(REDHAT5)
 extern	char	*strtok PROTO((char *, char *));
 #endif
 #endif
@@ -100,10 +98,10 @@ extern int inet_netof PROTO((struct in_addr));
 extern char *myctime PROTO((time_t));
 extern char *strtoken PROTO((char **, char *, char *));
 
-#if !defined(MAX)
+#ifndef MAX
 #define MAX(a, b)	((a) > (b) ? (a) : (b))
 #endif
-#if !defined(MIN)
+#ifndef MIN
 #define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
 
@@ -195,18 +193,10 @@ time_t NOW, tm_offset;
 #define REPORT_START_SOCKS "*** Checking for open socks server..."
 #define REPORT_FAIL_SOCKS "*** No socks server found (good)"
 #define REPORT_FIN_SOCKS "*** Open socks server found (bad)"
-#define REPORT_OK_SOCKS "*** No/Secure socks server found (ok)"
+#define REPORT_OK_SOCKS "*** Secure socks server found (ok)"
   /* remote closed inbetween our non-blocking connect() and send()  ::  tcp wrappers ? */
-#define REPORT_ERR_SOCKS "*** Socks port is firewalled or connection timed out"
+#define REPORT_ERR_SOCKS "*** Secure socks server found (unsure)"
 #define connotice(x, y) ( sendto_one(x, ":%s NOTICE AUTH :" y "", me.name) )
 #define UNSURE 2
-
-extern const char *service_nick[];
-#define cNickServ       service_nick[0]
-#define cChanServ       service_nick[1]
-#define cMemoServ       service_nick[2]
-#define cOperServ       service_nick[3]
-#define cInfoServ       service_nick[4]
-#define cGameServ       service_nick[5]
 
 #endif /* __common_include__ */

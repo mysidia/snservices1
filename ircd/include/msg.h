@@ -37,8 +37,6 @@
 #define MSG_KILL     "KILL"	/* KILL */
 #define MSG_HURT     "HURT"	/* HURT */
 #define MSG_HEAL     "HEAL"	/* HEAL */
-#define MSG_HUSH     "HUSH"	/* HUSH - HURT */
-#define MSG_UNHUSH   "UNHUSH"	/* UNHUSH - HEAL */
 #define MSG_INFO     "INFO"	/* INFO */
 #define MSG_LINKS    "LINKS"	/* LINK */
 #define MSG_STATS    "STATS"	/* STAT */
@@ -87,18 +85,12 @@
 #define MSG_LOCOPS   "LOCOPS"   /* LOCOPS */
 #define	MSG_OPMODE   "OPMODE"   /* OPMODE */
 #define MSG_CNICK    "CNICK"    /* CNICK */
-#define MSG_MLOCK    "MLOCK"    /* MLOCK */
-#define MSG_HURTSET  "HURTSET"	/* HURTSET */
-#define MSG_SHOWMASK "SHOWMASK" /* SHOWMASK */
-#define MSG_LOG	     "LOG"	/* LOG */
-#define MSG_WATCH    "WATCH"	/* WATCH */
- 
+
 #define MSG_NICKSERV "NickServ"
 #define MSG_CHANSERV "ChanServ"
 #define MSG_OPERSERV "OperServ"
 #define MSG_MEMOSERV "MemoServ"
 #define MSG_INFOSERV "InfoServ"
-#define MSG_GAMESERV "GameServ"
 #define MSG_IDENT    "IDENTIFY"
 #define MSG_SERVICE  "SERVICES"
 
@@ -107,14 +99,14 @@ extern int m_cnick();
 extern int m_private(), m_topic(), m_join(), m_part(), m_mode();
 extern int m_ping(), m_pong(), m_wallops(), m_kick();
 extern int m_nick(), m_error(), m_notice();
-extern int m_invite(), m_quit(), m_kill(), m_hurt(), m_heal(), m_hurtset();
+extern int m_invite(), m_quit(), m_kill(), m_hurt(), m_heal();
 extern int m_akill(), m_kline(), m_unkline(), m_rakill();
 extern int m_gnotice(), m_goper(), m_globops(), m_locops();
 extern int m_zline(), m_unzline(), m_ahurt(), m_rahurt();
 
-extern int m_mlock(), m_motd(), m_who(), m_whois(), m_user(), m_list();
+extern int m_motd(), m_who(), m_whois(), m_user(), m_list();
 extern int m_server(), m_info(), m_links(), m_stats();
-extern int m_version(), m_help(), m_showmask();
+extern int m_version(), m_help();
 extern int m_squit(), m_away(), m_connect();
 extern int m_oper(), m_pass(), m_trace();
 extern int m_time(), m_names(), m_admin();
@@ -122,13 +114,12 @@ extern int m_lusers(), m_umode(), m_close();
 extern int m_motd(), m_whowas(), m_silence();
 extern int m_userhost(), m_ison();
 extern int m_nickserv(), m_chanserv(), m_operserv(), m_memoserv(), m_infoserv();
-extern int m_gameserv();
 extern int m_identify(), m_services();
 extern	int	m_opmode();
 extern	int	m_rehash();
 extern	int	m_restart();
 extern	int	m_die();
-extern int m_hash(), m_dns(), m_log(), m_watch();
+extern int m_hash(), m_dns();
 
 /* Message flags */
 #define MF_NODUMP		0x1	/* only allow once per 2 seconds */
@@ -155,17 +146,14 @@ struct Message msgtab[] = {
   { MSG_INVITE,  m_invite,   0, MAXPARA, 1,        0L, 0 },
   { MSG_KICK,    m_kick,     0, MAXPARA, 1,        0L, 0 },
   { MSG_WALLOPS, m_wallops,  0, MAXPARA, 1,        0L, 0 },
-  { MSG_CNICK,   m_cnick,    0, MAXPARA, M_UL,     0L, 0 },
-  { MSG_MLOCK,   m_mlock,    0, MAXPARA, 1,        0L, 0 },
+  { MSG_CNICK, m_cnick,      0, MAXPARA, M_UL,     0L, 0 },
 
   { MSG_PING,    m_ping,     0, MAXPARA, 1,        0L, 0 },
   { MSG_PONG,    m_pong,     0, MAXPARA, 1,        0L, 1 },
   { MSG_ERROR,   m_error,    0, MAXPARA, 1,        0L, 0 },
   { MSG_KILL,    m_kill,     0, MAXPARA, 1,        0L, 0 },
-  { MSG_HURT,    m_hurt,     0, MAXPARA, 1 | MF_H, 0L, 0 },
-  { MSG_HEAL,    m_heal,     0, MAXPARA, 1 | MF_H, 0L, 1 },
-  { MSG_HUSH,    m_hurt,     0, MAXPARA, 1,        0L, 0 },
-  { MSG_UNHUSH,  m_heal,     0, MAXPARA, 1,        0L, 1 },
+  { MSG_HURT,    m_hurt,     0, MAXPARA, 1,        0L, 0 },
+  { MSG_HEAL,    m_heal,     0, MAXPARA, 1,        0L, 1 },
   { MSG_USER,    m_user,     0, MAXPARA, 1,        0L, 1 },
   { MSG_AWAY,    m_away,     0, MAXPARA, 1,        0L, 1 },
   { MSG_ISON,    m_ison,     0, 1      , 1,        0L, 1 },
@@ -182,14 +170,13 @@ struct Message msgtab[] = {
   SERVICES_TAB( MSG_OPERSERV, "OS", m_operserv, MF_OPER )
   SERVICES_TAB( MSG_MEMOSERV, "MS", m_memoserv, 0 )
   SERVICES_TAB( MSG_INFOSERV, "IS", m_infoserv, 0 )
-  SERVICES_TAB( MSG_GAMESERV, "GS", m_gameserv, 0 )
   { MSG_SERVICE, m_services, 0, 3,       1,        0L, 2 },
   { MSG_IDENT,   m_identify, 0, 3,       1,        0L, 1 },
   { MSG_TRACE,   m_trace,    0, MAXPARA, 1,        0L, 0 },
   { MSG_PASS,    m_pass,     0, MAXPARA, 1,        0L, 1 },
   { MSG_LUSERS,  m_lusers,   0, MAXPARA, 1,        0L, 1 },
   { MSG_TIME,    m_time,     0, MAXPARA, 1,        0L, 0 },
-  { MSG_OPER,    m_oper,     0, MAXPARA, 1,        0L, 2 },
+  { MSG_OPER,    m_oper,     0, MAXPARA, 1,        0L, 3 },
   { MSG_CONNECT, m_connect,  0, MAXPARA, 1,        0L, 0 },
   { MSG_VERSION, m_version,  0, MAXPARA, 1,        0L, 1 },
   { MSG_STATS,   m_stats,    0, MAXPARA, 1,        0L, 0 },
@@ -219,10 +206,6 @@ struct Message msgtab[] = {
   { MSG_REHASH,  m_rehash,   0, MAXPARA, 1,        0L, 0 },
   { MSG_RESTART, m_restart,  0, 1      , 1,        0L, 0 },
   { MSG_DIE,     m_die,      0, MAXPARA, 1,        0L, 0 },
-  { MSG_SHOWMASK,m_showmask, 0, MAXPARA, 1,        0L, 0 },
-  { MSG_HURTSET, m_hurtset,  0, MAXPARA, 1 | MF_H, 0L, 0 },
-  { MSG_LOG,	 m_log,      0, MAXPARA, 1,	   0L, 0 },
-  { MSG_WATCH,	 m_watch,    0, MAXPARA, 1,	   0L, 0 },
   { (char *) 0, (int (*)()) 0 , 0, 0, 0, 0L}
 };
 #else
