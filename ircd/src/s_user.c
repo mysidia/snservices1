@@ -1647,7 +1647,7 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #ifdef REQ_VERSION_RESPONSE
 		if (IsRegisteredUser(cptr) && IsHurt(cptr) 
 		    && cptr->hurt == 4) {
-			sendto_serv_butone(sptr, ":%s HURTSET %s 0", me.name, sptr->name);
+			sendto_serv_butone(sptr, ":%s HURTSET %s -", me.name, sptr->name);
 			remove_hurt(cptr);
 		}
 #endif
