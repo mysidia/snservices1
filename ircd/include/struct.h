@@ -50,9 +50,6 @@
 #  include <sys/syslog.h>
 # endif
 #endif
-#ifdef	pyr
-#include <sys/time.h>
-#endif
 
 typedef	union	Address	anAddress;
 typedef	struct	ConfItem aConfItem;
