@@ -4277,21 +4277,42 @@ NCMD(ns_release)
 			return RET_NOTARGET;
 		}
 
-		if ((numargs >= 3) && !Valid_pw(args[2], tmp->password, NickGetEnc(tmp))) {
-			PutReply(NickServ, nick, ERR_BADPW, 0, 0, 0);
-			if (BadPwNick(nick, tmp))
-				return RET_KILLED;
+		if (numargs >= 3)
+		{
+			if (isMD5Key(args[2])) 
+			{
+				if (!Valid_md5key(args[2], auth_info,
+					tmp->nick, tmp->password, NickGetEnc(tmp)))
+				{
+					sSend(":%s NOTICE %s :Invalid MD5 key.", NickServ, nick->nick);
+					nick->auth_cookie = 0;
+					if (BadPwNick(nick, tmp))
+						return RET_KILLED;
+					return RET_BADPW;
+				}
+				nick->auth_cookie = 0;
 
-			return RET_BADPW;
+				/* Authentication succeeded : Fall through */
+			}
+			else if (!Valid_pw(args[2], tmp->password, NickGetEnc(tmp))) 
+			{
+				PutReply(NickServ, nick, ERR_BADPW, 0, 0, 0);
+				if (BadPwNick(nick, tmp))
+					return RET_KILLED;
+	
+				return RET_BADPW;
+			}
+
+			/* Valid password, otherwise */
+
+			GoodPwNick(nick, tmp);
 		}
-		else if ((numargs < 3)
-			 && !checkAccess(nick->user, nick->host, tmp)) {
+		else if (checkAccess(nick->user, nick->host, tmp) == 0) {
 			PutReply(NickServ, nick, ERR_NOACCESS, 0, 0, 0);
 			return RET_NOPERM;
 		}
-		else
-			GoodPwNick(nick, tmp);
-
+		
+		
 		if ((tmp != NULL)) {
 			if (isGhost(args[1])) {
 				delGhost(args[1]);

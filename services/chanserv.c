@@ -3354,32 +3354,35 @@ CCMD(cs_register)
 	chan = getChanData(args[1]);
 	tmp = getChanUserData(chan, nick);
 
-	if (!ValidChannelName(args[1])) {
+	if (ValidChannelName(args[1]) == 0) {
 		sSend(":%s NOTICE %s :Invalid channel name, %s.", ChanServ, from,
 			  args[1]);
 		return RET_EFAULT;
 	}
 
-	if (!nick || !nick->reg || !isIdentified(nick, nick->reg)) {
+	if (nick == NULL || nick->reg == NULL || isIdentified(nick, nick->reg) == 0) {
 		sSend
 			(":%s NOTICE %s :You must be identified to register a channel",
 			 NickServ, from);
 		return RET_FAIL;
 	}
 
-	if (chan && chan->reg) {
+	if (chan != NULL && chan->reg != NULL) 
+	{
 		sSend(":%s NOTICE %s :%s is already registered", ChanServ, from,
 			  args[1]);
 		return RET_FAIL;
 	}
 
-	if (is_sn_chan(args[1]) && !opFlagged(nick, OOPER | OVERRIDE)) {
+	if (is_sn_chan(args[1]) != 0 && opFlagged(nick, OOPER | OVERRIDE) == 0) 
+	{
 		sSend(":%s NOTICE %s :This channel is reserved for " NETWORK ".",
 			  ChanServ, from);
 		return RET_NOPERM;
 	}
 
-        if (isPasswordAcceptable(args[2], pw_reason) == 0) {
+        if (isPasswordAcceptable(args[2], pw_reason) == 0) 
+	{
                 sSend(":%s NOTICE %s :Sorry, %s isn't a password that you can use.",
                         ChanServ, from, args[1]);
                 sSend(":%s NOTICE %s :%s", ChanServ, from, pw_reason);
@@ -3406,7 +3409,7 @@ CCMD(cs_register)
 	}
 
 	if (nick->reg->chans >= ChanLimit && !opFlagged(nick, OVERRIDE)
-            && !(nick->opflags & OROOT)) {
+            && !(nick->reg->opflags & OROOT)) {
 		sSend(":%s NOTICE %s :You have registered too many channels",
 			  ChanServ, from);
 #ifdef REGLIMITYELL
