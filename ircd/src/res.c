@@ -868,7 +868,7 @@ char	*lp;
 #endif
 	if (a && rptr->type == T_PTR)
 	    {
-		struct	Hostent	*hp2 = NULL;
+		struct	HostEnt	*hp2 = NULL;
 
                 if (rptr->he.h_name == NULL)
                     goto getres_err;
