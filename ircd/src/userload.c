@@ -216,7 +216,7 @@ void calc_load(aClient *sptr, char *parv) /* we only get passed the original par
   sendto_one(sptr,
     ":%s NOTICE %s :Minute   Hour  Day  Yest.  YYest.  Userload for:",
     me.name, parv);
-  for (i = 0; i < 2 i++)
+  for (i = 0; i < 2; i++)
     sendto_one(sptr,
       ":%s NOTICE %s :%3d.%02d  %3d.%01d  %3d   %3d     %3d   %s",
       me.name, parv, times[0][i] / 100, times[0][i] % 100, times[1][i] / 10,
