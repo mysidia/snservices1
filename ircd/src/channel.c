@@ -1867,10 +1867,10 @@ char	*key;
                return (ERR_BANRULE);
            if (IS_SET(bantype, BAN_REQUIRE))
                return (ERR_BANREQUIRE);
+           if (IS_SET(bantype, BAN_VERONLY))
+	       return (ERR_NEEDVERNICK);	   
 	   if (IS_SET(bantype, BAN_REGONLY))
 	       return (ERR_NEEDREGGEDNICK);
-           if (IS_SET(bantype, BAN_VERONLY))
-               return (ERR_NEEDVERNICK);
 	}
 
 	if (chptr->mode.limit && chptr->users >= chptr->mode.limit)
