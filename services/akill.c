@@ -917,25 +917,25 @@ int removeAkill(char *from, char *mask)
  * \param type Type of entry removal is being attempted of (such as #A_AKILL)
  * \param restrict [UNUSED]
  */
-int removeAkillType(char *from, char *mask, int type, int restrict)
+int removeAkillType(char *from, const char *given_mask, int type, int restrict)
 {
 	int i, j;
 	struct akill *ak;
-	char *nick, *user = NULL, *host = NULL, *oldmask;
+	char *nick, *user = NULL, *host = NULL, *tmpmask;
 	time_t temp;
 
-	oldmask = strdup(mask);
+	tmpmask = strdup(mask);
 
-	j = strlen(mask);
-	nick = mask;
+	j = strlen(tmpmask);
+	nick = tmpmask;
 	for (i = 0; i < j; i++) {
-		if (mask[i] == '!') {
-			mask[i] = 0;
-			user = &(mask[i + 1]);
+		if (tmpmask[i] == '!') {
+			tmpmask[i] = 0;
+			user = &(tmpmask[i + 1]);
 		}
-		if (mask[i] == '@') {
-			mask[i] = 0;
-			host = &(mask[i + 1]);
+		if (tmpmask[i] == '@') {
+			tmpmask[i] = 0;
+			host = &(tmpmask[i + 1]);
 		}
 	}
 
@@ -957,11 +957,11 @@ int removeAkillType(char *from, char *mask, int type, int restrict)
 
 
 				sSend(":%s GLOBOPS :%s is removing %s %s.", OperServ, from,
-					  aktype_str(ak->type, 0), oldmask);
+					  aktype_str(ak->type, 0), given_mask);
 				temp = time(NULL);
 
 #if defined(AKILLMAILTO) || defined(OPSMAILTO)
-				queueakill(oldmask, from, NULL, NULL, temp, ak->type,
+				queueakill(given_mask, from, NULL, NULL, temp, ak->type,
 						   ak->id, 0);
 #endif
 				if (ak->prev)
@@ -982,18 +982,22 @@ int removeAkillType(char *from, char *mask, int type, int restrict)
         */
 				if (strcmp(from, OperServ)) {
 					sSend(":%s NOTICE %s :%s %s removed", OperServ, from,
-						  aktype_str(ak->type, 0), oldmask);
+						  aktype_str(ak->type, 0), given_mask);
 					cancel_timer(ak->tid);	/* If OperServ is removing the kill, timer is up&shouldn't be canceled */
 				}
 				FREE(ak);
-				FREE(oldmask);
+				FREE(tmpmask);
 				return 0;
 			}
 	}
+
+	/* No notices to self */
 	if (strcmp(from, OperServ)) {
 		sSend(":%s NOTICE %s :%s %s not found", OperServ, from,
-			  aktype_str(type, 2), oldmask);
+			  aktype_str(type, 2), given_mask);
 	}
+
+	FREE(tmpmask);
 	return -1;
 }
 
