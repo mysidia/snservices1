@@ -601,8 +601,8 @@ OCMD(os_tempakill)
 		if ((AKREASON_LEN - count) <= 0)
 			break;
 		count +=
-			snprintf(akreason + count, AKREASON_LEN - count, "%s%s",
-					 i != 3 ? " " : "", args[i]);
+			snprintf(akreason + count, AKREASON_LEN - count, " %s",
+					 , args[i]);
 	}
 	addakill(3600, addr, from, A_AKILL, akreason);
 	return RET_OK_DB;
