@@ -182,7 +182,6 @@ newsNag(UserList * nick)
 void
 sendToInfoServ(UserList * nick, char **args, int numargs)
 {
-	char *from = nick->nick;
 	interp::parser * cmd;
 
 	cmd =

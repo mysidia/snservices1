@@ -5137,7 +5137,7 @@ CCMD(cs_clist)
 			/* Note: This is online data not database data */
 			sSend(":%s NOTICE %s :*** %s [%s@%s]", ChanServ, from,
 				  tnick->nick, tnick->user, tnick->host);
-			sSend(":%s NOTICE %s :ID: %ld, TS: %ld, LT: %ld", ChanServ,
+			sSend(":%s NOTICE %s :ID: %d, TS: %ld, LT: %d", ChanServ,
 				  from, tnick->idnum.getHashKey(), tnick->timestamp, tnick->floodlevel.GetLev());
 			sSend(":%s NOTICE %s :OF: %d, FL: %d, CA: %d", ChanServ, from,
 				  tnick->oflags, tnick->floodlevel.GetLev(), tnick->caccess);
@@ -5373,7 +5373,7 @@ CCMD(cs_modelock)
  *  This is a hack to allow for generalized ChanServ set types
  *  such as cs_set_bool and cs_set_string.
  */
-#define CSO(q)	(((size_t) &((RegChanList *)0)->q))
+#define CSO(q)	(((size_t) &((RegChanList *)1)->q - 1))
 
 /**
  * \cscmd Set

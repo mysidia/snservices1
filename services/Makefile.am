@@ -56,7 +56,7 @@ LDFLAGS = @LDFLAGS@
 
 # Warning flags
 WFLAGS  = -Wall -Wpointer-arith -Wcast-qual -Wcast-align \
--Woverloaded-virtual -Winline 
+-Woverloaded-virtual -Winline -Wno-format-y2k 
 
 services_SOURCES = akill.c chanserv.c clone.c db.c hash.c help.c \
 main.c parse.cc memoserv.c nickserv.c operserv.c server.c stuff.c \

@@ -315,9 +315,10 @@ xorit(char *tocrypt)
  */
 
 void
-parse_str(char **args, int argc, int startarg, char *workingstring, size_t sz)
+parse_str(char **args, unsigned int argc, unsigned int startarg, char *workingstring, size_t sz)
 {
-	int i, len, len2;
+	unsigned int i;
+	size_t len, len2;
 
 	len = 0;
 	workingstring[0] = '\0';

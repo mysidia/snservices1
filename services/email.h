@@ -39,10 +39,6 @@
  * SUCH DAMAGE.
  */
 
-class EmailString;
-class EmailAddressBuf;
-class EmailMessage;
-
 /**
  * \class EmailString
  * \brief A string associated with an email field
@@ -65,42 +61,20 @@ class EmailString
     friend int main();
 
     public:
-    EmailString() : theLength(0), theString(NULL) {
-    }
-
-    ~EmailString() {
-       if (theString)
-           delete theString;
-       return;
-    }
+    EmailString();
+    ~EmailString();
 
     const char *add(const char *);
-    const char *get_string() { 
-	    if ( theString ) 
-		    return theString;
-	    return "";
-    }
+    const char *get_string();
     const char *set_string(const char *s);
-    const char *set_string_ptr(char *s) {
-          theLength = s ? strlen(s) : 0;
-          return theString = s;  
-    }
+    const char *set_string_ptr(char *);
     int length() { return theLength; }
+ 
+    const char *operator =(const char *buf) { return set_string(buf); }
+    const char *operator +=(const char *buf) { return add(buf); }
 
-    const char *operator=(const char *buf) { return set_string(buf); };
-    const char *operator+=(const char *buf) { return add(buf); };
-
-    char &operator[](int i) {
-         if (i<0||i>theLength) {
-             abort();
-             return ((char *)0x0)[0];
-         }
-         return theString[i];
-    }
-
-    operator char* () {
-        return theString;
-    }
+    char &operator[](int);
+    operator char* () { return theString; }
 
     private:
     int theLength;
@@ -124,8 +98,8 @@ class EmailAddressBuf : public EmailString
 {
 	public:
 		const char *add_email(const char *);	
-		const char *operator=(const char *buf) { return set_string(buf); };
-		const char *operator+=(const char *buf) { return add_email(buf); };
+		const char *operator =(const char *buf) { return set_string(buf); }
+		const char *operator +=(const char *buf) { return add_email(buf); }
 };
 
 /**
@@ -142,6 +116,7 @@ class EmailAddressBuf : public EmailString
 class EmailMessage
 {
     public:
+	EmailMessage();
 
           /// Sender address for e-mail
 	EmailAddressBuf  from;
@@ -158,12 +133,7 @@ class EmailMessage
           /// Reset the data, can be used to construct another message with
           /// the same object or to wipe out the data in the destruction
           /// process.
-        void reset() {
-             from = NULL;
-	     to = NULL;
-	     subject = NULL;
-	     body = NULL;
-        }
+        void reset();
 
           /// Send an e-mail
 	void send();

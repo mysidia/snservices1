@@ -64,7 +64,7 @@ public:
 	TimeLengthString(const char* short_str);
 
 	TimeLengthString(const char* short_str, bool oldStyle,
-			   int default_unit_size_secs = 3600);
+			 int default_unit_size_secs = 3600);
 
 	/// Parse a new-style duration like 3h5m22s
 	void ParseNewStyle(const char*);
@@ -129,38 +129,13 @@ public:
 	 *  in the target space (buf).
 	 */
 	const char* TimeLengthString::asString(char* buf, int len, bool pad,
-                        bool long_format, bool show_secs) const;
+					       bool long_format,
+					       bool show_secs) const;
 
 
 private:
 	DurationRepresentation length;
-	void normalize() {
-		int k;
-		
-		if (length.seconds >= 60) {
-			k = length.seconds / 60;
-			length.minutes += k;
-			length.seconds -= k * 60;
-		}
-
-		// Reduce every 60 mins to an hour
-		if (length.minutes >= 60) {
-			k = length.minutes / 60;
-			length.hours += k;
-			length.minutes -= k * 60;
-		}
-
-		// Every 24 hours to a day
-		if (length.hours >= 24) {
-			k = length.hours / 24;
-			length.days += k;
-			length.hours -= k * 24;
-		}
-
-		if (length.hours < 0 || length.minutes < 0 || length.seconds < 0
-				|| length.days < 0)
-			f_isValid = false;
-	}
+	void normalize();
 	char* tempstr;
 	bool f_isValid;
 	bool f_isIntStyle;

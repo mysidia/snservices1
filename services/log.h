@@ -80,95 +80,30 @@ extern const char *nullFmtHack;
  */
 class SLogfile {
   public:
-    SLogfile(const char *fname) : fp(NULL), fpw(NULL), logFileName(0),
-                                  logwFileName(0), fp_noclose(0), fpw_noclose(0)
-   {
-      /*if (!(db = dbopen(fname, O_RDWR | O_EXLOCK | O_CREAT, DB_HASH, NULL))) {
-          fprintf(stderr, "Error: Could not open %s: %s\n", fname ? fname :
-                  "", strerror(errno)); 
-          sshutdown(0);
-      }*/
-      if (!(fp = fopen(fname, "a"))) {
-          fprintf(stderr, "Error: Could not open %s: %s\n", fname ? fname :
-                  "", strerror(errno)); 
-          sshutdown(0);
-      }
-
-      logFileName = static_cast<char *>(oalloc(strlen(fname) + 1));
-      strcpy(logFileName, fname);
-    }
-
-    SLogfile(const SLogfile& x) {
-         if (x.logFileName) {
-             logFileName = static_cast<char *>(oalloc(strlen(x.logFileName) + 1));
-             strcpy(logFileName, x.logFileName);
-         }
-         if (x.logwFileName) {
-             logwFileName = static_cast<char *>(oalloc(strlen(x.logwFileName) + 1));
-             strcpy(logwFileName, x.logFileName);
-         }
-         if (x.fp)
-             fp_noclose = 1;
-         if (x.fpw)
-             fpw_noclose = 1;
-    }
-
-    SLogfile(const char *fname, const char *fnamew) : fp(NULL), fpw(NULL),
-      logFileName(0), logwFileName(0), fp_noclose(0), fpw_noclose(0)
-   {
-      if (!(fp = fopen(fname, "a"))) {
-          fprintf(stderr, "Error: Could not open %s: %s\n", fname ? fname :
-                  "", strerror(errno)); 
-          sshutdown(0);
-      }
-      if (!(fpw = fopen(fnamew, "a"))) {
-          fprintf(stderr, "Error: Could not open %s: %s\n", fnamew ? fnamew :
-                  "", strerror(errno)); 
-          sshutdown(0);
-      }
-      logFileName = static_cast<char *>(oalloc(strlen(fname) + 1));
-      strcpy(logFileName, fname);
-
-      logwFileName = static_cast<char *>(oalloc(strlen(fnamew) + 1));
-      strcpy(logwFileName, fnamew);
-    }
-    ~SLogfile() {
-        if (!fp_noclose)
-             fclose(fp);
-        free(logFileName);
-        free(logwFileName);
-        if (fpw && !fpw_noclose) fclose(fpw);
-      /*if (db)
-          db->dbclose(db);*/
-    }
+    SLogfile(const char *);
+    SLogfile(const SLogfile&);
+    SLogfile(const char *, const char *);
+    ~SLogfile();
 
     /// Flush output
-    void flush() {
-         if (logwFileName && !fpw_noclose) {
-             if ( fclose(fpw) < 0 )
-                 dlogEntry("ERROR encountered in closing working log %s, %d", logwFileName, errno);
-             fpw = 0;
-             fpw = fopen(logwFileName, "a");
-         }
-         if (fp) fflush(fp); 
-    }
+    void flush();
 
     /// Normal log entry
-    int log(UserList *sender, 
+    void log(UserList *sender, 
             interp::services_cmd_id cmd,
             const char *target,
             u_int32_t flags = 0, const char *extra = nullFmtHack, ...)
     __attribute__ ((format (printf, 6, 7)));
 
     /// Working log only
-    int logw(UserList *sender, 
+    void logw(UserList *sender, 
             interp::services_cmd_id cmd,
             const char *target,
             u_int32_t flags = 0, const char *extra = nullFmtHack, ...)
     __attribute__ ((format (printf, 6, 7)));
 
     /// Create a new log entry in the file
-    int logx(UserList *sender, int, 
+    void logx(UserList *sender, int, 
             interp::services_cmd_id cmd,
             const char *target,
             u_int32_t flags = 0, const char *extra = nullFmtHack, va_list ap = NULL);

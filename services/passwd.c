@@ -127,7 +127,7 @@ unsigned char *toBase64(const unsigned char *stream, size_t left)
 
 	*p++ = '\0';
 
-	#undef X_OUTPUT_MAP_SZ 64
+	//#define X_OUTPUT_MAP_SZ 64
 	return (unsigned char *)s;
 }
 

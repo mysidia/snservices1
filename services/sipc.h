@@ -96,28 +96,7 @@ class IpcQ
 		 * @brief Called by shove() to push a piece of the message
 		 *        before a \\n onto the buffer.
 		 */
-		char *qPush(char *text, char *sep, int *rlen) {
-			IpcQel *z;
-
-			z = (IpcQel *)oalloc(sizeof(IpcQel) + (sep - text + 1));
-
-			*sep = '\0';
-			*rlen = z->len = sep - text;
-			z->text = (char *)oalloc(z->len + 1);
-			strcpy(z->text, text);
-
-			if (firstEls == NULL)
-				firstEls = lastEls = z;
-			else
-			{
-				lastEls->next = z;
-				lastEls = z;
-			}
-
-			*sep = '\n';
-
-			return (sep + 1);
-		}
+		char *qPush(char *, char *, int *);
 
 	public:
 
@@ -139,17 +118,7 @@ class IpcQ
 		 *        else that which has not been buffered is
 		 *        contained.
 		 */
-		char *shove(char *textIn, size_t textLen, int *rlen) {
-			char *p, *text = textIn;
-
-			for(p = text; p < (textIn + textLen); p++) {
-				if (*p == '\n' || (*p == '\r' && p[1] == '\n')) {
-					text = qPush(text, p, rlen);
-				}
-			}
-
-			return text;
-		}
+		char *shove(char *, size_t, int *);
 
 		/**
 		 * @brief Get buffered text and place it in cmd.
@@ -162,60 +131,20 @@ class IpcQ
 		 *        then the text of the next item will
 		 *        fill cmd, and be removed from the buffer.
 		 */
-		int pop(char cmd[IPCBUFSIZE]) {
-			IpcQel *f;
-			char *cp;
-
-			if (firstEls == NULL)
-				return 0;
-
-			f = firstEls;
-
-			if (firstEls == lastEls)
-				firstEls = lastEls = NULL;
-			else
-				firstEls = firstEls->next;
-
-			strncpy(cmd, f->text, IPCBUFSIZE);
-			cmd[IPCBUFSIZE - 1] = '\0';
-
-			cp = cmd + strlen(cmd) - 1;
-
-			if (*cp == '\n' || *cp == '\r')
-				*cp = '\0';
-
-			if ((cp - 1) > cmd && (cp[-1] == '\r' || cp[-1] == '\n'))
-				cp[-1] = '\0';
-
-			free(f->text);
-			free(f);
-
-			return 1;
-		}
+		int pop(char[]);
 
 		/**
 		 * @brief Is the buffer empty or no?
 		 * @return False if the buffer contains any text,
 		 *         not-false if the buffer contains text.
 		 */
-		bool IsEmpty()
-		{
-			if (firstEls == NULL)
-				return 1;
-			return 0;
-		}
+		bool IsEmpty();
 
 		/**
 		 * @brief Empty the buffer
 		 * @post  The buffer contains no items.
 		 */
-		void empty()
-		{
-			char cmd[1025];
-
-			while(pop(cmd))
-				return;
-		}
+		void empty();
 
 	private:
 		IpcQel *firstEls, *lastEls;
@@ -275,6 +204,7 @@ class IpcType
 		void delCon(IpcConnectType *);
 
 		IpcType() : listenDesc(-1), links(NULL) {}
+
 	private:
 		int ReadPackets(IpcConnectType *);
 		void authMessage(IpcConnectType *, parse_t *);

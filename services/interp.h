@@ -38,9 +38,6 @@
  * SUCH DAMAGE.
  */
 
-class SLogfile;
-extern SLogfile *nicklog, *chanlog, *operlog;
-
 /*
  *
  * These are short names to eliminate redundancy -- the primary reason
