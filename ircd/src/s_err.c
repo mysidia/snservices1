@@ -81,16 +81,8 @@ static	Numeric	numeric_errors[] = {
 /* 442 */	ERR_NOTONCHANNEL, "%s :You're not on that channel",
 /* 443 */	ERR_USERONCHANNEL, "%s %s :is already on channel",
 /* 444 */	ERR_NOLOGIN, "%s :User not logged in",
-#ifndef	ENABLE_SUMMON
 /* 445 */	ERR_SUMMONDISABLED, ":SUMMON has been disabled",
-#else
-		0, (char *)NULL,
-#endif
-#ifndef	ENABLE_USERS
 /* 446 */	ERR_USERSDISABLED, ":USERS has been disabled",
-#else
-		0, (char *)NULL,
-#endif
 		0, (char *)NULL, 0, (char *)NULL, 0, (char *)NULL,
 		0, (char *)NULL,
 /* 451 */	ERR_NOTREGISTERED, ":You have not registered",
@@ -224,15 +216,12 @@ static	Numeric	numeric_replies[] = {
 		0, (char *)NULL, 0, (char *)NULL, 0, (char *)NULL,
 		0, (char *)NULL, 0, (char *)NULL,
 /* 391 */	RPL_TIME, "%s :%s",
-#ifdef	ENABLE_USERS
+
 /* 392 */	RPL_USERSSTART, ":UserID   Terminal  Host",
 /* 393 */	RPL_USERS, ":%-8s %-9s %-8s",
 /* 394 */	RPL_ENDOFUSERS, ":End of Users",
 /* 395 */	RPL_NOUSERS, ":Nobody logged in.",
-#else
-		0, (char *)NULL, 0, (char *)NULL, 0, (char *)NULL,
-		0, (char *)NULL,
-#endif
+
 		0, (char *)NULL, 0, (char *)NULL, 0, (char *)NULL,
 		0, (char *)NULL,
 /* 200 */	RPL_TRACELINK, "Link %s%s %s %s",
@@ -299,11 +288,10 @@ static	Numeric	numeric_replies[] = {
 /* 275 */	RPL_STATSDLINE, "%c %s %s"
 };
 
-char	*err_str(numeric)
-int	numeric;
+char	*err_str(int numeric)
 {
-	Reg1	Numeric	*nptr;
-	Reg2	int	num = numeric;
+	Numeric	*nptr;
+	int	num = numeric;
 
 	num -= numeric_errors[0].num_val;
 	if (num < 0 || num > ERR_NEEDPONG)
@@ -324,11 +312,10 @@ int	numeric;
 }
 
 
-char	*rpl_str(numeric)
-int	numeric;
+char	*rpl_str(int numeric)
 {
-	Reg1	Numeric	*nptr;
-	Reg2	int	num = numeric;
+        Numeric	*nptr;
+	int	num = numeric;
 
 	if (num > 4)
 		num -= (num > 300) ? 300 : 100;
@@ -355,12 +342,9 @@ int	numeric;
 	return numbuff;
 }
 
-static	char	*prepbuf(buffer, num, tail)
-char	*buffer;
-Reg1	int	num;
-char	*tail;
+static	char	*prepbuf(char *buffer, int num, char *tail)
 {
-	Reg1	char	*s;
+	char	*s;
 
 	(void)strcpy(buffer, ":%s ");
 	s = buffer + 4;

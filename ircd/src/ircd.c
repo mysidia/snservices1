@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, ircd/ircd.c
  *   Copyright (C) 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
@@ -107,6 +107,7 @@ VOIDSIG s_die()
 	(void)syslog(LOG_CRIT, "Server Killed By SIGTERM");
 #endif
 	flush_connections(me.fd);
+	close_logs( );
 	exit(-1);
 }
 
@@ -133,8 +134,7 @@ VOIDSIG s_rehash()
 #endif
 }
 
-void	restart(mesg)
-char	*mesg;
+void	restart(char *mesg)
 {
 #ifdef	USE_SYSLOG
 	(void)syslog(LOG_WARNING, "Restarting Server because: %s",mesg);
@@ -161,7 +161,7 @@ VOIDSIG s_restart()
 void	server_reboot(mesg)
 char	*mesg;
 {
-	Reg1	int	i;
+        int	i;
 
 	sendto_ops("Aieeeee!!!  Restarting server... %s", mesg);
 	Debug((DEBUG_NOTICE,"Restarting server... %s", mesg));
@@ -173,6 +173,8 @@ char	*mesg;
 #ifdef USE_SYSLOG
 	(void)closelog();
 #endif
+        close_logs( );
+
 #ifndef _WIN32
 	for (i = 3; i < MAXCONNECTIONS; i++)
 		(void)close(i);
@@ -216,14 +218,13 @@ char	*mesg;
 static	time_t	try_connections(currenttime)
 time_t	currenttime;
 {
-	Reg1	aConfItem *aconf;
-	Reg2	aClient *cptr;
-	aConfItem **pconf;
+	aConfItem *aconf, **pconf;
+	aConfItem *cconf, *con_conf;
+	aClient *cptr, *xcptr;
 	int	connecting, confrq;
+	int	con_class = 0, i = 0;
 	time_t	next = 0;
 	aClass	*cltmp;
-	aConfItem *cconf, *con_conf;
-	int	con_class = 0;
 
 	connecting = FALSE;
 	Debug((DEBUG_NOTICE,"Connection check at   : %s",
@@ -277,6 +278,19 @@ time_t	currenttime;
 		if ((next > aconf->hold) || (next == 0))
 			next = aconf->hold;
 	    }
+
+#ifndef HUB
+	if (connecting)
+           for ( i = highest_fd; i > 0; i--)
+               if (!( xcptr = local[i] )) continue;
+               else 
+                 if ( IsServer(xcptr) )
+                 {
+                     connecting = FALSE;
+                     break;
+                 }
+#endif
+
 	if (connecting)
 	    {
 		if (con_conf->next)  /* are we already last? */
@@ -305,8 +319,8 @@ time_t	currenttime;
    -- Barubary */
 extern	time_t	check_pings(time_t currenttime, int check_kills)
 {		
-	Reg1	aClient	*cptr;
-	Reg2	int	killflag;
+	aClient	*cptr;
+	int	killflag;
 	int	ping = 0, i, rflag = 0;
 	time_t	oldest = 0, timeout;
 
@@ -370,9 +384,9 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
                               ClientFlags(cptr) &= ~FLAGS_SOCKS;
                         }
 
-			if (!IsRegistered(cptr) &&
-			    (DoingDNS(cptr) || DoingAuth(cptr) || DoingSocks(cptr)))
+			if (!IsRegistered(cptr) && (DoingDNS(cptr) || DoingSocks(cptr)))
 			    {
+			      /*
 				if (cptr->authfd >= 0)
 				    {
 #ifndef _WIN32
@@ -384,16 +398,11 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 					cptr->count = 0;
 					*cptr->buffer = '\0';
 				    }
+			      */
 				Debug((DEBUG_NOTICE,
-					"DNS/AUTH timeout %s",
+					"DNS timeout %s",
 					get_client_name(cptr,TRUE)));
 				del_queries((char *)cptr);
-				if (DoingAuth(cptr))
-				{
-                                        connotice(cptr, REPORT_FAIL_AUTH);
-					ClientFlags(cptr) &= ~FLAGS_GOTID;
-				}
-				ClearAuth(cptr);
 				ClearDNS(cptr);
 #if 0
 				if (DoingSocks(cptr))
@@ -411,13 +420,15 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 					ClientFlags(cptr) &= ~FLAGS_SOCK;
 				}
 #endif
-				if (!DoingSocks(cptr)) SetAccess(cptr);
+				if (!DoingSocks(cptr))
+				  SetAccess(cptr);
+
 				cptr->firsttime = currenttime;
 				cptr->lasttime = currenttime;
 				continue;
 			    }
-			if (IsServer(cptr) || IsConnecting(cptr) ||
-			    IsHandshake(cptr)) {
+			if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr))
+			{
 				sendto_ops("No response from %s, closing link",
 					   get_client_name(cptr, FALSE));
 				sendto_serv_butone(&me, ":%s GNOTICE :No response from %s, closing link",
@@ -445,8 +456,7 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
                                   "Ping timeout");
 			continue;
 		    }
-		else if (IsRegistered(cptr) &&
-			 (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
+		else if (IsRegistered(cptr) && (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
 		    {
 			/*
 			 * if we havent PINGed the connection and we havent
@@ -559,7 +569,7 @@ char	*argv[];
 #ifndef _WIN32
 	setup_signals();
 #endif
-	loadmsg("\e[1mdone\e[0m\n");
+	loadmsg("done\n");
 	initload();
 
 #ifdef FORCE_CORE
@@ -568,7 +578,7 @@ char	*argv[];
 	if (setrlimit(RLIMIT_CORE, &corelim))
 	  printf("unlimit core size failed; errno = %d\n", errno);
         else
-        loadmsg("\e[1mdone\e[0m\n");
+        loadmsg("done\n");
 
 #endif
 
@@ -576,7 +586,7 @@ char	*argv[];
 	/* Set up the case tables */
 	loadmsg("setting up casetables...");
 	setup_match();
-	loadmsg("\e[1mdone\e[0m\n");
+	loadmsg("done\n");
 #endif
 
 	/*
@@ -622,17 +632,17 @@ char	*argv[];
 			break;
 #ifndef _WIN32
 		    case 'o': /* Per user local daemon... */
-			loadmsg("Local[\e[1mOper\e[0m] ");
+			loadmsg("Local[Oper] ");
 			bootopt |= BOOT_OPER;
 		        break;
 #ifdef CMDLINE_CONFIG
 		    case 'f':
 			configfile = p;
-			loadmsg("Config[\e[1m%s\e[0m] ", configfile);
+			loadmsg("Config[%s] ", configfile);
 			break;
 #endif
 		    case 'h':
-			loadmsg("Name[\e[1m%s\e[0m] ", p);
+			loadmsg("Name[%s] ", p);
 			strncpyzt(me.name, p, sizeof(me.name));
 			break;
 		    case 'i':
@@ -643,7 +653,7 @@ char	*argv[];
 		    case 'p':
 			if ((portarg = atoi(p)) > 0 )
 				portnum = portarg;
-			loadmsg("Port[\e[1m%d\e[0m] ", portnum);
+			loadmsg("Port[%d] ", portnum);
 			break;
 		    case 's':
 			 loadmsg("\n");
@@ -711,6 +721,8 @@ char	*argv[];
 	}
 #endif
 
+	open_logs( );
+
 #if !defined(_WIN32)
 	if ((getuid() == 0) || (geteuid() == 0)) {
 		fprintf(stderr,	"ERROR: do not run ircd setuid root.\n");
@@ -735,7 +747,7 @@ char	*argv[];
 	loadmsg("Cleaning hash tables...");
 	clear_client_hash_table();
 	clear_channel_hash_table();
-	loadmsg("\e[1mdone\e[0m\n");
+	loadmsg("done\n");
 #ifdef HASH_MSGTAB
 	(void)msgtab_buildhash();
 #endif
@@ -745,7 +757,7 @@ char	*argv[];
 	initclass();
 	initwhowas();
 	initstats();
-	loadmsg("\e[1mdone\e[0m\n");
+	loadmsg("done\n");
 	open_debugfile();
 	if (portnum < 0)
 		portnum = PORTNUM;
@@ -809,7 +821,6 @@ char	*argv[];
 	if (me.name[0] == '\0')
 		strncpyzt(me.name, me.sockhost, sizeof(me.name));
 	me.hopcount = 0;
-	me.authfd = -1;
 	me.confs = NULL;
 	me.next = NULL;
 	me.user = NULL;

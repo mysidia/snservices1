@@ -32,6 +32,7 @@ static  char sccsid[] = "@(#)send.c	2.32 2/28/94 (C) 1988 University of Oulu, Co
 #include "h.h"
 #include <stdio.h>
 #include <assert.h>
+#include <stdarg.h>
 #ifdef _WIN32
 #include <io.h>
 #endif
@@ -48,9 +49,7 @@ static char last_pattern[2048*2]="";
 static	char	sendbuf[2048];
 static	int	send_message PROTO((aClient *, char *, int));
 
-#ifndef CLIENT_COMPILE
 static	int	sentalong[MAXCONNECTIONS];
-#endif
 
 /*
 ** dead_link
@@ -78,15 +77,12 @@ char	*notice;
 	 */
 	DBufClear(&to->recvQ);
 	DBufClear(&to->sendQ);
-#ifndef CLIENT_COMPILE
 	if (!IsPerson(to) && !IsUnknown(to) && !(ClientFlags(to) & FLAGS_CLOSING))
 		sendto_ops(notice, get_client_name(to, FALSE));
 	Debug((DEBUG_ERROR, notice, get_client_name(to, FALSE)));
-#endif
 	return -1;
 }
 
-#ifndef CLIENT_COMPILE
 /*
 ** flush_connections
 **	Used to empty all output buffers for all connections. Should only
@@ -100,8 +96,8 @@ void	flush_connections(fd)
 int	fd;
 {
 #ifdef SENDQ_ALWAYS
-	Reg1	int	i;
-	Reg2	aClient *cptr;
+	int	i;
+	aClient *cptr;
 
 	if (fd == me.fd)
 	    {
@@ -113,7 +109,6 @@ int	fd;
 		(void)send_queued(cptr);
 #endif
 }
-#endif
 
 /*
 ** send_message
@@ -129,10 +124,6 @@ int	len;
 {
 	if (IsDead(to))
 		return 0; /* This socket has already been marked as dead */
-# ifdef	CLIENT_COMPILE
-	if (DBufLength(&to->sendQ) > MAXSENDQLENGTH)
-		return dead_link(to,"Max SendQ limit exceeded for %s");
-# else
 	if (DBufLength(&to->sendQ) > get_sendq(to))
 	    {
 		if (IsServer(to))
@@ -141,7 +132,6 @@ int	len;
 				DBufLength(&to->sendQ), get_sendq(to));
 		return dead_link(to, "Max Sendq exceeded");
 	    }
-# endif
 	else if (dbuf_put(&to->sendQ, msg, len) < 0)
 		return dead_link(to, "Buffer allocation error for %s");
 	/*
@@ -184,10 +174,6 @@ int	len;
 		** Was unable to transfer all of the requested data. Queue
 		** up the remainder for some later time...
 		*/
-# ifdef	CLIENT_COMPILE
-		if (DBufLength(&to->sendQ) > MAXSENDQLENGTH)
-			return dead_link(to,"Max SendQ limit exceeded for %s");
-# else
 		if (DBufLength(&to->sendQ) > get_sendq(to))
 		    {
 			sendto_ops("Max SendQ limit exceeded for %s : %d > %d",
@@ -195,7 +181,6 @@ int	len;
 				   DBufLength(&to->sendQ), get_sendq(to));
 			return dead_link(to, "Max Sendq exceeded");
 		    }
-# endif
 		else if (dbuf_put(&to->sendQ,msg+rlen,len-rlen) < 0)
 			return dead_link(to,"Buffer allocation error for %s");
 	    }
@@ -280,13 +265,6 @@ va_dcl
 # endif
 */
 
-#ifdef VMS
-	extern int goodbye;
-	
-	if (StrEq("QUIT", pattern)) 
-		goodbye = 1;
-#endif
-
 #ifdef	USE_VARARGS
 	va_start(vl);
 	(void)vsprintf(sendbuf, pattern, vl);
@@ -305,12 +283,10 @@ va_dcl
 		      "Local socket %s with negative fd... AARGH!",
 		      to->name));
 	    }
-#ifndef	CLIENT_COMPILE
 	else if (IsMe(to)) {
 		sendto_ops("Trying to send [%s] to myself!", sendbuf);
 		return;
 	    }
-#endif
 	(void)strcat(sendbuf, NEWLINE);
 #ifndef	IRCII_KLUDGE
 	sendbuf[510] = '\r';
@@ -320,7 +296,6 @@ va_dcl
 	(void)send_message(to, sendbuf, strlen(sendbuf));
 }
 
-#ifndef CLIENT_COMPILE
 # ifndef	USE_VARARGS
 /*VARARGS*/
 void	sendto_channel_butone(one, from, chptr, pattern,
@@ -338,9 +313,9 @@ va_dcl
 {
 	va_list	vl;
 # endif
-	Reg1	Link	*lp;
-	Reg2	aClient *acptr;
-	Reg3	int	i;
+	Link	*lp;
+	aClient *acptr;
+	int	i;
 
 # ifdef	USE_VARARGS
 	va_start(vl);
@@ -411,9 +386,9 @@ va_dcl
 { 
 	va_list vl;
 # endif
-	Reg1	Link	*lp;
-	Reg2	aClient	*acptr;
-	Reg3	int	i;
+	Link	*lp;
+	aClient	*acptr;
+	int	i;
 
 # ifdef USE_VARARGS
 	va_start(vl);
@@ -481,8 +456,8 @@ va_dcl
 {
 	va_list	vl;
 # endif
-	Reg1	int	i;
-	Reg2	aClient *cptr;
+	int	i;
+	aClient *cptr;
 
 # ifdef	USE_VARARGS
 	va_start(vl);
@@ -530,9 +505,9 @@ va_dcl
 {
 	va_list	vl;
 # endif
-	Reg1	int	i;
-	Reg2	aClient *cptr;
-	Reg3	Link	*lp;
+	int	i;
+	aClient *cptr;
+	Link	*lp;
 
 # ifdef	USE_VARARGS
 	va_start(vl);
@@ -566,7 +541,6 @@ va_dcl
 # endif
 	return;
 }
-#endif /* CLIENT_COMPILE */
 
 /*
  * sendto_channel_butserv
@@ -591,8 +565,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	Link	*lp;
-	Reg2	aClient	*acptr;
+	Link	*lp;
+        aClient	*acptr;
 
 #ifdef	USE_VARARGS
 	for (va_start(vl), lp = chptr->members; lp; lp = lp->next)
@@ -634,7 +608,6 @@ int	what;
 	}
 }
 
-#ifndef CLIENT_COMPILE
 /*
  * sendto_match_servs
  *
@@ -657,8 +630,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	int	i;
-	Reg2	aClient	*cptr;
+	int	i;
+	aClient	*cptr;
 	char	*mask;
 
 #ifdef	USE_VARARGS
@@ -720,8 +693,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	int	i;
-	Reg2	aClient *cptr, *acptr;
+	int	i;
+	aClient *cptr, *acptr;
 	char	cansendlocal, cansendglobal;
   
 #ifdef	USE_VARARGS
@@ -793,8 +766,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	int	i;
-	Reg2	aClient *cptr;
+	int	i;
+	aClient *cptr;
 
 #ifdef	USE_VARARGS
 	for (va_start(vl), i = 0; i <= highest_fd; i++)
@@ -828,8 +801,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	aClient *cptr;
-	Reg2	int	i;
+	aClient *cptr;
+	int	i;
 	char	nbuf[1024];
 
 #ifdef	USE_VARARGS
@@ -869,8 +842,8 @@ va_dcl
 {
         va_list vl;
 #endif
-        Reg1    aClient *cptr;
-        Reg2    int     i;
+        aClient *cptr;
+        int     i;
         char    nbuf[1024];
 
 #ifdef  USE_VARARGS
@@ -911,8 +884,8 @@ va_dcl
 {
 	va_list vl;
 #endif
-	Reg1    aClient *cptr;
-	Reg2    int     i;
+	aClient *cptr;
+	int     i;
 	char    nbuf[1024];
 
 #ifdef  USE_VARARGS
@@ -1064,8 +1037,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	aClient *cptr;
-	Reg2	int	i;
+	aClient *cptr;
+	int	i;
 	char	nbuf[1024];
 
 #ifdef	USER_VARARGS
@@ -1094,8 +1067,8 @@ void	sendto_umode(flags, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
 int	flags;
 char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
 {
-	Reg1	aClient *cptr;
-	Reg2	int	i;
+	aClient *cptr;
+	int	i;
 	char	nbuf[1024];
 
 	for (i = 0; i <= highest_fd; i++)
@@ -1133,8 +1106,8 @@ va_dcl
 {
         va_list vl;
 #endif
-        Reg1    aClient *cptr;
-        Reg2    int     i;
+        aClient *cptr;
+        int     i;
         char    nbuf[1024];
 
 #ifdef  USE_VARARGS
@@ -1175,8 +1148,8 @@ va_dcl
 {
         va_list vl;
 #endif
-        Reg1    aClient *cptr;
-        Reg2    int     i;
+        aClient *cptr;
+        int     i;
         char    nbuf[1024];
 
 #ifdef  USE_VARARGS
@@ -1217,8 +1190,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	aClient *cptr;
-	Reg2	int	i;
+	aClient *cptr;
+	int	i;
 	char	nbuf[1024];
 
 #ifdef	USE_VARARGS
@@ -1262,8 +1235,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	int	i;
-	Reg2	aClient *cptr;
+	int	i;
+	aClient *cptr;
 
 #ifdef	USE_VARARGS
 	va_start(vl);
@@ -1313,8 +1286,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	int	i;
-	Reg2	aClient *cptr;
+	int	i;
+	aClient *cptr;
 
 #ifdef	USE_VARARGS
 	va_start(vl);
@@ -1364,8 +1337,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	int	i;
-	Reg2	aClient *cptr;
+	int	i;
+	aClient *cptr;
 
 #ifdef	USE_VARARGS
 	va_start(vl);
@@ -1393,8 +1366,6 @@ va_dcl
 # endif
 	return;
 }
-/*#endif*/
-#endif
 
 /*
  * sendto_prefix_one()
@@ -1408,21 +1379,21 @@ va_dcl
 #ifndef	USE_VARARGS
 /*VARARGS*/
 void	sendto_prefix_one(to, from, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
-Reg1	aClient *to;
-Reg2	aClient *from;
+aClient *to;
+aClient *from;
 char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
 {
 #else
 void	sendto_prefix_one(to, from, pattern, va_alist)
-Reg1	aClient *to;
-Reg2	aClient *from;
+aClient *to;
+aClient *from;
 char	*pattern;
 va_dcl
 {
 	va_list	vl;
 #endif
 	static	char	sender[HOSTLEN+NICKLEN+USERLEN+5];
-	Reg3	anUser	*user;
+	anUser	*user;
 	char	*par;
 	int	flag = 0;
 
@@ -1489,8 +1460,8 @@ va_dcl
 {
 	va_list	vl;
 #endif
-	Reg1	aClient *cptr;
-	Reg2	int	i;
+	aClient *cptr;
+	int	i;
 	char	nbuf[1024];
 
 #ifdef	USE_VARARGS
@@ -1515,3 +1486,4 @@ va_dcl
 #endif
 	return;
 }
+

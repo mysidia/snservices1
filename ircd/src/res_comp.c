@@ -36,12 +36,10 @@ static dn_find();
  * 'exp_dn' is a pointer to a buffer of size 'length' for the result.
  * Return size of compressed name or -1 if there was an error.
  */
-dn_expand(msg, eomorig, comp_dn, exp_dn, length)
-	u_char *msg, *eomorig, *comp_dn, *exp_dn;
-	int length;
+dn_expand(u_char *msg, u_char *eomorig, u_char *comp_dn, u_char *exp_dn, int length)
 {
-	register u_char *cp, *dn;
-	register int n, c;
+	u_char *cp, *dn;
+	int n, c;
 	u_char *eom;
 	int len = -1, checked = 0;
 
@@ -115,13 +113,10 @@ dn_expand(msg, eomorig, comp_dn, exp_dn, length)
  * If 'dnptr' is NULL, we don't try to compress names. If 'lastdnptr'
  * is NULL, we don't update the list.
  */
-dn_comp(exp_dn, comp_dn, length, dnptrs, lastdnptr)
-	u_char *exp_dn, *comp_dn;
-	int length;
-	u_char **dnptrs, **lastdnptr;
+dn_comp(u_char *exp_dn, u_char *comp_dn, int length, u_char **dnptrs, u_char **lastdnptr)
 {
-	register u_char *cp, *dn;
-	register int c, l;
+	u_char *cp, *dn;
+        int c, l;
 	u_char **cpp, **lpp, *sp, *eob;
 	u_char *msg;
 
@@ -193,11 +188,10 @@ dn_comp(exp_dn, comp_dn, length, dnptrs, lastdnptr)
 /*
  * Skip over a compressed domain name. Return the size or -1.
  */
-dn_skipname(comp_dn, eom)
-	u_char *comp_dn, *eom;
+dn_skipname(u_char *comp_dn, u_char *eom)
 {
-	register u_char *cp;
-	register int n;
+	u_char *cp;
+	int n;
 
 	cp = comp_dn;
 	while (cp < eom && (n = *cp++)) {
@@ -224,13 +218,10 @@ dn_skipname(comp_dn, eom)
  * dnptrs is the pointer to the first name on the list,
  * not the pointer to the start of the message.
  */
-static
-dn_find(exp_dn, msg, dnptrs, lastdnptr)
-	u_char *exp_dn, *msg;
-	u_char **dnptrs, **lastdnptr;
+static dn_find(u_char *exp_dn, u_char *msg, u_char **dnptrs, u_char **lastdnptr)
 {
-	register u_char *dn, *cp, **cpp;
-	register int n;
+	u_char *dn, *cp, **cpp;
+	int n;
 	u_char *sp;
 
 	for (cpp = dnptrs; cpp < lastdnptr; cpp++) {
@@ -278,30 +269,26 @@ dn_find(exp_dn, msg, dnptrs, lastdnptr)
  * used by sendmail.
  */
 
-u_short
-_getshort(msgp)
-	u_char *msgp;
+u_short _getshort(u_char *msgp)
 {
-	register u_char *p = (u_char *) msgp;
+	u_char *p = (u_char *) msgp;
 #ifdef vax
 	/*
 	 * vax compiler doesn't put shorts in registers
 	 */
-	register u_long u;
+	u_long u;
 #else
-	register u_short u;
+	u_short u;
 #endif
 
 	u = *p++ << 8;
 	return ((u_short)(u | *p));
 }
 
-u_long
-_getlong(msgp)
-	u_char *msgp;
+u_long _getlong(u_char *msgp)
 {
-	register u_char *p = (u_char *) msgp;
-	register u_long u;
+	u_char *p = (u_char *) msgp;
+	u_long u;
 
 	u = *p++; u <<= 8;
 	u |= *p++; u <<= 8;
@@ -310,18 +297,14 @@ _getlong(msgp)
 }
 
 
-putshort(s, msgp)
-	register u_short s;
-	register u_char *msgp;
+putshort(u_short s, u_char *msgp)
 {
 
 	msgp[1] = s;
 	msgp[0] = s >> 8;
 }
 
-putlong(l, msgp)
-	register u_long l;
-	register u_char *msgp;
+putlong(u_long l, u_char *msgp)
 {
 
 	msgp[3] = l;
