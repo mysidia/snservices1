@@ -5285,12 +5285,12 @@ NCMD(ns_getpass)
 
 		if (key_transfer)
 			sSend(":%s GLOBOPS :%s used sendpass (transfer) on %s",
-			      ChanServ, from, args[nick_arg]);
+			      NickServ, from, args[nick_arg]);
 		else
 			sSend(":%s GLOBOPS :%s used sendpass (getkey) on %s",
-			      ChanServ, from, args[nick_arg]);
+			      NickServ, from, args[nick_arg]);
 		sSend(":%s NOTICE %s :Transfer key for %s is %s",
-		      ChanServ, from, args[nick_arg], pwAuthKey);
+		      NickServ, from, args[nick_arg], pwAuthKey);
 		targetNick->flags |= NFORCEXFER;
 		operlog->log(nick, NSS_GETPASS_XFER, args[nick_arg]);
 	} else if ((targetNick->flags & NFORCEXFER) && targetNick->chpw_key && !opFlagged(nick, OGRP | OOPER | OVERRIDE)) {
