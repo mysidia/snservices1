@@ -1,0 +1,101 @@
+char *genHostMask(char *host)
+{
+    char tok1[USERLEN+HOSTLEN+255];
+    char tok2[USERLEN+HOSTLEN+255], *p, *q;
+    static char fin[USERLEN+HOSTLEN+255];
+    char fintmp[USERLEN+HOSTLEN+255];
+    int i, fIp = TRUE;
+
+    if (!host) return "";
+
+    if (strchr(host, ':'))
+    {
+        /* ipv6 address */
+        strcpy(tok2,host);
+        tok1[0] = '\0';
+        i = 0;
+        while (( p = strrchr(tok2, ':') ))
+        {
+                strcat(tok1,((i & 2)?(p+1):tokenEncode(p+1)));
+                strcat(tok1,".");
+                *p = '\0';
+                i++;
+        }
+
+        sprintf(fin,"%s%s.imsk",tok1,tok2);
+        return fin;
+    }
+
+    for (i = 0; host[i]; i++)
+         if ((host[i] < '0' || host[i] > '9') && host[i] != '.')
+         {
+             fIp = FALSE; 
+             break;
+         }
+
+    *tok1 = *tok2 = '\0';
+
+    /* It's an ipv4 address in quad-octet format: last two tokens are encoded */
+    if (fIp && strlen(host) <= 15)
+    {
+        if (( p = strrchr(host, '.') )) {
+            *p = '\0';
+            strcpy(tok1, host);
+            strcpy(tok2, p + 1);
+            *p = '.';
+        }
+        if (( p = strrchr(tok1, '.') )) {
+            strcpy(fintmp, tokenEncode(p+1));
+            *p = '\0';
+        }
+        sprintf(fin, "%s.%s.%s.imsk", tokenEncode(tok2), fintmp, tok1);
+        return fin;
+    }
+
+    /* It's a resolved hostname, hash the first token */
+    if (( p = strchr(host, '.') )) {
+        *p = '\0';
+        strcpy(tok1, host);
+        strcpy(fin, p + 1);
+        *p = '.';
+    }
+
+    /* Then separately hash the domain */
+    if (( p = strrchr(fin, '.') )) {
+        --p;
+        while (p > fin && *(p-1) != '.') p--;
+    }
+    if (p && (q = strrchr(fin, '.'))) {
+        i = (unsigned char)*p;
+        *p = '\0';
+        *q = '\0';
+        strcat(tok2, fin);
+        *p = (unsigned char)i;
+        if (*p == '.')
+            strcat(tok2, tokenEncode(p+1));
+        else 
+            strcat(tok2, tokenEncode(p));
+        *q = '.';
+        strcat(tok2, q);
+    }
+    else
+     strcpy(tok2, fin);
+    strcpy(tok1, tokenEncode(tok1));
+    snprintf(fin, HOSTLEN, "%s.%s.hmsk", tok1, tok2);
+
+    return fin;
+}
+
+
+char *tokenEncode(char *str)
+{
+   static char strn[HOSTLEN + 255];
+   unsigned char *p;
+   unsigned long m, v;
+
+   for ( p = str, m = 0, v = 0x55555; *p; p++ )
+        v = (31 * v) + (*p);
+   sprintf(strn, "%x", v);
+   return strn;
+}
+	
