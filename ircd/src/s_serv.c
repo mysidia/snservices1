@@ -265,7 +265,7 @@ char	*parv[];
 		 * there is a very good chance they don't want us to
 		 * reconnect right away.  -Cabal95
 		 */
-		acptr->flags |= FLAGS_SQUIT;
+		ClientFlags(acptr) |= FLAGS_SQUIT;
 	}
 
 	return exit_client(cptr, acptr, sptr, comment);
@@ -514,7 +514,7 @@ char	*parv[];
 		strncpyzt(acptr->info, info, sizeof(acptr->info));
 		strncpyzt(acptr->serv->up, parv[0], sizeof(acptr->serv->up));
 		SetServer(acptr);
-		acptr->flags|=FLAGS_TS8;
+		ClientFlags(acptr) |=FLAGS_TS8;
 		add_client_to_list(acptr);
 		(void)add_to_client_hash_table(acptr->name, acptr);
 		/*
@@ -542,7 +542,7 @@ char	*parv[];
 		    }
 		/* Check for U-line status -- Barubary */
 		if (find_conf_host(cptr->confs, acptr->name, CONF_UWORLD))
-			acptr->flags |= FLAGS_ULINE;
+			ClientFlags(acptr) |= FLAGS_ULINE;
 		return 0;
 	    }
 
@@ -705,7 +705,7 @@ Reg1	aClient	*cptr;
 	**	code is more neat this way...  --msa
 	*/
 	SetServer(cptr);
-	cptr->flags|=FLAGS_TS8;
+	ClientFlags(cptr) |=FLAGS_TS8;
 	nextping = NOW;
 #ifdef HUB
 	sendto_serv_butone(&me, ":%s GNOTICE :Link with %s established.",
@@ -718,6 +718,9 @@ Reg1	aClient	*cptr;
 	(void)make_server(cptr);
 	(void)strcpy(cptr->serv->up, me.name);
 	cptr->serv->nline = aconf;
+       if (find_conf_host(cptr->confs, cptr->name, CONF_UWORLD))
+                       cptr->flags |= FLAGS_ULINE;
+
 	/*
 	** Old sendto_serv_but_one() call removed because we now
 	** need to send different names to different servers
@@ -1051,6 +1054,7 @@ static int report_array[17][3] = {
 		{ CONF_CONNECT_SERVER,    RPL_STATSCLINE, 'C'},
 		{ CONF_NOCONNECT_SERVER,  RPL_STATSNLINE, 'N'},
 		{ CONF_CLIENT,            RPL_STATSILINE, 'I'},
+		{ CONF_AHURT,		  RPL_STATSKLINE, 'h'},
 		{ CONF_KILL,              RPL_STATSKLINE, 'K'},
 		{ CONF_ZAP,		  RPL_STATSKLINE, 'Z'},
 		{ CONF_QUARANTINED_SERVER,RPL_STATSQLINE, 'q'},
@@ -1108,39 +1112,33 @@ int	mask;
                         {
                            if (tmp->port & OFLAG_ADMIN)
                            {
-                                   *pt++ = 'A';
-                                   *pt++ = 'O';
-                            oflagset |= (OFLAG_ADMIN|OFLAG_GLOBAL);
-                             break;
+                              *pt++ = 'A';
+                              *pt++ = 'O';
+                              oflagset |= (OFLAG_ADMIN|OFLAG_GLOBAL);
+                              break;
                            }
         
-                           if (IS_GLOBO(tmp->port))
+                           if ((tmp->port & OFLAG_GLOBAL) == OFLAG_GLOBAL)
                            {
                                 *pt++ = 'O';
                               oflagset |= (OFLAG_GLOBAL);
-                              break;
+                              if (tmp->port == OFLAG_GLOBAL) break;
                            }
-                            
-                             
-                           if (!(tmp->port & OFLAG_ISGLOBAL))
-                           {
-                              if (IS_LOCO(tmp->port))
+                           else                                                         
+                              if ((tmp->port & OFLAG_LOCAL) == OFLAG_LOCAL)
                               {
                                 *pt++ = 'o';
                                 oflagset |= (OFLAG_LOCAL);
-                                break;
+                                if (tmp->port == OFLAG_LOCAL) break;
                               }
-                           }
                           break;
                        }
-                            
                              for ( s = (int *) &oper_access[10] ; *s ; s += 2 )
                              { 
                                     if (*(s+1) == '*') {
                                           continue;
-                                     }
-                               
-                                  if ( (tmp->port & *s) )
+                                     }                               
+                                  if ( ((tmp->port & *s) == *s))
                                   {
                                      if (!(oflagset & *s))
                                        *pt++ = *(s+1);
@@ -1171,8 +1169,7 @@ int	mask;
 			 * displayed on STATS reply. 	-Vesa
 			 */
 			/* Same with Z-lines and q/Q-lines -- Barubary */
-			if ((tmp->status == CONF_KILL) || (tmp->status &
-			    CONF_QUARANTINE) || (tmp->status == CONF_ZAP))
+                        if ((tmp->status & CONF_SHOWPASS))
 			{
 /* These mods are to tell the difference between the different kinds
  * of klines.  the only effect it has is in the display.  --Russell
@@ -1193,14 +1190,23 @@ int	mask;
 				else {
 /* This wasn't documented before - comments aren't displayed for akills
    because they are all the same. -- Barubary */
-				if (tmp->tmpconf == KLINE_AKILL)
+				if (tmp->tmpconf == KLINE_AKILL 
+                                         && !(tmp->status == CONF_AHURT))
 					strcpy(buf, "*");
 				/* KLINE_PERM == 0 - watch out when doing
 				   Z-lines. -- Barubary */
-				if (tmp->status != CONF_ZAP)
-				if (tmp->tmpconf == KLINE_PERM) c = 'K';
-				if (tmp->tmpconf == KLINE_TEMP) c = 'k';
-				if (tmp->tmpconf == KLINE_AKILL) c = 'A';
+				if (tmp->status == CONF_KILL)
+                                {
+                                   if (tmp->tmpconf == KLINE_PERM) c = 'K';
+                                   if (tmp->tmpconf == KLINE_TEMP) c = 'k';
+                                   if (tmp->tmpconf == KLINE_AKILL) c = 'A';
+                                }
+                                 else if (tmp->status == CONF_KILL)
+                                 {
+                                   if (tmp->tmpconf == KLINE_PERM) c = 'Z';
+                                   if (tmp->tmpconf == KLINE_TEMP) c = 'z';
+                                   if (tmp->tmpconf == KLINE_AKILL) c = 'S';
+                                 }
 				}
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c,  host,
@@ -1234,6 +1240,19 @@ char *get_client_name2(aClient *acptr, int showports)
 	if (showports) return pointer;
 	if (!strrchr(pointer, '.')) return NULL;
 	strcpy(strrchr(pointer, '.'), ".0]");
+
+	return pointer;
+}
+
+
+char *get_client_name3(aClient *acptr, int showports)
+{
+	char *pointer = get_client_name(acptr, TRUE);
+
+	if (!pointer) return NULL;
+	if (showports) return pointer;
+	if (!strrchr(pointer, '.')) return NULL;
+	strcpy(strrchr(pointer, '.'), "]");
 
 	return pointer;
 }
@@ -1316,14 +1335,14 @@ char	*parv[];
                 report_configured_links(sptr, CONF_CONNECT_SERVER|
 					CONF_NOCONNECT_SERVER);
 		break;
-	case 'H' : case 'h' :
+	case 'H' : case 'h':
                 report_configured_links(sptr, CONF_HUB|CONF_LEAF);
 		break;
 	case 'I' : case 'i' :
 		report_configured_links(sptr, CONF_CLIENT);
 		break;
 	case 'K' : case 'k' :
-		report_configured_links(sptr, CONF_KILL|CONF_ZAP);
+		report_configured_links(sptr, CONF_KILL|CONF_ZAP|CONF_AHURT);
 		break;
 	case 'M' : case 'm' :
 		for (mptr = msgtab; mptr->cmd; mptr++)
@@ -1501,6 +1520,7 @@ char	*parv[];
 	if (BadPtr(message))
 	{
 	for (i = 0; msgtab[i].cmd; i++)
+            if ((!IsHurt(sptr)||(msgtab[i].while_hurt>0))&&!(msgtab[i].flags & MF_H))
 		sendto_one(sptr,":%s NOTICE %s :%s",
 			   me.name, parv[0], msgtab[i].cmd);
 	return 0;
@@ -2338,7 +2358,7 @@ char	*parv[];
 	    }
 	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
 	sendto_one(sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
-	(void)close(fd);
+	(void)closefile(fd);
 	return 0;
     }
 

@@ -55,14 +55,14 @@ If you are reading this, you have most likely already done this, but to
 recap:
 
 The SorceryNet server
-<ftp://ftp.sorcery.net/sorcery/server/ircd-sor1.1.2.tar.gz> comes tarred
-and gziped. To uncompress it and expand it, use the following commands at
-the Unix prompt:
+<ftp://ftp.sorcery.net/sorcery/server/ircd-sor1.2.4.tar.gz> comes tarred
+and gzipped. To uncompress it and expand it, use the following commands at
+the UNIX prompt:
 
-gzip -d ircd-sor1.1.2.tar.gz
-tar -xf ircd-sor1.1.2.tar.gz
+gzip -d ircd-sor1.2.4.tar.gz
+tar -xf ircd-sor1.2.4.tar.gz
 
-This will create a new directory called ircd-sor1.1.2, and unpack the
+This will create a new directory called ircd-sor1.2.4, and unpack the
 source into it.
 
 If you use Windows NT/95, you may need to find a program to extract

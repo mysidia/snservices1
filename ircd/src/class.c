@@ -32,8 +32,7 @@ static char sccsid[] = "@(#)class.c	1.4 6/28/93 (C) 1990 Darren Reed";
 
 aClass	*classes;
 
-int	get_conf_class(aconf)
-aConfItem	*aconf;
+int	get_conf_class(aConfItem *aconf)
 {
 	if ((aconf) && Class(aconf))
 		return (ConfClass(aconf));
@@ -45,8 +44,7 @@ aConfItem	*aconf;
 
 }
 
-static	int	get_conf_ping(aconf)
-aConfItem	*aconf;
+static	int	get_conf_ping(aConfItem *aconf)
 {
 	if ((aconf) && Class(aconf))
 		return (ConfPingFreq(aconf));
@@ -58,12 +56,10 @@ aConfItem	*aconf;
 }
 
 
-
-int	get_client_class(acptr)
-aClient	*acptr;
+int	get_client_class(aClient *acptr)
 {
-	Reg1	Link	*tmp;
-	Reg2	aClass	*cl;
+	Link	*tmp;
+	aClass	*cl;
 	int	i = 0, retc = BAD_CLIENT_CLASS;
 
 	if (acptr && !IsMe(acptr)  && (acptr->confs))
@@ -81,8 +77,7 @@ aClient	*acptr;
 	return (retc);
 }
 
-int	get_client_ping(acptr)
-aClient	*acptr;
+int	get_client_ping(aClient *acptr)
 {
 	int	ping = 0, ping2;
 	aConfItem	*aconf;
@@ -115,8 +110,7 @@ aClient	*acptr;
 	return (ping);
 }
 
-int	get_con_freq(clptr)
-aClass	*clptr;
+int	get_con_freq(aClass *clptr)
 {
 	if (clptr)
 		return (ConFreq(clptr));
@@ -131,9 +125,7 @@ aClass	*clptr;
  * if no present entry is found, then create a new one and add it in
  * immeadiately after the first one (class 0).
  */
-void	add_class(class, ping, confreq, maxli, sendq)
-int	class, ping, confreq, maxli;
-long	sendq;
+void	add_class(int class, int ping, int confreq, int maxli, long sendq)
 {
 	aClass *t, *p;
 
@@ -158,8 +150,7 @@ long	sendq;
 		Links(p) = 0;
 }
 
-aClass	*find_class(cclass)
-int	cclass;
+aClass	*find_class(int cclass)
 {
 	aClass *cltmp;
 
@@ -171,7 +162,7 @@ int	cclass;
 
 void	check_class()
 {
-	Reg1 aClass *cltmp, *cltmp2;
+	aClass *cltmp, *cltmp2;
 
 	Debug((DEBUG_DEBUG, "Class check:"));
 
@@ -205,10 +196,9 @@ void	initclass()
 	NextClass(FirstClass()) = NULL;
 }
 
-void	report_classes(sptr)
-aClient	*sptr;
+void	report_classes(aClient *sptr)
 {
-	Reg1 aClass *cltmp;
+	aClass *cltmp;
 
 	for (cltmp = FirstClass(); cltmp; cltmp = NextClass(cltmp))
 		sendto_one(sptr, rpl_str(RPL_STATSYLINE), me.name, sptr->name,
@@ -216,12 +206,11 @@ aClient	*sptr;
 			   MaxLinks(cltmp), MaxSendq(cltmp));
 }
 
-long	get_sendq(cptr)
-aClient	*cptr;
+long	get_sendq(aClient *cptr)
 {
-	Reg1	int	sendq = MAXSENDQLENGTH, retc = BAD_CLIENT_CLASS;
-	Reg2	Link	*tmp;
-	Reg2	aClass	*cl;
+	int	sendq = MAXSENDQLENGTH, retc = BAD_CLIENT_CLASS;
+	Link	*tmp;
+	aClass	*cl;
 
 	if (cptr && !IsMe(cptr)  && (cptr->confs))
 		for (tmp = cptr->confs; tmp; tmp = tmp->next)

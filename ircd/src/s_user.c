@@ -336,6 +336,7 @@ char	*nick, *username;
 #endif
         short   oldstatus = sptr->status, upper = 0, lower = 0, special = 0;
 	anUser	*user = sptr->user;
+	aConfItem	*sconf;
 	int	i;
 
 	user->last = NOW;
@@ -346,7 +347,7 @@ char	*nick, *username;
 	    {
 		if ((i = check_client(sptr)))
 		    {
-			sendto_flag(FLAGS_OPER|FLAGS_CLIENT,
+			sendto_umode(FLAGSET_CLIENT,
 				   "*** Notice -- %s from %s.",
 				   i == -3 ? "Too many connections" :
 					     "Unauthorized connection",
@@ -367,10 +368,7 @@ char	*nick, *username;
 			    strncpyzt(user->host, sptr->sockhost, sizeof(sptr->sockhost));
 			}
 
-		if (IsUnixSocket(sptr))
-			strncpyzt(user->host, me.sockhost, HOSTLEN+1);
-		else
-			strncpyzt(user->host, sptr->sockhost, HOSTLEN+1);
+		strncpyzt(user->host, sptr->sockhost, HOSTLEN+1);
 		aconf = sptr->confs->value.aconf;
 		/*
 		 * I do not consider *, ~ or ! 'hostile' in usernames,
@@ -383,9 +381,9 @@ char	*nick, *username;
 		 * I do, We only allow a-z A-Z 0-9 _ - and . now so the
 		 * !strchr(sptr->username, '@') check is out of date. -Cabal95
 		 */
-		if (!(sptr->flags & FLAGS_DOID))
+		if (!(ClientFlags(sptr) & FLAGS_DOID))
 			strncpyzt(user->username, username, USERLEN+1);
-		else if (sptr->flags & FLAGS_GOTID)
+		else if (ClientFlags(sptr) & FLAGS_GOTID)
 			strncpyzt(user->username, sptr->username, USERLEN+1);
 		else
 		    {
@@ -463,6 +461,73 @@ char	*nick, *username;
 			ircstp->is_ref++;
 			return exit_client(cptr, sptr, &me, "K-lined");
 		    }
+
+		if ((sconf = find_ahurt(sptr)))
+		    {
+                      aClient *niptr;
+
+			/* ircstp->is_ref++; */
+                        SetHurt(sptr); 
+                        sptr->hurt = 3;
+                   if (sconf->tmpconf == KLINE_AKILL)
+                   {
+                    sendto_one(cptr,
+                          ":%s %d %s :*** due to the actions of some users from "
+                          "your host, new users from your site are not presently"
+                          " being accepted, if you have a registered nick, please"
+                          " identify.", me.name, ERR_YOURHURT, cptr->name,
+                          sconf->passwd ? sconf->passwd : "You are banned");
+                    sendto_one(cptr,
+                          ":%s %d %s :*** No new irc users from %s are being admitted "
+                          "%s.  Email " NETWORK_KLINE_ADDRESS " for more information.",
+                          me.name, ERR_YOURHURT, cptr->name, get_client_name3(sptr, FALSE),
+                          sconf->passwd ? sconf->passwd : "You are banned");
+                   if (MyConnect(sptr))
+                   {
+                     if ((niptr = find_person("NickServ", NULL)) && IsULine(niptr, niptr))
+                        sendto_one(cptr,
+                              ":%s PRIVMSG %s :*** due to the actions of some users from "
+                              "your host, new users from your site are not presently"
+                              " being accepted, if you have a registered nick, please"
+                              " identify with NickServ.", "-SorceryNet!sorceress@sorcery.net", cptr->name,
+                               sconf->passwd ? sconf->passwd : "You are banned");
+                         else
+                        {
+                        sendto_one(cptr,
+                              ":%s PRIVMSG %s :*** due to the actions of some users from "
+                              "your host, new users from your host are"
+                              " being accepted. Normally, if you had a registered nickname, "
+                              "you could gain access, however services are down at the moment.", "-SorceryNet!sorceress@sorcery.net", cptr->name,
+                               sconf->passwd ? sconf->passwd : "Your host is banned");
+                        sendto_one(cptr,
+                              ":%s PRIVMSG %s :*** "
+                              " Please wait a few minutes and reconnect, if you receive"
+                              " this message again, then try to send a message to online"
+                              " operators with /quote help <message>", "-SorceryNet!sorceress@sorcery.net", cptr->name);
+                        sendto_ops("AHURT user %s will not be able to identify with services down", 
+                              get_client_name3(sptr, FALSE));
+                        }
+                   }
+                   }
+                   else
+                   { /* this is kindof useless... */
+                    sendto_one(cptr,
+                          ":%s %d %s :*** No new irc users from your host are allowed on this server: "
+                          "%s.  Email " KLINE_ADDRESS " for more information.",
+                          me.name, ERR_YOURHURT, cptr->name,
+                          sconf->passwd ? sconf->passwd : "You are banned");
+                   }
+
+                    sendto_one(cptr,
+                               ":%s %d %s :*** %s",
+                                me.name, ERR_YOURHURT, cptr->name,
+                               "This is a \'weak\' ban, you can still connect to SorceryNet if you have a registered nickname.");
+                    sendto_one(cptr,
+                               ":%s %d %s :*** %s",
+                                me.name, ERR_YOURHURT, cptr->name,
+                               "\2*\2Warning\2*\2 Any abuse of SorceryNet from such a nick would be grounds for revoking your NickServ registration.");
+		    }
+
 #ifdef R_LINES
 		if (find_restrict(sptr))
 		    {
@@ -511,6 +576,8 @@ char	*nick, *username;
 	SetClient(sptr);
 	if (MyConnect(sptr))
 	    {
+               if (!IsHurt(sptr) || !(sptr->hurt == 2))
+               {
 		sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
 		/* This is a duplicate of the NOTICE but see below...*/
 		sendto_one(sptr, rpl_str(RPL_YOURHOST), me.name, nick,
@@ -529,17 +596,23 @@ char	*nick, *username;
 		(void)m_lusers(sptr, sptr, 1, parv);
 		update_load();
 		(void)m_motd(sptr, sptr, 1, parv);
+               }
+               else 
+               { 
+                  update_load();
+                  sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
+               }
 #ifdef HOSTILENAME
 		/*
 		 * Now send a numeric to the user telling them what, if
 		 * anything, happened.
 		 */
-		if (u1)
+		if ((!IsHurt(sptr) || sptr->hurt != 2) && u1)
 			sendto_one(sptr, err_str(ERR_HOSTILENAME), me.name,
 				   sptr->name, olduser, userbad, stripuser);
 #endif
 		nextping = NOW;
-		sendto_flag(FLAGS_OPER|FLAGS_CLIENT,"*** Notice -- Client connecting on port %d: %s (%s@%s)", 
+		sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client connecting on port %d: %s (%s@%s)", 
 			       sptr->acpt->port, nick, user->username,
 			       user->host);
 	    }
@@ -553,7 +626,7 @@ char	*nick, *username;
 		      cptr->name, nick, user->username, user->server);
 		  sendto_one(cptr, ":%s KILL %s :%s (No such server: %s)",
 		      me.name, sptr->name, me.name, user->server);
-		  sptr->flags |= FLAGS_KILLED;
+		  ClientFlags(sptr) |= FLAGS_KILLED;
 		  return exit_client(sptr, sptr, &me,
 		      "USER without prefix(2.8) or wrong prefix");
 		 }
@@ -565,16 +638,16 @@ char	*nick, *username;
 			sendto_one(cptr, ":%s KILL %s :%s (%s != %s[%s])",
 				   me.name, sptr->name, me.name, user->server,
 				   acptr->from->name, acptr->from->sockhost);
-			sptr->flags |= FLAGS_KILLED;
+			ClientFlags(sptr) |= FLAGS_KILLED;
 			return exit_client(sptr, sptr, &me,
 					   "USER server wrong direction");
 		   }
-		else sptr->flags|=(acptr->flags & FLAGS_TS8);
+		else ClientFlags(sptr) |=(ClientFlags(acptr) & FLAGS_TS8);
 		/* *FINALL* this gets in ircd... -- Barubary */
 		if (find_conf_host(cptr->confs, sptr->name, CONF_UWORLD)
 		    || (sptr->user && find_conf_host(cptr->confs,
 		    sptr->user->server, CONF_UWORLD)))
-			sptr->flags |= FLAGS_ULINE;
+			ClientFlags(sptr) |= FLAGS_ULINE;
 	    }
 
 	sendto_serv_butone(cptr, "NICK %s %d %d %s %s %s :%s", nick,
@@ -675,7 +748,7 @@ char	*parv[];
 					sptr->user ? sptr->username : "",
 					sptr->user ? sptr->user->server :
 						     cptr->name);
-				sptr->flags |= FLAGS_KILLED;
+				ClientFlags(sptr) |= FLAGS_KILLED;
 				return exit_client(cptr,sptr,&me,"BadNick");
 			    }
 		    }
@@ -761,7 +834,7 @@ char	*parv[];
 			   ** would be lost
 			   */
 			   get_client_name(cptr, FALSE));
-		sptr->flags |= FLAGS_KILLED;
+		ClientFlags(sptr) |= FLAGS_KILLED;
 		return exit_client(cptr, sptr, &me, "Nick/Server collision");
 	    }
 	if (!(acptr = find_client(nick, NULL)))
@@ -778,7 +851,7 @@ char	*parv[];
 		/* This may help - copying code below */
 		if (acptr == cptr)
 			return 0;
-		acptr->flags |= FLAGS_KILLED;
+		ClientFlags(acptr) |= FLAGS_KILLED;
 		exit_client(NULL, acptr, &me, "Overridden");
 		goto nickkilldone;
 	    }
@@ -790,7 +863,7 @@ char	*parv[];
 	  ircstp->is_kill++;
 	  sendto_one(acptr, ":%s KILL %s :%s (Lost user field!)",
 		     me.name, acptr->name, me.name);
-	  acptr->flags |= FLAGS_KILLED;
+	  ClientFlags(acptr) |= FLAGS_KILLED;
 	  /* Here's the previous versions' desynch.  If the old one is
 	     messed up, trash the old one and accept the new one.
 	     Remember - at this point there is a new nick coming in!
@@ -924,7 +997,7 @@ char	*parv[];
 				 me.name, sptr->name, me.name,
 				 acptr->from->name,
 				 get_client_name(cptr, FALSE));
-	      sptr->flags |= FLAGS_KILLED;
+	      ClientFlags(sptr) |= FLAGS_KILLED;
 	      (void)exit_client(NULL, sptr, &me,
 				"Nick collision (you're a ghost)");
 	    }
@@ -938,7 +1011,7 @@ char	*parv[];
 			   ":%s KILL %s :%s (%s <- %s)",
 			   me.name, acptr->name, me.name,
 			   acptr->from->name, get_client_name(cptr, FALSE));
-	acptr->flags |= FLAGS_KILLED;
+	ClientFlags(acptr) |= FLAGS_KILLED;
 	(void)exit_client(NULL, acptr, &me,
 			  "Nick collision (older nick overruled)");
 
@@ -1112,7 +1185,7 @@ int	notice;
 			return 0;
 	    }
 
-	sptr->flags&=~FLAGS_TS8;
+	ClientFlags(sptr) &= ~FLAGS_TS8;
 
 	cmd = notice ? MSG_NOTICE : MSG_PRIVATE;
 
@@ -1141,12 +1214,17 @@ int	notice;
 		{
 		    if (!is_silenced(sptr, acptr))
 		    {
-
+                      check_hurt(acptr);
+		      if (IsHurt(sptr) && acptr!=sptr && sptr->hurt && !IsAnOper(acptr)
+                          && !IsULine(acptr, acptr))
+			{
+				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as a silenced user, you may only message an IRC Operator, type /who 0 o for a list.", me.name, parv[0]);
+				continue;
+			}
                       if (MyClient(acptr))
-                        if (!IsAnOper(sptr) && !IsAnOper(acptr))
+                        if (!IsAnOper(sptr) && !IsAnOper(acptr) && !IsULine(sptr, sptr))
                         {
-                            if ((acptr->flags & FLAGS_HURT) && 
-                                (acptr->hurt >= 0 && acptr->hurt > NOW))
+                            if (IsHurt(acptr) && acptr->hurt)
                             {
                                sendto_one(sptr, ":%s NOTICE %s :Sorry, "
 					  "but %s has been silenced and "
@@ -1167,6 +1245,20 @@ int	notice;
 		    }
 		    continue;
                 }
+
+		if (*nick == '#' || *nick == '@' || *nick == '+') {
+			check_hurt(sptr);
+			if (IsHurt(sptr) && sptr->hurt > 0) {
+				sendto_one(sptr,
+					   ":%s NOTICE %s "
+					   ":Sorry, but as a silenced user, "
+					   "you may only message an IRC "
+					   "Operator, type \"/who 0 o\" for "
+					   "a list.", me.name, parv[0]);
+				continue;
+			}
+		}
+
 		/*   
 		 * If its a message for all Channel OPs call the function
 		 * sendto_channelops_butone() to handle it.  -Cabal95
@@ -1381,9 +1473,19 @@ char	*parv[];
 	char	*channame = NULL, *s;
 	int	oper = parc > 2 ? (*parv[2] == 'o' ): 0; /* Show OPERS only */
 	int	member;
+        char everyone[5] = "0";
 
 	if (check_registered_user(sptr))
 		return 0;
+	if (IsHurt(sptr) && sptr->hurt)
+	{
+		if (BadPtr(mask) || !oper)
+                {
+                        sendto_one(sptr, ":%s NOTICE %s :NOTE: as a hurt user you can only list irc operators", me.name, parv[0]);
+                        mask = everyone;
+                        oper = 1;
+                }
+	}
 
 	if (!BadPtr(mask))
 	    {
@@ -1674,6 +1776,12 @@ char	*parv[];
 				sendto_one(sptr, rpl_str(RPL_WHOISHELPOP),
 					   me.name, parv[0], name);
 
+
+			if (IsHurt(acptr) && !check_hurt(acptr))
+			{
+				sendto_one(sptr, rpl_str(RPL_WHOISHURT),
+					   me.name, parv[0], name);
+			}
 			if (acptr->user && MyConnect(acptr))
 				sendto_one(sptr, rpl_str(RPL_WHOISIDLE),
 					   me.name, parv[0], name,
@@ -1704,7 +1812,7 @@ aClient	*cptr, *sptr;
 int	parc;
 char	*parv[];
 {
-#define	UFLAGS	(FLAGS_INVISIBLE|FLAGS_WALLOP|FLAGS_SERVNOTICE)
+#define	UFLAGS	(U_WALLOP)
 	char	*username, *host, *server, *realname;
 	anUser	*user;
  
@@ -1748,9 +1856,12 @@ char	*parv[];
 		return 0;
 	    }
 #ifndef	NO_DEFAULT_INVISIBLE
-	sptr->flags |= FLAGS_INVISIBLE;
+	ClientUmode(sptr) |= U_INVISIBLE;
 #endif
-	sptr->flags |= (UFLAGS & atoi(host));
+
+	/* sptr->flags |= (UFLAGS & atoi(host)); 
+             call me crazy, but isn't &'ing host (a pointer) a bit weird ? */
+	ClientUmode(sptr) |= (UFLAGS); 
 	strncpyzt(user->host, host, sizeof(user->host));
 	strncpyzt(user->server, me.name, sizeof(user->server));
 user_finish:
@@ -1793,7 +1904,6 @@ char	*parv[];
 
 
 
-#define SIL_FMT ":%s NOTICE %s :ERROR: Silencing link: %s (%s%s (%s))"
 /*
 ** m_hurt
 **      parv[0] = sender prefix
@@ -1806,79 +1916,176 @@ aClient *cptr, *sptr;
 int     parc;
 char    *parv[];
 {
-        char	*user, *path, *nick, *host, *p, *ph, *pav[6]; 
-        char	ufield[USERLEN+5] = "", hurt_list[1024+5] = "";
-        aClient	*acptr, *bcptr;
-        time_t  hurttime=NOW;
-        int	chasing, hurtl, hurt2, hurtct, multiple, buffleft, need_comma = 0;
+	char	*user, *path, *nick, *host, *p, *ph, *pav[6]; 
+	char	ufield[USERLEN+5] = "", hurt_list[1024+10] = "";
+	aClient	*acptr, *bcptr;
+	time_t  hurttime=time(NULL);
+	int	chasing, hurtl, hurt2, hurtct, multiple, buffleft, need_comma = 0;
         int     addht=0;
+	int	i = 0, l = 0, tinf = 0;
         static int startstat=0;
-        time_t	TheTime = NOW;
+	
+	addht=0;
+	need_comma = hurtct = multiple = chasing = 0;
+	buffleft=200; /* nothing too large... */
 
-        addht=0;
-        need_comma = hurtct = multiple = chasing = 0;
-        buffleft=200;
+#define SIL_FMT ":%s NOTICE %s :ERROR: Silencing link: %s (%s%s (%s))"
+	if ( ( !IsPrivileged(cptr) || (MyClient(cptr) && IsPerson(cptr) && 
+	     !IsAnOper(cptr) ) ) )
+	   {
+	        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+	        return 0;
+	    }
+	
+	if (check_registered(sptr))   
+	        return 0;
+	
+	if (parc == 2)
+	{ /* special case: report the user's hurt time */
+	      nick = parv[1];
+              if (acptr = find_person(parv[1], NULL))
+		{
+			if (hunt_server(cptr,sptr,":%s HURT %s", 1,parc,parv) !=
+			      HUNTED_ISME)
+			            return 0;
+                        else
+                        {
+			    if (acptr->hurt == 0 || (acptr->hurt < NOW && acptr->hurt > 5)) 
+			              remove_hurt(acptr);
+			    if (!IsHurt(acptr))
+				sendto_one(sptr, ":%s NOTICE %s :User %s is not hurt.", me.name, parv[0], acptr->name);
+			    else
+			    {
+			      if (acptr->hurt > 5 || acptr->hurt < 1)
+				sendto_one(sptr, ":%s NOTICE %s :User %s will be hurt for %lu more seconds.", me.name, parv[0], acptr->name, acptr->hurt - NOW);
+			      else if (acptr->hurt > 0 && acptr->hurt < 5)
+				sendto_one(sptr, ":%s NOTICE %s :User %s will be hurt until an oper invokes HEAL.", me.name, parv[0], acptr->name);
+			    }
+			}
+                       return 0;
+		}
+		else
+		{
+			sendto_one(sptr, err_str(ERR_NOSUCHNICK),
+				me.name, parv[0], parv[1]);
+				return 0;		
+		}
+		return 0;		
+	} else if (parc < 2 && MyClient(sptr) && IsAnOper(sptr))
+	{
+		sendto_one(sptr, ":%s NOTICE %s :\02HURT usage\02", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :1) /hurt <nick> <duration> <reason>", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :2) /hurt #<machinename> <duration> <reason>", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :3) /hurt {nick1,nick2,...} <duration> <reason>", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :4) /hurt <nick>      [gets information about a user's hurt status]", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :--------------------------------------------", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :ex: /hurt badnick 1m15s flooding ", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :    /hurt #ppp5.bad.org 5m floodingclones", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :    /hurt clone1,clone2 30s clones", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :END", me.name, parv[0]);
+		return 0;
+	}
 
-        if ( ( !IsPrivileged(cptr) || (MyClient(cptr) && IsPerson(cptr) && 
-               !OPCanLKill(cptr) ) ) )
-            {
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
-                return 0;
-            }
+	if (parc < 4 || *parv[1] == '\0')
+	{
+	     sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+	               me.name, parv[0], "HURT");
+	     return 0;
+	}
 
+	if (isdigit(*parv[2])) /* evil hack to support 2h1m5s format. */
+	{
+		 l = strlen(parv[2]);
+		 tinf = 0;
+		 addht = 0;
+		 hurtl = 0;
+		 if (l > 20) l = 20;
+                 hurtl = 0; /* at this point in time, hurtl is used as a number buffer */
+		 for(i=0;i<l;i++)
+		 {
+			if (isdigit(parv[2][i]))
+			{
+				if (hurtl) addht += hurtl;
+				hurtl = atol(&parv[2][i]);
+				while(isdigit(parv[2][i]))
+					i++;
+				i--;
+				continue;
+			}
+			else
+			{
+			 if (tinf++ < 3) /* only allow 3 symbolic letters to be processed per command */
+			    switch(parv[2][i])
+			    {
+				case 's': case 'S':
+					addht += hurtl;
+					hurtl = 0;
+					break;
+				case 'm': case 'M':
+					addht += hurtl*60;
+					hurtl = 0;
+					break;
+				case 'h': case 'H':
+					addht += hurtl*60*60;
+					hurtl = 0;
+					break;
+				default:
+					addht += hurtl;
+					hurtl = 0;
+					break;
+			    }
+			}
+		 }
 
-        if (check_registered(sptr))   
-                return 0;
-
-        if (parc < 4 || *parv[1] == '\0')
-            {
-                sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
-                           me.name, parv[0], "HURT");
-                return 0;
-            }
-
-        if (isdigit(*parv[2])) addht=atol(parv[2]);
-        else
-            {
-              sendto_one(sptr,"NOTICE %s :HURTTIME must be a _numeric_ value",sptr->name);
-              return;
-            }
+		 if (hurtl) addht += hurtl;
+		 /*if (addht == 0) addht = 1;*/
+                 hurtl = addht;
+	}
+	else
+	{
+	    sendto_one(sptr,"NOTICE %s :HURTTIME must be a _numeric_ value",sptr->name);
+	    return 0;
+	}
+#if 0 /*  enable -true- permanent hurting.
+       *  if a remote host sends 30000 everything's fine so no risk of desync.
+       *  if we send 0, they'll interpret it as 30000 though.
+       */
              if (addht==0) {addht=30000;}
+#endif
                 
 
 #ifdef DEBUGMODE
 		Debug((11, "HURT: %s %s %s (%s)", parv[0],parv[1], parv[2], parv[3] ));
 #endif
-             
-        user = parv[1];
-        path = parv[2]; /* Either defined or NULL (parc >= 2!!) */
-
-        if (index(user,','))
-            multiple = 1;
-        else
-            multiple = 0;
-
-       for (p = NULL, hurtct = 0, nick = strtoken(&p, user, ","); nick && (hurtct <= MAXHURTS);
-               nick = strtoken(&p, NULL, ","), hurtct++)
-       {
-          if (!nick) break;
-          if (!multiple)
-          if (IsPrivileged(sptr) && (index(nick,'#') == nick) && *(nick+1))
-          {  bcptr = acptr = NULL;
-
-             if (ph = index((nick+1),'@'))
-              {   
-                  strncpy(ufield, nick+1, ((ph - (nick+1)) < USERLEN ? (ph - (nick+1)) : (USERLEN)));
-                  ufield[(ph - (nick+1) < USERLEN) ? ph - (nick+1) : USERLEN] = '\0';
-              } else
-                 ufield[0] = '\0';
-              host = nick + (ufield[0] ? 2 : 1 )  + strlen(ufield);
-
-            if (MyConnect(sptr) && addht > 30000 || addht < 0)
-            {
-               sendto_one(sptr,"NOTICE %s :Hurt times may not exceed 30000 and must be at least 0",sptr->name);
-               return;
-            }
+	user = parv[1];
+	path = parv[2]; /* Either defined or NULL (parc >= 2!!) */
+	
+	if (index(user,','))
+	    multiple = 1;
+	else
+	    multiple = 0;
+	
+	for (p = NULL, hurtct = 0, nick = strtoken(&p, user, ","); nick &&
+	    ((IsServer(cptr)&&hurtct<50)||hurtct <= MAXHURTS);
+	    nick = strtoken(&p, NULL, ","), hurtct++)
+	{
+	    if (!nick) break;
+	    if (!multiple)
+	    if (IsPrivileged(sptr) && (index(nick,'#') == nick) && *(nick+1))
+	    {
+	        bcptr = acptr = NULL;
+	        if (ph = index((nick+1),'@'))
+	        {
+	            strncpy(ufield, nick+1, ((ph - (nick+1)) < USERLEN ? (ph - (nick+1)) : (USERLEN)));
+	            ufield[(ph - (nick+1) < USERLEN) ? ph - (nick+1) : USERLEN] = '\0';
+	        } else
+	        ufield[0] = '\0';
+	        host = nick + (ufield[0] ? 2 : 1 )  + strlen(ufield);
+	       if (MyConnect(sptr) && !IsServer(sptr) && addht > 30000 || addht < 0)
+	      { /* > 30000 will be possible if all servers are ok with it */
+	          sendto_one(sptr,"NOTICE %s :Hurt times may not exceed 30000 and must be at least 0",sptr->name);
+	          return 0;
+	      }
 
             for (bcptr = client; bcptr; bcptr = bcptr->next)
             {
@@ -1889,11 +2096,12 @@ char    *parv[];
                     && (ufield[0] == '\0'
                     || (match(ufield, bcptr->user->username) == 0) ) )
                 {
-                    if (MyClient(bcptr))
+                    if (MyClient(bcptr) && !IsAnOper(bcptr))
                     {
-                       bcptr->flags |= FLAGS_HURT;
                        bcptr->hurt = hurttime+addht;
-                       sendto_one(bcptr, SIL_FMT, me.name, bcptr->name[0]?bcptr->name:"nobody",
+                       if (!IsServer(sptr)) set_hurt(bcptr, parv[0], 0);
+                       else SetHurt(bcptr);
+                       sendto_one(bcptr, SIL_FMT, me.name, bcptr->name,
                               get_client_name(bcptr, FALSE), 
                               (MyClient(sptr)&&MyClient(bcptr)?"Local hurt by ":"hurt: "),
                               sptr->name,
@@ -1901,27 +2109,22 @@ char    *parv[];
 
 
                     }
-                  /*
-                   pav[0] = parv[0];
-                   DupString(pav[1],bcptr->name);
-                   pav[2] = parv[2];
-                   pav[3] = parv[3];
-                   startstat=1;
-                   (void) m_hurt(cptr, sptr, 4, pav );
-                   startstat=0;
-                   MyFree(pav[1]);
-                  */
+                      /*         m_hurt() no longer called here recursively.   */
 
                 }
-            }
-
+	   }
+	if (addht)
         sendto_realops("Received Hurt Message for %s from %s (%ld seconds) (%s)",
                     parv[1], parv[0], addht, parv[3]);   
+	else
+        sendto_realops("Received Hurt Message for %s from %s (forever) (%s)",
+                    parv[1], parv[0], parv[3]);   
         sendto_serv_butone(cptr,":%s HURT %s %ld :%s",
                           parv[0],parv[1],addht,parv[3]);
 
+			/* function to insert temp conf/data for hurt goes here */
             acptr = NULL;
-             return;
+             return 0;
           }
 
              acptr=find_client(nick,NULL);
@@ -1941,9 +2144,8 @@ char    *parv[];
             else
               chasing = 1;
           }  
-    if (!acptr || !sptr || !cptr)  
-        /*return(0);*/
-          continue;
+	if (!acptr || !sptr || !cptr)  
+	    continue;
 
 
          /*  this is up to the admin, but if they want,
@@ -1951,14 +2153,28 @@ char    *parv[];
           *  same rules as kill;>
           */
 #ifdef STRICT_LOCOPS
-        if ( sptr == cptr && !IsServer(sptr) && !OPCanGKill(sptr) 
+        if ( sptr == cptr && IsPerson(sptr) && !IsOper(sptr) 
              && !MyClient(acptr) )
         {
                 sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
                 continue;
         }
 #endif
+	/* 1> stop local opers from using /hurt on an oper
+	   2> stop remote locops [people whose O's arent propogated] from using 
+	     /hurt on an oper local to this server, no matter what. */
 
+	if ((MyClient(sptr)||(!IsOper(sptr)&&MyClient(acptr))) &&
+	    IsOper(acptr) && acptr!=sptr)
+	{
+			sendto_one(sptr, ":%s NOTICE %s :opers cant /hurt opers.",
+					 me.name, parv[0]);
+			sendto_ops("Refused hurt for oper %s from user %s[%s@%s]", 
+				   acptr->name, sptr->name,
+				   sptr->user?sptr->user->username:"<null>",
+				   sptr->user?sptr->user->host:"<null>");
+		continue;
+	}
 
     if (IsServer(acptr) || IsMe(acptr))
     {
@@ -1989,13 +2205,7 @@ char    *parv[];
                    }
     }
 
-         if (IsOper(acptr) && MyClient(sptr) && (acptr != sptr))
-         {
-              sendto_one(sptr,"NOTICE %s :now, don't go around hurting your fellow opers!",cptr->name);
-              continue;
-         }
-
-    if (addht > 30000  || addht < 0 )
+    if ((addht > 30000 && MyClient(sptr) && IsPerson(sptr))  || addht < 0 )
    {
       sendto_one(cptr,"NOTICE %s :Too Much Hurt Time: Cannot Raise hurt time to more than 30000 seconds or less than 0",cptr->name);
       continue;
@@ -2009,21 +2219,42 @@ char    *parv[];
                    sptr->name,nick,acptr->name);
     }     
 
-  /*if (IsPerson(sptr))*/
-     if (!(acptr->flags & FLAGS_HURT))
-        sendto_realops("Received Hurt Message for %s from %s (%ld seconds) (%s)",   
+     if (IsHurt(acptr)) /* make sure it hasn't -already- expired */
+     {
+        if (acptr->hurt > 5 && acptr->hurt <= NOW)
+		remove_hurt(acptr);
+     }
+
+     if (!IsHurt(acptr))
+     {
+      if (addht)
+        sendto_ops("Received Hurt Message for %s from %s (%ld seconds) (%s)",   
         acptr->name,sptr->name,addht,parv[3]);
+      else
+        sendto_ops("Received Hurt Message for %s from %s (permanent) (%s)",   
+        acptr->name,sptr->name,parv[3]);
+
+			/* function to insert temp conf/data for hurt goes here */
+    }
     else
-        sendto_realops("Raising Hurt time for %s from %s (+%ld seconds) (%s)",   
-        acptr->name,sptr->name,addht,parv[3]);
+       {
+	if (!(acptr->hurt > 0 && acptr->hurt < 5)) /* make it appear right... */
+		acptr->hurt = NOW;
+       if (addht)
+        sendto_realops("Raising Hurt time for %s from %s (+%ld seconds) (%s)",    acptr->name,sptr->name,addht,parv[3]);
+       else
+        sendto_realops("Raising Hurt time for %s from %s (permanent) (%s)",   
+        acptr->name,sptr->name,parv[3]);
+        if (IsAnOper(sptr)) sendto_one(sptr, ":%s NOTICE %s :User %s hurt time raised from %lu to %lu.",  me.name, sptr->name, acptr->name, acptr->hurt - NOW, acptr->hurt+addht - NOW);
+       }
 
             
     if ( MyClient(acptr) )
     {   
-          if ( !(acptr->flags & FLAGS_HURT) )
+          if ( !IsHurt(acptr) )
           {
               /*sendto_one(acptr, "NOTICE %s :%s has SILENCED you: (%s)",acptr->name,parv[0],parv[3]);*/
-              sendto_one(acptr, SIL_FMT, me.name, acptr->name[0]?acptr->name:"nobody",
+              sendto_one(acptr,SIL_FMT, me.name, acptr->name,
                          get_client_name(acptr, FALSE), 
                          (MyClient(sptr)&&MyClient(acptr)?"Local hurt by ":"hurt: "),
                          sptr->name,
@@ -2033,30 +2264,27 @@ char    *parv[];
                                       acptr->name);
           }
             
-     acptr->flags |= FLAGS_HURT;
-     hurtl = atol(parv[2]);
+     if (!IsServer(acptr)) set_hurt(acptr, parv[0], 0);
+                    else   SetHurt(acptr);
 
-     if (acptr->hurt < (TheTime)) 
+     if (acptr->hurt < (NOW)) 
      {
          hurt2 = acptr->hurt;
-             if (hurtl != 0)
-                 acptr->hurt = TheTime + addht;
+             if (addht != 0)
+                 acptr->hurt = NOW + addht;
              else
-                 acptr->hurt = TheTime /*+ (24*60*60)*/ ;
-
-
-
-    } 
-         else
-         {
+                 acptr->hurt = 1 /*+ (24*60*60)*/ ;
+     } 
+     else
+     {
                        /* . o O ( hurt twice ? ;> )*/
-             if (hurtl != 0)
+             if (addht != 0)
                  acptr->hurt += addht;
              else
-                    ;
-         }
+                 acptr->hurt = 1;
+     }
 
-  }
+   }
  }
 
          if (hurt_list[0] && startstat==0)
@@ -2064,7 +2292,8 @@ char    *parv[];
                                parv[0],hurt_list,addht,parv[3]);
 
 }        
-#undef SIL_FMT
+
+
 
 
 /*
@@ -2080,7 +2309,7 @@ char    *parv[];
 aClient *acptr;      
 
         if ( ( !IsPrivileged(cptr) || (MyClient(cptr) && IsPerson(cptr) && 
-               !OPCanLKill(cptr) ) ) )
+               !IsAnOper(cptr) ) ) )
             {
                 sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
                 return(0);
@@ -2113,7 +2342,7 @@ aClient *acptr;
                                acptr->name,sptr->name);
             if (MyClient(acptr))
             {
-              if (!(acptr->flags & FLAGS_HURT) || !(acptr->hurt))
+              if (MyClient(sptr) && (!IsHurt(acptr) || !(acptr->hurt)))
               {
                   sendto_one(sptr,"NOTICE %s :%s is not hurt!",
                   sptr->name,acptr->name);
@@ -2123,22 +2352,19 @@ aClient *acptr;
                * they are hurt and mine, so now to heal them.
                */
               if (IsPerson(sptr))  
-               sendto_one(sptr,"NOTICE %s :%s is no longer hurt",
-                          sptr->name,acptr->name);
-               acptr->flags &= ~FLAGS_HURT;
+               sendto_one(sptr,":%s NOTICE %s :%s is no longer hurt", me.name,
+                          sptr->name, acptr->name);
+               remove_hurt(acptr);
                acptr->hurt = 0;  
-
-                /* use a notice over a numeric.. */
-               sendto_one(acptr,"NOTICE %s :%s Allows you to  use irc commands again.",
+               sendto_one(acptr,":%s NOTICE %s :%s Has removed your hurt status and re-enabled your IRC command access/speech ability.", me.name, 
                           acptr->name, sptr->name);
             }   
             else
             if (!MyClient(acptr) && IsPrivileged(cptr))
             {
-              sendto_serv_butone(cptr,"HEAL %s",parv[1]);
+              sendto_serv_butone(cptr,":%s HEAL %s", parv[0], parv[1]);
             }
 }
-
 
 
 
@@ -2266,10 +2492,7 @@ char	*parv[];
 		**	...!operhost!oper
 		**	...!operhost!oper (comment)
 		*/
-		if (IsUnixSocket(cptr)) /* Don't use get_client_name syntax */
-			inpath = me.sockhost;
-		else
-			inpath = cptr->sockhost;
+		  inpath = cptr->sockhost;
                   if (kcount < 2)
 		    if (!BadPtr(path))
 		    {
@@ -2295,9 +2518,9 @@ char	*parv[];
 
 
 	if (index(parv[0], '.'))
-		/*sendto_flag(FLAGS_KILLS, "*** Notice -- Received KILL message for %s. From %s Path: %s!%s",
+		/*sendto_flag(U_KILLS, "*** Notice -- Received KILL message for %s. From %s Path: %s!%s",
 			acptr->name, parv[0], inpath, path);*/
-               sendto_flag(FLAGS_KILLS, "*** Notice -- Received KILL message for %s!%s@%s from %s Path: %s!%s",
+               sendto_umode(U_KILLS, "*** Notice -- Received KILL message for %s!%s@%s from %s Path: %s!%s",
                        acptr->name, auser->username, auser->host,
                        parv[0], inpath, path);
 
@@ -2326,7 +2549,7 @@ char	*parv[];
 		if (chasing && IsServer(cptr))
 			sendto_one(cptr, ":%s KILL %s :%s!%s",
 				   me.name, acptr->name, inpath, path);
-		acptr->flags |= FLAGS_KILLED;
+		ClientFlags(acptr) |= FLAGS_KILLED;
 	    }
 
 	/*
@@ -2544,8 +2767,8 @@ char	*parv[];
 
 	origin = parv[1];
 	destination = parv[2];
-	cptr->flags &= ~FLAGS_PINGSENT;
-	sptr->flags &= ~FLAGS_PINGSENT;
+	ClientFlags(cptr) &= ~FLAGS_PINGSENT;
+	ClientFlags(sptr) &= ~FLAGS_PINGSENT;
 
 	if (!BadPtr(destination) && mycmp(destination, me.name) != 0)
 	    {
@@ -2614,7 +2837,7 @@ char	*parv[];
 	    
 	if ((IsServer(cptr) || IsMe(cptr)) && !IsOper(sptr))
 	    {
-		sptr->flags |= FLAGS_OPER;
+                SetOper(sptr);
 		sendto_serv_butone(cptr, ":%s MODE %s :+o", parv[0], parv[0]);
 		if (IsMe(cptr))
 			sendto_one(sptr, rpl_str(RPL_YOUREOPER),
@@ -2634,6 +2857,13 @@ char	*parv[];
 				      inetntoa((char *)&cptr->ip), CONF_OPS)))
 	    {
 		sendto_one(sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
+                if (IsHurt(sptr) && MyConnect(sptr))
+                {  
+                   sptr->since += 15; 
+		   det_confs_butmask(sptr, 0);
+                   SetUnknown(sptr);
+                }  else sptr->since += 2;
+
                 sendto_realops("Failed OPER attempt by %s (%s@%s)",
                   parv[0], sptr->user->username, sptr->sockhost);
                 sendto_serv_butone(&me,"GLOBOPS :Failed OPER attempt by %s (%s@%s)",
@@ -2662,7 +2892,7 @@ char	*parv[];
 	if ((aconf->status & CONF_OPS) &&
 	    StrEq(encr, aconf->passwd) && !attach_conf(sptr, aconf))
 	    {
-		int old = (sptr->flags & ALL_UMODES);
+		int old = (ClientUmode(sptr) & ALL_UMODES);
 		char *s;
 
 		s = index(aconf->host, '@');
@@ -2673,6 +2903,7 @@ char	*parv[];
 			SetOper(sptr);
 		sptr->oflag = aconf->port;
 		*--s =  '@';
+                remove_hurt(sptr);
 		sendto_ops("%s (%s@%s) is now operator (%c)", parv[0],
 			   sptr->user->username, sptr->user->host,
 			   IsOper(sptr) ? 'O' : 'o');
@@ -2680,7 +2911,7 @@ char	*parv[];
 			   operator (%c)", parv[0],
                            sptr->user->username, sptr->user->host,
                            IsOper(sptr) ? 'O' : 'o');*/
-		sptr->flags |= (FLAGS_SERVNOTICE|FLAGS_WALLOP|FLAGS_FAILOP|FLAGS_FLOOD);
+		ClientUmode(sptr) |= (U_SERVNOTICE|U_WALLOP|U_FAILOP|U_FLOOD);
 		send_umode_out(cptr, sptr, sptr, old);
  		sendto_one(sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
 #if !defined(CRYPT_OPER_PASSWORD) && (defined(FNAME_OPERLOG) ||\
@@ -2727,6 +2958,12 @@ char	*parv[];
 	    {
 		(void)detach_conf(sptr, aconf);
 		sendto_one(sptr,err_str(ERR_PASSWDMISMATCH),me.name, parv[0]);
+                if (IsHurt(sptr) && MyConnect(sptr))
+                {     sptr->since += 15;
+                      SetUnknown(sptr);
+                }  else sptr->since += 2;
+
+
 #ifndef	SHOW_PASSWORD
 #ifdef  FAILOPER_WARN
 		sendto_one(sptr,":%s NOTICE :Your attempt has been logged.",me.name);
@@ -2938,16 +3175,16 @@ char    *parv[];
 
 
 
-static int user_modes[]	     = { FLAGS_OPER, 'o',
-				 FLAGS_LOCOP, 'O',
-				 FLAGS_INVISIBLE, 'i',
-				 FLAGS_WALLOP, 'w',
-				 FLAGS_FAILOP, 'g',
-				 FLAGS_HELPOP, 'h',
-				 FLAGS_SERVNOTICE, 's',
-				 FLAGS_KILLS, 'k',
-				 FLAGS_CLIENT, 'c',
-				 FLAGS_FLOOD, 'f',
+static int user_modes[]	     = { U_OPER, 'o',
+				 U_LOCOP, 'O',
+				 U_INVISIBLE, 'i',
+				 U_WALLOP, 'w',
+				 U_FAILOP, 'g',
+				 U_HELPOP, 'h',
+				 U_SERVNOTICE, 's',
+				 U_KILLS, 'k',
+				 U_CLIENT, 'c',
+				 U_FLOOD, 'f',
 				 0, 0 };
 
 /*
@@ -3017,7 +3254,7 @@ char	*parv[];
 		*m++ = '+';
 		for (s = user_modes; (flag = *s) && (m - buf < BUFSIZE - 4);
 		     s += 2)
-			if (acptr->flags & flag)
+			if (ClientUmode(acptr) & flag)
 				*m++ = (char)(*(s+1));
 		*m = '\0';
 		sendto_one(sptr, rpl_str(RPL_UMODEIS),
@@ -3028,9 +3265,9 @@ char	*parv[];
 	/* find flags already set for user */
 	setflags = 0;
 	for (s = user_modes; (flag = *s); s += 2)
-		if (acptr->flags & flag)
+		if (ClientUmode(acptr) & flag)
 			setflags |= flag;
-         realflags = acptr->flags;
+         realflags = ClientUmode(acptr);
 
 	/*
 	 * parse mode change string(s)
@@ -3058,9 +3295,9 @@ char	*parv[];
 					if (*m == (char)(*(s+1)))
 				    {
 					if (what == MODE_ADD)
-						acptr->flags |= flag;
+						ClientUmode(acptr) |= flag;
 					else
-						acptr->flags &= ~flag;	
+						ClientUmode(acptr) &= ~flag;	
 					break;
 				    }
 				if (flag == 0 && MyConnect(acptr))
@@ -3074,14 +3311,12 @@ char	*parv[];
         if (uline && useduline)
         {
            
-            if ((setflags & FLAGS_OPER) && !IsOper(acptr))
+            if ((setflags & U_OPER) && !IsOper(acptr))
             {
-                acptr->flags |= FLAGS_OPER;
+                SetOper(acptr);
                 hackwarn = 1;
             }
-           
-
-            if (!(setflags & FLAGS_OPER) && IsOper(acptr))
+            if (!(setflags & U_OPER) && IsOper(acptr))
             {
                 ClearOper(acptr);
                 hackwarn = 1;
@@ -3090,7 +3325,7 @@ char	*parv[];
              if (MyClient(acptr))
              {
 
-               if ((!(setflags & FLAGS_LOCOP) && !(setflags & FLAGS_OPER)) && 
+               if ((!(setflags & U_LOCOP) && !(setflags & U_OPER)) && 
                    IsAnOper(acptr))
                {
                 hackwarn=1;
@@ -3098,18 +3333,18 @@ char	*parv[];
                 ClearLocOp(acptr);
                }
 
-               if ( (setflags & FLAGS_LOCOP) && !IsAnOper(acptr))
+               if ( (setflags & U_LOCOP) && !IsAnOper(acptr))
                {
-                  acptr->flags |= FLAGS_LOCOP;
+                  ClientUmode(acptr) |= U_LOCOP;
                   hackwarn=1;
                }
 
                        /* hackwarn for anything besides +/- h */
-#define ULINE_CHANGE (FLAGS_HELPOP)
+#define ULINE_CHANGE (U_HELPOP)
                   if (!hackwarn)
                   {
                if ( ((realflags    & ~(ULINE_CHANGE)) ) == 
-                    ( ( acptr->flags & ~(ULINE_CHANGE)) ) )
+                    ( ( ClientUmode(acptr) & ~(ULINE_CHANGE)) ) )
                         hackwarn = 0;
                     else 
                        {
@@ -3140,16 +3375,17 @@ if (uline == 0)
 	/*
 	 * stop users making themselves operators too easily
 	 */
-	if (!(setflags & FLAGS_OPER) && IsOper(sptr) && !IsServer(cptr))
+	if (!IS_SET(setflags, U_OPER) && IsOper(sptr) && !IsServer(cptr))
 		ClearOper(sptr);
-	if (!(setflags & FLAGS_LOCOP) && IsLocOp(sptr) && !IsServer(cptr))
-		sptr->flags &= ~FLAGS_LOCOP;
+	if (!(setflags & U_LOCOP) && IsLocOp(sptr) && !IsServer(cptr))
+		ClientUmode(sptr) &= ~U_LOCOP;
 
 	/*
 	 *  Let only operators set HelpOp
 	 * Helpops get all /quote help <mess> globals -Donwulff
+         * yeh, but dont -h someone if they're already +h -Mysid
 	 */
-	if (MyClient(sptr) && IsHelpOp(sptr) && !OPCanHelpOp(sptr))
+	if (!IS_SET(setflags, U_HELPOP) && MyClient(sptr) && IsHelpOp(sptr) && !OPCanHelpOp(sptr))
 		ClearHelpOp(sptr);
 	/*
 	 * Let only operators set FloodF, ClientF; also
@@ -3171,9 +3407,9 @@ if (uline == 0)
 	 */
 	if (MyClient(sptr) && IsAnOper(sptr))
 	    {
-	        if (IsClientF(sptr) && !OPCanUModeC(sptr))
+	        if (!IS_SET(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
 	                ClearClientF(sptr);
-	        if (IsFloodF(sptr) && !OPCanUModeF(sptr))
+	        if (!IS_SET(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
 	                ClearFloodF(sptr);  
 	    }
 
@@ -3186,7 +3422,7 @@ if (uline == 0)
 	 * O.K. The above code just does normal access flag checks. This
 	 * only changes the operflag access level.  -Cabal95
 	 */
-	if ((setflags & (FLAGS_OPER|FLAGS_LOCOP)) && !IsAnOper(sptr) &&
+	if ((setflags & (U_OPER|U_LOCOP)) && !IsAnOper(sptr) &&
 	    MyConnect(sptr))
 	    {
 		det_confs_butmask(sptr, CONF_CLIENT & ~CONF_OPS);
@@ -3225,7 +3461,7 @@ char	*umode_buf;
 	    {
 		if (MyClient(acptr) && !(flag & sendmask))
 			continue;
-		if ((flag & old) && !(acptr->flags & flag))
+		if ((flag & old) && !(ClientUmode(acptr) & flag))
 		    {
 			if (what == MODE_DEL)
 				*m++ = *(s+1);
@@ -3236,7 +3472,7 @@ char	*umode_buf;
 				*m++ = *(s+1);
 			    }
 		    }
-		else if (!(flag & old) && (acptr->flags & flag))
+		else if (!(flag & old) && (ClientUmode(acptr) & flag))
 		    {
 			if (what == MODE_ADD)
 				*m++ = *(s+1);
@@ -3308,21 +3544,30 @@ int	old;
 static int is_silenced(sptr, acptr)
 aClient *sptr;
 aClient *acptr;
-{ Reg1 Link *lp;
-  Reg2 anUser *user;
-  static char sender[HOSTLEN+NICKLEN+USERLEN+5];
+{
+	Link *lp;
+	anUser *user;
+	static char sender[HOSTLEN+NICKLEN+USERLEN+5];
 
-  if (!(acptr->user) || !(lp = acptr->user->silence) ||
-      !(user = sptr->user)) return 0;
-  sprintf(sender,"%s!%s@%s",sptr->name,user->username,user->host);
-  for (; lp; lp = lp->next)
-  { if (!match(lp->value.cp, sender))
-    { if (!MyConnect(sptr))
-      { sendto_one(sptr->from, ":%s SILENCE %s :%s",acptr->name,
-            sptr->name, lp->value.cp);
-        lp->flags=1; }
-      return 1; } }
-  return 0;
+	if (!(acptr->user) || !(lp = acptr->user->silence) ||
+	    !(user = sptr->user))
+		return 0;
+
+	sprintf(sender,"%s!%s@%s",sptr->name,user->username,user->host);
+
+	for (; lp; lp = lp->next) {
+		if (!match(lp->value.cp, sender)) {
+			if (!MyConnect(sptr)) {
+				sendto_one(sptr->from,
+					   ":%s SILENCE %s :%s",acptr->name,
+					   sptr->name, lp->value.cp);
+				lp->flags = 1;
+			}
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 int del_silence(sptr, mask)

@@ -403,10 +403,10 @@ static int des_set_key(key, schedule)
 des_cblock (*key);
 des_key_schedule schedule;
 	{
-	register unsigned long c,d,t,s;
-	register unsigned char *in;
-	register unsigned long *k;
-	register int i;
+	unsigned long c,d,t,s;
+	unsigned char *in;
+	unsigned long *k;
+	int i;
 
 	k=(unsigned long *)schedule;
 	in=(unsigned char *)key;
@@ -618,19 +618,17 @@ char *salt;
 	}
 
 static int body(out0, out1, ks, Eswap0, Eswap1)
-unsigned long *out0;
-unsigned long *out1;
+unsigned long *out0, *out1;
 des_key_schedule ks;
-unsigned long Eswap0;
-unsigned long Eswap1;
+unsigned long Eswap0, Eswap1;
 	{
-	register unsigned long l,r,t,u;
+	unsigned long l,r,t,u;
 #ifdef DES_USE_PTR
-	register unsigned char *des_SP=(unsigned char *)SPtrans;
+	unsigned char *des_SP=(unsigned char *)SPtrans;
 #endif
-	register unsigned long *s;
-	register int i,j;
-	register unsigned long E0,E1;
+	unsigned long *s;
+	int i,j;
+	unsigned long E0,E1;
 
 	l=0;
 	r=0;
