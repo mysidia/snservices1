@@ -1860,7 +1860,7 @@ static	aChannel *get_channel(aClient *cptr, char *chname, int flag)
 		return (chptr);
 	if (flag == CREATE)
 	    {
-		chptr = irc_malloc(sizeof(aChannel) + len);
+		chptr = irc_malloc(sizeof(aChannel));
 		bzero((char *)chptr, sizeof(aChannel));
 		strncpyzt(chptr->chname, chname, len+1);
 		if (channel)
