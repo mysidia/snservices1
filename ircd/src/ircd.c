@@ -53,7 +53,7 @@ void restart(char *);
 static void setup_signals(void);
 
 char **myargv;
-int portnum = -1;		/* Server port number, listening this */
+int portnum = PORTNUM;		/* Default port for outgoing connections */
 char *configfile = CONFIGFILE;	/* Server configuration file */
 int debuglevel = -1;		/* Server debug level */
 int bootopt = BOOT_FORK;	/* Server boot option flags */
@@ -252,7 +252,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 {		
 	aClient	*cptr;
 	int	killflag;
-	int	ping = 0, i, rflag = 0;
+	int	ping = 0, rflag = 0;
 	time_t	oldest = 0, timeout;
 
 #if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
@@ -286,7 +286,6 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		*/
 		if (ClientFlags(cptr) & FLAGS_DEADSOCKET) {
 			(void)exit_client(cptr, cptr, &me, "Dead socket");
-			 i--;  /* catch remapped descriptors */
 			continue;
 		}
 
@@ -364,7 +363,6 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
                                 (void)exit_client(cptr, cptr, &me,
                                   "Ping timeout");
 			 }
-			 i--;  /* catch remapped descriptors */
 			continue;
 		    }
 		else if (IsRegistered(cptr) && (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
@@ -412,8 +410,6 @@ int
 main(int argc, char **argv)
 {
 	time_t	delay = 0, now;
-	int	portarg = 0;
-	aConfItem *aconf;
 
         update_time();
 	sbrk0 = (char *)sbrk((size_t)0);
@@ -556,13 +552,8 @@ main(int argc, char **argv)
 	initwhowas();
 	initstats();
 	fprintf(stderr, "done\n");
-	if (portnum < 0)
-		portnum = PORTNUM;
-	me.port = portnum;
 	fprintf(stderr, "Pre-socket startup done.\n");
 	(void)init_sys();
-	me.flags = FLAGS_LISTEN;
-	me.fd = -1;
 
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
@@ -575,15 +566,6 @@ main(int argc, char **argv)
 		(void)printf("Couldn't open configuration file %s\n",
 			     configfile);
 		exit(-1);
-	}
-
-	if ((aconf = find_me()) && portarg <= 0 && aconf->port > 0)
-		portnum = aconf->port;
-	Debug((DEBUG_ERROR, "Port = %d", portnum));
-	if (inetport(&me, aconf->passwd, portnum)) {
-		fprintf(stderr,
-			"Error listening on port %d\n", portnum);
-		exit(1);
 	}
 
 	(void)get_my_name(&me, me.sockhost, sizeof(me.sockhost)-1);

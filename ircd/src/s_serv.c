@@ -1569,7 +1569,7 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0;
 		    }
 	    }
-	else if (port <= 0 && (port = PORTNUM) <= 0)
+	else if (port <= 0 && (port = portnum) <= 0)
 	    {
 		sendto_one(sptr, ":%s NOTICE %s :Connect: missing port number",
 			   me.name, parv[0]);
