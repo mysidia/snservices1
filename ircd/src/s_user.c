@@ -290,7 +290,8 @@ static int do_nick_name(char *nick, int isserv)
 ** reduce a string of duplicate list entries to contain only the unique
 ** items.  Unavoidably O(n^2).
 */
-char *canonize(char *buffer)
+static char *
+canonize(char *buffer)
 {
 	static	char	cbuf[BUFSIZ];
 	char	*s, *t, *cp = cbuf;
@@ -646,7 +647,8 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
   return 0;
 }
 
-void NospoofText(aClient* acptr)
+static void
+NospoofText(aClient* acptr)
 {
 #ifdef NOSPOOF
 	  sendto_one(acptr, "NOTICE %s :*** If you are having problems"
@@ -1230,10 +1232,13 @@ nickkilldone:
 	return 0;
 }
 
-__inline int msg_has_colors(const char *msg) {
-   for(; *msg; msg++)
-       if (*msg == '\003') return 1;
-   return 0;
+__inline static int
+msg_has_colors(const char *msg)
+{
+	for(; *msg ; msg++)
+		if (*msg == '\003')
+			return 1;
+	return 0;
 }
 
 /*
@@ -2982,9 +2987,10 @@ int m_ping(aClient *cptr, aClient *sptr, int parc, char *parv[])
 **	parv[0] = prefix
 **	parv[1] = code
 */
-int m_nospoof(aClient *cptr, aClient *sptr, int parc, char *parv[])
+static int
+m_nospoof(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-unsigned long result;
+	unsigned long result;
 
 	if (IsNotSpoof(cptr)) return 0;
 	if (IsRegistered(cptr)) return 0;

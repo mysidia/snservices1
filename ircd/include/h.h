@@ -84,12 +84,13 @@ aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *na
 char	*debugmode, *configfile, *sbrk0;
 char	*getfield(char *);
 void	get_sockhost(aClient *, char *);
-char	*rpl_str(int), *err_str(int);
+char	*rpl_str(int);
+char *err_str(int);
 char	*strerror(int);
 int	dgets(int, char *, int);
 char	*inetntoa(const anAddress *);
 int	addr_cmp(const anAddress *, const anAddress *);
-
+void boot_replies(void);
 
 extern	int	dbufalloc, dbufblocks, debuglevel;
 extern	int	highest_fd, debuglevel, portnum, debugtty, maxusersperchannel;

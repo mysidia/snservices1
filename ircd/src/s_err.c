@@ -281,46 +281,47 @@ boot_replies(void)
 }
 
 
-char	*err_str(int numeric)
+char *
+err_str(int numeric)
 {
-	int	num = numeric;
-
-	if (num < 0 || num > (ERR_YOURHURT + 400))
+	if (numeric < 0 || numeric > (ERR_YOURHURT + 400)) {
 		(void)sprintf(numbuff,
-			":%%s %d %%s :INTERNAL ERROR: BAD NUMERIC! %d",
-			numeric, num);
-	else
-	    {
-		if (!replies[num])
+			      ":%%s %d %%s :INTERNAL ERROR: BAD NUMERIC! %d",
+			      numeric, numeric);
+	} else {
+		if (!replies[numeric])
 			(void)sprintf(numbuff,
-				":%%s %d %%s :NO ERROR FOR NUMERIC ERROR %d",
-				numeric, num);
+				      ":%%s %d %%s "
+				      ":NO ERROR FOR NUMERIC ERROR %d",
+				      numeric, numeric);
 		else
-			(void)prepbuf(numbuff, num, replies[num]);
-	    }
+			(void)prepbuf(numbuff, numeric, replies[numeric]);
+	}
+
 	return numbuff;
 }
 
 
-char	*rpl_str(int numeric)
+char *
+rpl_str(int numeric)
 {
-	int	num = numeric;
-
-	if (num < 0 || num > 999)
+	if (numeric < 0 || numeric > 999) {
 		(void)sprintf(numbuff,
-			":%%s %d %%s :INTERNAL REPLY ERROR: BAD NUMERIC! %d",
-			numeric, num);
-	else
-	    {
+			      ":%%s %d %%s "
+			      ":INTERNAL REPLY ERROR: BAD NUMERIC! %d",
+			      numeric, numeric);
+	} else {
 		Debug((DEBUG_NUM, "rpl_str: numeric %d num %d %x",
-		       numeric, num, replies[num]));
-		if (!replies[num])
+		       numeric, numeric, replies[numeric]));
+		if (!replies[numeric])
 			(void)sprintf(numbuff,
-				":%%s %d %%s :NO REPLY FOR NUMERIC ERROR %d",
-				numeric, num);
+				      ":%%s %d %%s "
+				      ":NO REPLY FOR NUMERIC ERROR %d",
+				      numeric, numeric);
 		else
-			(void)prepbuf(numbuff, num, replies[num]);
-	    }
+			(void)prepbuf(numbuff, numeric, replies[numeric]);
+	}
+
 	return numbuff;
 }
 
