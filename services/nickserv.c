@@ -5344,6 +5344,7 @@ NCMD(ns_list)
 
 		while (reg != NULL) {
 			if (list_mode == LIST_mask
+				&& umask != NULL
 				&& !match(umask->nick, reg->nick)
 				&& !match(umask->user, reg->user)
 				&& !match(umask->host, reg->host))
@@ -5369,12 +5370,23 @@ NCMD(ns_list)
 	if (i > 200)
 		sSend(":%s NOTICE %s :[Results truncated to 200 items]",
 			  NickServ, from);
-	sSend(":%s NOTICE %s :%i/%i matched conditions (%s!%s@%s)",
-		  NickServ, from, i, x, umask->nick, umask->user, umask->host);
-	sSend(":%s GLOBOPS :%s is listing %s!%s@%s (%d/%d matches)",
-		  NickServ, from, umask->nick, umask->user, umask->host, i, x);
-	free_mask(umask);
 
+	if (list_mode == LIST_mask)
+		sSend(":%s NOTICE %s :%i/%i matched conditions (%s)",
+			  NickServ, from, i, x, param);
+	else if (list_mode == LIST_email) {
+		sSend(":%s NOTICE %s :%i/%i matched e-mail %s",
+				NickServ, from, i, x, param);
+	}
+
+	sSend(":%s GLOBOPS :%s is listing %s%s (%d/%d matches)",
+		  NickServ, from, list_mode == LIST_email ? " email" 
+		                                          : " mask", 
+		  param, i, x);
+
+	if (umask != NULL) {
+		free_mask(umask);
+	}
 	return RET_OK;
 }
 
