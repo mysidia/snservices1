@@ -30,7 +30,7 @@ extern	aChannel *channel;
 extern	struct	stats	*ircstp;
 extern	int	bootopt;
 /* Prototype added to force errors -- Barubary */
-extern	time_t	check_pings(time_t now, int check_kills);
+extern	time_t	check_pings(time_t now, int check_kills, aConfItem *conf_target);
 #ifdef _WIN32
 extern	void	*hCio;
 #endif
@@ -77,12 +77,13 @@ extern	aConfItem *find_conf_ip PROTO((Link *, char *, char *, int));
 extern	aConfItem *find_conf_name PROTO((char *, int));
 extern  aConfItem *find_temp_conf_entry PROTO((aConfItem *, u_int));
 extern  aConfItem *find_conf_servern PROTO((char *));
-extern	int	find_kill PROTO((aClient *));
+extern	int	find_kill(aClient *, aConfItem*);
+extern  char    *find_sup_zap PROTO((aClient *, int));
 extern	char	*find_zap PROTO((aClient *, int));
 extern	int	find_restrict PROTO((aClient *));
 extern	int	rehash PROTO((aClient *, aClient *, int));
 extern	int	initconf PROTO((int));
-extern	void	add_temp_conf();
+extern	aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp);
 
 extern	char	*MyMalloc PROTO((int)), *MyRealloc PROTO((char *, int));
 extern	char	*debugmode, *configfile, *sbrk0;

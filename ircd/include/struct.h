@@ -562,6 +562,7 @@ struct	ConfItem	{
 	char	*host;
 	char	*passwd;
 	char	*name;
+	char    *real_name;
 	int	port;
 	time_t	hold;	/* Hold action until this time (calendar time) */
 	int	tmpconf, bits;
@@ -601,8 +602,9 @@ struct	ConfItem	{
 #define CONF_CRULEAUTO          0x400000
 #define CONF_MISSING		0x800000
 #define CONF_AHURT		0x1000000
+#define CONF_SUP_ZAP		0x2000000
 
-#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT)
+#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT | CONF_SUP_ZAP)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER)
 #define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | CONF_SERVER_MASK )
