@@ -1,0 +1,24 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === GS_ROLL ===
+ 
+     SYNTAX:
+     /ChanServ Set #<channel> Gs_Roll <on | off>
+ 
+     DESCRIPTION:
+     Normally use of GameServ on a channel is restricted
+     so that only people listed in the ChanServ access list
+     may use the roll command.
+
+     If this option is enabled, then people you set voice, or
+     op (+v or +o) in the channel may use GameServ,
+ 
+     Even if they do not have ChanServ access.
+ 
+     EXAMPLES:
+     /ChanServ set #rpg gs_roll on
+     /ChanServ set #sorcery gs_roll off
+ 
+     Limited to Founder Access 
+
+--- End of Services Help ---

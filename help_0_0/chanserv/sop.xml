@@ -1,0 +1,32 @@
+<help service="chanserv">
+ <topic name="SOP">
+  <command name="SOP">
+   <syntax>
+     /msg chanserv SOP &lt;#channel&gt; ADD &lt;nick&gt;
+     /msg chanserv SOP &lt;#channel&gt; DEL &lt;nick | index#&gt;
+     /msg ChanServ SOP &lt;#channel&gt; LIST
+   </syntax>
+ 
+   <desc>
+      This command is an alias to the ADDOP, DELOP, and LISTOP facilties
+      except that it manipulates only ops at level 10 (SuperOp).
+   </desc>
+
+   <section>
+      This command is provided for interface compatibility with services
+      systems in use by other IRC networks.
+   </section>
+
+   <section>
+     (see /msg chanserv help listop, /msg chanserv help addop, and
+      /msg chanserv help delop)
+   </section>
+
+   <examples>
+     <ex pre="To grant Carlton level 10 op status on #sorcery">
+       /msg ChanServ sop #sorcery add Carlton
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

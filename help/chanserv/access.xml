@@ -1,0 +1,27 @@
+<help service="chanserv">
+ <topic name="ACCESS">
+  <command name="ACCESS">
+     <syntax>
+       /ChanServ ACCESS #&lt;channel> &lt;nickname>
+     </syntax>
+
+     <desc>
+     ACCESS returns the access level for the channel.
+     Using ACCESS with no parameters returns your access
+     level for the given channel.  Using ACCESS with a 
+     parameter will return the channel access level for
+     the specified nickname
+     </desc>
+
+     <examples>
+      <ex pre="To check your access level on #Sorcery:">
+         /ChanServ access #Sorcery
+      </ex>
+
+      <ex pre="To check the access level for the nick deuces on #Sorcery:">
+        /ChanServ access #Sorcery deuces
+      </ex>
+     </examples>
+  </command>
+ </topic>
+</help>

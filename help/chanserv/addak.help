@@ -1,0 +1,20 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === ADDAK ===
+ 
+     SYNTAX:
+     /ChanServ ADDAK #<channel> <nick!user@host> <reason>
+ 
+     DESCRIPTION:
+     ADDAK allows you to ban a user from your channel via
+     services. Unlike the channel bans, these do not get
+     removed when the channel is empty. Wildcards are 
+     allowed in the user mask. Setting a reason is optional.
+ 
+     EXAMPLES:
+     To addak the nick Carlton from #Dark:
+       /ChanServ addak #Dark Carlton!*@* Bad jokes
+     To addak Carlton from #Dark by host:
+       /ChanServ addak #Dark *!*@*.pastiche.org Fishbreath
+ 
+--- End Of Services Help ---

@@ -1,0 +1,16 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === PASSWD ===
+ 
+     SYNTAX:
+     /ChanServ SET #<channel> PASSWD <new password>
+ 
+     DESCRIPTION:
+     PASSWD changes the password set during the registration 
+     process.
+ 
+     EXAMPLES:
+     To change the password of #Dark to ShAyDe:
+       /ChanServ set #Dark passwd ShAyDe
+ 
+--- End of Services Help ---

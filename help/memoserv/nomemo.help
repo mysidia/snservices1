@@ -1,0 +1,19 @@
+--- SorceryNet Memo Services Help ---
+ 
+ === NOMEMO ===
+  
+     SYNTAX:
+     /MemoServ NOMEMO <on|off>
+ 
+     DESCRIPTION:
+     The NOMEMO command allows you to toggle your ability to
+     receive memos on and off. If it is on, nobody will be able
+     to send you any memos.
+  
+     EXAMPLES:
+     To stop receiving memos, type:
+       /MemoServ nomemo on
+     To start receiving memos again, type:
+       /MemoServ nomemo off
+ 
+--- End Of Services Help ---

@@ -1,0 +1,17 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === GETPASS ===
+ 
+     SYNTAX:
+     /ChanServ GETPASS <#channel>
+ 
+     DESCRIPTION:
+     The GETPASS command allows an IRCop to cue ChanServ to send the
+     founder password of a channel to the founder's e-mail address.
+ 
+     EXAMPLES:
+     To have ChanServ send the password for #Sorcery to the founder,
+     type:
+       /ChanServ getpass #Sorcery
+ 
+--- End Of Services Help ---

@@ -1,0 +1,35 @@
+--- SorceryNet Operator Services Help ---
+  
+ === AUTOKILL ===
+ 
+     SYNTAX:
+     (1) /OperServ AUTOKILL <time/-> <nick!user@host> <reason> 
+     (2) /OperServ AUTOKILL
+     (3) /OperServ AUTOKILL LIST [<search mask : nick!user@host> | -r <reason>]
+ 
+     DESCRIPTION:
+     OperServ AUTOKILL can either give a list of current autokills
+     on the network, or if you are a ServOp+, it can be used to add
+     or remove an autokill from the network wide ban list.  The 
+     time field is always in hours.  If - is used in the time 
+     field, the autokill is removed, if a 0 is used the autokill 
+     is permanent.
+
+     (1) Is used to add an autokill
+     (2) Is used to list all autokills
+     (3) Is used to search the autokill list:
+           If a search mask is given: matching autokill patterns will be listed
+           
+           If the '-r <reason>' option is given, autokills whose reason matches
+           the given pattern will be listed.
+ 
+     EXAMPLES:
+     To retrieve a complete list of autokills:
+       /OperServ autokill
+     To retrieve a list of autokills that effect AOL.COM:
+       /OperServ autokill list *!*@*.aol.com
+     To add an autokill for *!foo@*.bar.com for 2 hours for 
+     advertising:
+       /OperServ autokill 2 *!foo@*.bar.com mass advertising
+ 
+--- End Of Services Help ---

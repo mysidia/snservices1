@@ -1,0 +1,13 @@
+--- SorceryNet Channel Services Help ---
+ 
+=== <Comamnd> ===
+    OPGUARD:
+    1:  set <channel> OPGUARD <on|off>
+      ex. /msg ChanServ set #channel OPGUARD on 
+ 
+    DESCRIPTION
+    OPGUARD is a channel setting which only allows those
+    users with access levels set in ChanServ to have Ops
+    in the channel.
+  
+--- End Of Services Help ---

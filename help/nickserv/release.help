@@ -1,0 +1,25 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === RELEASE ===
+      
+     SYNTAX:
+     /NickServ RELEASE <nickname> <password>
+  
+     DESCRIPTION:
+     RELEASE removes a NickServ enforcer, allowing you to use
+     your nickname.  NickServ enforcers are created when 
+     someone who does not know your password or is not on your
+     access list attempts to use your nickname while the KILL 
+     option is set ON.  If you are not on your nickname's access
+     list, you must include your password.
+   
+     EXAMPLES:
+     To remove a NickServ enforcer holding the nick Raistlin,
+     with your current user@host mask in your access list:
+       /NickServ release Raistlin
+     To remove a NickServ enforcer holding the nick Raistlin,
+     with the password fizzle:
+       /NickServ release Raistlin fizzle
+  
+--- End Of Services Help ---
+      

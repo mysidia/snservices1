@@ -1,0 +1,20 @@
+<help service="chanserv">
+ <topic name="DEOP">
+  <command name="DEOP">
+   <syntax>
+     /ChanServ DEOP #&lt;channel&gt; &lt;nickname&gt;
+   </syntax>
+
+   <desc>
+     DEOP removes operator status for the specified nickname
+     on the specified channel.  
+   </desc>
+
+   <examples>
+     <ex pre="To remove the ops of Luthien on channel #AFD:">
+       /ChanServ deop #AFD Luthien
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

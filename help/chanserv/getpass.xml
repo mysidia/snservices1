@@ -1,0 +1,20 @@
+<help service="chanserv">
+ <topic name="GETPASS">
+  <command name="GETPASS">
+   <syntax>
+     /ChanServ GETPASS &lt;#channel&gt;
+   </syntax>
+
+   <desc>
+     The GETPASS command allows an IRCop to cue ChanServ to send the
+     founder password of a channel to the founder's e-mail address.
+   </desc>
+
+   <section name="EXAMPLES">
+     To have ChanServ send the password for #Sorcery to the founder,
+     type:
+       /ChanServ getpass #Sorcery
+   </section>
+  </command>
+ </topic>
+</help>

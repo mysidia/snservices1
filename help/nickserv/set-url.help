@@ -1,0 +1,20 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === SET URL ===
+ 
+     SYNTAX:
+     /NickServ SET URL <url>
+    
+     DESCRIPTION:
+     The NickServ SET URL option allows you to set URL that
+     will be seen whenever anyone retrieves your NickServ
+     information.  Omitting the URL field will clear the current 
+     URL that is set. 
+  
+     EXAMPLES:
+     To set your URL as http://www.sorcery.net :
+       /NickServ set url http://www.sorcery.net
+     To clear a currently set URL
+       /NickServ set url
+ 
+--- End Of Services Help ---

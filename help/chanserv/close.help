@@ -1,0 +1,19 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === CLOSE ===
+ 
+     SYNTAX:
+     /msg ChanServ CLOSE #<channel> <on|off>
+ 
+     DESCRIPTION:
+     The ChanServ CLOSE command is a ServOp+ only command that
+     stops changes from being made to the channel, but doesn't
+     destroy the channel record.
+
+     EXAMPLES:
+     To close the channel #badchannel:
+       /msg ChanServ CLOSE #badchannel on
+     To re-open the channel #badchannel:
+       /msg ChanServ CLOSE #badchannel off
+ 
+--- End Of Services Help ---

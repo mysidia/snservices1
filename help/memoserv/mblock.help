@@ -1,0 +1,25 @@
+--- SorceryNet Memo Services Help ---
+ 
+ === MBLOCK ===
+  
+     SYNTAX:
+     /MemoServ MBLOCK
+     /MemoServ MBLOCK [-]<nick>
+ 
+     DESCRIPTION:
+     The MBLOCK command maintains a memobox's MemoBlock list.
+     Users on a box's memoblock list cannot send memos to it.
+  
+     With no parameters, a list of blocks is provided; otherwise
+     the parameter is a nickname preceded with a - if the nick is
+     to be removed from the list, or no character if it is to be added.
+
+     EXAMPLES:
+     To list memo blocks:
+       /MemoServ mblock
+     To start blocking memos from raistlin:
+       /MemoServ mblock raistlin
+     To stop blocking memos from raistlin:
+       /MemoServ mblock -raistlin
+ 
+--- End Of Services Help ---

@@ -1,0 +1,20 @@
+<help service="chanserv">
+ <topic name="DELOP">
+  <command name="DELOP">
+
+   <syntax>
+     /ChanServ DELOP #&lt;channel&gt; &lt;nickname&gt;
+   </syntax>
+
+   <desc>
+     DELOP removes a user from the channel access list.
+   </desc>
+
+   <examples>
+     <ex pre="To remove Raistlin's ops in #Sorcery:">
+       /ChanServ delop #Sorcery Raistlin
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,23 @@
+--- SorceryNet Operator Services Help ---
+ 
+ === TRIGGER ===
+ 
+     SYNTAX:
+     /OperServ TRIGGER <user@host> <#>
+     /OperServ TRIGGER list
+ 
+     DESCRIPTION:
+     The TRIGGER command allows you to set the number of clones 
+     which can be connected from one host before OperServ begins
+     to issue clone warnings. This command can only be set while
+     the hostname in question is connected and sets back to default
+     when the last connection for this host is terminated.
+ 
+     See also /OperServ help CLONESET
+  
+     EXAMPLES:
+     To set the trigger for the host luthien@ts1-p6.auracom.com to 
+     5, type:
+       /OperServ trigger luthien@ts1-p6.auracom.com 5
+ 
+--- End Of Services Help ---

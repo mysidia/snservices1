@@ -1,0 +1,33 @@
+<help service="chanserv">
+ <topic name="AOP">
+  <command name="AOP">
+
+   <syntax>
+     /msg chanserv AOP &lt;#channel&gt; ADD &lt;nick&gt;
+     /msg chanserv AOP &lt;#channel&gt; DEL &lt;nick | index#&gt;
+     /msg ChanServ AOP &lt;#channel&gt; LIST
+   </syntax>
+ 
+   <desc>
+      This command is an alias to the ADDOP, DELOP, and LISTOP facilties
+      except that it manipulates only ops at level 5 (AutoOp).
+   </desc>
+
+   <section>
+      This command is provided for interface compatibility with services
+      systems in use by other IRC networks.
+   </section>
+
+   <section>
+     (see /msg chanserv help listop, /msg chanserv help addop, and
+      /msg chanserv help delop)
+   </section>
+
+   <examples>
+     <ex pre="To grant Carlton level 5 op status on #sorcery">
+       /msg ChanServ aop #sorcery add Carlton
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

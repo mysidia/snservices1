@@ -1,0 +1,22 @@
+--- SorceryNet Operator Services Help ---
+ 
+ === IGNORE ===
+ 
+     SYNTAX:
+     /OperServ IGNORE <time/-> <nick!user@host> <reason>
+ 
+     DESCRIPTION:
+     OperServ IGNORE can be used to give a list of hostmasks
+     currently on the services ignore list, or if you are a 
+     ServOp+, it can be used to add or remove a services
+     ignore.  If - is used in the time field, the ignore is 
+     removed, if a 0 is used the ignore is permanent.
+ 
+     EXAMPLES:
+     To retrieve a list of services ignores:
+       /OperServ ignore
+     To add a services ignore for *!foo@*.bar.com for 2 hours for 
+     services abuse:
+       /OperServ ignore 2 *!foo@*.bar.com services abuse
+   
+--- End Of Services Help ---

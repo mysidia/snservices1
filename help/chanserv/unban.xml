@@ -1,0 +1,33 @@
+<help service="chanserv">
+ <topic name="UNBAN">
+  <command name="UNBAN">
+
+     <syntax>
+       /ChanServ UNBAN #&lt;channel&gt; [&lt;ALL&gt;]
+     </syntax>
+
+     <desc>
+     UNBAN ALL removes all channel bans, UNBAN by itself removes the ban
+     for the person issuing the command. UNBAN only works if
+     you are listed in the channel operator database of the channel you are
+     attempting to use this command on.
+  
+     This command contains alternate syntax to ease users in transition
+     to this revision of services: 'UNBAN #channel *' is the same as
+     UNBAN ALL, 'UNBAN ME' and 'UNBAN &lt;your nickname&gt;' are the same as
+     UNBAN by itself.
+     </desc>
+
+     <examples>
+      <ex pre="To remove all channel bans from #linux:">
+       /ChanServ unban #linux all
+      </ex>
+
+      <ex pre="To remove a ban on yourself from #linux:">
+        /ChanServ unban #linux me
+      </ex>
+     </examples>
+
+  </command>
+ </topic>
+</help>

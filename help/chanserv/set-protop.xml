@@ -1,0 +1,31 @@
+<help service="chanserv">
+ <topic name="PROTOP">
+  <command name="SET PROTOP">
+
+     <syntax>
+        /ChanServ SET #&lt;channel&gt; PROTOP &lt;ON | OFF&gt;
+     </syntax>
+   
+    <desc>
+        PROTOP prevents channel ops from being deoped by anyone of
+        lower access level.
+    </desc>
+
+    <section>
+        ** protection offered by PROTOP is not complete at this time;
+        it is therefore labelled as an EXPERIMENTAL feature.
+    </section>
+
+    <examples>
+        <ex pre="To turn protop on in channel #Dark:">
+          /ChanServ SET #Dark protop on
+        </ex>
+
+        <ex pre="To Turn protop off in channel #Dark:">
+          /ChanServ SET #Dark protop off
+        </ex>
+    </examples>
+
+  </command>
+ </topic>
+</help>

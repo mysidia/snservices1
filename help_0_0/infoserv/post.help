@@ -1,0 +1,38 @@
+--- SorceryNet Information Services Help ---
+ 
+ === POST ===
+ 
+     SYNTAX:
+     /InfoServ POST <importance> <header> <content>
+ 
+     DESCRIPTION:
+     The InfoServ POST command allows IRC Operators to add an
+     article to the InfoServ database.  The importance field 
+     must be a number, the header field is a single word that will
+     be used as the subject of the article, and content is the actual
+     article.
+
+     Importance levels:
+
+           0 ==>        Oper-only messsage
+           1 ==>        Informational message
+           2 ==>        Info Pertinent right now, send out a notification
+           3 ==>        Announcement, send out notification now and to users
+                        signing on
+           4 ==>        Broadcast message, notify immediately and at signon
+                        with the message
+           5 ==>        _VERY_ important broadcast, notify with privmsg
+                        instead of notice
+
+           Opers may use priority levels 0-3: 4 is for servops, and 5
+           is currently restricted to root
+ 
+     EXAMPLES:
+     To post an info article announcing a new server, type:
+       /InfoServ post 1 new_server Everybody welcome 
+          newserver.sorcery.net to the network.
+     To post a system message:
+       /InfoServ post 4 services will be going down for aroud 3 hours
+       tonight for some maintenance
+ 
+--- End Of Services Help ---

@@ -1,0 +1,18 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === ACCESS LEVELS ===
+ 
+      1  SuperUser      Access to INVITE command.
+      3  Mini-AOP       Receives +v when entering channel. 
+      5  AutoOp (AOP)   User is a channel operator and can use the 
+                        'OP', 'DEOP', and 'UNBAN' commands, receives
+                        +o when entering channel.
+      8  Mini-SOP       Can modify the Autokick list.
+      10 SOP (SuperOp)  Can modify the chanop list.
+      13 Mini-Founder   Can add ops, change modelock, topiclock,
+                        and set restricts.
+      15 Founder        Channel owner. Can effect any change but
+                        password including adding and removing
+                        founders.
+ 
+--- End of Services Help ---

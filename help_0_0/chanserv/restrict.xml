@@ -1,0 +1,29 @@
+<help service="chanserv">
+ <topic name="RESTRICT">
+  <command name="RESTRICT">
+
+   <syntax>
+      /ChanServ RESTRICT #&lt;channel&gt; &lt;level&gt;
+   </syntax>
+ 
+   <desc>
+     RESTRICT is used to set a minimum access level for which
+     nicks can join the channel.  If a nick attempts to
+     join a level restricted channel for which their access
+     level is NOT high enough then they will be auto-kicked 
+     and banned from the channel.
+     For a list of access levels <b>/ChanServ help LEVELS</b>
+   </desc>
+ 
+   <examples>
+     <ex pre="To restrict #Sorcery to access level 8 and above:">
+       /ChanServ restrict #Sorcery 8
+     </ex>
+
+     <ex pre="To remove the access level restriction from #Sorcery:">
+       /ChanServ restrict #Sorcery off
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,22 @@
+<help service="chanserv">
+ <topic name="DROP">
+  <command name="DROP">
+
+   <syntax>
+     /ChanServ DROP #&lt;channel&gt; &lt;password&gt;
+   </syntax>
+
+   <desc>   
+     DROP removes a channel registration from the ChanServ
+     database.  You must be using the nickname used to register
+     the channel and identiied with Services to use this command.
+   </desc>
+
+   <section name="EXAMPLES">
+     To drop the channel #Sorcery after identifying as founder,
+     with the password of 1234abcd:
+       /ChanServ drop #Sorcery 1234abcd
+   </section>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,21 @@
+<help service="chanserv">
+ <topic name="MKICK">
+  <command name="MKICK">
+   <syntax>
+     /ChanServ MKICK #&lt;channel&gt;
+   </syntax>
+
+   <desc>
+     MKICK causes chanserv to remove all users from a channel.
+   </desc>
+
+   <examples>
+       <ex pre="To remove all users from #sorcery:">
+         /ChanServ mkick #sorcery
+       </ex>
+   </examples>
+ 
+   <limit access="SuperOp" />
+  </command> 
+ </topic>
+</help>

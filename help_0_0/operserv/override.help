@@ -1,0 +1,31 @@
+--- SorceryNet Operator Services Help ---
+ 
+ === OVERRIDE ===
+ 
+     SYNTAX:
+     /OperServ OVERRIDE <service> <command>
+ 
+     DESCRIPTION:
+     Some services commands may at times impose restrictions on users
+     that operators can override.  This is the command to invoke
+     a user-level restriction override.
+
+     Commands that have overridable restrictions:
+ 
+        ChanServ
+         REGISTER          LISTOP             LISTAK
+         CLIST             GETREALPASS
+ 
+        NickServ
+         ACCESS
+
+        MemoServ
+         SEND
+ 
+     Examples:
+ 
+         /operserv override chanserv listop #foo 
+         /operserv override chanserv listak #foo
+   
+--- End Of Services Help ---
+

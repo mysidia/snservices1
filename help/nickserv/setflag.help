@@ -1,0 +1,30 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === SETFLAG ===
+  
+     SYNTAX:
+     /NickServ SETFLAG <nickname> <+/-flags>
+   
+     DESCRIPTION:
+     The NickServ SETFLAG command is a ServOp+ only command that
+     allows you to set various flags on the specified nickname.
+     This command should be used with extreme caution.
+ 
+     Available flags are:
+       a = activated (not used)
+       b = banished
+       e = email (in)visiblity
+       h = held (available to SRA's only)
+       k = kill
+       r = registered
+       s = ServOp (available to SRA's only)
+       v = vacation
+ 
+     EXAMPLES:
+     To add kill to Raistlin's flags:
+       /NickServ setflag Raistlin +k
+     To add kill and to make Raistlin's email address unavailable
+     to the public:
+       /NickServ setflag Raistlin +k-e          
+ 
+--- End Of Services Help ---

@@ -1,0 +1,15 @@
+--- SorceryNet Information Services Help ---
+ 
+    SorceryNet's Information Service is a unique service,
+    allowing SorceryNet users to read various pieces of news
+    or urgent bulletins regarding SorceryNet.
+ 
+    Commands:
+        READ      - Read the latest piece of news
+        LIST      - Lists all news
+        POST      - Post a message
+  
+    Type /InfoServ help <command> for more help with each
+    command.  For further assistance with services, /join #Help.
+ 
+--- End Of Services Help ---

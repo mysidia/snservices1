@@ -1,0 +1,17 @@
+
+--- SorceryNet ChanServ Help ---
+  
+  == SETPASS ==
+
+     SYNTAX:
+     /ChanServ <#channel> <Auth Code> <New Password> 
+  
+     DESCRIPTION:
+     Changes the password on the given channel, using the auth code to
+     validate that the user is entitled to change the password.
+  
+     EXAMPLES:
+     Change the password on #here, to p455w0rd, with the authcode of 123456.
+     /ChanServ SETPASS #here 123456 p455w0rd 
+  
+--- End of Services Help ---

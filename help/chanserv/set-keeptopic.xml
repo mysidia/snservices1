@@ -1,0 +1,26 @@
+<help service="chanserv">
+ <topic name="KEEPTOPIC">
+  <command name="KEEPTOPIC">
+
+   <syntax>
+     /ChanServ SET #&lt;channel&gt; KEEPTOPIC &lt;ON/OFF&gt;
+   </syntax>
+
+   <desc>
+     KEEPTOPIC sets the topic to sticky. When ON, if the channel 
+     is empty when someone joins, Chanserv will set the last topic 
+     automatically
+   </desc>
+ 
+   <examples>
+     <ex pre="To make the topic on #SorceryNet sticky:">
+       /ChanServ set #SorceryNet keeptopic on
+     </ex>
+
+     <ex pre="To turn off the stickiness of the topic on #SorceryNet:">
+       /ChanServ set #SorceryNet keeptopic off
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,21 @@
+<help service="chanserv">
+ <topic name="PASSWORD" hide="1" />
+ <topic name="PASSWD">
+  <command name="SET PASSWD">
+   <syntax>
+     /ChanServ SET #&lt;channel&gt; PASSWD &lt;new password&gt;
+   </syntax>
+ 
+   <desc>
+     PASSWD changes the password set during the registration 
+     process.
+   </desc>
+ 
+   <examples>
+     <ex pre="To change the password of #Dark to ShAyDe">
+       /ChanServ set #Dark passwd ShAyDe
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,22 @@
+--- SorceryNet Nickname Services Help ---
+
+ === SET IDTIME ===
+
+     SYNTAX:
+     /NickServ SET IDTIME <time>
+
+     DESCRIPTION:
+     The NickServ SET IDTIME option lets you change
+     the length of time NickServ will wait before
+     changing your nickname if you fail to identify
+     yourself.  The time parameter is assumed to be in
+     seconds.  If no parameter is given, NickServ will
+     show your current ID time.
+
+     EXAMPLES:
+     To set your ID time to 90 seconds:
+       /msg NickServ set idtime 90
+     To view the value of your ID time:
+       /msg NickServ set idtime
+
+--- End Of Services Help ---

@@ -1,0 +1,35 @@
+<help service="chanserv">
+ <topic name="FOUNDER">
+  <command name="FOUNDER">
+   <syntax>
+     /msg chanserv FOUNDER &lt;#channel&gt; ADD &lt;nick&gt;
+     /msg chanserv FOUNDER &lt;#channel&gt; DEL &lt;nick | index#&gt;
+     /msg ChanServ FOUNDER &lt;#channel&gt; LIST
+   </syntax>
+ 
+   <desc>
+      This command is an alias to the ADDOP, DELOP, and LISTOP
+      facilties. It can be used to manipulate ops of level 15
+      (Founder)
+   </desc>
+
+   <section name="ACCESS">
+      Operators of level foudner have full control of the channel
+      op list, they can additionally set channel modelocks,
+      restrict, topiclock levels, and all channel options
+      except the channel password.
+
+      While this level has access equivalent to that of the
+      founder, operators given this access are not considered
+      to be owners of the channel -- ownership of the channel
+      is established only by knowledge of the password.
+   </section>
+
+   <examples>
+     <ex pre="To grant Joe level 13 (MiniFounder) op status on #sorcery">
+       /msg ChanServ mfounder #sorcery add Joe
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

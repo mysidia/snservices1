@@ -1,0 +1,25 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === UNBAN ===
+    
+     SYNTAX:
+     /ChanServ UNBAN #<channel> [<ALL>]
+ 
+     DESCRIPTION:
+     UNBAN ALL removes all channel bans, UNBAN by itself removes the ban
+     for the person issuing the command. UNBAN only works if
+     you are listed in the channel operator database of the channel you are
+     attempting to use this command on.
+  
+     This command contains alternate syntax to ease users in transition
+     to this revision of services: 'UNBAN #channel *' is the same as
+     UNBAN ALL, 'UNBAN ME' and 'UNBAN <your nickname>' are the same as
+     UNBAN by itself.
+
+     EXAMPLES:
+     To remove all channel bans from #linux:
+       /ChanServ unban #linux all
+     To remove a ban on yourself from #linux:
+       /ChanServ unban #linux me
+  
+--- End of Services Help ---

@@ -1,0 +1,16 @@
+
+--- SorceryNet NickServ Help ---
+  
+ === GETREALPASS ===
+
+     SYNTAX:
+     /NickServ <Nickname> 
+  
+     DESCRIPTION:
+     Deprecated. This command used to show the oper running the command,
+     what the password was. Now, for security reasons, it just shows the
+     base64 representation of the encrypted password.
+  
+     Limited operators with services GRPop access or above
+  
+--- End of Services Help ---

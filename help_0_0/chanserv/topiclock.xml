@@ -1,0 +1,27 @@
+<help service="chanserv">
+ <topic name="TOPICLOCK">
+  <command name="TOPICLOCK">
+
+   <syntax>
+     /ChanServ TOPICLOCK #&lt;channel&gt; &lt;level&gt;
+   </syntax>
+
+   <desc>
+     TOPICLOCK locks the channel topic, allowing only
+     channel members of the specified access level to
+     change the channel topic. When OFF, any operator 
+     may change the topic.
+     For a list of access levels <b>/ChanServ help LEVELS</b>
+   </desc>
+ 
+   <examples>
+     <ex pre="To set topiclock to access level 8 and higher on #AFD:">
+       /ChanServ topiclock #AFD 8
+     </ex>
+     <ex pre="To turn topiclock off on #AFD:">
+       /ChanServ topiclock #AFD off
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

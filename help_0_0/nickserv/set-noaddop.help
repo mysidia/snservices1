@@ -1,0 +1,18 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === NOADDOP ===
+ 
+     SYNTAX:
+     /NickServ SET NOADDOP <on/off>
+ 
+     DESCRIPTION:
+     The NickServ SET NOADDOP option allows you to set your nickname
+     so that you can not be added to the AOP list of any channel.
+ 
+     EXAMPLES:
+     To turn the SET NOADDOP option on, type:
+       /NickServ set noaddop on
+     To turn the SET NOADDOP option off, type:
+       /NickServ set noaddop off
+ 
+--- End Of Services Help ---

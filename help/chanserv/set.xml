@@ -1,0 +1,25 @@
+<help service="chanserv">
+ <topic name="SETTING" hide="1" />
+ <topic name="SETTINGS" hide="1" />
+ <topic name="SET">
+  <command name="SET">
+
+   <section>    
+     Set offers various ways of configuring your channel 
+     settings to suit your needs.  For more information on 
+     each set command:
+   </section>
+ 
+   <section name="Options" fmt="pre">
+     OPGUARD     DESC      KEEPTOPIC       FOUNDER
+     PROTOP      QUIET     PASSWD          AUTOGREET
+     IDENT       URL       MLOCK
+   </section>
+ 
+   <section>
+     Type <b>/ChanServ help set &lt;option></b> for more help with each
+     option.  For further assistance with services, /join #Help.
+   </section>
+  </command>
+ </topic>
+</help>

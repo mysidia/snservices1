@@ -1,0 +1,18 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === CHANNEL MODES ===
+ 
+     +t        only chanops can set the topic
+     +n        no external messages can be sent to your channel, 
+               in other words for a person to talk in your channel 
+               he/she must be in it
+     +s        makes your channel secret
+     +p        makes your channel private 
+     +l #      sets a limit of users which can enter your channel
+     +k <key>  sets a key, needed to enter your channel
+     +m        makes channel moderate (only voices and ops can 
+               speak)
+     +i        makes channel invite-only, users must be invited to 
+               join
+ 
+--- End of Services Help ---

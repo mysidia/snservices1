@@ -1,0 +1,16 @@
+--- SorceryNet Information Services Help ---
+ 
+ === DEL ===
+ 
+     SYNTAX:
+     /InfoServ DEL <#>
+ 
+     DESCRIPTION:
+     The InfoServ DEL command will remove the chosen article 
+     from InfoServ.  This command is limited to ServOps+ only.
+ 
+     EXAMPLES:
+     To delete article 7 from InfoServ, type:
+       /InfoServ del 7
+  
+--- End Of Services Help ---

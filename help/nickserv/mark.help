@@ -1,0 +1,21 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === MARK ===
+ 
+     SYNTAX:
+     /NickServ MARK <nick> [<on | off>]
+ 
+     DESCRIPTION:
+     The MARK command allows a +O operator to mark a nickname; indicating
+     that special caution should be observed in dealing with requests
+     involving it.
+
+     EXAMPLES:
+     Suppose you discovered Foo trying to use a devious trick to convince you
+     to give him ownership of the nick SorceryNet, you could issue the command:
+       /NS Mark SorceryNet ON
+
+    To remove the mark from the nick Joe
+      /NS MARK Joe OFF
+ 
+--- End Of Services Help ---

@@ -1,0 +1,21 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === MARK ===
+ 
+     SYNTAX:
+     /ChanServ MARK <#channel> [<on | off>]
+ 
+     DESCRIPTION:
+     The MARK command allows a +O operator to mark a channel; indicating
+     that special caution should be observed in dealing with requests
+     involving it.
+
+     Marks should be annotated using the /CS LOG command.
+ 
+     EXAMPLES:
+     Suppose you discovered Foo trying to use a devious trick to convince you
+     to give him ownership of #Blah'sChan, you could issue the command:
+       /CS Mark #Blah'sChan On
+       /CS LOG Foo is trying to steal #Blah'sChan with devious trick XXX.
+ 
+--- End Of Services Help ---

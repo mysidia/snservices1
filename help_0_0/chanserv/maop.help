@@ -1,0 +1,18 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === MAOP ===
+ 
+     SYNTAX:
+     /msg chanserv MAOP <#channel> ADD <nick>
+     /msg chanserv MAOP <#channel> DEL <nick | index#>
+     /msg ChanServ MAOP <#channel> LIST
+ 
+     DESCRIPTION:
+      This command is used to add, delete, and list users with
+      MAOP access to a channel, see also /ChanServ HELP LEVELS
+
+     EXAMPLES:
+     To grant Joe level 3 (AutoVoice) op status on #sorcery
+       /msg ChanServ maop #sorcery add Joe
+ 
+--- End Of Services Help ---

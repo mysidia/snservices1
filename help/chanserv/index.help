@@ -1,0 +1,27 @@
+--- SorceryNet Channel Services Help ---
+ 
+    ChanServ provides users with the ability to register 
+    channels.  ChanServ allows you to customize your channel 
+    to suit your needs, eliminating the need for a channel bot.
+ 
+    Commands:
+        REGISTER  - Register a channel
+        IDENTIFY  - Identify yourself as the founder of a channel
+        INFO      - Get information on a registered channel
+        SET       - Change your channel settings
+        LISTOP    - List current channel operators
+        CHANOP    - Modify the channel operator list
+        AKICK     - Modify the channel autokick list
+        DROP      - Release (un-register) a registered channel
+ 
+    Other Commands:
+        UNBAN     MDEOP     INVITE     TOPICLOCK
+        MLOCK     RESTRICT  ACCESS     OP
+        DEOP      WIPEAK    MKICK      MAOP
+        AOP       MSOP      SOP        MFOUNDER
+        CLIST
+
+    Type /ChanServ help <command> for more help with each
+    command. For further assistance with services, /join #Help.
+
+--- End of Services Help  ---

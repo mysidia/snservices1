@@ -1,0 +1,16 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === DELAK ===
+ 
+     SYNTAX:
+     /ChanServ WIPEAK #<channel>
+ 
+     DESCRIPTION:
+     WIPEAK allows you to remove all akicks from a channels
+     akick list in one simple command.
+
+     EXAMPLE:
+     To remove all akicks from the channel #hangman:
+       /ChanServ wipeak #hangman
+ 
+--- End Of Services Help ---

@@ -1,0 +1,28 @@
+--- SorceryNet OperServ Help ---
+Command: AUTOHURT
+
+Min Level: OS Flag H
+
+- /OperServ <time|-> <mask> <reason> 
+
+Description:
+An autohurt is an automatic hurt. A serverwide ban, if you like, on a
+connected client. The command will cause all client connections from
+the specified isp to be automatically hurt on connect. Hurt clients
+cannot do anything other than quit or message an oper.
+
+
+Manual removal of an autohurt is achieved by using a - in place of a
+time. No reason field is needed.
+
+
+Examples:
+To autohurt the entire AOL ISP for one hour, using the reason,
+"Multiple troublecausers from this domain".
+/OperServ AUTOHURT 1 *!*@*.ipt.aol.com Multiple troublecausers from this domain. 
+
+To remove the autohurt on *!*@*.ipt.aol.com
+/OperServ AUTOHURT - *!*@*.ipt.aol.com 
+
+
+--- End of Services Help ---

@@ -1,0 +1,14 @@
+--- SorceryNet Channel Services Help ---
+ 
+    The following are extended services commands and aliases
+    not needed or advised for common use.
+ 
+    Commands:
+        CHANOP    - Maintain channel operator lists
+        AKICK     - Maintain channel autokick lists
+        ID        - alias to the identify command
+ 
+    Type /ChanServ help <command> for more help with each
+    command. For further assistance with services, /join #Help.
+
+--- End of Services Help  ---
