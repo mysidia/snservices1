@@ -48,13 +48,13 @@ static void setup_signals(void);
 
 char **myargv;
 int portnum = PORTNUM;		/* Default port for outgoing connections */
-char *configfile = CONFIGFILE;	/* Server configuration file */
+char *configfile = FNAME_CONFIG;	/* Server configuration file */
 int debuglevel = -1;		/* Server debug level */
 int bootopt = BOOT_FORK;	/* Server boot option flags */
 char *debugmode = "";		/*  -"-    -"-   */
 char *sbrk0;			/* initial sbrk(0) */
 static int dorehash = 0;
-static char *dpath = DPATH;
+static char *dpath = DATADIR;
 char stripped[BUFSIZE];		/* Color stripped string for certain
 				 * replies--used throughout */
 
@@ -128,10 +128,10 @@ void	server_reboot(char *mesg)
 	for (i = 3; i < MAXCONNECTIONS; i++)
 		close(i);
 
-	execv(MYNAME, myargv);
+	execv(FNAME_ME, myargv);
 
 #ifdef USE_SYSLOG
-	syslog(LOG_CRIT, "execv(%s,%s) failed: %m\n", MYNAME, myargv[0]);
+	syslog(LOG_CRIT, "execv(%s,%s) failed: %m\n", FNAME_ME, myargv[0]);
 #endif
 	Debug((DEBUG_FATAL,"Couldn't restart server: %s", strerror(errno)));
 

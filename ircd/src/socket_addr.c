@@ -32,7 +32,7 @@
 #include "ircd.h"
 
 #include <netdb.h>
-#ifdef NEED_GETADDRINFO
+#ifndef HAVE_GETADDRINFO
 #include "getaddrinfo.h"
 #endif
 

@@ -1,0 +1,119 @@
+#
+# Copyright (c) 2004, Onno Molenkamp
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the author nor the names of its contributors may be
+#    used to endorse or promote products derived from this software without
+#    specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.57)
+AC_INIT(SorceryNet IRCD, 1.5, coders@sorcery.net)
+AC_CONFIG_SRCDIR([src/ircd.c])
+
+# Options
+AC_ARG_ENABLE(hub,
+	AC_HELP_STRING([--disable-hub], [Disable hub support]),
+	[if test "$enableval" = "yes"; then AC_DEFINE(HUB) fi],
+	AC_DEFINE(HUB))
+AC_ARG_WITH(expat,
+	AC_HELP_STRING([--with-expat=DIR], [Set directory of Expat library]),
+	CFLAGS="-I$withval/include" LDFLAGS="-L$withval/lib")
+AC_ARG_WITH(network,
+	AC_HELP_STRING([--with-network=TYPE], [Specify I/O notification mechanism (default is auto)]),
+	socket="$acfunc")
+
+# Default options. Most of these will move to the runtime configuration file.
+AC_DEFINE(BASENAME, "ircd")
+AC_SUBST(BASENAME, ircd)
+AC_DEFINE(LISTEN_SIZE, 5)
+AC_DEFINE(MAXSENDQLENGTH, 3000000)
+AC_DEFINE(BUFFERPOOL, (9 * MAXSENDQLENGTH))
+AC_DEFINE(MAXCONNECTIONS, 1024)
+AC_DEFINE(NICKNAMEHISTORYLENGTH, 750)
+AC_DEFINE(SN_MODE)
+AC_DEFINE(CRYPT_OPER_PASSWORD)
+AC_DEFINE(NOSPOOF)
+AC_DEFINE(NOSPOOF_SEED01, 0x12345678)
+AC_DEFINE(NOSPOOF_SEED02, 0x9abcdef0)
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_CHECK_TYPES(u_int32_t)
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netdb.h netinet/in.h stdlib.h string.h sys/file.h sys/param.h sys/socket.h sys/time.h syslog.h unistd.h], , [AC_ERROR(required header not found)])
+AC_CHECK_HEADERS([stddef.h crypt.h])
+
+# Checks for libraries and functions
+AC_CHECK_FUNCS(index inet_ntoa)
+AC_SEARCH_LIBS(socket, socket, , [AC_ERROR(socket() not found)])
+AC_SEARCH_LIBS(__dn_skipname, resolv, , [AC_ERROR(__dn_skipname() not found)])
+AC_SEARCH_LIBS(inet_addr, nsl, , [AC_ERROR(inet_addr() not found)])
+AC_SEARCH_LIBS(crypt, crypt, , [AC_ERROR(crypt() not found)])
+AC_CHECK_LIB(expat, XML_ParserCreate, , [AC_ERROR(expat not found)])
+AC_REPLACE_FUNCS(getaddrinfo snprintf)
+
+# Search for best I/O function
+if test "x$socket" = "x"; then
+	AC_CHECK_HEADER(sys/devpoll.h, socket="devpoll")
+fi
+if test "x$socket" = "x"; then
+	AC_CHECK_FUNCS([kqueue epoll_create poll select], socket="$ac_func" break)
+	if test "$socket" = "epoll_create"; then
+		socket="epoll"
+	fi
+fi
+
+case "$socket" in
+	kqueue)
+		AC_LIBOBJ(socket_kqueue)
+	;;
+	epoll)
+		AC_LIBOBJ(socket_epoll)
+	;;
+	devpoll)
+		AC_LIBOBJ(socket_devpoll)
+	;;
+	poll)
+		AC_LIBOBJ(socket_poll)
+	;;
+	select)
+		AC_LIBOBJ(socket_select)
+	;;
+esac
+
+# Output files
+AC_CONFIG_HEADERS([include/options.h include/setup.h])
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT

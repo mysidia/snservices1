@@ -33,6 +33,10 @@
 
 #include "ircd/md5.h"
 
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
+
 IRCD_SCCSID("@(#)s_user.c	2.74 2/8/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
 

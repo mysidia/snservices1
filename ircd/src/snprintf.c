@@ -9,7 +9,7 @@
 
   */
 
-#ifdef NEED_SNPRINTF
+#ifndef HAVE_SNPRINTF
 
 #include "ircd.h"
 #include <string.h>

@@ -1,0 +1,82 @@
+#/************************************************************************
+#*   IRC - Internet Relay Chat, Makefile
+#*   Copyright (C) 1990, Jarkko Oikarinen
+#*
+#*   This program is free software; you can redistribute it and/or modify
+#*   it under the terms of the GNU General Public License as published by
+#*   the Free Software Foundation; either version 1, or (at your option)
+#*   any later version.
+#*
+#*   This program is distributed in the hope that it will be useful,
+#*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#*   GNU General Public License for more details.
+#*
+#*   You should have received a copy of the GNU General Public License
+#*   along with this program; if not, write to the Free Software
+#*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#*/
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+
+CONFDIR=$(sysconfdir)
+BINDIR=$(bindir)
+DATADIR=$(localstatedir)
+
+SUBDIRS=src
+RM=rm
+CP=cp
+TOUCH=touch
+INSTALL=@INSTALL@
+
+all:	build
+
+server:
+build:
+	@for i in $(SUBDIRS); do \
+		echo "Building $$i"; \
+		( cd $$i; $(MAKE) build; ) ; \
+	done
+
+clean:
+	$(RM) -f *~ \#* core *.orig include/*.orig
+	@for i in $(SUBDIRS); do \
+		echo "Cleaning $$i";\
+		( cd $$i; $(MAKE) clean; ) \
+	done
+	-@if [ -f include/setup.h ] ; then \
+	  echo "To really restart installation, remove include/setup.h" ; \
+	fi
+	-@if [ -f include/options.h ] ; then \
+	  echo "and include/options.h" ; \
+	fi
+
+cleandir: clean
+	rm -rf include/setup.h include/options.h Makefile src/Makefile
+
+depend:
+	@for i in $(SUBDIRS); do \
+		echo "Making dependencies in $$i";\
+		( cd $$i; $(MAKE) depend; ) \
+	done
+
+install: all
+	@echo "installing ircd..."
+	$(INSTALL) -d $(BINDIR) $(DATADIR)/log $(DATADIR)/run $(CONFDIR)
+	$(INSTALL) src/@BASENAME@ $(BINDIR)
+	$(TOUCH) $(DATADIR)/log/@BASENAME@.users.log $(DATADIR)/log/@BASENAME@.opers.log
+	$(CP) doc/example.conf.xml $(CONFDIR)
+	@echo "done!"

@@ -39,6 +39,8 @@
 #ifndef IRCD_H
 #define IRCD_H
 
+#include "setup.h"
+
 #include "socket.h"
 #include "conf.h"
 
