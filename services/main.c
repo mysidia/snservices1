@@ -641,6 +641,8 @@ int main(int argc, char *argv[])
 				dlogEntry("Closing server connection due to error: %s",
 						  (cc ==
 						   0 ? "Connection closed" : strerror(errno)));
+				close(server);
+				server = -1;
 
 				sshutdown(0);
 			}

@@ -130,12 +130,16 @@ sSend(char *format, ...)
 #if 0
 	printf("Writing: %s\n", sBuffer);
 #endif
-	if (net_write(server, sBuffer, strlen(sBuffer)) == -1) {
-		if (errno == EPIPE || errno == EBADF || errno == EINVAL ||
-                    errno == EFAULT) {
-                    logDump(corelog, "Terminating on write error, errno=%d", errno);
-                    sshutdown(0);
-                }
+	if (server != -1) {		
+		if (net_write(server, sBuffer, strlen(sBuffer)) == -1) {
+			if (errno == EPIPE || errno == EBADF || errno == EINVAL ||
+	                    errno == EFAULT) {
+	                    logDump(corelog, "Terminating on write error, errno=%d", errno);
+	                    sshutdown(0);
+	                }
+		}
+	} else {
+		logDump(corelog, "[ServerFd=-1] sSend : %s", sBuffer);
 	}
 
 #ifdef DEBUG
