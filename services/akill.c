@@ -917,14 +917,14 @@ int removeAkill(char *from, char *mask)
  * \param type Type of entry removal is being attempted of (such as #A_AKILL)
  * \param restrict [UNUSED]
  */
-int removeAkillType(char *from, const char *given_mask, int type, int restrict)
+int removeAkillType(char *from, char *given_mask, int type, int restrict)
 {
 	int i, j;
 	struct akill *ak;
 	char *nick, *user = NULL, *host = NULL, *tmpmask;
 	time_t temp;
 
-	tmpmask = strdup(mask);
+	tmpmask = strdup(given_mask);
 
 	j = strlen(tmpmask);
 	nick = tmpmask;
