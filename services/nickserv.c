@@ -1987,7 +1987,7 @@ int BadPwNick(UserList *sender, RegNickList *target)
             (sender->badpws > NPW_TH_SENDER_2 && target->badpws > NPW_TH_TARGET_2) ||
             (sender->badpws > NPW_TH_SENDER_3 && target->badpws > NPW_TH_TARGET_3)) 
         {
-		sSend(":%s GLOBOPS :Possible hack attempt %s!%s@%s (%u) -> %s (%u)",
+		sSend(":%s GLOBOPS :Possible password guess attempt %s!%s@%s (%u) -> %s (%u)",
 			NickServ, sender->nick, sender->user, sender->host, (u_int)sender->badpws,
 			target->nick, (u_int)target->badpws
 		);

@@ -239,7 +239,7 @@ int BadPwChan(UserList *nick, RegChanList *target)
            || (nick->badpws > CPW_TH_SENDER_2 && target->badpws > CPW_TH_TARGET_2)
 	   || (nick->badpws > CPW_TH_SENDER_3 && target->badpws > CPW_TH_TARGET_3))
 	{
-		sSend(":%s GLOBOPS :Possible hack attempt %s (%u) -> %s (%u)",
+		sSend(":%s GLOBOPS :Possible password guess attempt %s (%u) -> %s (%u)",
 			ChanServ, nick->nick, (u_int)nick->badpws,
 			target->name, (u_int)target->badpws);
 	}
