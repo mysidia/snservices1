@@ -4,16 +4,16 @@
      It contains comments about the usage of the different elements. For a more
      formal definition of the file, have a look at ircd-config.xsd. -->
 
-<ircd>
+<ircd xmlns="http://www.sorcery.net/ircd">
 
 	<!-- General ircd config. -->
 
 	<config>
-		<!-- Name of the server. -->
-		<name>server.sorcery.net</name>
-
 		<!-- Name of the network. -->
 		<network>SorceryNet</network>
+
+		<!-- Name of the server. -->
+		<name>server.sorcery.net</name>
 
 		<!-- Info-line of the server. -->
 		<info>East Coast SorceryNet Server</info>

@@ -170,8 +170,6 @@ install: all
 	@echo "installing ircd..."
 	$(CP) src/ircd ${IRCDDIR}
 	@chmod $(IRCDMODE) ${IRCDDIR}/ircd
-	$(CP) src/chkconf ${IRCDDIR}
-	@chmod $(IRCDMODE) ${IRCDDIR}/chkconf
 	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
 	$(CP) doc/example.conf ${IRCDDIR}
 	@echo "done!"
