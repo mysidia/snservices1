@@ -1091,7 +1091,7 @@ int limit_rules;
 	  lead++;
 
       switch(*lead) {
-	      case 'r': case 'g':
+	      case 'R': case 'r': case 'g':
 	      case 'q': case 'm':
 		      return mask;
 	      default:;
