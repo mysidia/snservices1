@@ -655,34 +655,6 @@ sendto_failops(char *fmt, ...)
 	va_end(ap);
 }
 
-/*
- * Send to specified flag
- */
-void
-sendto_flag(int flags, char *fmt, ...)
-{
-	va_list	ap;
-	va_list ap2;
-	aClient *cptr;
-	char	nbuf[1024];
-
-	va_start(ap, fmt);
-
-	for (cptr = &me; cptr; cptr = cptr->lnext)
-		if (!IsServer(cptr) && !IsMe(cptr) &&
-		    (ClientFlags(cptr) & flags)==flags) {
-			sprintf(nbuf, ":%s NOTICE %s :",
-				me.name, cptr->name);
-			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-			vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
 void
 sendto_umode(int flags, char *fmt, ...)
 {
