@@ -1269,6 +1269,16 @@ void delRegNick(RegNickList * killme)
 			delMemo(to->memos, memos);
 			memos = memos_next;
 		}
+
+		memos = LIST_FIRST(&killme->memos->mb_memos);
+		while (memos != NULL) {
+			memos_next = LIST_NEXT(memos, ml_lst);
+			memos->realto = NULL;
+			LIST_REMOVE(memos, ml_sent);
+			delMemo(killme->memos, memos);
+
+			memos = memos_next;
+		}
 	}
 	freeRegNickListRec(killme);
 }
