@@ -752,7 +752,8 @@ cat >$TMP<<__EOF__
 
 int main()
 {
-	void *s = &_res; return s==s;
+	_res.retry; return s==s;
+	res_init();
 }
 __EOF__
 $COMP >/dev/null 2>&1
