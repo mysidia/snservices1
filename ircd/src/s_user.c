@@ -1737,7 +1737,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	who_opsonly = (IsHurt(sptr) && sptr->hurt);
 
 #if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-	if (!IsAnOper(sptr) && !UserVersionKnown(sptr)) 
+	if (!IsAnOper(sptr) && !IsUserVersionKnown(sptr)) 
 		who_opsonly = 1;
 #endif
 	
