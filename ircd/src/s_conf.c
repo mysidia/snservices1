@@ -1199,7 +1199,7 @@ int 	initconf(int opt)
 				bcopy(res->ai_addr, &me.addr, res->ai_addrlen);
 				freeaddrinfo(res);
 			}
-			if (portnum < 0 && aconf->port >= 0)
+			if (aconf->port > 0)
 				portnum = aconf->port;
 		    }
 		if (aconf->status == CONF_KILL)

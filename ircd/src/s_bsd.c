@@ -188,12 +188,9 @@ int	port;
 	bcopy(res->ai_addr, &server, res->ai_addrlen);
 	freeaddrinfo(res);
 
-	if (cptr != &me)
-	    {
-		(void)sprintf(cptr->sockhost, "%-.42s.%u",
-			name, (unsigned int)port);
-		(void)strcpy(cptr->name, me.name);
-	    }
+	(void)sprintf(cptr->sockhost, "%-.42s.%u",
+		name, (unsigned int)port);
+	(void)strcpy(cptr->name, me.name);
 	/*
 	 * At first, open a new socket
 	 */
@@ -267,25 +264,6 @@ int	port;
 		return -1;
 	    }
 
-	if (cptr == &me) /* KLUDGE to get it work... */
-	    {
-		char	buf[1024];
-
-		switch(server.addr_family)
-		{
-			case AF_INET:
-				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    			ntohs(server.in.sin_port));
-				break;
-#ifdef AF_INET6
-			case AF_INET6:
-				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    			ntohs(server.in6.sin6_port));
-				break;
-#endif
-		}
-		(void)write(0, buf, strlen(buf));
-	    }
 	if (cptr->fd > highest_fd)
 		highest_fd = cptr->fd;
 	bcopy(&server, &cptr->addr, sizeof(anAddress));
@@ -940,7 +918,6 @@ aClient *cptr;
 			break;
 
 	det_confs_butmask(cptr, 0);
-	cptr->from = NULL; /* ...this should catch them! >:) --msa */
 
 	/*
 	 * fd remap to keep local[i] filled at the bottom.

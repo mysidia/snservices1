@@ -414,7 +414,7 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 		for (acptr = client; acptr; acptr = next)
 		    {
 			next = acptr->next;
-			if (!IsServer(acptr) && acptr->from == sptr)
+			if (acptr != sptr && !IsServer(acptr) && acptr->from == sptr)
 				exit_one_client(NULL, acptr, &me, comment1);
 		    }
 		/*
@@ -423,7 +423,7 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 		for (acptr = client; acptr; acptr = next)
 		    {
 			next = acptr->next;
-			if (IsServer(acptr) && acptr->from == sptr)
+			if (acptr != sptr && IsServer(acptr) && acptr->from == sptr)
 				exit_one_client(NULL, acptr, &me, me.name);
 		    }
 	    }
