@@ -1226,7 +1226,8 @@ int	modehack;
 			}
 #endif
 		}
-	else if (cis_chop == 0)
+	else if (cis_chop == 0 && IsServer(cptr) == 0 &&
+		 IsULine(cptr, sptr) == 0 && modehack == 0)
 		return 0;
 #endif
 
