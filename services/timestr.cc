@@ -60,13 +60,14 @@ TimeLengthString::TimeLengthString(int num_secs)
 	length.days = 0;
 	length.seconds = num_secs;
 	f_isValid = true;
+	normalize();
 }
 
 /// Build a time length from a string
 TimeLengthString::TimeLengthString(const char* input)
 {
 	const char* p = input;
-	int value = 0, k;
+	int value = 0;
 
 	if (input == NULL) {
 		f_isValid = false;
@@ -104,31 +105,8 @@ TimeLengthString::TimeLengthString(const char* input)
 			p++;
 	}
 
-	// Now, normalize the representation.
-
-	if (length.seconds >= 60) {
-		k = length.seconds / 60;
-		length.minutes += k;
-		length.seconds -= k * 60;
-	}
-
-	// Reduce every 60 mins to an hour
-	if (length.minutes >= 60) {
-		k = length.minutes / 60;
-		length.hours += k;
-		length.minutes -= k * 60;
-	}
-
-	// Every 24 hours to a day
-	if (length.hours >= 24) {
-		k = length.hours / 24;
-		length.days += k;
-		length.hours -= k * 24;
-	}
-
-	if (length.hours < 0 || length.minutes < 0 || length.seconds < 0
-		|| length.days < 0)
-		f_isValid = false;
+	// Now normalize the representation
+	normalize();
 }
 
 int TimeLengthString::getTotalDays() const
