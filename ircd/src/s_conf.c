@@ -1288,7 +1288,6 @@ static	int	lookup_confhost(aConfItem *aconf)
 
 	if (getaddrinfo(s, NULL, NULL, &res) || !(res->ai_addr))
 		goto badlookup;
-	bzero(&me.addr, sizeof(anAddress));
 	bcopy(&res->ai_addr[0], &aconf->addr, res->ai_addrlen);
 	freeaddrinfo(res);
 
