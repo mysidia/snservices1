@@ -735,8 +735,10 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	Link	*lp, *lp2;
 	time_t	lastnick = (time_t)0;
 	int	differ = 1;
+#ifdef NOSPOOF
 	u_int32_t     md5data[16];
 	static u_int32_t     md5hash[4];
+#endif
 	int samenick = 0, bantype_tmp;
 
 	/*
@@ -1667,7 +1669,9 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				sptr->user->username);
 		return 0;
 	}
+#ifdef NOSPOOF
 	temp:
+#endif
 	return m_message(cptr, sptr, parc, parv, 1);
 }
 

@@ -383,7 +383,7 @@ struct	Message *mptr;
 
                 if (!mptr->cmd)
                 { 
-                  if (MyConnect(from))
+		   if (MyConnect(from)) {
                       if (!IsAnOper(from) && from->hurt > 5)
                       {
                           if (from->hurt < (MAXTIME-20)) from->hurt += 15;
@@ -396,6 +396,7 @@ struct	Message *mptr;
                           /*cptr->since += (2 + (bufend - ((s) ? s : ch)) / 120);*/
                           prevent_dumping(mptr, cptr);
                       }
+		   }
             
                  }
 		else if (mptr->cmd)	

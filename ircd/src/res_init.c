@@ -51,6 +51,7 @@ struct state _res = {
  *
  * Return 0 if completes successfully, -1 on error
  */
+int
 res_init()
 {
 	FILE *fp;
