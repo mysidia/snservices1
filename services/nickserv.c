@@ -3362,6 +3362,7 @@ NCMD(ns_register)
 	nick->reg->email_key = random();
 #endif
 	nick->caccess = 3;
+	nick->reg->flags |= NENCRYPT;
 	pw_enter_password(args[1], nick->reg->password, '@');
 
 	nicklog->log(nick, NS_REGISTER, nick->nick);
