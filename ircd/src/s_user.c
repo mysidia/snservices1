@@ -2279,34 +2279,44 @@ static int quoteShowConData(const char* text, char* buf, int length)
 int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 {
 	aClient* ptr;
+	char* pos = NULL, *option;
+
 	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
-	int show_unknowns = 0, show_users = 0, need_start = 1, i;
+	int show_unknowns = 0, show_users = 0, need_start = 1, extended = 0, show_all = 0, i;
 	
 	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
 		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
 		return 0;
 	}
 
-	if (parc < 3) {
-		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> (unknowns | users)", me.name, sptr->name);
+	if (parc < 2) {
+		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON [<server>] (unknowns | users)", me.name, sptr->name);
 		return 0;
 
 	}
 
-        if (hunt_server(cptr,sptr,":%s SHOWCON %s :%s", 1,parc,parv) != HUNTED_ISME)
-            return 0;
-
-	if (mycmp(parv[2], "unknowns") == 0)
-		show_unknowns = 1;
-	else if (mycmp(parv[2], "users") == 0)
-		show_users = 1;
-	else if (mycmp(parv[2], "all") == 0) {
-		 ;
+	if (parc >= 3) {
+	        if (hunt_server(cptr,sptr,":%s SHOWCON %s :%s", 1,parc,parv) != HUNTED_ISME)
+        	    return 0;
 	}
-	else {
-		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> (unknowns | users)", me.name, sptr->name);
-		return 0;
+
+	
+	 for (option = strtoken(&pos, parv[1], "+"); option;
+	       option = strtoken(&pos, NULL, "+"))
+	 {
+	 	if (mycmp(parv[2], "unknowns") == 0)
+			show_unknowns = 1;
+		else if (mycmp(parv[2], "users") == 0)
+			show_users = 1;
+		else if (mycmp(parv[2], "all") == 0) 
+			show_all = 1;
+		else if (mycmp(parv[2], "xml") == 0) 
+			extended = 1;
+		else {
+			sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON <server> {(unknowns | users) + ...}", me.name, sptr->name);
+			return 0;
+		}
 	}
 
 	for(i = 0; i <= highest_fd; i++) {
@@ -2321,6 +2331,23 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 		if (show_users && !IsPerson(ptr))
 			continue;
+
+		if (extended == 0) {
+			sendto_one(cptr, ":%s NOTICE %s :Client List",
+				       	me.name, sptr->name);
+			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%s,%d] [h:%s] [s:%s]",
+					me.name, sptr->name, i,
+					BadPtr(ptr->name) ? "-" : ptr->name,
+					BadPtr(ptr->username) ? "-" : ptr->username,
+					ptr->sockhost,
+					IsNotSpoof(ptr) ? "" : "Spoof?",
+					ptr->status,
+					ptr->sup_host,
+					ptr->sup_server
+				  );
+			sendto_one(cptr, ":%s NOTICE %s :End of List",
+					me.name, sptr->name);
+		}
 
 		sendto_one(cptr, ":%s NOTICE %s :%s<client id=\"%d\">", me.name, sptr->name,
 				need_start ? "<clients>" : "", i);
