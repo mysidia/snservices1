@@ -756,24 +756,24 @@ void timed_akill_queue(char *)
 		if (se)
 		{
 			ops_email.body.add("");
-			ops_email.body.add("Excluded Setters/Remover Activity: ");
+			ops_email.body.add("Excluded Setters/Remover Activity: \n");
 			ops_email.body.add("Nick               Ak+     Ig+     Ah+"
-					   "       Ak-      Ig-      Ah-");
+					   "     ?      Ak-     Ig-      Ah-  --\n");
 			for(; se; se = LIST_NEXT(se, dm_lst))
 			{
 				if (!se->nick) {
 					continue;
 				}
-				l = sprintf(buf2,      "%-20.20s", se->nick);
+				l = sprintf(buf2,      "%-15.20s", se->nick);
 
 				for(i = 0 ; i < NUM_AKTYPE_INDICES; i++) {
-					l += sprintf(buf2 + l, " %-6.6d", se->count_adds[i]);
+					l += sprintf(buf2 + l, " %-7d", se->count_adds[i]);
 
 					se->count_adds[i] = 0;
 				}
 
 				for(i = 0 ; i < NUM_AKTYPE_INDICES; i++) {
-					l += sprintf(buf2 + l, " %-6.6d", se->count_removes[i]);
+					l += sprintf(buf2 + l, " %-7d", se->count_removes[i]);
 					se->count_removes[i] = 0;
 				}
 				
