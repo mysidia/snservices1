@@ -173,12 +173,14 @@ anUser	*make_user(aClient *cptr)
 #ifdef	DEBUGMODE
 		users.inuse++;
 #endif
+		user->mask = NULL;
 		user->away = NULL;
 		user->refcnt = 1;
 		user->joined = 0;
 		user->channel = NULL;
 		user->invited = NULL;
 		user->silence = NULL;
+		user->mask = NULL;
 #ifdef  KEEP_HURTBY
 		user->hurtby = NULL;
 #endif
@@ -220,6 +222,9 @@ void	free_user(anUser *user, aClient *cptr)
 	    {
 		if (user->away)
 			MyFree((char *)user->away);
+		if (user->mask)
+			MyFree((char *)user->mask);
+
 #ifdef  KEEP_HURTBY
 		if (user->hurtby)
 			MyFree((char *)user->hurtby);

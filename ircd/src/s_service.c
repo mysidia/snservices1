@@ -29,17 +29,12 @@
 #include "h.h"
 
 
-#define cNickServ	service_nick[0]
-#define cChanServ	service_nick[1]
-#define cMemoServ	service_nick[2]
-#define cOperServ	service_nick[3]
-#define cInfoServ	service_nick[4]
-#define SERVICES_NAME	"warlock.sorcery.net"
+#define SERVICES_NAME	"services.sorcery.net"
 
 /* these are only considered services when the nicks are U-lined. */
 /* this array is an evil hack so pointer comparisons will do... */
 const char *service_nick[] = { "NickServ", "ChanServ", "MemoServ", "OperServ", 
-                               "InfoServ", (char *)0, (char *)0, (char *)0 };
+                               "InfoServ", "GameServ", (char *)0, (char *)0, (char *)0 };
 
 extern __inline int    m_sendto_service();
 
@@ -134,6 +129,7 @@ SERVICES_FUNC(m_chanserv, cChanServ);
 SERVICES_FUNC(m_memoserv, cMemoServ);
 SERVICES_FUNC(m_operserv, cOperServ);
 SERVICES_FUNC(m_infoserv, cInfoServ);
+SERVICES_FUNC(m_gameserv, cGameServ);
 
 
 __inline int
@@ -158,8 +154,21 @@ const	char *sService;
        {
                if (fOper && !IsAnOper(sptr) && MyClient(sptr))
                   return -2;
-               sendto_one(acptr,":%s PRIVMSG %s@%s :%s", parv[0],
-                       sService, SERVICES_NAME, parv[1]);
+#if 0
+               if (!MyClient(sptr) || myncmp(parv[1], "help ", 5) || BadPtr(parv[1]+5))
+#endif
+                   sendto_one(acptr,":%s PRIVMSG %s@%s :%s", parv[0],
+                           sService, SERVICES_NAME, parv[1]);
+#if 0
+               else if (MyClient(sptr))
+               {
+                   char buf[2048] = "";
+                   sprintf(buf, "%s %s", sService, parv[1]+5);
+                   if (parse_help(sptr, parv[0], buf) < 1)
+                       sendto_one(acptr,":%s PRIVMSG %s@%s :%s", parv[0],
+                                  sService, SERVICES_NAME, parv[1]);
+               }
+#endif
        }
        else
                sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name,

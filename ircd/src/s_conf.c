@@ -734,7 +734,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 			    }
 #endif
 		    }
-
 	while ((tmp2 = *tmp))
 		if (tmp2->clients || tmp2->status & CONF_LISTEN_PORT)
 		    {
@@ -770,6 +769,7 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	for (cltmp = NextClass(FirstClass()); cltmp; cltmp = NextClass(cltmp))
 		MaxLinks(cltmp) = -1;
 
+	flush_socks(time(NULL), 1);
 	if (sig != 2)
 		flush_cache();
 	(void) initconf(0);
@@ -792,6 +792,7 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	/* rebuild the commands hashtable  */
 	msgtab_buildhash();
 #endif
+
 	/* Added to make sure K-lines are checked -- Barubary */
 	check_pings(NOW, 1);
 
@@ -808,25 +809,27 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 				ClientFlags(acptr) &= ~FLAGS_ULINE;
 		}
 
+        /* read_help(1); */
 	return ret;
 }
 
 int conf_xbits(aConfItem *aconf, char *field)
 {
      int add = 1, bitp = 0, bit = 0;
-     char *p = NULL, *s, *ss;
+     char *p = NULL, *s;
+
      for (  s = strtoken( &p, field, ","); s; s = strtoken( &p, NULL , ","))
      {
           while (isspace(*s)) s++;
-          if (index(ss, ' ')) *ss = 0;
+          /* if (index(ss, ' ')) *ss = 0; */
           if ((*s == '+')) add = 1;
           else if ((*s == '-')) add = 0;
           switch( aconf->status )
           {
             case CONF_CLIENT:
-             if (!strcmp(s, "!i") || !strcasecmp( s, "!identcheck" ))
+             if (!strncmp(s, "!i", 2) || !strcasecmp( s, "!identcheck" ))
                  { bitp = 1; bit = CFLAG_NOIDENT; }
-             else if (!strcmp(s, "!s") || !strcasecmp( s, "!sockscheck" ))
+             else if (!strncmp(s, "!s", 2) || !strcasecmp( s, "!sockscheck" ))
                  { bitp = 1; bit = CFLAG_NOSOCKS; }
              break;
           }
@@ -936,6 +939,8 @@ int 	initconf(int opt)
 	char	line[512], c[80];
 	int	ccount = 0, ncount = 0;
 	aConfItem *aconf = NULL;
+	long int sendq = 0;
+
 
 	Debug((DEBUG_DEBUG, "initconf(): ircd.conf = %s", configfile));
 	if ((fd = openconf()) == -1)
@@ -1134,11 +1139,17 @@ int 	initconf(int opt)
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
 			Class(aconf) = find_class(atoi(tmp));
-			if ((tmp = getfield(NULL)) == NULL)
-				break;
-			else conf_xbits(aconf, tmp);
-			break;
+                        sendq = atoi(tmp);
+			if (!(aconf->status & CONF_CLASS))
+			{
+				if ((tmp = getfield(NULL)) == NULL)
+					break;
+				else
+				 conf_xbits(aconf, tmp);
+			}
+		        break;
 		    }
+		       
 		/*
 		** If conf line is a general config, just
 		** see if we recognize the keyword, and set
@@ -1191,7 +1202,7 @@ int 	initconf(int opt)
 		    {
 			add_class(atoi(aconf->host), atoi(aconf->passwd),
 				  atoi(aconf->name), aconf->port,
-				  tmp ? atoi(tmp) : 0);
+				  sendq);
 			continue;
 		    }
 		/*
@@ -1362,7 +1373,7 @@ badlookup:
 
 int	find_kill(aClient *cptr)
 {
-	char	reply[256], *host, *name;
+	char	reply[256], *host, *name, u_ip[HOSTLEN + 25], *u_sip;
 	aConfItem *tmp;
 
 	if (!cptr->user)
@@ -1370,6 +1381,9 @@ int	find_kill(aClient *cptr)
 
 	host = cptr->sockhost;
 	name = cptr->user->username;
+        if ((u_sip = inetntoa((char *) &cptr->ip)))
+            strncpyzt(u_ip, u_sip, HOSTLEN);
+        else u_ip[0] = '\0';
 
 	if (strlen(host)  > (size_t) HOSTLEN ||
             (name ? strlen(name) : 0) > (size_t) HOSTLEN)
@@ -1379,7 +1393,7 @@ int	find_kill(aClient *cptr)
 
 	for (tmp = conf; tmp; tmp = tmp->next)
  		if ((tmp->status == CONF_KILL) && tmp->host && tmp->name &&
-		    (match(tmp->host, host) == 0) &&
+		    (match(tmp->host, u_ip) == 0 || match(tmp->host, host) == 0) &&
  		    (!name || match(tmp->name, name) == 0) &&
 		    (!tmp->port || (tmp->port == cptr->acpt->port)))
                        /* can short-circuit evaluation - not taking chances
@@ -1851,7 +1865,8 @@ int     m_rahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 return 0;
             }
 
-           if (!IsULine(sptr, sptr)) return;
+           if (!IsULine(sptr, sptr)) 
+               return 0;
 
                 	del_temp_conf(CONF_AHURT, parv[1], NULL, 
 				parv[2], NULL, NULL, 1); 
@@ -1862,6 +1877,7 @@ int     m_rahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 else
                         sendto_serv_butone(cptr, ":%s RAHURT %s %s", 
 				parv[0], parv[1], parv[2]);
+		return 0;
 }
 
 
@@ -1892,6 +1908,7 @@ int	m_ahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		else
 			sendto_serv_butone(cptr, ":%s AHURT %s %s", parv[0],
 				     parv[1], parv[2]);
+		return 0;
 }
 
 
@@ -1929,7 +1946,7 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 /* This patch allows opers to quote kline by address as well as nick
  * --Russell
  */
-	if (hosttemp = strchr(parv[1], '@'))
+	if ((hosttemp = (char *)strchr(parv[1], '@')))
 	{
 		temp = 0;
 		while (temp <= 20)
@@ -2000,6 +2017,7 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	sendto_ops("%s added a temp k:line for %s@%s %s", parv[0], name, uhost, parv[2] ? parv[2] : "");
  	add_temp_conf(CONF_KILL, uhost, parv[2], name, 0, 0, 1);
 	check_pings(NOW, 1);
+        return 0;
     }
 	
 
@@ -2025,7 +2043,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		sendto_one(sptr,"NOTICE %s :Not enough parameters", parv[0]);
 		return 0;
 	}
-        if (hosttemp = strchr(parv[1], '@'))
+        if ((hosttemp = (char *)strchr(parv[1], '@')))
         {
                 temp = 0;
                 while (temp <= 20)
@@ -2062,6 +2080,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 	/* This wasn't here before -- Barubary */
 	check_pings(NOW, 1);
+        return 0;
 }
 
   /******************************************************************************
@@ -2144,7 +2163,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    if (!isdigit(*in) && !ispunct(*in)) 
 	    {
 	      sendto_one(sptr, ":%s NOTICE %s :z:lines work only with ip addresses (you cannot specify ident either)", me.name, sptr->name);
-	      return;
+	      return 0;
 	    }
 	    in++;
 	    }
@@ -2164,7 +2183,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    if (!isdigit(*in) && !ispunct(*in)) 
 	    {
 	       sendto_one(sptr, ":%s NOTICE %s :z:lines work only with ip addresses (you cannot specify ident either)", me.name, sptr->name);
-	       return;
+	       return 0;
 	    }
 	    in++;
 	  }
@@ -2176,7 +2195,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  sendto_ops("Bad z:line mask from %s *@%s [%s]", parv[0], userhost, reason?reason:"");
 	  if (MyClient(sptr))
 	  sendto_one(sptr, ":%s NOTICE %s :*@%s is a bad z:line mask...", me.name, sptr->name, userhost);
-	  return;
+	  return 0;
         }
 
 	if (uline == 0)
@@ -2190,9 +2209,9 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	else
 	 {
 	 if (person)
-	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:"SorceryNet" , reason?reason:"");
+	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:NETWORK , reason?reason:"");
 	 else
-	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:"SorceryNet" , reason?reason:"");
+	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:NETWORK , reason?reason:"");
 	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
         }
 
@@ -2204,7 +2223,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
              sendto_serv_butone(NULL,":%s GLOBOPS :z:line error: mask=%s parsed=%s I tried to zap cptr", me.name, mask, userhost);
              flush_connections(me.fd);
              (void)rehash(&me, &me, 0);
-             return;
+             return 0;
        }
 
 	for (i=highest_fd;i>0;i--)
@@ -2239,7 +2258,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
             sendto_serv_butone(cptr, ":%s ZLINE %s :%s", parv[0], parv[1], reason?reason:"");
 
         check_pings(time(NULL), 1);
-
+        return 0;
 }
 
 
@@ -2255,7 +2274,7 @@ int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[])
    int result=0, uline=0, akill=0;
    aConfItem *aconf, *tmp;
    aConfItem dummy;
-   char *mask, *server;
+   char *mask = NULL, *server = NULL;
 
    uline = IsULine(cptr, sptr)? 1 : 0;
 
@@ -2313,7 +2332,7 @@ int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if (!isdigit(*in) && !ispunct(*in)) 
             {
                sendto_one(sptr, ":%s NOTICE %s :it's not possible to have a z:line that's not an ip addresss...", me.name, sptr->name);
-               return;
+               return 0;
            }
             in++;
        }
@@ -2327,7 +2346,7 @@ int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[])
            if (!isdigit(*in) && !ispunct(*in)) 
            {
               sendto_one(sptr, ":%s NOTICE %s :it's not possible to have a z:line that's not an ip addresss...", me.name, sptr->name);
-              return;
+              return 0;
            }
             in++;
        }
@@ -2347,7 +2366,7 @@ retry_unzline:
           else if (result == KLINE_RET_PERM)
               sendto_one(sptr, ":%s NOTICE %s :You may not remove permanent z:lines talk to your admin...", me.name, sptr->name);
 
-/*          else if (result == KLINE_RET_AKILL && !(sptr->flags & FLAGS_SADMIN))
+/*          else if (result == KLINE_RET_AKILL && !(ClientFlags(sptr) & FLAGS_SADMIN))
           {
               sendto_one(sptr, ":%s NOTICE %s :You may not remove z:lines placed by services...", me.name, sptr->name);
           }*/
@@ -2373,7 +2392,7 @@ retry_unzline:
           else
               sendto_one(sptr, ":%s NOTICE %s :Unable to find z:line", me.name, sptr->name);
        }
-
+       return 0;
 }
 
 
@@ -2390,10 +2409,10 @@ retry_unzline:
  *         FALSE == mask is not ok
  *        UNSURE == [unused] something went wrong
  */
-banmask_check(char *userhost, int ipstat)
+int banmask_check(char *userhost, int ipstat)
 {
    int	retval = TRUE;
-   char	*up, *p, *thisseg;
+   char	*up = NULL, *p, *thisseg;
    int	numdots=0, segno=0, numseg, i=0;
    char	*ipseg[10+2];
    char	safebuffer[512]=""; /* buffer strtoken() can mess up to its heart's content...;>*/
@@ -2428,7 +2447,7 @@ banmask_check(char *userhost, int ipstat)
                  sendto_realops("[***] PANIC! UNABLE TO ALLOCATE MEMORY (banmask_check)"); 
                  for (l = 0; l < segno ; l++) free(ipseg[segno]);
                  server_reboot("UNABLE TO ALLOCATE MEMORY (banmask_check)");
-                 return;
+                 return 0;
            }
             strncpy(ipseg[segno], thisseg, l);
             ipseg[segno++][l] = 0;
@@ -2439,7 +2458,7 @@ banmask_check(char *userhost, int ipstat)
      if (ipstat==TRUE)
       for(i=0;i<numseg;i++)
       {
-            if (!IP_WILDS_OK(i) && index(ipseg[i], '*')||index(ipseg[i], '?'))
+            if (!IP_WILDS_OK(i) && (index(ipseg[i], '*')||index(ipseg[i], '?')))
                retval=FALSE;            
             MyFree(ipseg[i]);
       }

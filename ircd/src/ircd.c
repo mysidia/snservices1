@@ -75,6 +75,8 @@ time_t	nextconnect = 1;	/* time for next try_connections call */
 time_t	nextping = 1;		/* same as above for check_pings() */
 time_t	nextdnscheck = 0;	/* next time to poll dns to force timeouts */
 time_t	nextexpire = 1;		/* next expire run on the dns cache */
+time_t  nextsockflush = 1;
+void	boot_replies(void);
 
 #if	defined(PROFIL) && !defined(_WIN32)
 extern	etext();
@@ -219,7 +221,7 @@ static	time_t	try_connections(currenttime)
 time_t	currenttime;
 {
 	aConfItem *aconf, **pconf;
-	aConfItem *cconf, *con_conf;
+	aConfItem *cconf, *con_conf = NULL;
 	aClient *cptr, *xcptr;
 	int	connecting, confrq;
 	int	con_class = 0, i = 0;
@@ -378,8 +380,25 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		    {
                         if (cptr->socks && cptr->socks->fd >= 0)
                         {
-                              (void)closesocket(cptr->socks->fd);
-                              MyFree(cptr->socks);
+                              int q;
+                              for(q = highest_fd; q >= 0; q--) {
+                                  if (!local[q] || !local[q]->socks || local[q]==cptr)
+                                     continue;
+                                  if (local[q]->socks == cptr->socks)
+                                      break;
+                              }
+                              if (q < 0) {
+                                  aSocks *flushlist = NULL, *socks, *snext;
+                                  remFromSocks(cptr->socks, &flushlist);
+                                  for (socks = flushlist; socks; socks = snext)
+                                  {
+                                        snext = socks->next;
+                                        if (socks->fd >= 0)
+                                            closesocket(socks->fd);
+                                        socks->fd = -1;
+                                        MyFree(socks);
+                                  }
+                              }
                               cptr->socks = NULL;
                               ClientFlags(cptr) &= ~FLAGS_SOCKS;
                         }
@@ -721,6 +740,7 @@ char	*argv[];
 	}
 #endif
 
+        /* read_help (0); */ /* read the helpfile and attach it into memory... */
 	open_logs( );
 
 #if !defined(_WIN32)
@@ -747,6 +767,8 @@ char	*argv[];
 	loadmsg("Cleaning hash tables...");
 	clear_client_hash_table();
 	clear_channel_hash_table();
+        boot_replies();
+
 	loadmsg("done\n");
 #ifdef HASH_MSGTAB
 	(void)msgtab_buildhash();
@@ -921,8 +943,14 @@ void    SocketLoop(void *dummy)
 		** time might be too far away... (similarly with
 		** ping times) --msa
 		*/
-		if (now >= nextping)
+		if (now >= nextping) {
 			nextping = check_pings(now, 0);
+                }
+		if (now >= nextsockflush)
+		{
+			(void)flush_socks(now, 0);
+			nextsockflush = (now+3);
+		}
 
 		if (dorehash)
 		    {
