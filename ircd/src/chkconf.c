@@ -646,8 +646,8 @@ char	*buf;
 {
 	static	char	dgbuf[8192];
 	static	char	*head = dgbuf, *tail = dgbuf;
-	register char	*s, *t;
-	register int	n, nr;
+	char	*s, *t;
+	int	n, nr;
 
 	/*
 	** Sanity checks.
@@ -742,7 +742,7 @@ dgetsreturnbuf:
 static	int	validate(top)
 aConfItem *top;
 {
-	Reg1	aConfItem *aconf, *bconf;
+	aConfItem *aconf, *bconf;
 	u_int	otype, valid = 0;
 
 	if (!top)

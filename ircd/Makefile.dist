@@ -150,9 +150,7 @@ build:
 
 	@for i in $(SUBDIRS); do \
 		echo "Building $$i"; \
-		echo '' | awk '{print systime()}' > $$i/clock ; \
-		( cd $$i; rm -f Makefile.err ; ${MAKE} ${MAKEARGS} build; ./fin.sh; ) ; \
-                rm -f $i/clock ; \
+		( cd $$i; ${MAKE} ${MAKEARGS} build; ) ; \
 	done
 #	@#./info.sh -m
 

@@ -1,3 +1,15 @@
+Sat May 8  09:54:03 GMT 1999 - DuffJ
+	* Removed ident from ircd - complete code removal will be done by
+	  next version.
+	* Some major rototilling of the code cosmetically and functionally
+	* Some ancient unneeded compatibility removed
+
+Wed Apr 27 16:32:57 PDT 1999 - Mysidia
+	* 'OPMODE' command allow opers with 'M' flag to hack channel modes
+	* changed ircd logging mechanism, now uses tolog() function instead
+	  of calling open() and write() within the function that needs to log something
+	* took out the remains of /summon and /users
+
 Fri Jul 31 23:17:24 CDT 1998 - Mysidia
 	* detect open socks servers
 	* fixed /stats o display, eliminate use of yicky macros is_globo() and is_loco()

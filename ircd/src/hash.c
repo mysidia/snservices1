@@ -37,7 +37,7 @@ static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
 
 /* Quick & dirty inline version of mycmp for hash-tables -Donwulff */
 #define thecmp(str1, str2, where) { \
-                                    register char *st1=str1, *st2=str2; \
+                                    char *st1=str1, *st2=str2; \
                                     while (tolower(*st1)==tolower(*st2)) \
                                     { \
                                       if (!*st1) goto where; \
@@ -107,10 +107,8 @@ static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
 int hash_nn_name(nname)
 char	*nname;
 {
-	Reg1	u_char	*name = (u_char *)nname;
-	Reg2	u_char	ch;
-	Reg3	int	i = 30;
-	Reg4	int	hash = 1, *tab;
+	u_char	ch, *name = (u_char *)nname;
+	int	i = 30, hash = 1, *tab;
 
 	for (tab = hash_mult; (ch = *name) && --i; name++, tab++)
 		hash += tolower(ch) + *tab + hash + i + i;
@@ -122,8 +120,8 @@ char	*nname;
 int hash_nn_name(hname)
 char	*hname;
 {
-	Reg1	u_char	*name = (u_char *)hname;
-	Reg2	int	hash = 0x5555;
+	u_char	*name = (u_char *)hname;
+	int	hash = 0x5555;
 
 	for (; *name; name++)
 		hash = (hash<<2) ^ tolower(*name);
@@ -170,7 +168,7 @@ int	add_to_client_hash_table(name, cptr)
 char	*name;
 aClient	*cptr;
 {
-	Reg1	int	hashv;
+	int	hashv;
 
 	hashv = hash_nn_name(name)%HASHSIZE;
 #ifdef DEBUGMODE
@@ -192,7 +190,7 @@ int	add_to_channel_hash_table(name, chptr)
 char	*name;
 aChannel	*chptr;
 {
-	Reg1	int	hashv;
+	int	hashv;
 
 	hashv = hash_nn_name(name)%CHANNELHASHSIZE;
 #ifdef DEBUGMODE
@@ -214,8 +212,8 @@ int	del_from_client_hash_table(name, cptr)
 char	*name;
 aClient	*cptr;
 {
-	Reg1	aClient	*tmp, *prev = NULL;
-	Reg2	int	hashv;
+	aClient	*tmp, *prev = NULL;
+	int	hashv;
 
 	hashv = hash_nn_name(name)%HASHSIZE;
 #ifdef DEBUGMODE
@@ -267,8 +265,8 @@ int	del_from_channel_hash_table(name, chptr)
 char	*name;
 aChannel	*chptr;
 {
-	Reg1	aChannel	*tmp, *prev = NULL;
-	Reg2	int	hashv;
+	aChannel	*tmp, *prev = NULL;
+	int	hashv;
 
 	hashv = hash_nn_name(name)%CHANNELHASHSIZE;
 #ifdef DEBUGMODE
@@ -317,10 +315,10 @@ aClient	*hash_find_client(name, cptr)
 char	*name;
 aClient	*cptr;
 {
-	Reg1	aClient	*tmp;
-	Reg2	aClient	*prv = NULL;
+	aClient	*tmp;
+	aClient	*prv = NULL;
 #ifdef DEBUGMODE
-	Reg3	aHashEntry	*tmp3;
+	aHashEntry	*tmp3;
 #endif /* DEBUGMODE */
 	int	hashv;
 
@@ -378,10 +376,10 @@ aClient	*hash_find_nickserver(name, cptr)
 char	*name;
 aClient *cptr;
 {
-	Reg1	aClient	*tmp;
-	Reg2	aClient	*prv = NULL;
+	aClient	*tmp;
+	aClient	*prv = NULL;
 #ifdef DEBUGMODE
-	Reg3	aHashEntry	*tmp3;
+	aHashEntry	*tmp3;
 #endif /* DEBUGMODE */
 	int	hashv;
 	char	*serv;
@@ -446,9 +444,9 @@ aClient	*hash_find_server(server, cptr)
 char	*server;
 aClient *cptr;
 {
-	Reg1	aClient	*tmp, *prv = NULL;
-	Reg2	char	*t;
-	Reg3	char	ch;
+	aClient	*tmp, *prv = NULL;
+	char	*t;
+	char	ch;
 #ifdef DEBUGMODE
 	aHashEntry	*tmp3;
 #endif /* DEBUGMODE */
@@ -539,8 +537,8 @@ char	*name;
 aChannel *chptr;
 {
 	int	hashv;
-	Reg1    aChannel	*tmp;
-	Reg2    aChannel	*prv = NULL;
+        aChannel	*tmp;
+	aChannel	*prv = NULL;
 #ifdef DEBUGMODE
 	aHashEntry	*tmp3;
 #endif /* DEBUGMODE */
@@ -557,7 +555,7 @@ c_move_to_top:
 	chhits++;
 	if (prv)
 	    {
-		register aChannel *tmp2;
+		aChannel *tmp2;
 
 		tmp2 = (aChannel *)tmp3->list;
 		tmp3->list = (void *)tmp;
@@ -570,7 +568,7 @@ c_move_to_top:
 	return chptr;
 c_move_to_top:
 	if(prv) {
-		register	aChannel	*tmp2;
+		aChannel	*tmp2;
 
 		tmp2 = (aChannel *)channelTable[hashv];
 		channelTable[hashv] = (void *)tmp;
@@ -597,8 +595,8 @@ char	*parv[];
 #ifndef DEBUGMODE
 	return 0;
 #else
-	register	int	l, i;
-	register	aHashEntry	*tab;
+	int	l, i;
+	aHashEntry	*tab;
 	int	deepest = 0, deeplink = 0, showlist = 0, tothits = 0;
 	int	mosthit = 0, mosthits = 0, used = 0, used_now = 0, totlink = 0;
 	int	link_pop[10], size = HASHSIZE;
@@ -658,7 +656,7 @@ char	*parv[];
 	{
 	case 'V' : case 'v' :
 	    {
-		register	aClient	*acptr;
+		aClient	*acptr;
 		int	bad = 0, listlength = 0;
 
 		for (acptr = client; acptr; acptr = acptr->next) {
@@ -680,7 +678,7 @@ char	*parv[];
 		return (0);
 	case 'r' :
 	    {
-		Reg1	aClient	*acptr;
+		aClient	*acptr;
 
 		sendto_one(sptr,"NOTICE %s :Rehashing Client List.", parv[0]);
 		clear_client_hash_table();
@@ -690,7 +688,7 @@ char	*parv[];
 	    }
 	case 'R' :
 	    {
-		Reg1	aChannel	*acptr;
+		aChannel	*acptr;
 
 		sendto_one(sptr,"NOTICE %s :Rehashing Channel List.", parv[0]);
 		clear_channel_hash_table();
@@ -758,7 +756,7 @@ char	*parv[];
 	    }
 	case 'z' :
 	    {
-		Reg1	aClient	*acptr;
+		aClient	*acptr;
 
 		if (parc <= 2)
 			return 0;
@@ -784,7 +782,7 @@ char	*parv[];
 	    }
 	case 'Z' :
 	    {
-		Reg1	aChannel	*acptr;
+		aChannel	*acptr;
 
 		if (parc <= 2)
 			return 0;

@@ -36,6 +36,8 @@ Computing Center and Jarkko Oikarinen";
 #include "h.h"
 
 
+
+
 /*
  * NOTE: parse() should not be called recursively by other functions!
  */
@@ -49,6 +51,35 @@ static	char	sender[HOSTLEN+1];
 static	int	cancel_clients PROTO((aClient *, aClient *, char *));
 static	void	remove_unknown PROTO((aClient *, char *));
 #endif
+
+/*
+**  Find a user@host (for services purposes).
+*/
+aClient *find_userserver(user, server, cptr, count)
+	char	*user, *server;
+	aClient	*cptr;
+	int	*count;
+{
+	Reg1    aClient *c2ptr;
+	Reg2    aClient *res = cptr;
+
+	*count = 0;
+	if (collapse(user))
+		for (c2ptr = client; c2ptr; c2ptr = c2ptr->next)
+		{
+			if (!MyClient(c2ptr)) /* implies mine and a user */
+			    continue;
+			if ((!server || !match(server, c2ptr->user->server)) &&
+                             mycmp(user, c2ptr->name) == 0)
+			  {
+                                (*count)++;
+                                res = c2ptr;
+ 			  }
+		}
+		return res;
+}
+
+
 
 /*
 **  Find a client (server or user) by name.
@@ -127,6 +158,105 @@ int	*count;
 		    }
 	return res;
     }
+
+#ifdef HASH_MSGTAB
+#define MSG_HASH_SIZE  255
+#define MHASH(x)       (toupper(*x)%MSG_HASH_SIZE)
+struct HMessage *msghash[MSG_HASH_SIZE+255];
+struct Message BlankMptrEnt;
+struct Message VMptrEnt;
+
+struct Message *hash_findcommand(char *cmd, aClient *cptr)
+{
+   char hval = cmd ? MHASH(cmd) : 0;
+   int iOper = (!MyClient(cptr) || IsAnOper(cptr)) ? 1 : 0;
+   if (!msghash[hval]) return NULL;
+   else
+   {
+        struct HMessage *ptr;
+        for (ptr = msghash[hval]; ptr; ptr = ptr->next)
+        {
+             if ((ptr->mptr && (mycmp(ptr->mptr->cmd, cmd) == 0)))
+             {
+                   if ( (ptr->mptr->flags & MF_OPER) && !iOper)
+                   {
+                             sendto_one(cptr, err_str(ERR_NOPRIVILEGES), me.name, ptr->mptr->cmd);
+                       return &VMptrEnt;
+                   }
+                   return ptr->mptr;
+             }
+        }
+        return NULL;
+   }
+}
+
+int msgtab_buildhash()
+{
+        int i = 0, trun = 0;
+        static int run = 0;
+        struct Message *mptr;
+        struct HMessage *ipt;
+        char hval;
+        BlankMptrEnt.cmd = NULL;
+        BlankMptrEnt.func= NULL;
+
+        if ( run ) /* empty the existing hashtable */
+        {
+               struct HMessage *h_next, *h_ptr;
+               trun = 1;
+
+               for (i = 0; i < 255; i++)
+               {
+                   if (msghash[i])
+                   {
+                           for (h_ptr = msghash[i]; h_ptr; h_ptr = h_next)
+                           {
+                               h_next = h_ptr->next;
+                               h_ptr->next = NULL;
+                               MyFree(h_ptr);
+                               h_ptr = NULL;
+                           }
+                           msghash[i] = NULL;
+                   }
+               }
+        } else run = 1;
+
+#ifdef BOOT_MSGS
+        if (trun < 1)
+               printf("Building msgtab[] hashes... ", hval);
+#endif
+
+        for ( i = 0 ; msgtab[i].cmd ; i++)
+        {
+            hval = MHASH(msgtab[i].cmd);
+            if (!msghash[hval])
+            {
+#ifdef BOOT_MSGS
+               if (trun < 1)
+                printf("\e[1;32m%c\e[0m ", hval);
+#endif
+                ipt = msghash[hval] = (struct HMessage *)MyMalloc(sizeof(struct HMessage));
+                memset(msghash[hval], 0, sizeof(struct HMessage));
+            }
+            else
+            {
+                 ipt = msghash[hval];
+                 msghash[hval] = (struct HMessage *)MyMalloc(sizeof(struct HMessage));
+                 memset(msghash[hval], 0, sizeof(struct HMessage));
+                 msghash[hval]->next = ipt;
+                 ipt = msghash[hval];
+            }
+            ipt->mptr = &msgtab[i];
+        }
+#ifdef BOOT_MSGS
+        if (trun < 1)
+               printf("\nmsgtab[] hashtable built; rehash to rebuild.\n", hval);
+#endif
+}
+#endif
+
+
+
 
 /*
 **  Find server by name.
@@ -354,58 +484,124 @@ struct	Message *mptr;
 	    {
 		if (s)
 			*s++ = '\0';
+#define prevent_dumping(mptr, cptr)                                              \
+               i = bufend - ((s) ? s : ch);                                      \
+               if ((mptr->flags & 0x1) && !(IsServer(cptr) || IsService(cptr)))  \
+                       cptr->since += (2 + i / 120);                             
+#if !defined(HASH_MSGTAB)
 		for (; mptr->cmd; mptr++) 
 			if (mycmp(mptr->cmd, ch) == 0)
 				break;
+#else
+                   mptr = hash_findcommand(ch, from);
+                   if (!mptr)
+                      mptr = &BlankMptrEnt;
+                   if (mptr == &VMptrEnt)
+                   {
+                      VMptrEnt.flags = 1;
+                      prevent_dumping(mptr, cptr);
+                      return 0;
+                   }
+#endif
 
                 if (!mptr->cmd)
                 { 
-                  if (MyConnect(from) && !IsAnOper(from))
-                      if (from->hurt)
+                  if (MyConnect(from))
+                      if (!IsAnOper(from) && from->hurt > 5)
                       {
-                          if (from->hurt < 2147483000) from->hurt += 15;
-                          if (from->since < 2147483000) from->since += 15;
+                          if (from->hurt < (MAXTIME-20)) from->hurt += 15;
+                          /*if (from->since < (MAXTIME-20)) from->since += 2; */
+                          /*cptr->since += (2 + (bufend - ((s) ? s : ch)) / 120);*/
+                          prevent_dumping(mptr, cptr);
                       }
                       else
                       {
-                          if (from->since < 2147483000) 
-                          cptr->since += (2 + (bufend - ((s) ? s : ch)) / 120);
+                          /*cptr->since += (2 + (bufend - ((s) ? s : ch)) / 120);*/
+                          prevent_dumping(mptr, cptr);
                       }
             
                  }
+		else if (mptr->cmd)	
+	        {
 
-                if (mptr && mptr->cmd)
-                {
-                 if(MyConnect(from) && from->hurt && !IsAnOper(from))
-                 if (mptr->func != m_pong && mptr->func != m_quit &&
-                     mptr->func != m_part && mptr->func != m_ison &&
-                     mptr->func != m_heal)
-                if (from && IsPerson(from))
-                {
-                   if (!(from->flags & FLAGS_HURT))
-                         from->hurt = 0;
-                   if (from->flags & FLAGS_HURT)
+                   if ((mptr->flags) && !(mptr->flags == 1))
                    {
-                       if (parsetime < from->hurt ) 
-                       {
-                           if (from->hurt < 2147483000) from->hurt += 10;
-                           if (from->since < 2147483000) from->since += 10;
-
-                          if ((from->since - parsetime) <= 60)
-                          {
-                           sendto_one(from, err_str(ERR_YOURHURT), me.name,
-                                      from->name);
-                          }
-                         return(0);
-                       }
-                       else
-                       {
-                        from->flags &= ~FLAGS_HURT;
-                       }
+                     int stopcmd = 0;
+                     if ((mptr->flags & MF_OPER) && !IsPrivileged(from) && MyClient(from))
+                     {
+                       sendto_one(from, err_str(ERR_NOPRIVILEGES), me.name, mptr->cmd);
+                       stopcmd=1;
+                     }
+                     else
+                     if ((mptr->flags & MF_ULINE) && MyConnect(from) &&
+                        (!IsULine(cptr, from)))
+                     {   stopcmd=1;
+                         sendto_one(from, ":%s NOTICE %s :(%s) This command can only be used by a U-lined server.",
+                                    me.name, from->name, mptr->cmd);
+                         if (IsServer(cptr))
+                         {
+                            sendto_ops("%s is not U-lined and attempted a services command (%s).", from->name, mptr->cmd);
+                            sendto_serv_butone(cptr, ":%s GLOBOPS :%s is not U-lined and "
+                                                     "attempted a services command. (%s)",
+                                                      me.name, from->name, mptr->cmd);
+                         }
+                     }
+                     if (stopcmd) { prevent_dumping(mptr, cptr); return 0; }
                    }
-                   else from->hurt=0;
-                }
-            }
+
+
+/*                             replaced with a flag in the message table
+				if (mptr->func != m_pong && mptr->func != m_quit &&
+				    mptr->func != m_part && mptr->func != m_ison &&
+				    mptr->func != m_heal && mptr->func != m_userhost)*/
+			if (IsPerson(from) && MyConnect(from))
+			{
+				if (mptr->while_hurt < 1 
+                                   || ((mptr->while_hurt > 1 && (from->hurt < mptr->while_hurt))))
+				{
+					if (!IsHurt(from))
+					   from->hurt = 0;
+					if (IsHurt(from) && from->hurt)
+					{
+						if (NOW < from->hurt || (from->hurt>0 && from->hurt<5))
+						{
+						     if (from->hurt>5 && from->hurt > NOW)
+						     {
+							if (from->hurt < MAXTIME-20) from->hurt += 4;
+							/* 
+                                                         * dont lag, this will just
+                                                         * cause some commands to be processed
+                                                         * after the hurt expires.
+                                                            if (from->since < MAXTIME-20) from->since += 10;
+                                                         */
+						     }
+							/* hurt replies */
+                                                       if (!(mptr->func == m_notice))
+	 						if (((from->since - NOW ) <= 60))
+							{
+							     switch(from->hurt)
+							     {
+							        default: case 1:
+								 sendto_one(from, err_str(ERR_YOURHURT), me.name, from->name);
+							         break;
+							        case 2:
+								 sendto_one(from, err_str(ERR_YOURHURT), me.name, "AUTH");
+							         break;
+							        case 3: 
+								  sendto_one(from, ":%s %d %s :You must identify to a registered nick before you can use this command from a banned site.", me.name, ERR_YOURHURT, from->name);
+                                                                  break;
+							        case 4: 
+                                                                    break;
+							     }
+							}
+
+							return 0;
+						} else remove_hurt(from);
+					}
+				}
+			} 
+		}
+
 
 		if (!mptr->cmd)
 		    {

@@ -126,6 +126,7 @@ aClient	*from;
 	cptr->serv = NULL;
 	cptr->status = STAT_UNKNOWN;
 	cptr->fd = -1;
+	cptr->socks = (void *)0;
 	(void)strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
@@ -137,6 +138,22 @@ aClient	*from;
 		cptr->authfd = -1;
 	    }
 	return (cptr);
+}
+
+int	free_socks(zap)
+struct Socks	*zap;
+{
+	if (zap == NULL)
+		return (-1);
+
+	if (zap->fd >= 0)
+		closesocket(zap->fd);
+	zap->fd = -1;
+
+	MyFree(zap);
+
+	Debug((DEBUG_ERROR, "freeing socks"));
+	return (0);
 }
 
 void	free_client(cptr)
@@ -167,6 +184,9 @@ aClient *cptr;
 		user->channel = NULL;
 		user->invited = NULL;
 		user->silence = NULL;
+#ifdef  KEEP_HURTBY
+		user->hurtby = NULL;
+#endif
 		cptr->user = user;
 	    }
 	return user;
@@ -205,6 +225,11 @@ aClient	*cptr;
 	    {
 		if (user->away)
 			MyFree((char *)user->away);
+#ifdef  KEEP_HURTBY
+		if (user->hurtby)
+			MyFree((char *)user->hurtby);
+		user->hurtby = NULL;
+#endif
 		/*
 		 * sanity check
 		 */

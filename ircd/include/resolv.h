@@ -76,3 +76,6 @@ struct state {
 extern struct state _res;
 extern char *p_cdname(), *p_rr(), *p_type(), *p_class(), *p_time();
 
+#ifdef SOL20
+#define dn_skipname __dn_skipname
+#endif

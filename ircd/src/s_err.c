@@ -75,7 +75,8 @@ static	Numeric	numeric_errors[] = {
 /* 436 */	ERR_NICKCOLLISION, "%s :Nickname collision KILL",
 /* 437 */	ERR_BANNICKCHANGE,
 		"%s :Cannot change nickname while banned on channel",
-		0, (char *)NULL, 0, (char *)NULL, 0, (char *)NULL,
+		0, (char *)NULL, 0, (char *)NULL, 
+/* 440 */	ERR_SERVICESDOWN, "Services is currently down. Please wait a few moments and then try again.",
 /* 441 */	ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel",
 /* 442 */	ERR_NOTONCHANNEL, "%s :You're not on that channel",
 /* 443 */	ERR_USERONCHANNEL, "%s %s :is already on channel",
@@ -142,9 +143,9 @@ static	Numeric	numeric_errors[] = {
 /* 511 */	ERR_SILELISTFULL, "%s :Your silence list is full",
 		0, (char *)NULL,
 /* 513 */	ERR_NEEDPONG, ":To connect, type /QUOTE PONG %lX",
-/* 514 */	ERR_YOURHURT, ":You are temporarily silenced:\
- Do NOT attempt to speak or continue flooding, this will only penalize\
- you more"
+/* 514 */	ERR_YOURHURT, ":Your connection is silenced:\
+ You should not attempt to speak or issue any IRC commands: Attempts\
+ to do so will not be successful."
 };
 
 static	Numeric	numeric_replies[] = {
@@ -156,7 +157,7 @@ static	Numeric	numeric_replies[] = {
 /* 305 */	RPL_UNAWAY, ":You are no longer marked as being away",
 /* 306 */	RPL_NOWAWAY, ":You have been marked as being away",
 		0, (char *)NULL, 0, (char *)NULL,
-		0, (char *)NULL,
+/* 309 */	RPL_WHOISHURT, "%s :has been muted",
 /* 310 */	RPL_WHOISHELPOP, "%s :looks very helpful.",
 /* 311 */	RPL_WHOISUSER, "%s %s %s * :%s",
 /* 312 */	RPL_WHOISSERVER, "%s %s :%s",

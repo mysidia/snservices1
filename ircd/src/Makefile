@@ -20,7 +20,6 @@ DIRCHG=(cd ../;make)
 CC=danger will robinson
 #CC=gcc
 #normal
-FIN_COMP=@./fin.sh
 
 LINTFLAGS=-hba
 
@@ -28,7 +27,7 @@ OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
 	class.o hash.o ircd.o list.o res.o s_auth.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
 	whowas.o userload.o crule.o md5.o help.o version.o s_sock.o \
-	$(RES) $(STRTOUL)
+	snprintf.o $(RES) $(STRTOUL)
 
 SRC=$(OBJS:%.o=%.c)
 
@@ -52,10 +51,8 @@ version.o: version.c ../include/patchlevel.h
 
 ircd: $(OBJS) 
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) $(DESCRYPT) -o ircd
-#	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) $(DESCRYPT) -o ircd
-
-	$(FIN_COMP)
 	@chmod $(IRCDMODE) ircd
+
 chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
 	 ../include/common.h crule.c chkconf.c
 	$(CC) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
