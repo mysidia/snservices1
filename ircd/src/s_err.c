@@ -111,6 +111,7 @@ static  Numeric local_replies[] = {
 /* 304 */	{ RPL_TEXT, NULL },
 /* 305 */	{ RPL_UNAWAY, ":You are no longer marked as being away" },
 /* 306 */	{ RPL_NOWAWAY, ":You have been marked as being away" },
+/* 307 */       { RPL_WHOISREGNICK, "%s %s :has identified for this nick%s" },
 /* 309 */	{ RPL_WHOISHURT, "%s :has been muted" },
 /* 310 */	{ RPL_WHOISHELPOP, "%s :looks very helpful." },
 /* 311 */	{ RPL_WHOISUSER, "%s %s %s * :%s" },
@@ -227,6 +228,9 @@ static  Numeric local_replies[] = {
 		":Permission Denied- You're not an IRC operator" },
 /* 482 */	{ ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator" },
 /* 483 */	{ ERR_CANTKILLSERVER, ":You cant kill (or hurt) a server!" },
+/* 486 */       { ERR_NONONREG, "%s :You must identify to a "
+                                    "%s nick to private message %s", },
+    
 /* 491 */	{ ERR_NOOPERHOST, ":No O-lines for your host" },
 /* 492 */	{ ERR_NOSERVICEHOST, NULL },
 /* 501 */	{ ERR_UMODEUNKNOWNFLAG, ":Unknown MODE flag" },

@@ -1193,6 +1193,20 @@ nickkilldone:
 	      (!MyClient(sptr) && parc>2 && atoi(parv[2])<sptr->lastnick))
 	    sptr->lastnick = (MyClient(sptr) || parc < 3) ?
 	      NOW:atoi(parv[2]);
+
+	  /* Change of nick name, Remove any +r (Registered) or +v (Verified ) */
+	  if ((IsRegNick(sptr) || IsVerNick(sptr)) && mycmp(parv[0], nick) != 0) {
+		  char modebuf[BUFSIZE];
+		  long oldmode = ClientUmode(sptr);
+	
+		  ClearRegNick(sptr);
+		  ClearVerNick(sptr);	  
+		  
+		  if (MyClient(cptr)) {			  
+			  send_umode(cptr, sptr, sptr, oldmode, ALL_UMODES, modebuf);
+		  }
+	  }
+	  
 	  sendto_common_channels(sptr, ":%s NICK :%s", parv[0], nick);
 	  if (IsPerson(sptr))
 	    add_history(sptr);
@@ -1383,6 +1397,19 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 		    if (!is_silenced(sptr, acptr))
 		    {
                       check_hurt(acptr);
+
+                      if (!IsULine(sptr, sptr)) {
+                          if ((IsRegOnly(acptr) && !IsRegNick(sptr)) ||
+			       (IsVerOnly(acptr) && !IsVerNick(sptr))) 
+                          {
+				  sendto_one(sptr, rpl_str(ERR_NONONREG), me.name, parv[0],
+						  IsVerOnly(acptr) ? "verified"
+						                   : "registered",
+						  acptr->name);
+				  continue;
+                          }
+                      }
+		      
                       if (MyClient(sptr)) 
                       {
 		      if (IsHurt(sptr) && acptr!=sptr && sptr->hurt && !IsAnOper(acptr)
@@ -2085,6 +2112,13 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
 				   me.name, parv[0], name, user->server,
 				   a2cptr?safe_info(IsOper(sptr), a2cptr):"*Not On This Net*");
+
+			if(IsRegNick(acptr) || IsVerNick(acptr))
+			{
+				sendto_one(sptr, rpl_str(RPL_WHOISREGNICK), me.name, parv[0], name, 
+					     IsVerNick(acptr) ? " (Verified)" : "");
+			}
+	
 
 			if (user->away)
 				sendto_one(sptr, rpl_str(RPL_AWAY), me.name,
@@ -3509,6 +3543,10 @@ static int user_modes[]	     = { U_OPER, 'o',
 				 U_FLOOD, 'f',
 				 U_LOG, 'l',
 				 U_MASK, 'm',
+				 U_REGISTERED, 'r',
+				 U_VERIFIED, 'v',				 
+				 U_REGONLY, 'R',
+				 U_VERONLY, 'V',
 				 0, 0 };
 
 /*
@@ -3615,6 +3653,12 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  for (s = user_modes; (flag = *s); s += 2)
 	    if (*m == (char)(*(s+1)))
 	      {
+		if (uline == 0 && (flag == U_REGISTERED || flag == U_VERIFIED)) {
+			   /* TODO: Should have a table of flags + who can set them */
+			flag = 0;
+
+			break;
+		}
 		if (what == MODE_ADD)
 		  ClientUmode(acptr) |= flag;
 		else
@@ -3661,7 +3705,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  }
 
 	  /* hackwarn for anything besides +/- h */
-#define ULINE_CHANGE (U_HELPOP|U_MASK)
+#define ULINE_CHANGE (U_HELPOP|U_MASK|U_VERIFIED|U_REGISTERED|U_VERONLY|U_REGONLY)
 	  if (!hackwarn)
 	  {
 	      if((realflags & ~(ULINE_CHANGE)) == (ClientUmode(acptr) & ~(ULINE_CHANGE)))

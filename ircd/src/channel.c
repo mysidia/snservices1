@@ -376,6 +376,30 @@ char	*banid;
 }
 
 /*
+ * index_left_part( text, substring, int *pointer ) :
+ *    Tries to find 'substring' at the beginning of text.
+ *       if successful returns the index 1 after the end, else 0
+ */
+int index_left_part(const char* text, const char* substring)
+{
+	int i = 0;
+
+	for(; *substring != '\0'; substring++) {
+		if (*text == '\0') {
+			return 0;
+		}
+
+		if (irc_tolower(*text) != irc_tolower(*substring)) 
+			return 0;
+		text++;
+		substring++;
+		i++;
+	}
+
+	return i;
+}
+
+/*
  * IsMember - returns 1 if a person is joined and not a zombie
  */
 int	IsMember(cptr, chptr)
@@ -418,15 +442,31 @@ int BanRuleMatch(const char *text, aClient *cptr, int *result,
             ban_flags = BAN_GECOS;
             pattern_start = 2;
         }
+        else if (((pattern_start = index_left_part(text, "NR:")) > 0)
+	          && !IsRegNick(cptr)) {
+            ban_flags = BAN_REGONLY;
+        }
+        else if (((pattern_start = index_left_part(text, "NV:")) > 0)
+	          && !IsVerNick(cptr)) {
+	    ban_flags = BAN_VERONLY;
+        }	
         else return 0;
 
-	if (ban_flags == BAN_BQUIET && pattern_start) {
+
+	/* Ban flags +q,  NV, and NR  match nick!user@host  like any other ban */
+	if ((ban_flags == BAN_BQUIET || ban_flags == BAN_VERONLY || ban_flags == BAN_REGONLY)
+	      && pattern_start) {
 	    if (
                   (match(text+pattern_start, nuh)) &&
                   (!nuhmask || match(text+pattern_start, nuhmask)) &&
                   (!sip || match(text+pattern_start, sip))
                )
                return 0;
+	}
+
+	/* Ban flags NV and NR elevate to standard bans if they match */
+	if ((ban_flags == BAN_VERONLY || ban_flags == BAN_REGONLY)) {
+		ban_flags |= BAN_STD;		
 	}
 
 	if (ban_flags == BAN_REQUIRE && pattern_start) {
