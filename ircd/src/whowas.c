@@ -125,12 +125,7 @@ void	off_history(aClient *cptr)
 
 void	initwhowas()
 {
-	int	i;
-
-	for (i = 0; i < NICKNAMEHISTORYLENGTH; i++)
-	  {
-		bzero((char *)&was[i], sizeof(aName));
-	  }
+	bzero(&was, sizeof(aName) * NICKNAMEHISTORYLENGTH);
 }
 
 
@@ -147,7 +142,7 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	char	*chname = NULL;
 	aChannel *chptr = NULL;
 	Link	*lp;
-	int	max = -1, len = 0;
+	int	max = -1, len = 0, mlen = 0;
 	char	*p, *nick, *s, buf[BUFSIZE];
 
  	if (parc < 2)
@@ -177,6 +172,9 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   up->username,
 					   UGETHOST(sptr, up), wp->ww_info);
 
+				mlen = strlen(me.name) + strlen(parv[0]) + 10 +
+				  strlen(wp->ww_nick);
+
 				for (*buf = '\0', len = 0, lp = wp->ww_chans; lp; lp = lp->next)
 				  {
 					chname = lp->value.wwcptr->chname;
@@ -185,11 +183,7 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					    ((chptr = find_channel(lp->value.wwcptr->chname, NULL)) &&
 					     IsMember(sptr, chptr)))
 					  {
-						if (len + strlen(lp->value.wwcptr->chname)
-						    > (size_t) BUFSIZE - 10
-						    - strlen(me.name)
-						    - strlen(parv[0])
-						    - strlen(wp->ww_nick))
+						if (len + strlen(lp->value.wwcptr->chname) > (size_t) BUFSIZE - mlen)
 						  {
 							sendto_one(sptr,
 								   ":%s %d %s %s :%s",
@@ -201,17 +195,17 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 						  }
 
 						if (lp->value.wwcptr->ucflags & CHFL_CHANOP)
-							*(buf + len++) = '@';
+							buf[len++] = '@';
 
 						else if (lp->value.wwcptr->ucflags & CHFL_VOICE)
-							*(buf + len++) = '+';
+							buf[len++] = '+';
 
 						if (len)
-							*(buf + len) = '\0';
+							buf[len] = '\0';
 
-						strcpy(buf + len, lp->value.wwcptr->chname);
+						strcpy(&buf[len], lp->value.wwcptr->chname);
 						len += strlen(lp->value.wwcptr->chname);
-						strcat(buf + len, " ");
+						strcpy(&buf[len], " ");
 						len++;
 					  }
 				  }
