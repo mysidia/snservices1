@@ -516,7 +516,12 @@ int config_read(char *name, char *file)
 		{
 			if (n->data != NULL)
 			{
+				n->status = ((node *) n->data)->status;
 				n->data = ((node *) n->data)->data;
+				if (n->status != CONFIG_OK)
+				{
+					n->status = m->h(n);
+				}
 			}
 			else
 			{
