@@ -2276,7 +2276,8 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		return 0;
 	}
 
-	sendto_one(sptr, ":%s NOTICE %s :Client List", me.name, sptr->name);
+        sendto_one(cptr, ":%s NOTICE %s :<clients>", me.name, sptr->name);
+		
 	for(i = 0; i <= highest_fd; i++) {
 		if (!(ptr = local[i]))
 			continue;
@@ -2290,25 +2291,53 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		if (show_users && !IsPerson(ptr))
 			continue;
 
-		sendto_one(sptr, ":%s NOTICE %s :%d. [%s!%s@%s,%s%s,%d] [%s/%s/%d]", me.name, sptr->name, i,
-				(BadPtr(ptr->name) ? "-" : ptr->name),
-				 BadPtr(ptr->username) ? "-" : ptr->username,
-				BadPtr( ptr->sockhost) ? "-" : ptr->sockhost,
-				DoingDNS(ptr) ? "DNS" : "",
-				IsNotSpoof( ptr )  ? "" : "Spoof?",
-				ptr->status,
-				BadPtr(ptr->sup_server) ? "-" : ptr->sup_server,
-				BadPtr(ptr->sup_host) ? "-" : ptr->sup_host,
-				ptr->port
-				);
-		sendto_one(sptr, ":%s NOTICE %s : [%ld/%ld]  [%s:%s] [%s] ",  me.name, sptr->name,
-			              ptr->firsttime, ptr->lasttime,
-				      IsUserVersionKnown( ptr ) ? "V" : "NV",
-				      ((ptr->user == NULL || BadPtr(ptr->user->sup_version))
-				                ? "-" : ptr->user->sup_version),
-			              BadPtr(ptr->info) ? "" : ptr->info );
+		sendto_one(cptr, ":%s NOTICE %s :<client id=\"%d\">", me.name, sptr->name,
+					i);
+		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name> <uid>%s</uid>", 
+				me.name, sptr->name,
+			                 BadPtr(sptr->name) ? "" : sptr->name,
+					 BadPtr(sptr->username) ? "" : sptr->username);
+		sendto_one(cptr, ":%s NOTICE %s :<sockhost rport=\"%d\">%s</sockhost>",
+				me.name, me.name, sptr->name, ptr->port, ptr->sockhost);
+		sendto_one(sptr, ":%s NOTICE %s : <info>%s</info>",  me.name, sptr->name,
+                                BadPtr(ptr->info) ? "" : ptr->info);
+		
+		sendto_one(cptr, ":%s NOTICE %s :%s%s<statuscode>%d</statuscode>"
+				 "<flags client=\"%ld\" user=\"%ld\" />", me.name, 
+				sptr->name,
+				DoingDNS(ptr) ? "<doingdns />" : "",
+				!IsNotSpoof(ptr) ? "<maybespoof />" : "",
+				ptr->status, ClientFlags(ptr), ClientUmode(ptr));
+
+		if (!BadPtr(ptr->sup_server)) {
+			sendto_one(cptr, ":%s NOTICE %s :<sup_server>%s</sup_server>",
+					  me.name, sptr->name, ptr->sup_server);
+		}
+
+		if (!BadPtr(ptr->sup_host)) {
+			sendto_one(cptr, ":%s NOTICE %s :<sup_host>%s</sup_host>",
+					me.name, sptr->name, ptr->sup_host);
+		}
+
+		sendto_one(sptr, ":%s NOTICE %s : <times first=\"%d\" last=\"%d\" since=\"%d\" />",  me.name, sptr->name,
+				                   ptr->firsttime, ptr->lasttime, ptr->since);
+		sendto_one(sptr, ":%s NOTICE %s : <version status=\"%s\" />",
+			                          me.name, sptr->name,
+				                  IsUserVersionKnown(ptr) ? "Known" : "Unknown");
+		sendto_one(sptr, ":%s NOTICE %s : <counts watches=\"%d\" sendM=\"%d\" sendK=\"%d\" receiveM=\"%d\" receiveK=\"%d\" />",  me.name, sptr->name, ptr->watches, ptr->sendM, ptr->sendK, ptr->receiveM, ptr->receiveK);
+		
+		
+		if (ptr->user)
+		{
+			if (!BadPtr(ptr->user->sup_version)) {
+				sendto_one(sptr, ":%s NOTICE %s : <user_version>%s</user_version>",
+					      	me.name, sptr->name, ptr->user->sup_version);
+			}			
+		}
+		sendto_one(cptr, ":%s NOTICE %s :</client>", me.name, sptr->name);
+
 	}
-	sendto_one(sptr, ":%s NOTICE %s :End of List", me.name, sptr->name);
+	sendto_one(sptr, ":%s NOTICE %s :</clients>", me.name, sptr->name);
 	return 0;
 }
 
