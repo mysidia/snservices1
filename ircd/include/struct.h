@@ -25,33 +25,6 @@
 #include "common.h"
 #include "sys.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-
-#if !defined(va_copy) && defined(SOL20)
-#define va_copy(dst, src) ((dst) = (src))
-#endif
-
-#include "snprintf.h"
-
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#ifdef STDDEFH
-# include <stddef.h>
-#endif
-
-#ifdef USE_SYSLOG
-# include <syslog.h>
-# ifdef SYSSYSLOGH
-#  include <sys/syslog.h>
-# endif
-#endif
-#ifdef	pyr
-#include <sys/time.h>
-#endif
-
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
 typedef	struct	Socks	aSocks;
@@ -61,7 +34,9 @@ typedef	struct	Server	aServer;
 typedef	struct	SLink	Link;
 typedef	struct	SMode	Mode;
 typedef struct	Watch	aWatch;
+typedef struct	machine_data aMachine;
 typedef struct  ListOptions     LOpts;
+
 
 typedef struct  CloneItem aClone;
 
@@ -74,15 +49,20 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #include "dbuf.h"	/* THIS REALLY SHOULDN'T BE HERE!!! --msa */
 #endif
 
-/*#define NETWORK                 "SorceryNet"*/
-/*#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"*/
+#ifndef NETWORK
+#define NETWORK                 "SorceryNet"
+#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"
+#endif
+
 #define SOCKS_TIMEOUT	30	/* number of seconds to wait before giving
 				   up on a socks request */
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
-/*#define ENABLE_SOCKSCHECK*/	/* enable socks check */
+#ifndef _WIN32
+#define ENABLE_SOCKSCHECK	/* enable socks check */
+#endif
 
 #define SOCKSPORT		1080
 
@@ -118,12 +98,15 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	MAXBANLENGTH	1024
 #define	MAXSILES	5
 #define	MAXSILELENGTH	128
+#define MAXDCCALLOW	5
+#define DCC_LINK_ME	0x01    /* This is my dcc allow */
+#define DCC_LINK_REMOTE	0x02    /* I need to remove these dcc allows from these clients when I die */
+
 
 #define	USERHOST_REPLYLEN	(NICKLEN+HOSTLEN+USERLEN+5)
 #define MAXTIME			0x7FFFFFFF /* largest thing time() returns, when time() exceeds this,
                                            we're dead meat as far as hurt timing goes:/  */
 #define HELPOP_CHAN     "#HelpOps"
-
 
 /*
 ** 'offsetof' is defined in ANSI-C. The following definition
@@ -243,13 +226,13 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define FLAGS_HURT		BIT19 /* if ->hurt is set, user is silenced */
 #define FLAGS_SOCK		BIT20 /* socks check pending */
 #define FLAGS_SOCKS		FLAGS_SOCK	/* same as flags_sock */
-#define FLAGS_GOT_VERSION	BIT21 /* Ctcp version reply received */
-#define FLAGS_GOT_SPOOFCODE	BIT22 /* Is not spoof */
-#define FLAGS_SENT_SPOOFCODE	BIT23
+#define FLAGS_DCCNOTICE		BIT21
 
 /* usermode flags
      NOTE: these are still held in sptr->flags */
-#define U_FULLMASK	BIT18
+#define U_FULLMASK	BIT18 /* Complete masking */
+#define U_TROJAN	BIT19 /* `Trojan notices' */
+#define U_DCCALLOW	BIT20 /* Usermode +d -- enable dccallow*/
 #define U_MASK		BIT21 /* Masked */
 #define	U_OPER		BIT22 /* Global IRCop */
 #define	U_LOCOP		BIT23 /* Local IRCop */
@@ -264,14 +247,16 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define U_LOG           BIT32 /* See network-level server logging */
 
 /* list of usermodes that are propogated/passed on to other servers*/
-#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP|U_MASK)
+#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP|U_MASK|U_FULLMASK|U_DCCALLOW)
 /* list of all usermodes except those that are in send_umodes*/
-#define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
-#define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
+#define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG|U_TROJAN)
+#define FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
-#define FLAGSET_FLOOD   (U_FLOOD)  /* what clients should flood notices be sent to ? */
-#define FLAGSET_CLIENT	(U_CLIENT) /* what clients should client notices be sent to ? */
-#define FLAGSET_SOCKS	(U_OPER)   /* what clients should socks warnings be sent to ?  */
+#define FLAGSET_FLOOD   (U_OPER|U_FLOOD)  /* what clients should flood notices be sent to ? */
+#define FLAGSET_CLIENT	(U_OPER|U_CLIENT) /* what clients should client notices be sent to ? */
+#define FLAGSET_SOCKS	(U_OPER)          /* what clients should socks warnings be sent to ?  */
+#define FLAGSET_DCCALLOW (U_OPER|U_TROJAN)
+#define FLAGSET_SUBSEVEN (U_OPER|U_TROJAN)
 
 /* socks flags */
 #define	SOCK_WANTCON		BIT01	/* nonblocking connection in progress */
@@ -293,6 +278,12 @@ typedef	enum {
 	LOG_HI
 } loglevel_value_t;
 
+/* Client/Version capabilities */
+#define CAP_USERIP		BIT01
+#define CAP_ZIP			BIT02
+#define CAP_ZIP_DO		BIT03
+#define CAP_ZIP_DONT		BIT04
+
 #define SET_BIT(x, y)		((x) |= (y))
 #define REMOVE_BIT(x, y)	((x) &= ~(y))
 #define IS_SET(x, y)		((x) & (y))
@@ -303,6 +294,7 @@ typedef	enum {
 /* flags macros. */
 #define ClientUmode(x)		(x)->uflags
 #define ClientFlags(x)		(x)->flags
+#define ClientOpt(x)		(x)->opt
 
 #define	IsListening(x)		((x)->flags & FLAGS_LISTEN)
 #define SetListening(x)		((x)->flags |= FLAGS_LISTEN)
@@ -346,6 +338,10 @@ typedef	enum {
 #define SetFloodF(x)		(ClientUmode(x) |= U_FLOOD)
 #define ClearFloodF(x)		(ClientUmode(x) &= ~U_FLOOD)
 
+#define IsTrojan(x)		(ClientUmode(x) & U_TROJAN)
+#define SetTrojan(x)		(ClientUmode(x) |= U_TROJAN)
+#define ClearTrojan(x)		(ClientUmode(x) &= ~U_TROJAN)
+
 #define IsHelpOp(x)		(ClientUmode(x) & U_HELPOP)
 #define SetHelpOp(x)		(ClientUmode(x) |= U_HELPOP)
 #define ClearHelpOp(x)		(ClientUmode(x) &= ~U_HELPOP)
@@ -385,18 +381,15 @@ typedef	enum {
 #define UGETHOST(s, x)		(((s)->user == (x) || !(x)->mask || ((s) && IsOper((s)))) ? (x)->host : (x)->mask)
 
 #ifdef NOSPOOF
-/*#define	IsNotSpoof(x)		((x)->nospoof == 0)*/
-#define		IsNotSpoof(x)	((ClientFlags(x)) & FLAGS_GOT_SPOOFCODE)
-#define		SetNotSpoof(x)	((ClientFlags(x)) |= FLAGS_GOT_SPOOFCODE)
-#define		SetSentNoSpoof(x) ((ClientFlags(x)) |= FLAGS_SENT_SPOOFCODE)
-#define         SentNoSpoof(x)  ((ClientFlags(x)) & FLAGS_SENT_SPOOFCODE)
+#define	IsNotSpoof(x)		((x)->nospoof == 0)
 #else
 #define IsNotSpoof(x)           (1)
-#define SetNotSpoof(x)		(1)
 #endif
 
-#define IsUserVersionKnown(x)	(ClientFlags(x) & FLAGS_GOT_VERSION)
-#define SetUserVersionKnown(x)	(ClientFlags(x) |= FLAGS_GOT_VERSION)
+#define SeenDCCNotice(x)	(ClientFlags(x) & FLAGS_DCCNOTICE)
+#define	SetDCCNotice(x)		(ClientFlags(x) |= FLAGS_DCCNOTICE)
+#define	ClearDCCNotice(x)	(ClientFlags(x) &= ~FLAGS_DCCNOTICE)
+
 
 /*
  * defined operator access levels
@@ -562,9 +555,11 @@ struct	ConfItem	{
 	char	*host;
 	char	*passwd;
 	char	*name;
+	void	*other_p;
 	int	port;
 	time_t	hold;	/* Hold action until this time (calendar time) */
 	int	tmpconf, bits;
+	char	exval1;
 #ifndef VMSP
 	aClass	*class;  /* Class of connection */
 #endif
@@ -601,6 +596,7 @@ struct	ConfItem	{
 #define CONF_CRULEAUTO          0x400000
 #define CONF_MISSING		0x800000
 #define CONF_AHURT		0x1000000
+#define CONF_TRIGGER		0x2000000
 
 #define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
@@ -621,6 +617,7 @@ struct	User	{
 	Link	*channel;	/* chain of channel pointer blocks */
 	Link	*invited;	/* chain of invite pointer blocks */
 	Link	*silence;	/* chain of silence pointer blocks */
+	Link	*dccallow;	/* chain of dcc send allowed users */
 	char	*away;		/* pointer to away message */
         char    *mask;          /* masked host */
 	time_t	last;
@@ -628,10 +625,6 @@ struct	User	{
 	int	joined;		/* number of channels joined */
 	char	username[USERLEN+1];
 	char	host[HOSTLEN+1];
-        char	server[HOSTLEN+1];
-#ifdef  KEEP_HURTBY
-	char    *hurtby;
-#endif
 				/*
 				** In a perfect world the 'server' name
 				** should not be needed, a pointer to the
@@ -640,6 +633,11 @@ struct	User	{
 				** not yet be in links while USER is
 				** introduced... --msa
 				*/
+        char	server[HOSTLEN+1];
+#ifdef  KEEP_HURTBY
+	char    *hurtby;
+#endif
+	u_int32_t auth_a, auth_b;
 #ifdef	LIST_DEBUG
 	aClient	*bcptr;
 #endif
@@ -677,6 +675,7 @@ struct Client	{
 	time_t	lastnick;	/* TimeStamp on nick */
 	long	flags;		/* client flags */
 	long	uflags;		/* client usermode */
+	char	cap;		/* options */
 	aClient	*from;		/* == self, if Local Client, *NEVER* NULL! */
 	int	fd;		/* >= 0, for local clients */
 	int	hopcount;	/* number of servers to this 0 = local */
@@ -685,16 +684,31 @@ struct Client	{
 	char	name[HOSTLEN+1]; /* Unique name of the client, nick or host */
 	char	username[USERLEN+1]; /* username here now for auth stuff */
 	char	info[REALLEN+1]; /* Free form additional client information */
+	struct	in_addr	ip;	/* keep real ip# too */
+#ifdef FLUD
+        Link       *fludees;
+#endif
+	/****************************************************************/
+	/****************************************************************/
+
 	/*
 	** The following fields are allocated only for local clients
 	** (directly connected to *this* server with a socket.
 	** The first of them *MUST* be the "count"--it is the field
-	** to which the allocation is tied to! *Never* refer to
+	** to which the allocation is tied to! *NEVER, NEVER* refer to
 	** these fields, if (from != self).
 	*/
+
+	/****************************************************************/
+	/****************************************************************/
+
 	int	count;		/* Amount of data in buffer */
+	int	inOpt, outOpt;
+#ifdef FLUD
+        time_t      fludblock;
+        struct fludbot *fluders;
+#endif
 	char	buffer[BUFSIZE]; /* Incoming message buffer */
-	char	sup_server[HOSTLEN+1], sup_host[HOSTLEN+1];
 	short	lastsq;		/* # of 2k blocks when sendqueued called last*/
 	dbuf	sendQ;		/* Outgoing message queue--if socket full */
 	dbuf	recvQ;		/* Hold for data incoming yet to be parsed */
@@ -706,19 +720,18 @@ struct Client	{
 	long	sendK;		/* Statistics: total k-bytes send */
 	long	receiveM;	/* Statistics: protocol messages received */
 	long	receiveK;	/* Statistics: total k-bytes received */
-	u_short	sendB;		/* counters to count upto 1-k lots of bytes */
-	u_short	receiveB;	/* sent and received. */
 	aClient	*acpt;		/* listening client which we accepted from */
 	Link	*confs;		/* Configuration record associated */
 	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
-	struct	in_addr	ip;	/* keep real ip# too */
-	u_short	port;	/* and the remote port# too :-) */
-	struct	hostent	*hostp;
-	LOpts   *lopt;
 #ifdef	pyr
 	struct	timeval	lw;
 #endif
+	struct	hostent	*hostp;
+	LOpts   *lopt;
+	u_short	sendB;		/* counters to count upto 1-k lots of bytes */
+	u_short	receiveB;	/* sent and received. */
+	u_short	port;	/* and the remote port# too :-) */
 	char	sockhost[HOSTLEN+1]; /* This is the host name from the socket
 				     ** and after which the connection was
 				     ** accepted.
@@ -759,23 +772,26 @@ struct	stats {
 	unsigned int	is_abad; /* bad auth requests */
 	unsigned int	is_udp;	/* packets recv'd on udp port */
 	unsigned int	is_loc;	/* local connections made */
+#ifdef FLUD
+        unsigned int is_flud;     /* users/channels flood protected */
+#endif                    /* FLUD */
 };
 
 struct ListOptions {
-        LOpts   *next;
-        Link    *yeslist, *nolist;
-        int     flag;
+	char	flag;
         int     starthash;
         short int       showall;
         unsigned short  usermin;
         int     usermax;
+
+        LOpts   *next;
+        Link    *yeslist, *nolist;
         time_t  currenttime;
         time_t  chantimemin;
         time_t  chantimemax;
         time_t  topictimemin;
         time_t  topictimemax;
 };
-
 
 
 /* mode structure for channels */
@@ -805,6 +821,13 @@ struct	Message	{
 struct  HMessage {
         struct Message  *mptr;
         struct HMessage *next;
+};
+
+struct machine_data {
+	time_t first_at, last_at;
+	struct in_addr ip;
+	int num_conn, online;
+   	struct machine_data *hnext, *next;
 };
 
 /* general link structure used for chains */
@@ -847,6 +870,10 @@ struct Channel	{
 	Link	*members;
 	Link	*invites;
 	Link	*banlist;
+#ifdef FLUD
+        time_t      fludblock;
+        struct fludbot *fluders;
+#endif
 	char	chname[1];
 };
 
@@ -865,14 +892,14 @@ struct Channel	{
 #define CHFL_BQUIET	0x0040 /* Is banned on the channel? */
 #define	CHFL_OVERLAP    (CHFL_CHANOP|CHFL_VOICE)
 
-#define BAN_BLOCK      0x0001
-#define BAN_BQUIET     0x0002
-#define BAN_MASK       0x0004
-#define BAN_REQUIRE    0x0008
-#define BAN_RBLOCK     0x0010
-#define BAN_GECOS      0x0020
+#define BAN_BLOCK	0x0001
+#define BAN_BQUIET	0x0002
+#define BAN_MASK	0x0004
+#define BAN_REQUIRE	0x0008
+#define BAN_RBLOCK	0x0010
+#define BAN_GECOS	0x0020
 
-#define BAN_STD                (BAN_BLOCK|BAN_BQUIET)
+#define BAN_STD		(BAN_BLOCK|BAN_BQUIET)
 
 /* Channel Visibility macros */
 
@@ -887,26 +914,19 @@ struct Channel	{
 #define	MODE_KEY	0x0100
 #define	MODE_BAN	0x0200
 #define	MODE_LIMIT	0x0400
-#define MODE_SHOWHOST	0x8000
+#define MODE_SHOWMASK	0x0800
 #define MODE_NOCOLORS	0x1000
 
 /*
  * mode flags which take another parameter (With PARAmeterS)
  */
 #define	MODE_WPARAS	(MODE_CHANOP|MODE_VOICE|MODE_BAN|MODE_KEY|MODE_LIMIT)
-
 /*
  * Undefined here, these are used in conjunction with the above modes in
  * the source.
 #define	MODE_DEL       0x40000000
 #define	MODE_ADD       0x80000000
  */
-
-/* Lifted somewhat from Undernet code --Rak */
-
-#define IsSendable(x)           (DBufLength(&x->sendQ) < 2048)
-#define DoList(x)               ((x)->lopt)
-
 
 #define	HoldChannel(x)		(!(x))
 /* name invisible */
@@ -916,11 +936,13 @@ struct Channel	{
 /* channel visible */
 #define	ShowChannel(v,c)	(PubChannel(c) || IsMember((v),(c)))
 #define	PubChannel(x)		((!x) || ((x)->mode.mode &\
-				 (MODE_PRIVATE | MODE_SECRET | MODE_SHOWHOST)) == 0)
+				 (MODE_PRIVATE | MODE_SECRET)) == 0)
 
-#define	IsChannelName(name) ((name) && (*(name) == '#' || *(name) == '&' || *(name) == '+') \
-                             && (*(name+1) != '#' || *(name) != '+'))
-#define IsModelessChannel(name) (0 /*&& (name) && (*(name) == '+')*/)
+#define	IsChannelName(name) ((name) && ((*(name) == '#' || *(name) == '&') || *(name) == '+'))
+#define IsModelessChannel(name) (0 && (name) && (*(name) == '+'))
+#define IsPlusChan(chptr) ((chptr) && (chptr)->chname && (*((chptr->chname)) == '+'))
+#define IsPlusChanName(chptr) ((name) && (*(name) == '+'))
+#define IsLpPvis(lp) ((lp) && ((lp) && (lp->flags & (CHFL_CHANOP | CHFL_VOICE))))
 #define IsSystemChannel(name) ((name) && (*name) && (!mycmp((name)+1, HELPOP_CHAN+1)))
 
 /* Misc macros */
@@ -932,6 +954,12 @@ struct Channel	{
 #define	MyConnect(x)			((x)->fd >= 0)
 #define	MyClient(x)			(MyConnect(x) && IsClient(x))
 #define	MyOper(x)			(MyConnect(x) && IsOper(x))
+
+/* Lifted somewhat from Undernet code --Rak */
+
+#define IsSendable(x)           (DBufLength(&x->sendQ) < 2048)
+#define DoList(x)               ((x)->lopt)
+
 
 /* String manipulation macros */
 
@@ -976,6 +1004,17 @@ extern	int	schecksfd;
 #define	FLUSH_BUFFER	-2
 #define	UTMP		"/etc/utmp"
 #define	COMMA		","
+
+#ifdef FLUD
+struct fludbot {
+        struct Client *fluder;
+        int         count;
+        time_t      first_msg, last_msg;
+        struct fludbot *next;
+};
+
+#endif /* FLUD */
+
 
 /* IRC client structures */
 

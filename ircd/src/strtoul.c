@@ -33,15 +33,21 @@
  * SUCH DAMAGE.
  */
 
-#include "ircd/cdefs.h"
+#if defined(LIBC_SCCS) && !defined(lint)
+#if 0
+static char *sccsid = "from: @(#)strtoul.c	5.3 (Berkeley) 2/23/91";
+#else
+static char *rcsid = "$NetBSD: strtoul.c,v 1.9 1996/07/20 01:00:57 jtc Exp $";
+#endif
+#endif /* LIBC_SCCS and not lint */
 
+#include "setup.h"
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 
-IRCD_RCSID("$NetBSD: strtoul.c,v 1.9 1996/07/20 01:00:57 jtc Exp $");
-
+#ifndef HAVE_STRTOUL
 /*
  * Convert a string to an unsigned long integer.
  *
@@ -108,3 +114,4 @@ unsigned long strtoul(char *nptr, char **endptr, int base)
 		*endptr = (char *) (any ? s - 1 : nptr);
 	return (acc);
 }
+#endif

@@ -17,28 +17,33 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef lint
+static  char sccsid[] = "@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed";
+#endif
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "res.h"
 #include "numeric.h"
 #include "patchlevel.h"
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #ifdef	UNIXPORT
 # include <sys/un.h>
 #endif
+#if defined(__hpux)
+# include "inet.h"
+#endif
+#else
+#include <io.h>
+#endif
 #include <fcntl.h>
 #include "sock.h"	/* If FD_ZERO isn't define up to this point,  */
 			/* define it (BSD4.2 needs this) */
 #include "h.h"
-
-#include "ircd/send.h"
-#include "ircd/string.h"
-
-IRCD_SCCSID("@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed");
-IRCD_RCSID("$Id$");
 
 /*
  * start_auth
@@ -73,6 +78,7 @@ void	start_auth(aClient *cptr)
 		return;
 	    }
         (void)alarm(0);
+#ifndef _WIN32
 	if (cptr->authfd >= (MAXCONNECTIONS - 3))
 	    {
 		sendto_ops("Can't allocate fd for auth on %s",
@@ -80,6 +86,7 @@ void	start_auth(aClient *cptr)
 		(void)close(cptr->authfd);
 		return;
 	    }
+#endif
 	set_non_blocking(cptr->authfd, cptr);
 
 	getsockname(cptr->fd, (struct sockaddr *)&sock, &addrlen);
@@ -95,15 +102,24 @@ void	start_auth(aClient *cptr)
 
 	(void)alarm((unsigned)4);
 	if (connect(cptr->authfd, (struct sockaddr *)&sock,
+#ifndef _WIN32
 		    sizeof(sock)) == -1 && errno != EINPROGRESS)
+#else
+		    sizeof(sock)) == -1 && (WSAGetLastError() !=
+		WSAEINPROGRESS && WSAGetLastError() != WSAEWOULDBLOCK))
+#endif
 	    {
 		ircstp->is_abad++;
                 connotice(cptr, REPORT_ERR_AUTH);
 		/*
 		 * No error report from this...
 		 */
+#ifndef _WIN32
 		(void)alarm((unsigned)0);
 		(void)close(cptr->authfd);
+#else
+		(void)closesocket(cptr->authfd);
+#endif
 		cptr->authfd = -1;
 		if (!DoingDNS(cptr) && !DoingSocks(cptr))
 			SetAccess(cptr);
@@ -151,11 +167,19 @@ void	send_authports(aClient *cptr)
 
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",
 		authbuf, inetntoa((char *)&them.sin_addr)));
+#ifndef _WIN32
 	if (write(cptr->authfd, authbuf, strlen(authbuf)) != strlen(authbuf))
+#else
+	if (send(cptr->authfd, authbuf, strlen(authbuf), 0) != (int)strlen(authbuf))
+#endif
 	    {
 authsenderr:
 		ircstp->is_abad++;
+#ifndef _WIN32
 		(void)close(cptr->authfd);
+#else
+		(void)closesocket(cptr->authfd);
+#endif
 		if (cptr->authfd == highest_fd)
 			while (!local[highest_fd])
 				highest_fd--;
@@ -193,8 +217,13 @@ void	read_authports(aClient *cptr)
 	 * Oh. this is needed because an authd reply may come back in more
 	 * than 1 read! -avalon
 	 */
+#ifndef _WIN32
 	if ((len = read(cptr->authfd, cptr->buffer + cptr->count,
 			sizeof(cptr->buffer) - 1 - cptr->count)) >= 0)
+#else
+	if ((len = recv(cptr->authfd, cptr->buffer + cptr->count,
+			sizeof(cptr->buffer) - 1 - cptr->count, 0)) >= 0)
+#endif
 	    {
 		cptr->count += len;
 		cptr->buffer[cptr->count] = '\0';
@@ -227,7 +256,11 @@ void	read_authports(aClient *cptr)
 		Debug((DEBUG_ERROR,"bad auth reply in [%s]", cptr->buffer));
 		*ruser = '\0';
 	    }
+#ifndef _WIN32
 	(void)close(cptr->authfd);
+#else
+	(void)closesocket(cptr->authfd);
+#endif
 	if (cptr->authfd == highest_fd)
 		while (!local[highest_fd])
 			highest_fd--;

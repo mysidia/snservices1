@@ -1,6 +1,6 @@
 /************************************************************************
- *   IRC - Internet Relay Chat, common/bsd.c
- *   Copyright (C) 1990 Jarkko Oikarinen and
+ *   IRC - Internet Relay Chat, src/bsd.c
+ *   Copyright C 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -18,31 +18,37 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-
-#include <signal.h>
-#include <errno.h>
+#ifndef lint
+static  char sccsid[] = "@(#)bsd.c	2.14 1/30/94 (C) 1988 University of Oulu, \
+Computing Center and Jarkko Oikarinen";
+#endif
 
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "h.h"
 
-#include "ircd/send.h"
+#include <signal.h>
+#include <errno.h>
 
-IRCD_SCCSID("@(#)bsd.c	2.14 1/30/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
-IRCD_RCSID("$Id$");
+#ifndef _WIN32
+extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
+#endif
+
+#ifndef SYS_ERRLIST_DECLARED
+extern	char	*sys_errlist[];
+#endif
 
 #ifdef DEBUGMODE
 int	writecalls = 0, writeb[10] = {0,0,0,0,0,0,0,0,0,0};
 #endif
+#ifndef _WIN32
 VOIDSIG dummy()
 {
 #ifndef HAVE_RELIABLE_SIGNALS
 	(void)signal(SIGALRM, dummy);
 	(void)signal(SIGPIPE, dummy);
-#ifndef HPUX	/* Only 9k/800 series require this, but don't know how to.. */
+#ifndef OS_HPUX	/* Only 9k/800 series require this, but don't know how to.. */
 # ifdef SIGWINCH
 	(void)signal(SIGWINCH, dummy);
 # endif
@@ -67,6 +73,7 @@ VOIDSIG dummy()
 # endif
 #endif
 }
+#endif /* _WIN32 */
 
 
 /*
@@ -117,8 +124,13 @@ char	*str;
 	**
 	** ...now, would this work on VMS too? --msa
 	*/
+# ifndef _WIN32
 	if (retval < 0 && (errno == EWOULDBLOCK || errno == EAGAIN ||
 			   errno == ENOBUFS))
+# else
+	if (retval < 0 && (WSAGetLastError() == WSAEWOULDBLOCK ||
+	    WSAGetLastError() == WSAENOBUFS))
+# endif
 	    {
 		retval = 0;
 		ClientFlags(cptr) |= FLAGS_BLOCKED;
@@ -135,8 +147,13 @@ char	*str;
 #ifdef DEBUGMODE
 	if (retval < 0) {
 		writeb[0]++;
+# ifndef _WIN32
                Debug((DEBUG_ERROR,"write error (%s) to %s",
                         sys_errlist[errno], cptr->name));
+# else
+               Debug((DEBUG_ERROR,"write error (%s) to %s",
+			sys_errlist[WSAGetLastError()], cptr->name));
+# endif
 
 	} else if (retval == 0)
 		writeb[1]++;

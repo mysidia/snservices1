@@ -1,7 +1,8 @@
 /*
  *   IRC - Internet Relay Chat, ircd/ircd.c
- *   Copyright (C) 1990 Jarkko Oikarinen and
- *                      University of Oulu, Computing Center
+ *   Copyright C 1990 Jarkko Oikarinen and
+ *                    University of Oulu, Computing Center
+ *   Copyright C 1997-2002 James Hess -- All Rights Reserved
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,37 +19,47 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <sys/types.h>
-#include <sys/resource.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-
-#include <signal.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include <errno.h>
+#ifndef lint
+static	char sccsid[] = "@(#)ircd.c	2.48 3/9/94 (C) 1988 University of "
+"Oulu, Computing Center and Jarkko Oikarinen";
+static	char rcsid[] = "$Id$";
+#endif
 
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "numeric.h"
 #include "userload.h"
+#include <sys/stat.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#ifndef _WIN32
+#include <sys/file.h>
+#include <pwd.h>
+#include <sys/time.h>
+#else
+#include <io.h>
+#include <direct.h>
+#endif
+#ifdef OS_HPUX
+#define _KERNEL            /* HPUX has the world's worst headers... */
+#endif
+#ifndef _WIN32
+#include <sys/resource.h>
+#endif
+#ifdef OS_HPUX
+#undef _KERNEL
+#endif
+#include <errno.h>
 #include "h.h"
-
-#include "ircd/send.h"
-
-IRCD_SCCSID("@(#)ircd.c	2.48 3/9/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
-IRCD_RCSID("$Id$");
 
 aClient me;			/* That's me */
 aClient *client = &me;		/* Pointer to beginning of Client list */
 
-void NospoofText(aClient* acptr);
-
 time_t    NOW, tm_offset = 0;
 void	server_reboot(char *);
-void	restart(char *);
+void	restart PROTO((char *));
 static	void	open_debugfile(), setup_signals();
 
 char	**myargv;
@@ -56,7 +67,7 @@ int	portnum = -1;		    /* Server port number, listening this */
 char	*configfile = CONFIGFILE;	/* Server configuration file */
 int	debuglevel = -1;		/* Server debug level */
 int	bootopt = 0;			/* Server boot option flags */
-char	*debugmode = "";		/*  -"-    -"-   */
+char	*debugmode = "";		/*  -"-    -"-   -"-  */
 char	*sbrk0;				/* initial sbrk(0) */
 static	int	dorehash = 0;
 static	char	*dpath = DPATH;
@@ -68,7 +79,7 @@ time_t	nextexpire = 1;		/* next expire run on the dns cache */
 time_t  nextsockflush = 1;
 void	boot_replies(void);
 
-#if	defined(PROFIL)
+#if	defined(PROFIL) && !defined(_WIN32)
 extern	etext();
 
 VOIDSIG	s_monitor()
@@ -93,19 +104,21 @@ VOIDSIG	s_monitor()
 #endif
 
 
-VOIDSIG s_die(int sig)
+VOIDSIG s_die()
 {
-	IRCD_UNUSED(sig);
-
 #ifdef	USE_SYSLOG
 	(void)syslog(LOG_CRIT, "Server Killed By SIGTERM");
 #endif
 	flush_connections(me.fd);
-	close_logs();
+	close_logs( );
 	exit(-1);
 }
 
+#ifndef _WIN32
 static VOIDSIG s_rehash()
+#else
+VOIDSIG s_rehash()
+#endif
 {
 #ifdef	POSIX_SIGNALS
 	struct	sigaction act;
@@ -118,7 +131,9 @@ static VOIDSIG s_rehash()
 	(void)sigaddset(&act.sa_mask, SIGHUP);
 	(void)sigaction(SIGHUP, &act, NULL);
 #else
+# ifndef _WIN32
 	(void)signal(SIGHUP, s_rehash);	/* sysV -argv */
+# endif
 #endif
 }
 
@@ -161,8 +176,9 @@ char	*mesg;
 #ifdef USE_SYSLOG
 	(void)closelog();
 #endif
-        close_logs();
+        close_logs( );
 
+#ifndef _WIN32
 	for (i = 3; i < MAXCONNECTIONS; i++)
 		(void)close(i);
 	if (!(bootopt & (BOOT_TTY|BOOT_DEBUG)))
@@ -172,6 +188,12 @@ char	*mesg;
 		(void)close(0);
 	if (!(bootopt & (BOOT_INETD|BOOT_OPER)))
 		(void)execv(MYNAME, myargv);
+#else
+	for (i = 0; i < highest_fd; i++)
+		if ( closesocket(i) == -1 ) close(i);
+
+	(void)execv(myargv[0], myargv);
+#endif
 #ifdef USE_SYSLOG
 	/* Have to reopen since it has been closed above */
 
@@ -179,7 +201,11 @@ char	*mesg;
 	syslog(LOG_CRIT, "execv(%s,%s) failed: %m\n", MYNAME, myargv[0]);
 	closelog();
 #endif
+#ifndef _WIN32
 	Debug((DEBUG_FATAL,"Couldn't restart server: %s", strerror(errno)));
+#else
+	Debug((DEBUG_FATAL,"Couldn't restart server: %s", strerror(GetLastError())));
+#endif
 	exit(-1);
 }
 
@@ -197,13 +223,9 @@ time_t	currenttime;
 {
 	aConfItem *aconf, **pconf;
 	aConfItem *cconf, *con_conf = NULL;
-	aClient *cptr;
-#ifndef HUB
-	aClient *xcptr;
-	int i;
-#endif
+	aClient *cptr, *xcptr;
 	int	connecting, confrq;
-	int	con_class = 0;
+	int	con_class = 0, i = 0;
 	time_t	next = 0;
 	aClass	*cltmp;
 
@@ -261,15 +283,15 @@ time_t	currenttime;
 	    }
 
 #ifndef HUB
-	if (connecting) {
-		for ( i = highest_fd; i > 0; i--)
-			if (!( xcptr = local[i] ))
-				continue;
-			else if (IsServer(xcptr)) {
-				connecting = FALSE;
-				break;
-			}
-	}
+	if (connecting)
+           for ( i = highest_fd; i > 0; i--)
+               if (!( xcptr = local[i] )) continue;
+               else 
+                 if ( IsServer(xcptr) )
+                 {
+                     connecting = FALSE;
+                     break;
+                 }
 #endif
 
 	if (connecting)
@@ -298,18 +320,31 @@ time_t	currenttime;
    AKILL/RAKILL/KLINE/UNKLINE/REHASH.  Very significant CPU usage decrease.
    I made changes to every check_pings call to add new parameter.
    -- Barubary */
-time_t
-check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
+extern	time_t	check_pings(time_t currenttime, int check_kills)
 {		
 	aClient	*cptr;
 	int	killflag;
 	int	ping = 0, i, rflag = 0;
 	time_t	oldest = 0, timeout;
+	extern aMachine *mPurgeList;
+	aMachine *mmach, *mmach_next;
 
 #ifdef TIMED_KLINES
 	check_kills = 1;
 #endif
-	for (i = 0; i <= highest_fd; i++) {
+
+	for(mmach = mPurgeList; mmach; mmach = mmach_next) {
+	    mmach_next = mmach->next;
+
+		if ((mmach->last_at + 90) < NOW) {
+                    rem_machine_from_purgelist(mmach);
+                    del_from_machine_hash_table(mmach->ip, mmach);
+                    free_machine(mmach);
+		}
+	}
+
+	for (i = 0; i <= highest_fd; i++)
+	    {
 		if (!(cptr = local[i]) || IsMe(cptr) || IsLog(cptr))
 			continue;
 
@@ -317,15 +352,14 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		** Note: No need to notify opers here. It's
 		** already done when "FLAGS_DEADSOCKET" is set.
 		*/
-		if (ClientFlags(cptr) & FLAGS_DEADSOCKET) {
+		if (ClientFlags(cptr) & FLAGS_DEADSOCKET)
+		    {
 			(void)exit_client(cptr, cptr, &me, "Dead socket");
-			 i--;  /* catch remapped descriptors */
 			continue;
-		}
+		    }
 
 		if (check_kills)
-			killflag = IsPerson(cptr) ? find_kill(cptr,
-							      conf_target) : 0;
+			killflag = IsPerson(cptr) ? find_kill(cptr) : 0;
 		else
 			killflag = 0;
 		if (check_kills && !killflag && IsPerson(cptr))
@@ -337,8 +371,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		ping = IsRegistered(cptr) ? get_client_ping(cptr) :
 					    CONNECTTIMEOUT;
 		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d r %d a %d",
-		       cptr->name, cptr->status, ping, killflag, rflag,
-		       currenttime - cptr->lasttime));
+			cptr->name, cptr->status, ping, killflag, rflag,
+			currenttime - cptr->lasttime));
 		/*
 		 * Ok, so goto's are ugly and can be avoided here but this code
 		 * is already indented enough so I think its justified. -avalon
@@ -356,38 +390,43 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		    ((currenttime - cptr->lasttime) >= (2 * ping) &&
 		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
 		    (!IsRegistered(cptr) &&
-		     (currenttime - cptr->firsttime) >= ping)) {
-#ifdef ENABLE_SOCKSCHECK
-                        if (cptr->socks && cptr->socks->fd >= 0) {
+		     (currenttime - cptr->firsttime) >= ping))
+		    {
+                        if (cptr->socks && cptr->socks->fd >= 0)
+                        {
                               int q;
                               for(q = highest_fd; q >= 0; q--) {
                                   if (!local[q] || !local[q]->socks || local[q]==cptr)
-					  continue;
+                                     continue;
                                   if (local[q]->socks == cptr->socks)
-					  break;
+                                      break;
                               }
                               if (q < 0) {
-				      aSocks *flushlist = NULL, *socks, *snext;
-				      remFromSocks(cptr->socks, &flushlist);
-				      for (socks = flushlist; socks; socks = snext) {
-					      snext = socks->next;
-					      if (socks->fd >= 0)
-						      closesocket(socks->fd);
-					      socks->fd = -1;
-					      irc_free(socks);
-				      }
-                              }			      
+                                  aSocks *flushlist = NULL, *socks, *snext;
+                                  remFromSocks(cptr->socks, &flushlist);
+                                  for (socks = flushlist; socks; socks = snext)
+                                  {
+                                        snext = socks->next;
+                                        if (socks->fd >= 0)
+                                            closesocket(socks->fd);
+                                        socks->fd = -1;
+                                        MyFree(socks);
+                                  }
+                              }
                               cptr->socks = NULL;
                               ClientFlags(cptr) &= ~FLAGS_SOCKS;
                         }
-#endif
 
 			if (!IsRegistered(cptr) && (DoingDNS(cptr) || DoingSocks(cptr)))
 			    {
 			      /*
 				if (cptr->authfd >= 0)
 				    {
+#ifndef _WIN32
 					(void)close(cptr->authfd);
+#else
+					(void)closesocket(cptr->authfd);
+#endif
 					cptr->authfd = -1;
 					cptr->count = 0;
 					*cptr->buffer = '\0';
@@ -409,7 +448,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 					{
 						closesocket(cptr->socks->fd);
 					}
-					irc_free(cptr->socks);
+					MyFree(cptr->socks);
 					cptr->socks = NULL;
 					ClientFlags(cptr) &= ~FLAGS_SOCK;
 				}
@@ -448,7 +487,6 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
                          else
                                 (void)exit_client(cptr, cptr, &me,
                                   "Ping timeout");
-			 i--;  /* catch remapped descriptors */
 			continue;
 		    }
 		else if (IsRegistered(cptr) && (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
@@ -463,25 +501,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 			cptr->lasttime = currenttime - ping;
 			sendto_one(cptr, "PING :%s", me.name);
 		    }
-#ifdef NOSPOOF		
-/*		else if (!IsRegistered(cptr) && cptr->nospoof &&
-			!DoingDNS(cptr) && !DoingSocks(cptr) &&
-			!IsNotSpoof(cptr) && !SentNoSpoof(cptr) &&
-			(currenttime - cptr->firsttime) >= 5)
-		{
-			NospoofText(cptr);
-			SetSentNoSpoof(cptr);
-		}*/
-#endif			
 ping_timeout:
 		timeout = cptr->lasttime + ping;
-		/*if (ping > 20 && !IsRegistered(cptr) &&
-			!DoingDNS(cptr) && !DoingSocks(cptr) &&
-			!IsNotSpoof(cptr) && !SentNoSpoof(cptr)
-                    ) {
-                    timeout = cptr->lasttime + (ping = 20);
-                }*/
-
 		while (timeout <= currenttime)
 			timeout += ping;
 		if (timeout < oldest || !oldest)
@@ -502,6 +523,7 @@ ping_timeout:
 */
 static	int	bad_command()
 {
+#ifndef _WIN32
   (void)printf(
 	 "Usage: ircd %s[-h servername] [-p portnumber] [-x loglevel] [-t]\n",
 #ifdef CMDLINE_CONFIG
@@ -511,6 +533,11 @@ static	int	bad_command()
 #endif
 	 );
   (void)printf("Server not started\n\n");
+#else
+  MessageBox(NULL,
+         "Usage: wircd [-h servername] [-p portnumber] [-x loglevel]\n",
+         "wIRCD", MB_OK);
+#endif
   return (-1);
 }
 
@@ -521,43 +548,45 @@ void null_func(void *x, ...) {return; x=NULL;}
 #define loadmsg while(0) null_func
 #endif
 
+#ifndef _WIN32
 int	main(argc, argv)
+#else
+int	InitwIRCD(argc, argv)
+#endif
 int	argc;
 char	*argv[];
 {
+#ifdef _WIN32
+	WORD    wVersionRequested = MAKEWORD(1, 1);
+	WSADATA wsaData;
+#else
 	time_t	delay = 0, now;
+#endif
 	int	portarg = 0;
 #ifdef  FORCE_CORE
 	struct  rlimit corelim;
 #endif
 
         update_time();
+#ifndef _WIN32
 	sbrk0 = (char *)sbrk((size_t)0);
 # ifdef	PROFIL
 	(void)monstartup(0, etext);
 	(void)moncontrol(1);
 	(void)signal(SIGUSR1, s_monitor);
 # endif
-
-#ifdef	CHROOTDIR
-	if (chdir(dpath))
-	    {
-		perror("chdir");
-		exit(-1);
-	    }
-	res_init();
-	if (chroot(DPATH))
-	  {
-	    (void)fprintf(stderr,"ERROR:  Cannot chdir/chroot\n");
-	    exit(5);
-	  }
-#endif /*CHROOTDIR*/
-
+#endif
 	myargv = argv;
+#ifndef _WIN32
 	(void)umask(077);                /* better safe than sorry --SRB */
+#else
+	WSAStartup(wVersionRequested, &wsaData);
+#endif
 	bzero((char *)&me, sizeof(me));
 	loadmsg("Setting up signals...");
+#ifndef _WIN32
 	setup_signals();
+#endif
 	loadmsg("done\n");
 	initload();
 
@@ -590,17 +619,18 @@ char	*argv[];
 		char	*p = argv[0]+1;
 		int	flag = *p++;
 
-		if (flag == '\0' || *p == '\0') {
-			if (argc > 1 && argv[1][0] != '-') {
+		if (flag == '\0' || *p == '\0')
+			if (argc > 1 && argv[1][0] != '-')
+			    {
 				p = *++argv;
 				argc -= 1;
-			} else {
+			    }
+			else
 				p = "";
-			}
-		}
 
 		switch (flag)
 		    {
+#ifndef _WIN32
                     case 'a':
 			loadmsg("Autodie ");
 			bootopt |= BOOT_AUTODIE;
@@ -613,8 +643,12 @@ char	*argv[];
 			loadmsg("QuickBoot ");
 			bootopt |= BOOT_QUICK;
 			break;
+#else
+		    case 'd':
+#endif
 			dpath = p;
 			break;
+#ifndef _WIN32
 		    case 'o': /* Per user local daemon... */
 			loadmsg("Local[Oper] ");
 			bootopt |= BOOT_OPER;
@@ -633,6 +667,7 @@ char	*argv[];
 			loadmsg("InetdBoot ");
 			bootopt |= BOOT_INETD|BOOT_AUTODIE;
 		        break;
+#endif
 		    case 'p':
 			if ((portarg = atoi(p)) > 0 )
 				portnum = portarg;
@@ -640,28 +675,19 @@ char	*argv[];
 			break;
 		    case 's':
 			 loadmsg("\n");
-		         printf("sizeof(anUser) == %lu\t\t",
-				(unsigned long)sizeof(anUser));
-		         printf("sizeof(aClient) == %lu\t\t",
-				(unsigned long)sizeof(aClient));
-		         printf("sizeof(aClient) == %lu\n",
-				(unsigned long)sizeof(aClient));
-		         printf("sizeof(Link) == %lu\t\t",
-				(unsigned long)sizeof(Link));
-		         printf("sizeof(aServer) == %lu\t\t",
-				(unsigned long)sizeof(aServer));
-		         printf("sizeof(dbuf) == %lu\n",
-				(unsigned long)sizeof(dbuf));
-		         printf("\n");
-		         printf("sizeof(aChannel) == %lu\t\t",
-				(unsigned long)sizeof(aChannel));
-		         printf("bans maxlength: %u maxn# %u banstruct %lu*bans\n",
-				MAXBANLENGTH, MAXBANS,
-				(unsigned long)sizeof(Link));
-		         printf("invites %lu*numinvites\n",
-				(unsigned long)sizeof(Link));
+		         printf("sizeof(anUser) == %lu \t\t", sizeof(anUser));	
+		         printf("sizeof(aClient) == %lu \t\t", sizeof(aClient));	
+		         printf("sizeof(aClient) == %lu \n", sizeof(aClient));	
+		         printf("sizeof(Link) == %lu \t\t", sizeof(Link));	
+		         printf("sizeof(aServer) == %lu \t\t", sizeof(aServer));	
+		         printf("sizeof(dbuf) == %lu \n", sizeof(dbuf));	
+		         printf("\n", sizeof(dbuf));	
+		         printf("sizeof(aChannel) == %lu \t\t", sizeof(aChannel));	
+		         printf("bans maxlength: %lu maxn# %lu banstruct %lu*bans\n", MAXBANLENGTH, MAXBANS, sizeof(Link));	
+		         printf("invites %lu*numinvites \n", sizeof(Link));	
 
                             exit(0);
+#ifndef _WIN32
 		    case 't':
 			loadmsg("tty ");
 			bootopt |= BOOT_TTY;
@@ -669,6 +695,11 @@ char	*argv[];
 		    case 'v':
 			loadmsg("\n");
 			(void)printf("ircd %s\n", version);
+#else
+		    case 'v':
+			loadmsg("\n");
+			MessageBox(NULL, version, "wIRCD version", MB_OK);
+#endif
 			exit(0);
 		    case 'x':
 #ifdef	DEBUGMODE
@@ -677,9 +708,15 @@ char	*argv[];
 			bootopt |= BOOT_DEBUG;
 			break;
 #else
+# ifndef _WIN32
 			(void)fprintf(stderr,
 				"%s: DEBUGMODE must be defined for -x y\n",
 				myargv[0]);
+# else
+			MessageBox(NULL,
+				"DEBUGMODE must be defined for -x option",
+				"wIRCD", MB_OK);
+# endif
 			exit(0);
 #endif
 		    default:
@@ -690,21 +727,26 @@ char	*argv[];
 	    }
 	loadmsg("\n");
 
-#ifndef	CHROOT
 	if (chdir(dpath)) {
+#ifndef _WIN32
 		perror("chdir");
+#else
+		MessageBox(NULL, strerror(GetLastError()), "wIRCD: chdir()",
+			   MB_OK);
+#endif
 		exit(-1);
 	}
-#endif
-
         /* read_help (0); */ /* read the helpfile and attach it into memory... */
-	open_logs();
+	open_logs( );
 
+#if !defined(_WIN32)
 	if ((getuid() == 0) || (geteuid() == 0)) {
 		fprintf(stderr,	"ERROR: do not run ircd setuid root.\n");
 		exit(-1);
 	}
+#endif
 
+#ifndef _WIN32
 	/* didn't set debuglevel */
 	/* but asked for debugging output to tty */
 	if ((debuglevel < 0) &&  (bootopt & BOOT_TTY))
@@ -713,6 +755,7 @@ char	*argv[];
 			"you specified -t without -x. use -x <n>\n");
 		exit(-1);
 	    }
+#endif
 
 	if (argc > 0)
 		return bad_command(); /* This should exit out */
@@ -723,8 +766,9 @@ char	*argv[];
         boot_replies();
 
 	loadmsg("done\n");
-	msgtab_buildhash();
-
+#ifdef HASH_MSGTAB
+	(void)msgtab_buildhash();
+#endif
 	loadmsg("Initializing lists...");
 
 	initlists();
@@ -739,6 +783,7 @@ char	*argv[];
 	loadmsg("Pre-socket startup done, going into background.\n");
 	(void)init_sys();
 	me.flags = FLAGS_LISTEN;
+#ifndef _WIN32
 	if (bootopt & BOOT_INETD)
 	    {
 		me.fd = 0;
@@ -746,6 +791,7 @@ char	*argv[];
 		me.flags = FLAGS_LISTEN;
 	    }
 	else
+#endif
 		me.fd = -1;
 
 #ifdef USE_SYSLOG
@@ -756,12 +802,18 @@ char	*argv[];
 		loadmsg("error opening ircd config file: %s\n", configfile);
 		Debug((DEBUG_FATAL, "Failed in reading configuration file %s",
 			configfile));
+#ifndef _WIN32
 		(void)printf("Couldn't open configuration file %s\n",
 			configfile);
+#else
+		MessageBox(NULL, "Couldn't open configuration file "CONFIGFILE,
+			"wIRCD", MB_OK);
+#endif
 		exit(-1);
 	    }
 	if (!(bootopt & BOOT_INETD))
 	    {
+		static	char	star[] = "*";
 		aConfItem	*aconf;
 
 		if ((aconf = find_me()) && portarg <= 0 && aconf->port > 0)
@@ -818,7 +870,18 @@ char	*argv[];
        syslog(LOG_NOTICE, "Server Ready");
 #endif
 
+#ifdef _WIN32
+    return 1;
+}
+
+void    SocketLoop(void *dummy)
+{
+	time_t	delay = 0, now;
+
+	while (1)
+#else
 	for (;;)
+#endif
 	    {
 		update_time();
 		now = NOW;
@@ -877,16 +940,13 @@ char	*argv[];
 		** ping times) --msa
 		*/
 		if (now >= nextping) {
-			nextping = check_pings(now, 0, NULL);
+			nextping = check_pings(now, 0);
                 }
-
-#ifdef ENABLE_SOCKSCHECK
 		if (now >= nextsockflush)
 		{
 			(void)flush_socks(now, 0);
 			nextsockflush = (now+3);
 		}
-#endif		
 
 		if (dorehash)
 		    {
@@ -929,6 +989,7 @@ static	void	open_debugfile()
 		cptr->acpt = cptr;
 		local[2] = cptr;
 		(void)strcpy(cptr->sockhost, me.sockhost);
+# ifndef _WIN32
 		(void)printf("isatty = %d ttyname = %#x\n",
 			isatty(2), (u_int)ttyname(2));
 		if (!(bootopt & BOOT_TTY)) /* leave debugging output on fd 2 */
@@ -947,6 +1008,7 @@ static	void	open_debugfile()
 		else if (isatty(2) && ttyname(2))
 			strncpyzt(cptr->name, ttyname(2), sizeof(cptr->name));
 		else
+# endif
 			(void)strcpy(cptr->name, "FD2-Pipe");
 		Debug((DEBUG_FATAL, "Debug: File <%s> Level: %d at %s",
 			cptr->name, cptr->port, myctime(NOW)));
@@ -957,6 +1019,7 @@ static	void	open_debugfile()
 	return;
 }
 
+#ifndef _WIN32
 static	void	setup_signals()
 {
 #ifdef	POSIX_SIGNALS
@@ -1012,3 +1075,4 @@ static	void	setup_signals()
 	(void)siginterrupt(SIGALRM, 1);
 #endif
 }
+#endif /* !_Win32 */

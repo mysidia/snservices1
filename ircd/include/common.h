@@ -20,12 +20,35 @@
 #ifndef	__common_include__
 #define __common_include__
 
-#include "ircd/cdefs.h"
-
 #include <time.h>
+#ifdef _WIN32
+#include <malloc.h>
+#include <windows.h>
+#include <winsock.h>
+#include <process.h>
+#include <io.h>
+#include "struct.h"
 
+typedef unsigned long int u_int32_t;
+typedef unsigned char u_int8_t;
+#endif
+
+#ifndef _WIN32
 #ifdef	PARAMH
 #include <sys/param.h>
+#endif
+#endif
+
+#ifndef PROTO
+#if __STDC__
+#	define PROTO(x)	x
+#else
+#	define PROTO(x)	()
+#endif
+#endif
+
+#ifndef NULL
+#define NULL 0
 #endif
 
 #ifdef TRUE
@@ -39,34 +62,93 @@
 #define FALSE (0)
 #define TRUE  (!FALSE)
 
-int match(const char *, const char *);
-
-#ifdef NEED_INET_ADDR
-unsigned long inet_addr(char *);
+#if 0
+#ifndef	MALLOCH
+char	*malloc(), *calloc();
+void	free();
+#else
+#include MALLOCH
+#endif
 #endif
 
-#if defined(NEED_INET_NTOA) || defined(NEED_INET_NETOF)
+extern	int	match PROTO((const char *, const char *));
+#define mycmp(a,b) \
+ ( (toupper((a)[0])!=toupper((b)[0])) || (((a)[0]!=0) && smycmp((a)+1,(b)+1)) )
+extern int     smycmp PROTO((const char *, const char *));
+#if !defined(REDHAT6) && !defined(LINUX_GLIBC)
+extern	int	myncmp PROTO((const char *, const char *, int));
+#endif
+#ifdef NEED_STRTOK
+#if !defined(REDHAT5) && !defined(REDHAT6) && !defined(LINUX_GLIBC)
+extern	char	*strtok PROTO((char *, char *));
+#endif
+#endif
+#ifdef NEED_STRTOKEN
+extern	char	*strtoken PROTO((char **, char *, char *));
+#endif
+#ifdef NEED_INET_ADDR
+extern unsigned long inet_addr PROTO((char *));
+#endif
+
+#if defined(NEED_INET_NTOA) || defined(NEED_INET_NETOF) && !defined(_WIN32)
 #include <netinet/in.h>
 #endif
 
 #ifdef NEED_INET_NTOA
-char *inet_ntoa(struct in_addr);
+extern char *inet_ntoa PROTO((struct in_addr));
 #endif
 
 #ifdef NEED_INET_NETOF
-int inet_netof(struct in_addr);
+extern int inet_netof PROTO((struct in_addr));
 #endif
 
-char *myctime(time_t);
-char *strtoken(char **, char *, char *);
+extern char *myctime PROTO((time_t));
+extern char *strtoken PROTO((char **, char *, char *));
 
-#if !defined(MAX)
+#if !defined(HAVE_MINMAX)
 #define MAX(a, b)	((a) > (b) ? (a) : (b))
 #endif
-
-#if !defined(MIN)
+#if !defined(HAVE_MINMAX)
 #define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
+
+#define DupString(x,y) do{x=MyMalloc(strlen(y)+1);(void)strcpy(x,y);}while(0)
+
+#ifdef USE_CASETABLES
+extern int casetable;
+extern u_char *tolowertab, tolowertab1[], tolowertab2[];
+extern u_char *touppertab, touppertab1[], touppertab2[];
+#else
+extern u_char tolowertab[], touppertab[];
+#endif
+
+#undef tolower
+#define tolower(c) (tolowertab[(c)])
+
+#undef toupper
+#define toupper(c) (touppertab[(c)])
+
+#undef isalpha
+#undef isdigit
+#undef isxdigit
+#undef isalnum
+#undef isprint
+#undef isascii
+#undef isgraph
+#undef ispunct
+#undef islower
+#undef isupper
+#undef isspace
+#undef iscntrl
+
+extern unsigned char char_atribs[];
+
+#define PRINT 1
+#define CNTRL 2
+#define ALPHA 4
+#define PUNCT 8
+#define DIGIT 16
+#define SPACE 32
 
 #ifndef KLINE_TEMP
 #define KLINE_PERM 0
@@ -74,10 +156,35 @@ char *strtoken(char **, char *, char *);
 #define KLINE_AKILL 2
 #endif
 
-void flush_connections();
-struct SLink *find_user_link(/* struct SLink *, struct Client * */);
+#define	iscntrl(c) (char_atribs[(u_char)(c)]&CNTRL)
+#define isalpha(c) (char_atribs[(u_char)(c)]&ALPHA)
+#define isspace(c) (char_atribs[(u_char)(c)]&SPACE)
+#define islower(c) ((char_atribs[(u_char)(c)]&ALPHA) && ((u_char)(c) > 0x5f))
+#define isupper(c) ((char_atribs[(u_char)(c)]&ALPHA) && ((u_char)(c) < 0x60))
+#define isdigit(c) (char_atribs[(u_char)(c)]&DIGIT)
+#define	isxdigit(c) (isdigit(c) || 'a' <= (c) && (c) <= 'f' || \
+		     'A' <= (c) && (c) <= 'F')
+#define isalnum(c) (char_atribs[(u_char)(c)]&(DIGIT|ALPHA))
+#define isprint(c) (char_atribs[(u_char)(c)]&PRINT)
+#define isascii(c) ((u_char)(c) >= 0 && (u_char)(c) <= 0x7f)
+#define isgraph(c) ((char_atribs[(u_char)(c)]&PRINT) && ((u_char)(c) != 0x32))
+#define ispunct(c) (!(char_atribs[(u_char)(c)]&(CNTRL|ALPHA|DIGIT)))
 
-extern time_t NOW, tm_offset;
+extern char *MyMalloc();
+extern void flush_connections();
+extern struct SLink *find_user_link(/* struct SLink *, struct Client * */);
+
+#ifdef _WIN32
+/*
+ * Used to display a string to the GUI interface.
+ * Windows' internal strerror() function doesn't work with socket errors.
+ */
+extern	int	DisplayString(HWND hWnd, char *InBuf, ...);
+#undef	strerror
+_inline	void	alarm(unsigned int seconds) { }
+#endif
+
+time_t NOW, tm_offset;
 #define update_time() NOW=(time(NULL)+tm_offset)
 
 #define REPORT_START_DNS "*** Looking up your hostname..."
@@ -99,6 +206,8 @@ extern time_t NOW, tm_offset;
 #define connotice(x, y) ( sendto_one(x, ":%s NOTICE AUTH :" y "", me.name) )
 #define UNSURE 2
 
+#define SERVICES_NAME   "services.sorcery.net"
+
 extern const char *service_nick[];
 #define cNickServ       service_nick[0]
 #define cChanServ       service_nick[1]
@@ -106,10 +215,5 @@ extern const char *service_nick[];
 #define cOperServ       service_nick[3]
 #define cInfoServ       service_nick[4]
 #define cGameServ       service_nick[5]
-
-#ifdef NEED_SPRINTF
-int snprintf(char *str, size_t size, const char *format, ...);
-int vsnprintf(char *str, size_t size, const char *format, va_list ap);
-#endif
 
 #endif /* __common_include__ */

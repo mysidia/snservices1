@@ -44,6 +44,6 @@ extern struct load_entry *load_list_head, *load_list_tail,
                          *load_free_head, *load_free_tail;
 
 
-extern void initload(void);
-extern void update_load(void);
-extern void calc_load(aClient *, char *);
+extern void initload PROTO ((void));
+extern void update_load PROTO ((void));
+extern void calc_load PROTO ((aClient *, char *));
