@@ -141,13 +141,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 /*
 ** flags for bootup options (command line flags)
 */
-#define	BOOT_CONSOLE	1
-#define	BOOT_QUICK	2
-#define	BOOT_DEBUG	4
-#define	BOOT_INETD	8
-#define	BOOT_TTY	16
-#define	BOOT_OPER	32
-#define	BOOT_AUTODIE	64
+#define	BOOT_DEBUG	0x0000001
+#define	BOOT_FORK	0x0000002
 
 #define	STAT_AUTHSERV	-7	/* Server waiting identd check */
 #define	STAT_LOG	-6	/* logfile for -x */

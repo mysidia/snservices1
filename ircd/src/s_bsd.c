@@ -171,15 +171,6 @@ aClient *cptr;
 			if (err)
 				errtmp = err;
 #endif
-#ifdef DEBUG3
-        if ((bootopt & BOOT_OPER))
-	{
-		char outB[4096*2]="";
-		sprintf(outB, text, host, strerror(errtmp));
- 		(void)write(0, outB, strlen(outB));
- 		(void)write(0, "\n", 1);
-	}
-#endif
 	sendto_ops(text, host, strerror(errtmp));
 #ifdef USE_SYSLOG
 	syslog(LOG_WARNING, text, host, strerror(errtmp));
@@ -487,37 +478,14 @@ void	init_sys()
 		local[fd] = NULL;
 	    }
 	local[1] = NULL;
-        if (!(bootopt & BOOT_OPER))
-	 (void)close(1); /* -- allow output a little more yet */
+	(void)close(1); /* -- allow output a little more yet */
 
-	if (bootopt & BOOT_TTY)	/* debugging is going to a tty */
-		goto init_dgram;
-	if (!(bootopt & (BOOT_DEBUG|BOOT_OPER) ))
-		(void)close(2);
-
-	if (((bootopt & BOOT_CONSOLE) || isatty(0)) &&
-	    !(bootopt & (BOOT_INETD|BOOT_OPER)))
-	    {
-	        if (fork())
+	if ((bootopt & BOOT_FORK) != 0) {
+		if (fork())
 			exit(0);
+		fprintf(stderr, "fork() successful, now in child.\n");
+	}
 
-#ifdef TIOCNOTTY
-		if ((fd = open("/dev/tty", O_RDWR)) >= 0)
-		    {
-			(void)ioctl(fd, TIOCNOTTY, (char *)NULL);
-			(void)close(fd);
-		    }
-#endif
-#if defined(HPUX) || defined(SOL20) || defined(DYNIXPTX) || \
-    defined(_POSIX_SOURCE) || defined(SVR4) || defined(SGI)
-		(void)setsid();
-#else
-		(void)setpgrp(0, (int)getpid());
-#endif
-		(void)close(0);	/* fd 0 opened by inetd */
-		local[0] = NULL;
-	    }
-init_dgram:
 	resfd = init_resolver(0x1f);
 
 	return;

@@ -1272,7 +1272,7 @@ int 	initconf(int opt)
 		    {
 			if (BadPtr(aconf->passwd))
 				continue;
-			else if (!(opt & BOOT_QUICK))
+			else
 				(void)lookup_confhost(aconf);
 		    }
 

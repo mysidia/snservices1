@@ -49,13 +49,13 @@ void NospoofText(aClient* acptr);
 time_t    NOW, tm_offset = 0;
 void	server_reboot(char *);
 void	restart(char *);
-static	void	open_debugfile(), setup_signals();
+static	void	setup_signals();
 
 char	**myargv;
 int	portnum = -1;		    /* Server port number, listening this */
 char	*configfile = CONFIGFILE;	/* Server configuration file */
 int	debuglevel = -1;		/* Server debug level */
-int	bootopt = 0;			/* Server boot option flags */
+int	bootopt = BOOT_FORK;		/* Server boot option flags */
 char	*debugmode = "";		/*  -"-    -"-   */
 char	*sbrk0;				/* initial sbrk(0) */
 static	int	dorehash = 0;
@@ -154,32 +154,22 @@ char	*mesg;
 	sendto_ops("Aieeeee!!!  Restarting server... %s", mesg);
 	Debug((DEBUG_NOTICE,"Restarting server... %s", mesg));
 	flush_connections(me.fd);
-	/*
-	** fd 0 must be 'preserved' if either the -d or -i options have
-	** been passed to us before restarting.
-	*/
-#ifdef USE_SYSLOG
-	(void)closelog();
-#endif
+
         close_logs();
 
+	/*
+	 * Close any FDs we may have open.
+	 */
 	for (i = 3; i < MAXCONNECTIONS; i++)
 		(void)close(i);
-	if (!(bootopt & (BOOT_TTY|BOOT_DEBUG)))
-		(void)close(2);
-	(void)close(1);
-	if ((bootopt & BOOT_CONSOLE) || isatty(0))
-		(void)close(0);
-	if (!(bootopt & (BOOT_INETD|BOOT_OPER)))
-		(void)execv(MYNAME, myargv);
-#ifdef USE_SYSLOG
-	/* Have to reopen since it has been closed above */
 
-	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
+	(void)execv(MYNAME, myargv);
+
+#ifdef USE_SYSLOG
 	syslog(LOG_CRIT, "execv(%s,%s) failed: %m\n", MYNAME, myargv[0]);
-	closelog();
 #endif
 	Debug((DEBUG_FATAL,"Couldn't restart server: %s", strerror(errno)));
+
 	exit(-1);
 }
 
@@ -542,13 +532,6 @@ static	int	bad_command()
   return (-1);
 }
 
-#ifdef BOOT_MSGS
-#define loadmsg printf
-#else
-void null_func(void *x, ...) {return; x=NULL;}
-#define loadmsg while(0) null_func
-#endif
-
 int	main(argc, argv)
 int	argc;
 char	*argv[];
@@ -584,26 +567,26 @@ char	*argv[];
 	myargv = argv;
 	(void)umask(077);                /* better safe than sorry --SRB */
 	bzero((char *)&me, sizeof(me));
-	loadmsg("Setting up signals...");
+	fprintf(stderr, "Setting up signals...");
 	setup_signals();
-	loadmsg("done\n");
+	fprintf(stderr, "done\n");
 	initload();
 
 #ifdef FORCE_CORE
-        loadmsg("Removing corefile size limits...");
+        fprintf(stderr, "Removing corefile size limits...");
 	corelim.rlim_cur = corelim.rlim_max = RLIM_INFINITY;
 	if (setrlimit(RLIMIT_CORE, &corelim))
 	  printf("unlimit core size failed; errno = %d\n", errno);
         else
-        loadmsg("done\n");
+        fprintf(stderr, "done\n");
 
 #endif
 
 #ifdef USE_CASETABLES
 	/* Set up the case tables */
-	loadmsg("setting up casetables...");
+	fprintf(stderr, "setting up casetables...");
 	setup_match();
-	loadmsg("done\n");
+	fprintf(stderr, "done\n");
 #endif
 
 	/*
@@ -612,7 +595,7 @@ char	*argv[];
 	** be empty. Flag characters cannot be concatenated (like
 	** "-fxyz"), it would conflict with the form "-fstring".
 	*/
-	loadmsg("Startup options: ");
+	fprintf(stderr, "Startup options: ");
 	while (--argc > 0 && (*++argv)[0] == '-')
 	    {
 		char	*p = argv[0]+1;
@@ -627,78 +610,43 @@ char	*argv[];
 			}
 		}
 
-		switch (flag)
-		    {
-                    case 'a':
-			loadmsg("Autodie ");
-			bootopt |= BOOT_AUTODIE;
+		switch (flag) {
+		case 'f':
+			bootopt &= ~BOOT_FORK;
+			fprintf(stderr, "Will not fork()");
 			break;
-		    case 'c':
-			loadmsg("Console ");
-			bootopt |= BOOT_CONSOLE;
-			break;
-		    case 'q':
-			loadmsg("QuickBoot ");
-			bootopt |= BOOT_QUICK;
-			break;
-			dpath = p;
-			break;
-		    case 'o': /* Per user local daemon... */
-			loadmsg("Local[Oper] ");
-			bootopt |= BOOT_OPER;
-		        break;
-#ifdef CMDLINE_CONFIG
-		    case 'f':
-			configfile = p;
-			loadmsg("Config[%s] ", configfile);
-			break;
-#endif
-		    case 'h':
-			loadmsg("Name[%s] ", p);
-			strncpyzt(me.name, p, sizeof(me.name));
-			break;
-		    case 'i':
-			loadmsg("InetdBoot ");
-			bootopt |= BOOT_INETD|BOOT_AUTODIE;
-		        break;
-		    case 'p':
-			if ((portarg = atoi(p)) > 0 )
-				portnum = portarg;
-			loadmsg("Port[%d] ", portnum);
-			break;
-		    case 's':
-			 loadmsg("\n");
-		         printf("sizeof(anUser) == %lu\t\t",
-				(unsigned long)sizeof(anUser));
-		         printf("sizeof(aClient) == %lu\t\t",
-				(unsigned long)sizeof(aClient));
-		         printf("sizeof(aClient) == %lu\n",
-				(unsigned long)sizeof(aClient));
-		         printf("sizeof(Link) == %lu\t\t",
-				(unsigned long)sizeof(Link));
-		         printf("sizeof(aServer) == %lu\t\t",
-				(unsigned long)sizeof(aServer));
-		         printf("sizeof(dbuf) == %lu\n",
-				(unsigned long)sizeof(dbuf));
-		         printf("\n");
-		         printf("sizeof(aChannel) == %lu\t\t",
-				(unsigned long)sizeof(aChannel));
-		         printf("bans maxlength: %u maxn# %u banstruct %lu*bans\n",
-				MAXBANLENGTH, MAXBANS,
-				(unsigned long)sizeof(Link));
-		         printf("invites %lu*numinvites\n",
-				(unsigned long)sizeof(Link));
 
-                            exit(0);
-		    case 't':
-			loadmsg("tty ");
-			bootopt |= BOOT_TTY;
-			break;
-		    case 'v':
-			loadmsg("\n");
+		case 's':
+			fprintf(stderr, "\n");
+			printf("sizeof(anUser) == %lu\t\t",
+			       (unsigned long)sizeof(anUser));
+			printf("sizeof(aClient) == %lu\t\t",
+			       (unsigned long)sizeof(aClient));
+			printf("sizeof(aClient) == %lu\n",
+			       (unsigned long)sizeof(aClient));
+			printf("sizeof(Link) == %lu\t\t",
+			       (unsigned long)sizeof(Link));
+			printf("sizeof(aServer) == %lu\t\t",
+			       (unsigned long)sizeof(aServer));
+			printf("sizeof(dbuf) == %lu\n",
+			       (unsigned long)sizeof(dbuf));
+			printf("\n");
+			printf("sizeof(aChannel) == %lu\t\t",
+			       (unsigned long)sizeof(aChannel));
+			printf("bans maxlength: %u maxn# %u"
+			       " banstruct %lu*bans\n",
+			       MAXBANLENGTH, MAXBANS,
+			       (unsigned long)sizeof(Link));
+			printf("invites %lu*numinvites\n",
+			       (unsigned long)sizeof(Link));
+			exit(0);
+
+		case 'v':
+			fprintf(stderr, "\n");
 			(void)printf("ircd %s\n", version);
 			exit(0);
-		    case 'x':
+
+		case 'x':
 #ifdef	DEBUGMODE
 			debuglevel = atoi(p);
 			debugmode = *p ? p : "0";
@@ -706,17 +654,18 @@ char	*argv[];
 			break;
 #else
 			(void)fprintf(stderr,
-				"%s: DEBUGMODE must be defined for -x y\n",
-				myargv[0]);
+				      "%s: DEBUGMODE must be defined for -x\n",
+				      myargv[0]);
 			exit(0);
 #endif
-		    default:
-			loadmsg("\n");
+
+		default:
+			fprintf(stderr, "\n");
 			bad_command();
 			break;
-		    }
+		}
 	    }
-	loadmsg("\n");
+	fprintf(stderr, "\n");
 
 #ifndef	CHROOT
 	if (chdir(dpath)) {
@@ -733,82 +682,55 @@ char	*argv[];
 		exit(-1);
 	}
 
-	/* didn't set debuglevel */
-	/* but asked for debugging output to tty */
-	if ((debuglevel < 0) &&  (bootopt & BOOT_TTY))
-	    {
-		(void)fprintf(stderr,
-			"you specified -t without -x. use -x <n>\n");
-		exit(-1);
-	    }
-
 	if (argc > 0)
 		return bad_command(); /* This should exit out */
 
-	loadmsg("Cleaning hash tables...");
+	fprintf(stderr, "Cleaning hash tables...");
 	clear_client_hash_table();
 	clear_channel_hash_table();
         boot_replies();
 
-	loadmsg("done\n");
+	fprintf(stderr, "done\n");
 	msgtab_buildhash();
 
-	loadmsg("Initializing lists...");
+	fprintf(stderr, "Initializing lists...");
 
 	initlists();
 	initclass();
 	initwhowas();
 	initstats();
-	loadmsg("done\n");
-	open_debugfile();
+	fprintf(stderr, "done\n");
 	if (portnum < 0)
 		portnum = PORTNUM;
 	me.port = portnum;
-	loadmsg("Pre-socket startup done, going into background.\n");
+	fprintf(stderr, "Pre-socket startup done.\n");
 	(void)init_sys();
 	me.flags = FLAGS_LISTEN;
-	if (bootopt & BOOT_INETD)
-	    {
-		me.fd = 0;
-		local[0] = &me;
-		me.flags = FLAGS_LISTEN;
-	    }
-	else
-		me.fd = -1;
+	me.fd = -1;
 
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
 #endif
-	if (initconf(bootopt) == -1)
-	    {
-		loadmsg("error opening ircd config file: %s\n", configfile);
+	if (initconf(bootopt) == -1) {
+		fprintf(stderr, "error opening ircd config file: %s\n", configfile);
 		Debug((DEBUG_FATAL, "Failed in reading configuration file %s",
-			configfile));
+		       configfile));
 		(void)printf("Couldn't open configuration file %s\n",
-			configfile);
+			     configfile);
 		exit(-1);
-	    }
-	if (!(bootopt & BOOT_INETD))
-	    {
+	}
+	{
 		aConfItem	*aconf;
 
 		if ((aconf = find_me()) && portarg <= 0 && aconf->port > 0)
 			portnum = aconf->port;
 		Debug((DEBUG_ERROR, "Port = %d", portnum));
-		if (inetport(&me, aconf->passwd, portnum))
-		{
-			loadmsg("Error listening on port %d\n", portnum);
-			close(1);
+		if (inetport(&me, aconf->passwd, portnum)) {
+			fprintf(stderr,
+				"Error listening on port %d\n", portnum);
 			exit(1);
 		}
-	    }
-	else if (inetport(&me, "*", 0))
-	{
-		loadmsg("Error listening on port %d.%d\n", portnum, me.port);
-		close(1);
-		exit(1);
 	}
-	if ((bootopt & BOOT_OPER)) close(1);
 
 	(void)setup_ping();
 	(void)get_my_name(&me, me.sockhost, sizeof(me.sockhost)-1);
@@ -828,16 +750,7 @@ char	*argv[];
 	(void)add_to_client_hash_table(me.name, &me);
 
 	check_class();
-	if (bootopt & BOOT_OPER)
-	    {
-		aClient *tmp = add_connection(&me, 0);
-
-		if (!tmp)
-			exit(1);
-		SetMaster(tmp);
-	    }
-	else
-		write_pidfile();
+	write_pidfile();
 
        open_checkport();
 
@@ -929,61 +842,6 @@ char	*argv[];
 		flush_connections(me.fd);
 	    }
     }
-
-/*
- * open_debugfile
- *
- * If the -t option is not given on the command line when the server is
- * started, all debugging output is sent to the file set by LPATH in config.h
- * Here we just open that file and make sure it is opened to fd 2 so that
- * any fprintf's to stderr also goto the logfile.  If the debuglevel is not
- * set from the command line by -x, use /dev/null as the dummy logfile as long
- * as DEBUGMODE has been defined, else dont waste the fd.
- */
-static	void	open_debugfile()
-{
-#ifdef	DEBUGMODE
-	int	fd;
-	aClient	*cptr;
-
-	if (debuglevel >= 0)
-	    {
-		cptr = make_client(NULL);
-		cptr->fd = 2;
-		SetLog(cptr);
-		cptr->port = debuglevel;
-		ClientFlags(cptr) = 0;
-		ClientUmode(cptr) = 0;
-		cptr->acpt = cptr;
-		local[2] = cptr;
-		(void)strcpy(cptr->sockhost, me.sockhost);
-		(void)printf("isatty = %d ttyname = %#x\n",
-			isatty(2), (u_int)ttyname(2));
-		if (!(bootopt & BOOT_TTY)) /* leave debugging output on fd 2 */
-		    {
-			(void)truncate(LOGFILE, 0);
-			if ((fd = open(LOGFILE, O_WRONLY | O_CREAT, 0600)) < 0) 
-				if ((fd = open("/dev/null", O_WRONLY)) < 0)
-					exit(-1);
-			if (fd != 2)
-			    {
-				(void)dup2(fd, 2);
-				(void)close(fd); 
-			    }
-			strncpyzt(cptr->name, LOGFILE, sizeof(cptr->name));
-		    }
-		else if (isatty(2) && ttyname(2))
-			strncpyzt(cptr->name, ttyname(2), sizeof(cptr->name));
-		else
-			(void)strcpy(cptr->name, "FD2-Pipe");
-		Debug((DEBUG_FATAL, "Debug: File <%s> Level: %d at %s",
-			cptr->name, cptr->port, myctime(NOW)));
-	    }
-	else
-		local[2] = NULL;
-#endif
-	return;
-}
 
 static	void	setup_signals()
 {

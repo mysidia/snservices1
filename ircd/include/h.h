@@ -183,7 +183,6 @@ Link	*find_user_link(Link *, aClient *);
 int	IsMember(aClient *, aChannel *);
 char	*pretty_mask(char *, int);
 void	add_client_to_list(aClient *);
-void	checklist();
 void	remove_client_from_list(aClient *);
 void	initlists();
 

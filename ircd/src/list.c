@@ -342,7 +342,6 @@ void	free_user(anUser *user, aClient *cptr)
  */
 void	remove_client_from_list(aClient *cptr)
 {
-	checklist();
 	if (cptr->prev)
 		cptr->prev->next = cptr->next;
 	else
