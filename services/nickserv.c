@@ -616,12 +616,13 @@ void changeNick(char *from, char *to, char *ts)
 	char tmp1[NICKLEN + 2];
 
 	changeme = getNickData(from);
-	changeme->oflags &= ~NOISREG;
 	
 	if (changeme == NULL) {
 		nDesynch(to, "NICK");
 		return;
 	}
+
+	changeme->oflags &= ~NOISREG;
 
 	if (changeme->oflags & NCNICK) {
 		addGhost(changeme->nick);
