@@ -931,7 +931,7 @@ struct Channel	{
 
 #define	isvalid(c) (((c) >= 'A' && (c) <= '~') || isdigit(c) || (c) == '-')
 
-#define	MyConnect(x)			((x)->sock != NULL)
+#define	MyConnect(x)			((x)->hopcount == 0)
 #define	MyClient(x)			(MyConnect(x) && IsClient(x))
 #define	MyOper(x)			(MyConnect(x) && IsOper(x))
 
