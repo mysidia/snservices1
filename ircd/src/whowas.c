@@ -164,7 +164,7 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					sendto_one(sptr, rpl_str(RPL_AWAY),
 						   me.name, parv[0],
 						   wp->ww_nick, up->away);
-				if (!BadPtr(up->sup_version)) {
+				if (IsAnOper(sptr) && !BadPtr(up->sup_version)) {
 					sendto_one(sptr, rpl_str(RPL_WHOISVERSION),
 							me.name, parv[0],
 							wp->ww_nick, 
