@@ -103,36 +103,6 @@
 #define NOSPOOF_SEED02 0x87654321
 #endif
 
-/* NS_ADDRESS
- *
- * This is the email address displayed to the user so that they can email
- * someone if they have problems with the no spoofing system.  It is
- * usually set up by the Config script.
- *
- * For SorceryNet servers, this should be set to nospoof@sorcery.net.  For 
- * other servers, it should be a valid email address for the users to contact.
- */
-#ifndef NS_ADDRESS
-#define NS_ADDRESS "clueless-admin@poorly.configured.server"
-#endif
-#endif
-
-/* KLINE_ADDRESS
- *
- * This is the email address displayed to the user when they are K:lined
- * so that they can email someone in the server's administration about it.
- * It is usually set up by the Config script.
- *
- * It should be a valid email address for the users to contact.
- *
- * For SorceryNet servers, note that this message is displayed when the user
- * is affected by a local K:line or k:line.  For Services-based autokills,
- * the message is set up automatically by Services to ask to email
- * kline@sorcery.net.  It is recommended that you set this up to give a valid
- * email address for the server's admin, not kline@sorcery.net.
- */
-#ifndef KLINE_ADDRESS
-#define KLINE_ADDRESS "clueless-admin@poorly.configured.server"
 #endif
 
 /*

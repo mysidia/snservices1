@@ -224,7 +224,7 @@ int FailClientCheck(aClient* sptr) {
 		me.name, sptr->name);
     sendto_one(sptr, ":%s NOTICE %s :If turning off scripts does not help, then try emptying your ignore list, and making sure all CTCP response types are enabled.", me.name, sptr->name);
 
-    sendto_one(sptr, ":%s NOTICE %s :As a last option, you may try uninstalling and reinstalling your IRC software or try using a different software program to connect to " NETWORK ".", me.name, sptr->name);
+    sendto_one(sptr, ":%s NOTICE %s :As a last option, you may try uninstalling and reinstalling your IRC software or try using a different software program to connect to %s.", me.name, sptr->name, network);
 
 #ifdef SN_MODE
 	sendto_one(sptr, ":%s NOTICE %s :For further help, see: http://www.sorcery.net/help", me.name, sptr->name);
@@ -476,38 +476,35 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 	    {
 	      sendto_one(cptr,
 			 ":%s %d %s :*** No new irc users from %s are being admitted "
-			 "(%s).  Email " NETWORK_KLINE_ADDRESS " for more information.",
+			 "(%s).  Email %s for more information.",
 			 me.name, ERR_YOURHURT, cptr->name, get_client_name3(sptr, FALSE),
-			 sconf->passwd ? sconf->passwd : "You are banned");
+			 sconf->passwd ? sconf->passwd : "You are banned", network_kline);
 	      sendto_one(cptr,
 			 ":%s %d %s :*** due to the actions of some users from "
 			 "your host, new users from your site are not presently"
 			 " being accepted, if you have a registered nick, please"
-			 " identify.", me.name, ERR_YOURHURT, cptr->name,
-			 sconf->passwd ? sconf->passwd : "You are banned");
+			 " identify.", me.name, ERR_YOURHURT, cptr->name);
 	      if (MyConnect(sptr))
 		{
 		  if ((niptr = find_person("NickServ", NULL)) && IsULine(niptr, niptr))
 		    sendto_one(cptr,
-			       ":%s PRIVMSG %s :*** due to the actions of some users from "
+			       ":%s!sorceress@sorcery.net PRIVMSG %s :*** due to the actions of some users from "
 			       "your host, new users from your site are not presently"
 			       " being accepted, if you have a registered nick, please"
-			       " identify with NickServ.", NETWORK"!sorceress@sorcery.net", cptr->name,
-                               sconf->passwd ? sconf->passwd : "You are banned");
+			       " identify with NickServ.", network, cptr->name);
 		  else
 		    {
 		      ns_down = 1;
 		      sendto_one(cptr,
-				 ":%s PRIVMSG %s :*** due to the actions of some users from "
+				 ":%s!sorceress@sorcery.net PRIVMSG %s :*** due to the actions of some users from "
 				 "your host, new users from your host are no longer"
 				 " being accepted. Normally, if you had a registered nickname, "
-				 "you could gain access; however, services are down at the moment.", NETWORK"!sorceress@sorcery.net", cptr->name,
-				 sconf->passwd ? sconf->passwd : "Your host is banned");
+				 "you could gain access; however, services are down at the moment.", network, cptr->name);
 		      sendto_one(cptr,
-				 ":%s PRIVMSG %s :*** "
+				 ":%s!sorceress@sorcery.net PRIVMSG %s :*** "
 				 " Please wait a few minutes and reconnect, if you receive"
 				 " this message again, then try to send a message to online"
-				 " operators with /quote help <message>", NETWORK"!sorceress@sorcery.net", cptr->name);
+				 " operators with /quote help <message>", network, cptr->name);
 		      sendto_ops("AHURT user %s will not be able to identify with services down", 
 				 get_client_name3(sptr, FALSE));
 		    }
@@ -517,17 +514,16 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 	    { /* this is kindof useless... */
 	      sendto_one(cptr,
 			 ":%s %d %s :*** No new irc users from your host are allowed on this server: "
-			 "%s.  Email " KLINE_ADDRESS " for more information.",
+			 "%s.  Email %s for more information.",
 			 me.name, ERR_YOURHURT, cptr->name,
-			 sconf->passwd ? sconf->passwd : "You are banned");
+			 sconf->passwd ? sconf->passwd : "You are banned", kline);
 	    }
 
 	  if (!ns_down)
 	    {
 	      sendto_one(cptr,
-			 ":%s %d %s :*** %s%s",
-			 me.name, ERR_YOURHURT, cptr->name,
-			 "This is a \'weak\' ban, you can still enter "NETWORK" if you have a registered nickname",
+			 ":%s %d %s :*** This is a \'weak\' ban, you can still enter %s if you have a registered nickname%s",
+			 me.name, ERR_YOURHURT, cptr->name, network,
 			 ns_down ? ", when services become available." : "." );
 	    }
 	}
@@ -540,14 +536,14 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
     {
       if (!IsHurt(sptr) || !(sptr->hurt == 2))
 	{
-	  sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
+	  sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, network, nick);
 	  /* This is a duplicate of the NOTICE but see below...*/
 	  sendto_one(sptr, rpl_str(RPL_YOURHOST), me.name, nick,
 		     get_client_name(&me, FALSE), version);
 	  sendto_one(sptr, rpl_str(RPL_CREATED),me.name,nick,creation);
 	  sendto_one(sptr, rpl_str(RPL_MYINFO), me.name, parv[0],
 		     me.name, version);
-	  sendto_one(sptr, rpl_str(RPL_PROTOCTL), me.name, parv[0]);
+	  sendto_one(sptr, rpl_str(RPL_PROTOCTL), me.name, parv[0], network);
 
 	  m_lusers(sptr, sptr, 1, parv);
 	  update_load();

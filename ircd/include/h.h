@@ -79,6 +79,8 @@ int	rehash(aClient *, aClient *, int);
 void	conf_init();
 aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp);
 
+extern	char	*network, *kline, *network_kline;
+
 char	*debugmode, *configfile, *sbrk0;
 char	*getfield(char *);
 void	get_sockhost(aClient *, char *);
