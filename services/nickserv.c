@@ -785,9 +785,9 @@ void setMode(char *nick, char *mode)
 				changeme->oflags |= NOISREG;
 
 				if (hasValidModeR(changeme)) {
-					sSend(":%s NOTICE %s :Since you were previously identified,"
-				              " you will be allowed to remain on your current "
-					      "nickname." ,
+					sSend(":%s NOTICE %s :NickServ was just informed that "
+					      "you previously identified (usermode +r). "
+					      "You will not be forced to change nicknames.",
 					      NickServ, changeme->nick);
 				}
 			}
