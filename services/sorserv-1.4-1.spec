@@ -1,6 +1,6 @@
 Summary: IRC Services software for use with ircd-sor1.3.2+
 Name: sorserv
-Version: 1.4.2-test
+Version: 1.4.2
 Release: 1 
 Copyright: BSD
 Vendor: http://www.sorcery.net
