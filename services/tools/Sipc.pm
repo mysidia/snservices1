@@ -63,6 +63,14 @@ sub getPrivateNickInfo
 
 }
 
+sub hashPw
+{
+	my $x = shift;
+	my $p = shift;
+
+	return md5_hex($p);
+}
+
 sub loginChannel
 {
 	my $self = shift;
@@ -71,7 +79,7 @@ sub loginChannel
 	my $sel = $self->{sel};
 	my $sock = $self->{sock};
 
-	$passw = md5_hex($passw);
+	# $passw = md5_hex($passw);
 	$sock->print("AUTH OBJECT LOGIN RCHAN " . $chan. "\n");
 
 	for(;;) {
