@@ -27,8 +27,6 @@ IRCD_RCSID("$Id$");
 
 #define NEWLINE	"\r\n"
 
-static int recurse_send = 0;
-static char last_pattern[2048 * 2] = "";
 static char sendbuf[2048];
 static int sentalong[MAXCONNECTIONS];
 
@@ -242,7 +240,7 @@ vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 		i = acptr->from->sock->fd;
 		va_copy(ap2, ap);
 		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
-			vsendto_prefix_one(acptr, from, fmt, ap);
+			vsendto_prefix_one(acptr, from, fmt, ap2);
 			sentalong[i] = 1;
 		} else {
 			/*
@@ -250,7 +248,7 @@ vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 			 * remote link already
 			 */
 			if (sentalong[i] == 0) {
-	  			vsendto_prefix_one(acptr, from, fmt, ap);
+	  			vsendto_prefix_one(acptr, from, fmt, ap2);
 				sentalong[i] = 1;
 			}
 		}
@@ -386,7 +384,7 @@ sendto_serv_butone(aClient *one, char *fmt, ...)
 			continue;
 		if (IsServer(cptr)) {
 			va_copy(ap2, ap);
-			vsendto_one(cptr, fmt, ap);
+			vsendto_one(cptr, fmt, ap2);
 			va_end(ap2);
 		}
 	}
@@ -598,85 +596,32 @@ sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 	va_end(ap);
 }
 
-/*
- * Send to local ops only.
- */
-void
-sendto_ops(char *fmt, ...)
+void vsendto_umode(int flags, char *fmt, va_list ap)
 {
-	va_list	ap;
-	va_list ap2;
-	aClient *cptr;
+	va_list	ap2;
+	aClient	*cptr;
 	char	nbuf[1024];
 
-	va_start(ap, fmt);
-
 	for (cptr = &me; cptr; cptr = cptr->lnext)
+	{
 		if (!IsServer(cptr) && !IsMe(cptr) &&
-		    SendServNotice(cptr)) {
-			sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
-				me.name, cptr->name);
+			(ClientUmode(cptr) & flags)==flags)
+		{
+			sprintf(nbuf, ":%s NOTICE %s :", me.name, cptr->name);
 			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
 			va_end(ap2);
 		}
-
-	va_end(ap);
+	}
 }
 
-/*
- * Send to local mode +g ops only.
- */
-void
-sendto_failops(char *fmt, ...)
-{
-        va_list ap;
-	va_list ap2;
-        aClient *cptr;
-        char    nbuf[1024];
-
-
-        va_start(ap, fmt);
-
-        for (cptr = &me; cptr; cptr = cptr->lnext)
-                if (!IsServer(cptr) && !IsMe(cptr) &&
-                    SendFailops(cptr)) {
-                        sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
-				me.name, cptr->name);
-                        strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-                        vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-void
-sendto_umode(int flags, char *fmt, ...)
+void sendto_umode(int flags, char *fmt, ...)
 {
 	va_list ap;
-	va_list ap2;
-	aClient *cptr;
-	char	nbuf[1024];
 
 	va_start(ap, fmt);
-
-	for (cptr = &me; cptr; cptr = cptr->lnext)
-		if (!IsServer(cptr) && !IsMe(cptr) &&
-		    (ClientUmode(cptr) & flags)==flags) {
-                       sprintf(nbuf, ":%s NOTICE %s :",
-			       me.name, cptr->name);
-                       strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-		       va_copy(ap2, ap);
-                       vsendto_one(cptr, nbuf, ap2);
-		       va_end(ap2);
-		}
-
+	vsendto_umode(flags, fmt, ap);
 	va_end(ap);
 }
 
@@ -702,91 +647,6 @@ sendto_umode_except(int flags, int notflags, char *fmt, ...)
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-/*
- * Send to local mode +g ops only who are also +o.
- */
-void
-sendto_failops_whoare_opers(char *fmt, ...)
-{
-        va_list ap;
-        va_list ap2;
-        aClient *cptr;
-        char    nbuf[1024];
-
-        va_start(ap, fmt);
-
-        for (cptr = &me; cptr; cptr = cptr->lnext)
-                if (!IsServer(cptr) && !IsMe(cptr) &&
-                    SendFailops(cptr) && OPCangmode(cptr)) {
-                        sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
-				me.name, cptr->name);
-                        strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-                        vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-/*
- * Send to local mode +g ops only who are also +o.
- */
-void
-sendto_locfailops(char *fmt, ...)
-{
-        va_list ap;
-	va_list ap2;
-        aClient *cptr;
-        char    nbuf[1024];
-
-        va_start(ap, fmt);
-
-        for (cptr = &me; cptr; cptr = cptr->lnext)
-                if (!IsServer(cptr) && !IsMe(cptr) &&
-                    SendFailops(cptr) && IsAnOper(cptr)) {
-                        sprintf(nbuf, ":%s NOTICE %s :*** LocOps -- ",
-				me.name, cptr->name);
-                        strncat(nbuf, fmt,
-				sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-                        vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		    }
-
-	va_end(ap);
-}
-
-/*
- * Send to *local* ops only. (all +O or +o people)
- */
-void
-sendto_opers(char *fmt, ...)
-{
-	va_list	ap;
-	va_list	ap2;
-	aClient *cptr;
-	char	nbuf[1024];
-
-	va_start(ap, fmt);
-
-	for (cptr = &me; cptr; cptr = cptr->lnext)
-		if (!IsServer(cptr) && !IsMe(cptr) &&
-		    IsAnOper(cptr)) {
-			sprintf(nbuf, ":%s NOTICE %s :*** Oper -- ",
-				me.name, cptr->name);
-			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-			vsendto_one(cptr, nbuf, ap);
 			va_end(ap2);
 		}
 
@@ -947,26 +807,89 @@ vsendto_prefix_one(aClient *to, aClient *from, char *fmt, va_list ap)
 }
 
 /*
- * Send to local ops only but NOT +s nonopers.
+ * Send to global operators on this server.
+ */
+
+void sendto_realops(char *fmt, ...)
+{
+	va_list	ap;
+	char	nbuf[1024];
+
+	sprintf(nbuf, "*** Notice -- %s", fmt);
+
+	va_start(ap, fmt);
+	vsendto_umode(U_OPER, nbuf, ap);
+	va_end(ap);
+}
+
+/*
+ * Send to local ops only.
+ */
+
+void sendto_ops(char *fmt, ...)
+{
+	va_list	ap;
+	char	nbuf[1024];
+
+	sprintf(nbuf, "*** Notice -- %s", fmt);
+
+	va_start(ap, fmt);
+	vsendto_umode(U_SERVNOTICE, nbuf, ap);
+	va_end(ap);
+}
+
+/*
+ * Send to local mode +g ops only.
+ */
+
+void sendto_failops(char *fmt, ...)
+{
+        va_list ap;
+        char    nbuf[1024];
+
+	sprintf(nbuf, "*** Global -- %s", fmt);
+
+        va_start(ap, fmt);
+	vsendto_umode(U_FAILOP, nbuf, ap);
+	va_end(ap);
+}
+
+
+/*
+ * Send to local mode +g ops only who are also +o.
+ */
+
+void sendto_locfailops(char *fmt, ...)
+{
+        va_list ap;
+        char    nbuf[1024];
+
+	sprintf(nbuf, "*** LocOps -- %s", fmt);
+
+        va_start(ap, fmt);
+	vsendto_umode(U_FAILOP, nbuf, ap);
+	va_end(ap);
+}
+
+/*
+ * Send to *local* ops only. (all +O or +o people)
  */
 void
-sendto_realops(char *pattern, ...)
+sendto_opers(char *fmt, ...)
 {
 	va_list	ap;
 	va_list	ap2;
 	aClient *cptr;
 	char	nbuf[1024];
 
-	va_start(ap, pattern);
+	va_start(ap, fmt);
 
 	for (cptr = &me; cptr; cptr = cptr->lnext)
 		if (!IsServer(cptr) && !IsMe(cptr) &&
-		    IsOper(cptr)) {
-			sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
-				      me.name, cptr->name);
-			strncat(nbuf, pattern,
-				      sizeof(nbuf) - strlen(nbuf));
-
+		    IsAnOper(cptr)) {
+			sprintf(nbuf, ":%s NOTICE %s :*** Oper -- ",
+				me.name, cptr->name);
+			strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);

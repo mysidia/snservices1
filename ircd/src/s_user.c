@@ -129,8 +129,6 @@ aClient *next_client(aClient *next, char *ch)
 		return next;
 	for ( ; next; next = next->next)
 	{
-		if (IsService(next))
-			continue;
 		if (!match(ch, next->name) || !match(next->name, ch))
 			break;
 	}
@@ -4001,33 +3999,36 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
  		ClearHelpOp(sptr);
                 sptr->since++;
           }
-      /*
-       * Let only operators set FloodF, ClientF; also
-       * remove those flags if they've gone -o/-O.
-       *  FloodF sends notices about possible flooding -Cabal95
-       *  ClientF sends notices about clients connecting or exiting
-       */
-      if (!IsAnOper(sptr) && !IsServer(cptr))
-      {
-	  if (IsClientF(sptr))
-	    ClearClientF(sptr);
-	  if (IsFloodF(sptr))
-	    ClearFloodF(sptr);
-          if (IsLogMode(sptr))
-            ClearLogMode(sptr);
-      }
-      /*
-       * New oper access flags - Only let them set certian usermodes on
-       * themselves IF they have access to set that specific mode in their
-       * O:Line.
-       */
-      if (MyClient(sptr) && IsAnOper(sptr))
-      {
-	  if (!IsSet(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
-	    ClearClientF(sptr);
-	  if (!IsSet(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
-	    ClearFloodF(sptr);  
-      }
+
+	/*
+	 * Make sure only opers can set certain umodes.
+	 */
+	if (!IsAnOper(sptr) && !IsServer(cptr))
+	{
+		ClientUmode(sptr) &= ~OPER_UMODES;
+	}
+
+	/*
+	 * New oper access flags - Only let them set certian usermodes on
+	 * themselves IF they have access to set that specific mode in their
+	 * O:Line.
+	 */
+	if (MyClient(sptr) && IsAnOper(sptr))
+	{
+		if (!IsSet(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
+		{
+			ClearClientF(sptr);
+		}
+		if (!IsSet(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
+		{
+			ClearFloodF(sptr);
+		}
+		if (!IsSet(setflags, U_FAILOP) && SendFailops(sptr) && !OPCangmode(sptr))
+		{
+			ClearFailops(sptr);
+		}
+	
+	}
 
       if (!IsSet(ClientUmode(sptr), U_MASK))
 	  REMOVE_BIT(ClientUmode(sptr), U_FULLMASK);

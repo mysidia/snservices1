@@ -751,13 +751,6 @@ m_server_estab(aClient *cptr)
 
 			send_user_joins(cptr, acptr);
 		    }
-		else if (IsService(acptr))
-		    {
-			sendto_one(cptr,"NICK %s :%d",
-				   acptr->name, acptr->hopcount + 1);
-			sendto_one(cptr,":%s SERVICE * * :%s",
-				   acptr->name, acptr->info);
-		    }
 	    }
 	/*
 	** Last, pass all channels plus statuses
@@ -891,7 +884,6 @@ static int report_array[19][3] = {
 		{ CONF_OPERATOR,	  RPL_STATSOLINE, 'O'},
 		{ CONF_HUB,		  RPL_STATSHLINE, 'H'},
 		{ CONF_LOCOP,		  RPL_STATSOLINE, 'o'},
-		{ CONF_SERVICE,		  RPL_STATSSLINE, 'S'},
 		{ CONF_UWORLD,		  RPL_STATSULINE, 'U'},
 		{ CONF_MISSING,		  RPL_STATSXLINE, 'X'},
 		{ 0, 0, 0 }
@@ -1213,9 +1205,6 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		send_usage(sptr,parv[0]);
 #endif
 		break;
-	case 'S' : case 's' :
-		report_configured_links(sptr, CONF_SERVICE);
-		break;
 	case 'T' : case 't' :
 		tstats(sptr, parv[0]);
 		break;
@@ -1279,7 +1268,7 @@ m_error(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	** screen otherwise). Pass ERROR's from other sources to
 	** the local operator...
 	*/
-	if (IsPerson(cptr) || IsUnknown(cptr) || IsService(cptr))
+	if (IsPerson(cptr) || IsUnknown(cptr))
 		return 0;
 	if (cptr == sptr) {
 		sendto_serv_butone(&me, ":%s GLOBOPS :ERROR from %s -- %s",
@@ -1586,7 +1575,7 @@ m_gnotice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
 	sendto_serv_butone(IsServer(cptr) ? cptr : NULL, ":%s GNOTICE :%s",
 		 parv[0], message);
-	sendto_failops_whoare_opers("from %s: %s", parv[0], message);
+	sendto_failops("from %s: %s", parv[0], message);
 	return 0;
 }
 
@@ -1618,7 +1607,7 @@ m_globops(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
         sendto_serv_butone(IsServer(cptr) ? cptr : NULL,
                         ":%s GLOBOPS :%s", parv[0], message);
-        sendto_failops_whoare_opers("from %s: %s", parv[0], message);
+        sendto_failops("from %s: %s", parv[0], message);
         return 0;
 }
 
@@ -1930,11 +1919,6 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   link_u[acptr->sock->fd], name, *(acptr->serv->by) ?
 					   acptr->serv->by : "*", "*", me.name,
 					   now - acptr->lasttime);
-			cnt++;
-			break;
-		case STAT_SERVICE:
-			sendto_one(sptr, rpl_str(RPL_TRACESERVICE),
-				   me.name, parv[0], class, name);
 			cnt++;
 			break;
 		case STAT_LOG:

@@ -984,12 +984,12 @@ static CONF_HANDLER(conf_operator)
 
 void conf_init()
 {
-	config_monitor("config", conf_me, CONFIG_SINGLE);
-	config_monitor("class", conf_class, CONFIG_LIST);
 	config_monitor("listener", conf_listener, CONFIG_LIST);
 	config_monitor("server", conf_server, CONFIG_LIST);
 	config_monitor("client", conf_client, CONFIG_LIST);
 	config_monitor("operator", conf_operator, CONFIG_LIST);
+	config_monitor("class", conf_class, CONFIG_LIST);
+	config_monitor("config", conf_me, CONFIG_SINGLE);
 }
 
 /*
@@ -1860,7 +1860,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                               zapping the command source... */
        if (find_zap(cptr, 0)||find_zap(sptr, 0))
        {
-             sendto_failops_whoare_opers("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
+             sendto_failops("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
              sendto_serv_butone(NULL,":%s GLOBOPS :z:line error: mask=%s parsed=%s I tried to zap cptr", me.name, mask, userhost);
              flush_connections(&me);
              rehash(&me, &me, 0);

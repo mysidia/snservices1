@@ -480,7 +480,7 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 					   sptr->name, comment);
 			    }
 	    }
-	} else if (!(IsPerson(sptr) || IsService(sptr)))
+	} else if (!IsPerson(sptr))
 				    /* ...this test is *dubious*, would need
 				    ** some thougth.. but for now it plugs a
 				    ** nasty hole in the server... --msa
