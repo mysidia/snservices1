@@ -4281,6 +4281,12 @@ NCMD(ns_release)
 		{
 			if (isMD5Key(args[2])) 
 			{
+				struct auth_data auth_info[] = {{
+					nick->auth_cookie,
+					nick->idnum.getHashKey(),
+					2
+				}};
+
 				if (!Valid_md5key(args[2], auth_info,
 					tmp->nick, tmp->password, NickGetEnc(tmp)))
 				{
