@@ -1,0 +1,243 @@
+Sun Apr 19 17:48:36 PDT 1998 - Cabal95
+	* More cosmetics to the Config and Makefile(s).
+	* Cleaned out segfault tracking code
+	* Misc changes
+	* Updated version to 1.1.2
+
+Thu Apr 16 21:32:27 PDT 1998 - Cabal95
+	* Removed Skandranon's NO_AUTH_CHECKS patch. Outdated by previous
+	  patch (see below)
+
+Wed Apr 15 20:05:04 PDT 1998 - Cabal95
+	* Modifications to how ident checking is done.
+	  o If I:Lines do not contain an @, ident checking is not done and
+	    no ~ prefix is used for the userid.
+	  o If a C or N line contains an @, then ident checks are done
+	    and only the username before the @ is accepted. If not @ is
+	    provided no ident checking is done at all.
+
+Fri Apr 10 13:14:21 CDT 1998
+	* /hurt affect error message is no longer sent as m_error()
+	* opers can no longer be /hurt
+
+Mon Dec 29 13:40:56 EST 1997 Mysidia
+	* visual improvements to compile scripts and config
+        * dropped nicklen to 17
+        * added #ifdef/#defines to raise/drop nicklen in the future
+          in such a way that kills wouldn't be a result...
+
+Tue Oct 28 19:46:51 EST 1997 Mysidia
+        * nicklen changed to 17+NULL
+
+Sat Oct 18 22:11:15 CDT 1997 Mysidia
+        * /msg and /notice @#channel now requires chanops
+        * /hurt now accepts alternate formats
+        * nicklen now 18+null
+        * ulined NICKNAMES (not servers) changing remote clients
+          +/-h usermode
+        * prefix quits with Quit:
+
+Tue Oct 14 16:45:33 CDT 1997 Mysidia
+	* m_hurt()   /hurt <nick> <duration> <reason> temporarily silences
+          <nick>, /heal <nick> reverses hurt before <duration> passes.
+        * fixed typo in help.c
+        * /stats O shows flags instead of numbers ;>
+        * got rid of most of the #ifdef USE_SERVICES (trash) ;>
+        * added some stuff from dal4.4.13:
+        "
+        * Server exists -errors report show additional info: where the
+          existing server is connected from
+        * /kill allows multiple targets (nick1,nick2,nick3) and show
+          the killed client's address in the Nick!user@host format
+          (the mkil6 patch)
+        * Fake direction notices removed, fake direction splits removed
+        * fake direction notices sent to #debug;)
+        * Invisible opers (+io) no longer shown with /trace for
+          non-opers (-o)
+        * nospoof notice changed to say /notice <nospoofnick> nospoof
+        * Config script has the right version in it now :)
+        * Fixed bug in operflag system, wallop and locop access used
+          the same flag bit
+        * Fixed compile errors for the WIN32 platform, now is error
+          free
+        "
+
+Tue Aug 12 08:09:43 CDT 1997 Mysidia
+	* changes for sor1.0.0
+	* sor0.0.1 was merged with changes from dal4.4.10 to dal4.4.12
+	* sorcery-specific help.c
+	* Config, s_err.c, Config.c, config.h
+	  DALnet references changed to SorceryNet
+	* 'make install' was fixed (somewhat)
+
+Tue May 27 00:15:17 PDT 1997 some2, entered by Greg Poma
+	* changes for sor0.0.1
+	* visual modifications as far as /info reply, /version reply
+
+Mon May  5 13:52:37 HST 1997 Cabal95, entered by Michael Sawyer
+	* Changes for 4.4.10
+	* Minor bug fixes for /stats L and a test to disallow
+	  funky host names (with @'s in them).
+
+Sun May  4 20:20:44 HST 1997 Various, entered by Michael Sawyer
+	* Changes for 4.4.9
+	* JK's qualify-match patch
+	* Fix to K-line message in quit message
+	* Some new additional modes (CLIENT, KILL, FLOOD)
+	* Timed k-line patch
+	* Hostile username patch
+	* LOCOPS
+
+Mon Feb 10 21:07:03 EST 1997 Michael Sawyer <aetobat@dal.net>
+	* Fix problem in password testing of SERVER command
+	* Add ability to use different case tables, safely
+	* Prohibit most commands beforeregistration complete.
+
+Fri Nov 29 04:16:15 1996  Michael Graff  <Michael Graff <explorer@flame.org>>
+
+	* Changes for 3.2.6:
+
+	* Make it almost unnecessary to edit the Makefile or include/config.h
+	anymore.  Config now asks questions, and stores the answers in
+	a file called Options.  The theory is this file can be copied into
+	a new version and pathnames and other options will get defaults
+	from it.
+
+	* Make nospoof code optional.  Many servers do NOT need it, and
+	some clients break badly with it.  Thank you, Netscrape...
+
+Changes for 3.2.5
+Sun Nov 24 04:39:57 1996  Michael Graff <explorer@flame.org>
+	* Remove 2-second client connect delay.
+	* Print "Client exited" not "error 0"
+
+Changes with dal4.3.3 (Barubary - barubary@dal.net,
+                       Donwulff - donwulff@dal.net)
+Bugfix version and anti-hacking/spoofing
+
+* Spaces in kline comments (not akills!) are converted to _ instead of 
+hiding them totally.  find_kill exits for a non-akill kline the message 
+*** You are not welcome on this server: reason  Email kline@dal.net...
+* Deleted #wallops from the source code completely
+* Added md5-based anti-spoofing system
+* Fixed channel mode hacking
+* Fixed various memory leaks
+* Stopped certain commands while unregistered
+* Fixed WHOWAS bugs
+* Fixed problem with PONG (part of nospoof)
+* Fixed "ghost kline" bug
+* Added dn_skipname for BSDI systems (check src/Makefile)
+* chkconf now shows line error is on (Magel)
+* Config - script now tries to set up libraries properly (Magel)
+* Made dropping out USER server<->server protocol messages mandatory
+
+Changes with dal4.3.2 (Russell - russell@dal.net)
+Port of Fake Direction fix to dal4.3; special thanks to 
+Roddy for pointing out that it wasn't in there already
+
+* Fixed Fake Direction caused by m_error
+
+Changes with dal4.3.1 (Donwulff - donwulff@dal.net)
+
+* Fixed @-in-username bug
+
+Changes with dal4.3 (Donwulff - jusantal@kauhajoki.fi)
+Alpha on performance fixes while waiting for dal4.5
+
+* Added Roddy's ircd.doc into doc/ directory
+* Tripled hash table sizes in hash.c and hash.h
+* Optimized hashing function in hash.c
+* Removed extraneous debug data from hash.c in non-debugmode
+* Numerous minor performance increases in hash.c
+* Added /hash m in DEBUGMODE for getting list.c memory usage summary
+* Removed maximum nickname limit from USERHOST
+* Added optionally matched address part to ISON - no wildcards in nick
+* Optionally drops USER protocol messages from server-server (Barubary)
+* Ident replies with @ are now refused
+* Added +h mode that can be set when you're opered
+* Parameters following /quote help are sent to all +h
+* Starting writing a help database to /quote help
+* Improved version control
+
+Changes with 2.8.21.mu3.dal4.2 (Russell - Russell@dal.net)
+Minor bugfix revision
+
+* Removed hack and netride wallops - and finally did it *right*
+* Users can no longer hide from opers by joining an invisible channel
+* Only hubs will send out the connection established global
+* Connect globals are now working right.
+* Miscellanous bugs are fixed.
+
+Changes with 2.8.21.mu3.dal4 (Russell - Russell@dal.net)
+
+* Added new user mode "g" that does the following:
+	*notices all +og users with failed and/or succesful oper attempts 
+	on all servers
+	*notices all +og users with failed server connection attempts
+	*moves miscellanous other things anyone can see.
+* RAKILL command that allows ulined servers to remove an autokill as 
+	easily as it adds one.
+* Added support for temporary klines.
+* defined new A: class of klines (for autokill).  These are meant to
+	be services managed.
+* UNKLINE command allowing opers to remove k:lines by address.
+* Allow quote KLINE by address
+* Hacked STATS K to distinguish between permanent and temporary klines.
+* GOPER command allows a ulined client to broadcast all opers whether or not
+        any other flags are enabled.
+* GLOBOPS command allows opers to broadcast over GLOBAL messages, thereby 
+	depreciating wallops.  Wallops behavior stays the same though.
+* patch to allow the proper propagation of autokills.
+* Masks server notices that show PRIVMSGs
+* Masks the password from the failed oper attempt messages
+* Removed those annoying NET.RIDE and HACK notices
+* Allow opers to take quarantined nicks.
+* Fixed away bug that sends blank away messages on netjoin
+* Patch to allow opers to see invisible users on a /who
+* any oper can see all connections on any server in a /trace
+* Miscellaneous bug fixes.
+
+Changes with 2.8.21.mu3.dal3 (Lefler - lefler@dal.net):
+
+* Added modeless channels (starting with character +)
+* Now allows comments on channel parts
+* Changed TOPIC timestamp code to avoid unneccessary changes [NOTE: 
+  TOPICs are now incompatible with versions prior to dal2]
+* Q line can now exclude nicks (from the local server only)
+* Added a STATS X function that shows what C lines are not currently
+  active (i.e. missing servers)
+* Will now WALLOP all +w users when a server connects or disconnects
+  from the network
+* Added AKILL command, which allows U lined servers to establish
+  temporary global K lines.
+* New KLINE command; operators can now temporarily add K lines to
+  the server
+* Fixed a missing feature (bug?) where you could change nicks while banned
+  if the channel was moderated. Side effect of this fix is that noone
+  can now change nicks when banned, even chanops.
+* NOTE is gone for good. May it rest in peace.
+* Tidied up STATS K to work with spaces in the comment field (it turns the
+  field into a * if there are spaces), so you can use ircii's /stats k
+  handler as well as spaces.
+* New example.conf file with DALnet defaults
+
+Changes with 2.8.21.mu3.dal2a (Lefler - lefler@dal.net):
+
+* Fixed bug in AWAY resynch where only the first word would be shown.
+* New Solaris IRCDLIBS defnition in the Makefile [Pipis]
+
+Changes with 2.8.21.mu3.dal2 (Lefler - lefler@dal.net):
+
+* Allows users behind U lined servers to make mode changes, topic changes,
+  invites and kicks regardless of whether the user is allowed to or not.
+* Gets rid of HACK notices for mode changes from U lined servers.
+* Sends AWAY info in response to SERVER message where appropirate.
+* Resynchs TOPICs on net rejoins. Resvoles conflicts using the older topic
+  (using time/date stamp info).
+* Makes NPATH (the NOTE function) #undef by default.
+* Some tidying up of code distribution.
+* New features from irc2.8.21 and mu3.2.
+
+Changes with 2.8.20.mu2+Dal (Dalvenjah - dalvenjah@dal.net):
+
+* Allows non-chanops to see bans.

@@ -1,0 +1,168 @@
+#************************************************************************
+#*   IRC - Internet Relay Chat, src/Makefile
+#*   Copyright (C) 1990 Jarkko Oikarinen
+#*
+#*   This program is free software; you can redistribute it and/or modify
+#*   it under the terms of the GNU General Public License as published by
+#*   the Free Software Foundation; either version 1, or (at your option)
+#*   any later version.
+#*
+#*   This program is distributed in the hope that it will be useful,
+#*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#*   GNU General Public License for more details.
+#*
+#*   You should have received a copy of the GNU General Public License
+#*   along with this program; if not, write to the Free Software
+#*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#*/
+
+CC=danger will robinson
+#normal
+COMP=@comp.sh
+FIN_COMP=@fin.sh
+
+LINTFLAGS=-hba
+
+OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
+	class.o hash.o ircd.o list.o res.o s_auth.o s_bsd.o s_conf.o \
+	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o whowas.o \
+	userload.o crule.o md5.o help.o version.o $(RES) $(STRTOUL)
+
+SRC=$(OBJS:%.o=%.c)
+
+MAKE = make 'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
+	    'LDFLAGS=${LDFLAGS}' 'IRCDMODE=${IRCDMODE}' \
+            'DESCRYPT=${DESCRYPT}'
+
+INCLUDES = ../include/struct.h ../include/config.h ../include/options.h \
+	../include/sys.h ../include/common.h ../include/patchlevel.h \
+	../include/h.h ../include/numeric.h ../include/msg.h
+
+all: build
+
+build: ircd chkconf
+version.c:
+	$(SHELL) version.c.SH
+
+version.o: version.c ../include/patchlevel.h
+	$(COMP) $@ $(CC) $(CFLAGS) -c version.c
+
+ircd: $(OBJS) 
+	$(COMP) ircd '$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) $(DESCRYPT) -o ircd'
+#	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) $(DESCRYPT) -o ircd
+
+	$(FIN_COMP)
+	@chmod $(IRCDMODE) ircd
+chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \
+	 ../include/common.h crule.c chkconf.c
+	$(COMP) 'chkconf(1)' $(CC) $(CFLAGS) -DCR_CHKCONF -o chkcrule.o -c crule.c
+	$(COMP) 'chkconf(2)' $(CC) $(CFLAGS) -DCR_CHKCONF -o chkmatch.o -c match.c
+	$(COMP) 'chkconf(3)' $(CC) $(CFLAGS) chkconf.c chkmatch.o chkcrule.o \
+	$(LDFLAGS) $(IRCDLIBS) -o chkconf
+
+saber: $(SRC)
+	#load -I../include $(SRC) version.c $(IRCDLIBS)
+
+lint:
+	lint $(LINTFLAGS) -I../include $(SRC) | egrep -v 'sendto_|debug'
+
+parse.o: parse.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o parse.o -c parse.c
+bsd.o: bsd.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o bsd.o -c bsd.c
+dbuf.o: dbuf.c $(INCLUDES) ../include/dbuf.h
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o dbuf.o -c dbuf.c
+packet.o: packet.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o packet.o -c packet.c
+send.o: send.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o send.o -c send.c
+match.o: match.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o match.o -c match.c
+support.o: support.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o support.o -c support.c
+userload.o: userload.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(XCFLAGS) $(CFLAGS)      -o userload.o -c userload.c
+help.o: help.c $(INCLUDES)
+
+#install: all
+#	-if [ ! -d ${IRCDDIR} -a ! -f ${IRCDDIR} ] ; then \
+#		mkdir ${IRCDDIR}; \
+#	fi
+#	../bsdinstall -m ${IRCDMODE} ircd ${BINDIR}
+#	../bsdinstall -m 700 chkconf ${BINDIR}
+#	$(CP) ../doc/example.conf ${IRCDDIR}
+#	$(TOUCH) ${IRCDDIR}/ircd.motd
+#	$(RM) -f ${IRCDDIR}/ircd.m4
+#	$(TOUCH) ${IRCDDIR}/ircd.m4
+#	chmod +x buildm4
+#	./buildm4 ${IRCDDIR}
+
+clean:
+	$(RM) -f *.o *~ core ircd version.c chkconf
+
+cleandir: clean
+
+depend:
+	makedepend -I${INCLUDEDIR} ${SRC}
+
+channel.o: channel.c $(INCLUDES) ../include/channel.h
+	$(COMP) $@ $(CC) $(CFLAGS) -c channel.c
+
+class.o: class.c $(INCLUDES) ../include/class.h
+	$(COMP) $@ $(CC) $(CFLAGS) -c class.c
+
+ircd.o: ircd.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c ircd.c
+
+list.o: list.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c list.c
+
+res.o: res.c ../include/res.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c res.c
+
+s_bsd.o: s_bsd.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_bsd.c
+
+s_auth.o: s_auth.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_auth.c
+
+s_conf.o: s_conf.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_conf.c
+
+s_debug.o: ../include/sys.h s_debug.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_debug.c
+
+s_err.o: ../include/msg.h s_err.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_err.c
+
+s_misc.o: s_misc.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_misc.c
+
+s_user.o: s_user.c $(INCLUDES) \
+	  ../include/dbuf.h ../include/channel.h ../include/whowas.h
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_user.c
+
+s_serv.o: s_serv.c $(INCLUDES) \
+	  ../include/dbuf.h ../include/whowas.h
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_serv.c
+
+s_numeric.o: s_numeric.c ../include/dbuf.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c s_numeric.c
+
+whowas.o: whowas.c ../include/dbuf.h ../include/whowas.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c whowas.c
+
+hash.o: hash.c ../include/hash.h $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c hash.c
+
+crule.o: crule.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c crule.c
+
+help.o: help.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c help.c
+
+md5.o: md5.c $(INCLUDES)
+	$(COMP) $@ $(CC) $(CFLAGS) -c md5.c
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
