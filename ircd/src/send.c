@@ -437,6 +437,75 @@ va_dcl
 }
 
 
+
+# ifndef        USE_VARARGS
+/*VARARGS*/
+void    sendto_channelvoices_butone(one, from, chptr, pattern,
+			      p1, p2, p3, p4, p5, p6, p7, p8)
+aClient *one, *from; 
+aChannel *chptr;
+char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+# else
+void	sendto_channelvoices_butone(one, from, chptr, pattern, va_alist)
+aClient *one, *from;
+aChannel *chptr;
+char	*pattern;
+va_dcl
+{ 
+	va_list vl;
+# endif
+	Link	*lp;
+	aClient	*acptr;
+	int	i;
+
+# ifdef USE_VARARGS
+	va_start(vl);
+# endif
+	for (i = 0; i < MAXCONNECTIONS; i++)
+		sentalong[i] = 0;
+	for (lp = chptr->members; lp; lp = lp->next)
+	    {
+		acptr = lp->value.cptr;
+		if (acptr->from == one || (lp->flags & CHFL_ZOMBIE) ||
+		    ( !(lp->flags & CHFL_VOICE) && !(lp->flags & CHFL_CHANOP) ))
+			continue;       /* ...was the one I should skip
+                                           or user not not a channel op */
+		i = acptr->from->fd;
+		if (MyConnect(acptr) && IsRegisteredUser(acptr))
+		    {
+# ifdef USE_VARARGS
+			sendto_prefix_one(acptr, from, pattern, vl);
+# else 
+			sendto_prefix_one(acptr, from, pattern, p1, p2,
+                                          p3, p4, p5, p6, p7, p8);
+# endif
+			sentalong[i] = 1;
+		    }
+		else
+                    {
+		/* Now check whether a message has been sent to this
+		 * remote link already */
+			if (sentalong[i] == 0) 
+			    {
+# ifdef USE_VARARGS
+				sendto_prefix_one(acptr, from, pattern, vl);
+# else
+				sendto_prefix_one(acptr, from, pattern,
+						  p1, p2, p3, p4,
+						  p5, p6, p7, p8);  
+# endif
+				sentalong[i] = 1;
+			    }
+		    }
+	    }
+# ifdef USE_VARARGS  
+	va_end(vl); 
+# endif
+	return;
+}
+
+
 /*
  * sendto_server_butone
  *
@@ -1063,6 +1132,51 @@ va_dcl
 }
 
 
+/*
+ * sendto_socks
+ *
+ *  Send message to specified socks struct clients
+ */
+#ifndef USE_VARARGS
+/*VARARGS*/
+void	sendto_socks(socks, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
+aSocks  *socks;
+char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+#else
+void	sendto_socks(socks, pattern, va_alist)
+aSocks  *socks;
+char	*pattern;
+va_dcl
+{
+	va_list	vl;
+#endif
+	aClient *cptr;
+	int	i;
+	char	nbuf[1024];
+
+#ifdef	USER_VARARGS
+	va_start(vl);
+#endif
+	for (i = 0; i <= highest_fd; i++)
+		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+		    (cptr->socks == socks))
+		    {
+			(void)sprintf(nbuf, ":%s NOTICE AUTH :",
+				me.name);
+			(void)strncat(nbuf, pattern,
+				      sizeof(nbuf) - strlen(nbuf));
+#ifdef	USE_VARARGS
+			sendto_one(cptr, nbuf, va_list);
+#else
+			sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6,
+				p7, p8);
+#endif
+		    }
+	return;
+}
+
+
 void	sendto_umode(flags, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
 int	flags;
 char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
@@ -1418,7 +1532,7 @@ va_dcl
 			if (*user->host && !MyConnect(from))
 			    {
 				(void)strcat(sender, "@");
-				(void)strcat(sender, user->host);
+				(void)strcat(sender, UGETHOST(to, user));
 				flag = 1;
 			    }
 		    }
@@ -1429,7 +1543,10 @@ va_dcl
 		if (!flag && MyConnect(from) && *user->host)
 		    {
 			(void)strcat(sender, "@");
-			(void)strcat(sender, from->sockhost);
+                        if (!IsMasked(from) || !user->mask || to == from || IsOper(to))
+			    (void)strcat(sender, from->sockhost);
+			else
+			    (void)strcat(sender, user->mask);
 		    }
 #ifdef	USE_VARARGS
 		par = sender;

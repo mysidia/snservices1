@@ -103,9 +103,9 @@ char	*date(time_t clock)
 	if (minswest < 0)
 		minswest = -minswest;
 
-	(void)sprintf(buf, "%s %s %d 19%02d -- %02d:%02d %c%02d:%02d",
+	(void)sprintf(buf, "%s %s %d %04d -- %02d:%02d %c%02d:%02d",
 		weekdays[lt->tm_wday], months[lt->tm_mon],lt->tm_mday,
-		lt->tm_year, lt->tm_hour, lt->tm_min,
+		1900 + lt->tm_year, lt->tm_hour, lt->tm_min,
 		plus, minswest/60, minswest%60);
 
 	return buf;
@@ -216,6 +216,33 @@ char	*get_client_name(aClient *sptr, int showip)
       {
 	  if (mycmp(sptr->name, sptr->sockhost))
 	    (void)sprintf(nbuf, "%s[%s]", sptr->name, sptr->sockhost);
+	  else
+	    return sptr->name;
+      }
+
+      return nbuf;
+  }
+
+  return sptr->name;
+}
+
+char	*get_client_name_mask(aClient *sptr, int showip, int showport, int mask)
+{
+  static char nbuf[HOSTLEN * 2 + USERLEN + 5];
+
+  if (MyConnect(sptr))
+  {
+      if (showip)
+      {
+	  sprintf(nbuf, "%s[%s@%s.%u]",
+		  sptr->name,
+		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
+		  mask ? genHostMask(inetntoa((char *)&sptr->ip)) : inetntoa((char *)&sptr->ip), showport ? (unsigned int)sptr->port : (unsigned int)0);
+      } 
+      else
+      {
+	  if (mycmp(sptr->name, sptr->sockhost))
+	    (void)sprintf(nbuf, "%s[%s]", sptr->name, mask ? genHostMask(sptr->sockhost) : sptr->sockhost);
 	  else
 	    return sptr->name;
       }
@@ -339,13 +366,17 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 		}
 		update_load();
 		on_for = NOW - sptr->firsttime;
-		if (IsPerson(sptr))
+		if (IsPerson(sptr)) {
+                        /* poof goes their watchlist! */
+                        hash_del_watch_list(sptr);
+
 			tolog(LOG_USER,	"Client Exiting %s (%3d:%02d:%02d): %s@%s",
 					myctime(sptr->firsttime),
 					on_for / 3600, (on_for % 3600)/60,
 					on_for % 60,
 					sptr->user->username, sptr->user->host
 					);
+		}
 
 		if (sptr->fd >= 0 && !IsConnecting(sptr))
 		    {
@@ -513,6 +544,7 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 			sptr->from ? sptr->from->sockhost : "??host",
 			sptr->from, sptr->next, sptr->prev, sptr->fd,
 			sptr->status, sptr->user));
+        hash_check_watch(sptr, RPL_LOGOFF);
 	remove_client_from_list(sptr);
 	return;
 }
@@ -665,8 +697,8 @@ int remove_hurt(aClient *acptr)
        }
 #endif
 
-        if (IsHurt(acptr))
-		sendto_one(acptr, ":%s NOTICE %s :You can talk again, as you are no longer silenced.",
+        if (IsHurt(acptr) && MyClient(acptr) && acptr->hurt > 5)
+		sendto_one(acptr, ":%s NOTICE %s :You are no longer silenced and now again have full command access.",
 			   me.name, acptr->name);
         ClearHurt(acptr);
         acptr->hurt = 0;
@@ -677,7 +709,7 @@ static int slogfiles[LOG_HI+3];
 static char *logfile_n[] = {
    FNAME_OPERLOG,
    FNAME_USERLOG,
-    NULL, NULL, NULL
+    NULL, NULL, NULL, NULL
 };
 
 #ifdef O_NONBLOCK
@@ -693,8 +725,13 @@ int open_logs( )
 #ifdef IRC_LOGGING
     int i = 0;
     for ( i = 0 ; i <= LOG_HI; i++) slogfiles[i] = -1;
-    for ( i = 0 ; i <= LOG_HI && logfile_n[i] ; i++)
+    for ( i = 0 ; i <= LOG_HI; i++)
     {
+         if (!logfile_n[i])
+         {
+             slogfiles[i] = -1;
+             continue;
+         }
          slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND|O_NBVAR);    
     }
  #endif
@@ -729,17 +766,72 @@ return 0;
 int tolog( int logtype, char *fmt, ... )
 {
 #ifdef IRC_LOGGING
+        int orig_logtype = logtype;
 	static char buf[8192] = "";
 	va_list args;
 
         va_start(args, fmt);
 
-	if ( (logtype < 0 || logtype >= LOG_HI) || (slogfiles[logtype] < 0))
+        if (logtype == LOG_NET)
+            logtype = LOG_OPER;
+
+	if ((logtype < 0 || logtype >= LOG_HI) || (orig_logtype != LOG_NET && slogfiles[logtype] < 0))
                return -1;
-        vsnprintf(buf, 8190, fmt, args);
+        sprintf(buf, "%.25s: ", myctime(NOW));
+        vsnprintf(buf + strlen(buf), 8160, fmt, args);
         va_end(args);
+        if (orig_logtype == LOG_NET)
+            sendto_umode(U_LOG, "Log -- from %s: %s", me.name, buf);
+        if (slogfiles[logtype] < 0)
+            return 0;
 	strcat(buf, "\n");
         write( slogfiles[logtype], buf, strlen(buf));
+#else
+        int orig_logtype = logtype;
+	static char buf[8192] = "";
+	va_list args;
+
+        if (logtype == LOG_NET)
+        {
+            va_start(args, fmt);
+            vsnprintf(buf, 8190, fmt, args);
+            va_end(args);
+            sendto_umode(U_LOG, "Log -- from %s: %s", me.name, buf);
+        }
 #endif
         return 0;
+}
+
+int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
+{
+  char *message = (parc > 1) ? parv[1] : NULL;
+
+  if (BadPtr(message))
+      return 0;
+  if (!IsPerson(sptr) && !IsServer(sptr))
+      return 0;
+  if (MyClient(cptr) && !IsAnOper(cptr))
+      return 0;
+
+  sendto_umode(U_LOG, "Log -- from %s: %s", parv[0], message);
+
+  if (IsULine(cptr, sptr))
+      tolog(LOG_OPER, "%s", message);
+  else if (MyClient(sptr) || IsServer(sptr)) {
+      if (IsPerson(sptr) && sptr->user)
+          tolog(LOG_OPER, "<%s!%s@%s> %s", parv[0], sptr->user->username, sptr->user->host, message);
+      else
+          tolog(LOG_OPER, "<%s> %s", parv[0], message);
+  }
+  else {
+      if (IsPerson(sptr) && sptr->user)
+          tolog(LOG_OPER, "<%s!%s@%s/%s> %s", parv[0], sptr->user->username, sptr->user->host, sptr->user->server ? sptr->user->server : "", message);
+      else
+          tolog(LOG_OPER, "<%s> %s", parv[0], message);
+  }
+
+  if (MyClient(cptr))
+      return 0;
+
+  sendto_serv_butone(sptr, ":%s LOG :%s", parv[0], message);
 }

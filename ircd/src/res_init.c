@@ -28,8 +28,8 @@ static char sccsid[] = "@(#)res_init.c	6.14.1 (Berkeley) 6/27/90";
 #endif
 #include <stdio.h>
 #include "config.h"	/* To get #define SOL20		Vesa */
-#include "sys.h"
 #include "common.h"
+#include "sys.h"
 #include "nameser.h"
 #include "resolv.h"
 

@@ -75,7 +75,7 @@ char *strtoken(char **save, char *str, char *fs)
 }
 #endif /* NEED_STRTOKEN */
 
-#if defined(REDHAT5) && defined(NEED_STRTOK)
+#if (defined(REDHAT5) || defined(REDHAT6) || defined(LINUX_GLIBC)) && defined(NEED_STRTOK) 
 #undef NEED_STRTOK
 #endif
 

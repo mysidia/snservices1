@@ -720,7 +720,7 @@ char	*lp;
 	struct	sockaddr_in	sin;
 	int	rc, a, len = sizeof(sin), max;
 	ResRQ	*rptr = NULL;
-	aCache	*cp;
+	aCache	*cp = NULL;
 
 	(void)alarm((unsigned)4);
 	rc = recvfrom(resfd, buf, sizeof(buf), 0, (struct sockaddr *)&sin,

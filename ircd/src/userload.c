@@ -107,7 +107,7 @@ void update_load()
 void calc_load(aClient *sptr, char *parv) /* we only get passed the original parv[0] */
 {
   struct load_entry *cur_load_entry;
-  struct load_entry *last;
+  struct load_entry *last = NULL;
   u_long secs = 0, adj_secs, total[3], adj[3];/*[local,client,conn]*/
   int i, times[5][3]; /* [min,hour,day,Yest,YYest][local,client,conn] */
   char what[3][HOSTLEN + 1 + 10];

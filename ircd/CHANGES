@@ -1,10 +1,16 @@
-Sun Jan 30 19:01:23 CST 2000 - Mysidia
+Sat Oct 14 00:00:00 CST 2000 - Mysidia - sor1.3.1
+       * Bugfix to socks check; ircd was dropping the check attempt where
+         it wasn't supposed to
+       * Kludge to the 005 Message to avoid breaking mIRC Notify
+       * m_silence addition to properly silence masked users
+
+Sun Jan 30 19:01:23 CST 2000 - Mysidia - sor1.3
        * modeless channels nuked
        * added /notice +#channel syntax
        * allow opers to /mlock local-only channels, but 
          mlock is otherwise for servers only.
 
-Sat Jan 29 09:59:42 CST 2000
+Sat Jan 29 09:59:42 CST 2000 - sor1.3
        * Address masking introduced
        * Fixed Y-lines
        * y2k issue with /time command fixed
@@ -12,7 +18,7 @@ Sat Jan 29 09:59:42 CST 2000
        * channel /mlock command
        * Command parser hash datatype bug was fixed
 
-Sun Nov  7 11:19:23 CST 1999 - Mysidia
+Sun Nov  7 11:19:23 CST 1999 - Mysidia - sor1.3
         * buildhf.c build help system from services helpfiles hierarchy
         * Services MLOCK command to set a channel's modelock status on ircd
         * Added LOG_NET a special logging flag that goes to a new usermode
@@ -21,16 +27,8 @@ Sun Nov  7 11:19:23 CST 1999 - Mysidia
           to be used as first parameter
         * Some small case changes to a few oper messages
 
-Thu Apr 6  21:23:30 GMT 2000 - Andy 
+Thu Apr 6  21:23:30 GMT 2000 - Andy - sor1.2.x
 	* This release made outside the cvs tree
-	* Updated version to 1.2.6
-	* All references to warlock.sorcery.net changed to services.sorcery.net
-	* Odd command that coredumped ircd bug fixed
-	* Socks timeout notice moved to client connects/disconnects/errors section (umode +oc)
-	* Y-lines fixed
-	* Should compile properly on linux now
-
-Thu Apr 6  21:23:30 GMT 2000 - Andy 
 	* Updated version to 1.2.6
 	* All references to warlock.sorcery.net changed to services.sorcery.net
 	* Odd command that coredumped ircd bug fixed
