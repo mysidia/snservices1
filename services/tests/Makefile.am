@@ -29,6 +29,7 @@
 
 CC = @CXX@
 CXX = @CXX@
+CPPUNIT_PREFIX = @CPPUNIT_PREFIX@
 
 SVOBJS = ../akill.o ../db.o ../help.o ../parse.o ../stuff.o \
          ../chanserv.o ../email.o ../infoserv.o ../memoserv.o \
@@ -38,13 +39,14 @@ SVOBJS = ../akill.o ../db.o ../help.o ../parse.o ../stuff.o \
 	 ../sipc.o ../mass.o ../timestr.o ../chantrig.o
 
 DEFAULT_INCLUDES = -I./
-INCLUDES = -I./ -I../ -I- -I/usr/include -I@includedir@
+INCLUDES = -I./ -I../ -I- -I/usr/include -I@includedir@ -I${CPPUNIT_PREFIX}/include
 
 EXTRA_PROGRAMS = tests tool_cmd
 tests_SOURCES = email_test.cc stuff_test.cc chanserv_test.cc run_test.cc \
 timestr_test.cc passwd_test.cc
 
-tests_LDADD = -lcppunit $(SVOBJS)
+tests_LDFLAGS = -L${CPPUNIT_PREFIX}/lib
+tests_LDADD =  -lcppunit $(SVOBJS)
 
 tool_cmd_SOURCES = tool_cmd.c
 tool_cmd_LDADD = $(SVOBJS)
@@ -60,7 +62,7 @@ $(SVOBJS) :
 	(cd ../;make)
 
 check:  tests
-	./tests
+	LD_LIBRARY_PATH=${CPPUNIT_PREFIX}/lib ./tests
 
 #tests: $(OBJS)
 #	$(CXX) -o tests -lcppunit $(OBJS) $(SVOBJS)

@@ -248,7 +248,12 @@ logDump(FILE *fp, char *format, ...)
 	va_end(crud);
 
 	strftime(stuff, 80, "%H:%M[%d/%m/%Y]", localtime(&doot));
-	fprintf(fp, "(%s) %s\n", stuff, buffer);
+	if (fp != NULL) {
+		fprintf(fp, "(%s) %s\n", stuff, buffer);
+	} else {
+		fprintf(stdout, "(%s) %s\n", stuff, buffer);
+	}
+
 	return;
 }
 

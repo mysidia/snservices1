@@ -222,6 +222,17 @@ AC_ARG_WITH(cfgpath,
    ],
   [CFGPATH=""])
 
+  AC_ARG_WITH(cppunit-dir,
+  [  --with-cppunit-prefix=ARG  Specify the prefix where CPPunit is installed] ,
+  [if test "$withval" = "yes" ; then
+      AC_MSG_ERROR([Must specify a path for --with-cppunit-dir])
+   else
+	cppunit_prefix="$withval"
+   fi
+  ], [CPPUNIT_PREFIX="/home/mysidia/sorcery/libs"])
+
+AC_SUBST(CPPUNIT_PREFIX) 
+
 if test -z "$CFGPATH" ; then
     CFGPATH="."
     AC_MSG_WARN([no --with-cfgpath=path, you must start the program in the data directory])
