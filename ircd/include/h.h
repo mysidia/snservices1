@@ -93,7 +93,7 @@ int	addr_cmp(const anAddress *, const anAddress *);
 
 extern	int	dbufalloc, dbufblocks, debuglevel;
 extern	int	highest_fd, debuglevel, portnum, debugtty, maxusersperchannel;
-extern	int	readcalls, udpfd, resfd;
+extern	int	readcalls, resfd;
 aClient	*add_connection(aClient *, int);
 int	add_listener(aConfItem *);
 void	add_local_domain(char *, int);

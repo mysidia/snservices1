@@ -63,9 +63,8 @@ IRCD_RCSID("$Id$");
 #endif
 
 aClient	*local[MAXCONNECTIONS];
-int	highest_fd = 0, readcalls = 0, udpfd = -1, resfd = -1;
+int	highest_fd = 0, readcalls = 0, resfd = -1;
 static	anAddress	mysk;
-static	void	polludp(void);
 
 static	anAddress *connect_inet(aConfItem *, aClient *, int *);
 static	int	completed_connection(aClient *);
@@ -1360,8 +1359,6 @@ read_message(time_t delay)
 				FD_SET(i, &write_set);
 		}
 
-		if (udpfd >= 0)
-			FD_SET(udpfd, &read_set);
 		if (resfd >= 0)
 			FD_SET(resfd, &read_set);
 
@@ -1382,13 +1379,6 @@ read_message(time_t delay)
 		}
 	}
 
-	if (udpfd >= 0 && FD_ISSET(udpfd, &read_set))
-	    {
-			polludp();
-			update_time();
-			nfds--;
-			FD_CLR(udpfd, &read_set);
-	    }
 	if (resfd >= 0 && FD_ISSET(resfd, &read_set))
 	    {
 			do_dns_async();
@@ -1854,137 +1844,6 @@ int	len;
 		Debug((DEBUG_DEBUG,"local name is %s",
 				get_client_name(&me,TRUE)));
 	    }
-	return;
-}
-
-/*
-** setup a UDP socket and listen for incoming packets
-*/
-int	setup_ping()
-{
-	anAddress	from;
-	int	on = 1, len = 0;
-
-	bcopy((char *)&me.addr, (char *)&from, sizeof(anAddress));
-	switch (from.addr_family)
-	{
-		case AF_INET:
-			len = sizeof(struct sockaddr_in);
-			from.in.sin_port = htons(7007);
-			break;
-		case AF_INET6:
-			len = sizeof(struct sockaddr_in6);
-			from.in6.sin6_port = htons(7007);
-			break;
-	}
-
-	if ((udpfd = socket(from.addr_family, SOCK_DGRAM, 0)) == -1)
-	    {
-		Debug((DEBUG_ERROR, "socket udp : %s", strerror(errno)));
-		return -1;
-	    }
-	if (setsockopt(udpfd, SOL_SOCKET, SO_REUSEADDR,
-			(OPT_TYPE *)&on, sizeof(on)) == -1)
-	    {
-#ifdef	USE_SYSLOG
-		syslog(LOG_ERR, "setsockopt udp fd %d : %m", udpfd);
-#endif
-		Debug((DEBUG_ERROR, "setsockopt so_reuseaddr : %s",
-			strerror(errno)));
-		(void)close(udpfd);
-		udpfd = -1;
-		return -1;
-	    }
-	on = 0;
-	(void) setsockopt(udpfd, SOL_SOCKET, SO_BROADCAST,
-			  (char *)&on, sizeof(on));
-	if (bind(udpfd, (struct sockaddr *)&from, len)==-1)
-	    {
-#ifdef	USE_SYSLOG
-		switch (from.addr_family)
-		{
-			case AF_INET:
-				syslog(LOG_ERR, "bind udp.%d fd %d : %m",
-					from.in.sin_port, udpfd);
-				break;
-			case AF_INET6:
-				syslog(LOG_ERR, "bind udp.%d fd %d : %m",
-					from.in6.sin6_port, udpfd);
-				break;
-		}
-#endif
-		Debug((DEBUG_ERROR, "bind : %s", strerror(errno)));
-		(void)close(udpfd);
-		udpfd = -1;
-		return -1;
-	    }
-	if (fcntl(udpfd, F_SETFL, FNDELAY)==-1)
-	    {
-		Debug((DEBUG_ERROR, "fcntl fndelay : %s", strerror(errno)));
-		(void)close(udpfd);
-		udpfd = -1;
-		return -1;
-	    }
-	return udpfd;
-}
-
-/*
- * max # of pings set to 15/sec.
- */
-static	void	polludp()
-{
-	char	*s;
-	anAddress	from;
-	int	n, fromlen = sizeof(from);
-	static	time_t	last = 0, now;
-	static	int	cnt = 0, mlen = 0;
-
-	/*
-	 * find max length of data area of packet.
-	 */
-	if (!mlen)
-	    {
-		mlen = sizeof(readbuf) - strlen(me.name) - strlen(version);
-		mlen -= 6;
-		if (mlen < 0)
-			mlen = 0;
-	    }
-	Debug((DEBUG_DEBUG,"udp poll"));
-
-	n = recvfrom(udpfd, readbuf, mlen, 0,
-		(struct sockaddr *)&from, &fromlen);
-	now = NOW;
-	if (now == last)
-		if (++cnt > 14)
-			return;
-	cnt = 0;
-	last = now;
-
-	if (n == -1)
-	    {
-		if ((errno == EWOULDBLOCK) || (errno == EAGAIN))
-			return;
-		else
-		    {
-			report_error("udp port recvfrom (%s): %s", &me);
-			return;
-		    }
-	    }
-	ircstp->is_udp++;
-	if (n  < 19)
-		return;
-
-	s = readbuf + n;
-	/*
-	 * attach my name and version for the reply
-	 */
-	*readbuf |= 1;
-	(void)strcpy(s, me.name);
-	s += strlen(s)+1;
-	(void)strcpy(s, version);
-	s += strlen(s);
-	(void)sendto(udpfd, readbuf, s-readbuf, 0,
-		(struct sockaddr *)&from ,sizeof(from));
 	return;
 }
 
