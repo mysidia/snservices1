@@ -1341,13 +1341,70 @@ nickkilldone:
 	return 0;
 }
 
-__inline static int
+__inline int
 msg_has_colors(const char *msg)
 {
 	for(; *msg ; msg++)
-		if (*msg == '\003')
+		if (*msg == '\002' || *msg == '\037' || *msg == '\003' ||
+		    *msg == '\026')
 			return 1;
 	return 0;
+}
+
+/*
+** strip_colors
+** Remove color codes from a string
+**
+**	in = input string
+**	returns a color-free version of the input string
+**
+**	Post-condition: returned ptr. points to a location
+**	                allocated here. Freeing this is the
+**	                responsibility of the caller.
+*/
+__inline char *
+strip_colors(const char *in)
+{
+	char *out = irc_strdup(in);
+	char *p;
+
+	for(p = out; *in ; in++)
+	{
+		switch(*in)
+		{
+			case '\002':
+			case '\037':
+			case '\026':
+			  break;
+
+			case '\003':
+			  in++;
+			  if (*in >= '0' && *in <= '9')
+				in++;
+
+			  if (*in >= '0' && *in <= '9')
+				in++;
+
+			  if (*in == ',')
+			  {
+				in++;
+				if (*in >= '0' && *in <= '9')
+					in++;
+
+				if (*in >= '0' && *in <= '9')
+					in++;
+			  }
+			  in--;
+			  break;
+
+			default:
+			  *p = *in;
+			  p++;
+		}
+	}
+
+	*p = '\0';
+	return out;
 }
 
 /*
@@ -1369,7 +1426,7 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 	aClient	*acptr;
 	char	*s;
 	aChannel *chptr;
-	char	*nick, *server, *p, *cmd, *host;
+	char	*nick, *server, *p, *cmd, *host, *stripped = NULL;
 	    {
 		if (check_registered(sptr))
 			return 0;
@@ -1529,23 +1586,20 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 		*/
 		if ((chptr = find_channel(nick, NullChn)))
 		    {
+			if ((can_send(sptr, chptr) == 0 || IsULine(cptr,sptr)))
+			  {
 				if (MyClient(sptr) &&
-					(chptr->mode.mode & MODE_NOCOLORS) &&
-					!IsAnOper(sptr) &&
-					!is_chan_op(sptr, chptr) &&
-					msg_has_colors(parv[2])) {
-					if (!notice)
-						sendto_one(sptr,
-							err_str(ERR_NOCOLORSONCHAN),
-							me.name, parv[0], nick, parv[2]);
-						continue;
-				}
-
-			if (can_send(sptr, chptr) == 0 || IsULine(cptr,sptr))
-				sendto_channel_butone(cptr, sptr, chptr,
-						      ":%s %s %s :%s",
-						      parv[0], cmd, nick,
-						      parv[2]);
+				    (chptr->mode.mode & MODE_NOCOLORS) &&
+				    !IsAnOper(sptr) &&
+				    !is_chan_op(sptr, chptr) &&
+				    msg_has_colors(parv[2])) {
+					if (!stripped)
+						stripped = strip_colors(parv[2]);
+					sendto_channel_butone(cptr, sptr, chptr, ":%s %s %s :%s", parv[0], cmd, nick, stripped);
+				} else
+					sendto_channel_butone(cptr, sptr, chptr, ":%s %s %s :%s", parv[0], cmd, nick, parv[2]);
+			  }
+			
 			else if (!notice)
 				sendto_one(sptr, err_str(ERR_CANNOTSENDTOCHAN),
 					   me.name, parv[0], nick);
@@ -1648,7 +1702,9 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 		sendto_one(sptr, err_str(ERR_NOSUCHNICK), me.name,
 			   parv[0], nick);
             }
-    return 0;
+
+	irc_free(stripped);
+	return 0;
 }
 
 /*
