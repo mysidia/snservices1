@@ -31,9 +31,6 @@ INCLUDEDIR=../include
 XCFLAGS=
 IRCDLIBS=
 
-#set this to fcrypt.o to enable des crypt()
-DESCRYPT=
-
 #
 # use the following on MIPS:
 #CFLAGS= -systype bsd43 -DSYSTYPE_BSD43 -I$(INCLUDEDIR)
@@ -95,12 +92,6 @@ IRCDDIR=
 # NEED_U_INT32_T=	-DNEED_U_INT32_T
 NEED_U_INT32_T=
 
-# [CHANGEME]
-# If you get a link-time error dealing with strtoul, comment out
-# this line.
-# STRTOUL=	strtoul.o
-STRTOUL=
-
 GETADDRINFO=
 
 SOCKET=socket_select.o
@@ -129,8 +120,7 @@ MAKEARGS =	'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
 		'BINDIR=${BINDIR}' 'INSTALL=${INSTALL}' \
 		'INCLUDEDIR=${INCLUDEDIR}' 'IRCDDIR=${IRCDDIR}' \
 		'MANDIR=${MANDIR}' 'RM=${RM}' 'CP=${CP}' 'TOUCH=${TOUCH}' \
-		'DESCRYPT=${DESCRYPT}' \
-		'RES=${RES}' 'SHELL=${SHELL}' 'STRTOUL=${STRTOUL}' \
+		'SHELL=${SHELL}' \
 		'GETADDRINFO=${GETADDRINFO}' 'SOCKET=${SOCKET}'
 
 server:
@@ -139,10 +129,6 @@ build:
 		echo "Hmm...doesn't look like you've run Config..."; \
 		echo "Doing so now."; \
 		sh Config; \
-	fi
-
-	@if [ "$(DESCRYPT)" = "fcrypt.o" ] ; then \
-	        ./fcrypt.sh ; \
 	fi
 
 	@for i in $(SUBDIRS); do \

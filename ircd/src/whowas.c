@@ -23,6 +23,8 @@
  * is referenced like a circular loop. Should be faster and more efficient.
  */
 
+#include "ircd.h"
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
@@ -143,7 +145,7 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (hunt_server(cptr,sptr,":%s WHOWAS %s %s :%s", 3,parc,parv))
 			return 0;
 
-	for (s = parv[1]; (nick = strtoken(&p, s, ",")); s = NULL)
+	for (s = parv[1]; (nick = strtok_r(s, ",", &p)); s = NULL)
 	    {
 		wp = wp2 = &was[ww_index - 1];
 

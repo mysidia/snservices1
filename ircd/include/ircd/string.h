@@ -21,16 +21,6 @@
 
 #include "sys.h"
 
-#ifdef NEED_STRTOK
-#if !defined(REDHAT5) && !defined(REDHAT6) && !defined(LINUX_GLIBC)
-extern	char	*strtok(char *, char *);
-#endif
-#endif
-
-#ifdef NEED_STRTOKEN
-extern	char	*strtoken(char **, char *, char *);
-#endif
-
 extern unsigned char irc_tolowertab[];
 extern unsigned char irc_touppertab[];
 extern unsigned char irc_charattrib[];

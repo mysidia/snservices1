@@ -2106,8 +2106,8 @@ char	*parv[];
 	** Rebuild list of channels joined to be the actual result of the
 	** JOIN.  Note that "JOIN 0" is the destructive problem.
 	*/
-	for (i = 0, name = strtoken(&p, parv[1], ","); name;
-	     name = strtoken(&p, NULL, ","))
+	for (i = 0, name = strtok_r(parv[1], ",", &p); name;
+	     name = strtok_r(NULL, ",", &p))
 	    {
 		clean_channelname(name);
 		if (check_channelmask(sptr, cptr, name)==-1)
@@ -2149,11 +2149,11 @@ char	*parv[];
 
 	p = NULL;
 	if (parv[2])
-		key = strtoken(&p2, parv[2], ",");
+		key = strtok_r(parv[2], ",", &p2);
 	parv[2] = NULL;	/* for m_names call later, parv[parc] must == NULL */
-	for (name = strtoken(&p, jbuf, ","); name;
-	     key = (key) ? strtoken(&p2, NULL, ",") : NULL,
-	     name = strtoken(&p, NULL, ","))
+	for (name = strtok_r(jbuf, ",", &p); name;
+	     key = (key) ? strtok_r(NULL, ",", &p2) : NULL,
+	     name = strtok_r(NULL, ",", &p))
 	    {
 		/*
 		** JOIN 0 sends out a part for all channels a user
@@ -2323,7 +2323,7 @@ char	*parv[];
 		return 0;
 	    }
 
-	for (; (name = strtoken(&p, parv[1], ",")); parv[1] = NULL)
+	for (; (name = strtok_r(parv[1], ",", &p)); parv[1] = NULL)
 	    {
 		chptr = get_channel(sptr, name, 0);
 		if (!chptr)
@@ -2419,7 +2419,7 @@ char	*parv[];
 
 	*nickbuf = *buf = '\0';
 
-	for (; (name = strtoken(&p, parv[1], ",")); parv[1] = NULL)
+	for (; (name = strtok_r(parv[1], ",", &p)); parv[1] = NULL)
 	    {
 		chptr = get_channel(sptr, name, !CREATE);
 		if (!chptr)
@@ -2438,7 +2438,7 @@ char	*parv[];
 		    }
 
 	        lp2=find_user_link(chptr->members, sptr);
-		for (; (user = strtoken(&p2, parv[2], ",")); parv[2] = NULL)
+		for (; (user = strtok_r(parv[2], ",", &p2)); parv[2] = NULL)
 		    {   if (!(who = find_chasing(sptr, user, &chasing)))
 				continue; /* No such user left! */
 			if (((lp = find_user_link(chptr->members, who)) &&
@@ -2567,7 +2567,7 @@ char	*parv[];
 		return 0;
 	    }
 
-	for (; (name = strtoken(&p, parv[1], ",")); parv[1] = NULL)
+	for (; (name = strtok_r(parv[1], ",", &p)); parv[1] = NULL)
 	    {
 		if (parc > 1 && IsChannelName(name))
 		    {
@@ -2900,7 +2900,7 @@ char	*parv[];
         if (BadPtr(parv)) /* Sanity check! */
             continue;
 
-        name = strtoken(&p, *parv, ",");
+        name = strtok_r(*parv, ",", &p);
 
         while (name) {
           switch (*name) {
@@ -3011,7 +3011,7 @@ char	*parv[];
                                        chptr->topic);
                     }
           } /* switch (*name) */
-        name = strtoken(&p, NULL, ",");
+        name = strtok_r(NULL, ",", &p);
         } /* while(name) */
     } /* while(--parc) */
 
