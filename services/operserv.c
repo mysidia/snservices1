@@ -1644,6 +1644,7 @@ OCMD(os_strike)
  * \oscmd Heal
  * \plr   Have services heal an AHURT client and mark them as healed
  *        (so they can use services)
+ * \brief Syntax: /OS HEAL \<nick>
  */
 OCMD(os_heal)
 {
