@@ -1072,7 +1072,7 @@ OCMD(os_clonerule)
 			}
 
 
-			if (!(pCheck = strchr(args[3], '@')) && atoi(args[4])) {
+			if (!(pCheck = strchr(rule->mask, '@')) && atoi(args[4])) {
 				sSend(":%s NOTICE %s :Cannot set host trigger "
 				      "rewrite unless rule contains a @.",
 					  OperServ, from);
