@@ -63,6 +63,12 @@ public:
          */
 	TimeLengthString(const char* short_str);
 
+	TimeLengthString(const char* short_str, bool oldStyle,
+			   int default_unit_size_secs = 3600);
+
+	/// Parse a new-style duration like 3h5m22s
+	void ParseNewStyle(const char*);
+
 	/// Does the object represent a legally created time string?
 	bool isValid() const;
 
@@ -157,4 +163,5 @@ private:
 	}
 	char* tempstr;
 	bool f_isValid;
+	bool f_isIntStyle;
 };

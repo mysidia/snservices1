@@ -60,11 +60,46 @@ TimeLengthString::TimeLengthString(int num_secs)
 	length.days = 0;
 	length.seconds = num_secs;
 	f_isValid = true;
+	f_isIntStyle = false;
 	normalize();
 }
 
-/// Build a time length from a string
 TimeLengthString::TimeLengthString(const char* input)
+{
+	f_isIntStyle = false;
+	f_isValid = true;
+	this->ParseNewStyle(input);
+}
+
+
+TimeLengthString::TimeLengthString(const char* input, bool allowUnitStyle,
+					int secs_per_unit) 
+{
+	const char* p;
+	f_isIntStyle = false;
+	f_isValid = true;
+
+	if (allowUnitStyle) {
+		for(p = input; *p != '\0'; p++) {
+			if (!isascii(*p) || !isdigit(*p))
+				break;
+		}
+
+		if (*p == '\0') {
+			f_isIntStyle = true;
+			f_isValid = true;
+			length.seconds = length.days = length.hours = 0;
+			length.minutes = 0;
+			length.seconds = secs_per_unit * atoi(input);
+			normalize();
+			return;
+		}
+	}
+	this->ParseNewStyle(input);
+}
+
+/// Build a time length from a string
+void TimeLengthString::ParseNewStyle(const char* input)
 {
 	const char* p = input;
 	int value = 0;
