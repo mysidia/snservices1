@@ -85,19 +85,22 @@ dead_link(aClient *to, char *notice)
  * client and try to send it. if we cant send it, it goes into the sendQ
  */
 void
-flush_connections(int fd)
+flush_connections(aClient *cptr)
 {
-	int	i;
-	aClient *cptr;
-
-	if (fd == me.fd) {
-		for (i = highest_fd; i >= 0; i--)
-			if ((cptr = local[i]) && DBufLength(&cptr->sendQ) > 0)
-				(void)send_queued(cptr);
-	} else if (fd >= 0
-		   && (cptr = local[fd])
-		   && DBufLength(&cptr->sendQ) > 0)
-		(void)send_queued(cptr);
+	if (cptr == &me)
+	{
+		for ( ; cptr; cptr = cptr->lnext)
+		{
+			if (DBufLength(&cptr->sendQ) > 0)
+			{
+				send_queued(cptr);
+			}
+		}
+	}
+	else if (cptr->fd >= 0 && DBufLength(&cptr->sendQ) > 0)
+	{
+		send_queued(cptr);
+	}
 }
 
 /*
@@ -285,8 +288,7 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 
 	va_start(ap, fmt);
 
-	for (i = 0; i < MAXCONNECTIONS; i++)
-		sentalong[i] = 0;
+	bzero(sentalong, sizeof(sentalong));
 	for (lp = chptr->members; lp; lp = lp->next) {
 		acptr = lp->value.cptr;
 		if (acptr->from == one || (lp->flags & CHFL_ZOMBIE) ||
@@ -376,13 +378,12 @@ sendto_serv_butone(aClient *one, char *fmt, ...)
 {
 	va_list	ap;
 	va_list ap2;
-	int	i;
 	aClient *cptr;
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++) {
-		if (!(cptr = local[i]) || (one && cptr == one->from))
+	for (cptr = &me; cptr; cptr = cptr->lnext) {
+		if (one && cptr == one->from)
 			continue;
 		if (IsServer(cptr)) {
 			va_copy(ap2, ap);
@@ -403,15 +404,13 @@ sendto_common_channels(aClient *user, char *fmt, ...)
 {
 	va_list	ap;
 	va_list ap2;
-	int	i;
 	aClient *cptr;
 	Link	*lp;
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++) {
-		if (!(cptr = local[i]) || IsServer(cptr) ||
-		    user == cptr || !user->user)
+	for (cptr = &me; cptr; cptr = cptr->lnext) {
+		if (IsServer(cptr) || user == cptr || !user->user)
 			continue;
 		for (lp = user->user->channel; lp; lp = lp->next)
 			if (IsMember(user, lp->value.chptr) &&
@@ -525,7 +524,6 @@ sendto_match_servs(aChannel *chptr, aClient *from, char *fmt, ...)
 {
 	va_list	ap;
 	va_list ap2;
-	int	i;
 	aClient	*cptr;
 	char	*mask;
 
@@ -539,9 +537,7 @@ sendto_match_servs(aChannel *chptr, aClient *from, char *fmt, ...)
 	} else
 		mask = (char *)NULL;
 
-	for (i = 0; i <= highest_fd; i++) {
-		if (!(cptr = local[i]))
-			continue;
+	for (cptr = &me; cptr; cptr = cptr->lnext) {
 		if ((cptr == from) || !IsServer(cptr))
 			continue;
 		if (!BadPtr(mask) && IsServer(cptr) &&
@@ -566,7 +562,6 @@ sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 {
 	va_list	ap;
 	va_list ap2;
-	int	i;
 	aClient *cptr, *acptr;
 	char	cansendlocal, cansendglobal;
   
@@ -578,9 +573,7 @@ sendto_match_butone(aClient *one, aClient *from, char *mask, int what,
 	} else
 		cansendlocal = cansendglobal = 1;
 
-	for (i = 0; i <= highest_fd; i++) {
-		if (!(cptr = local[i]))
-			continue;       /* that clients are not mine */
+	for (cptr = &me; cptr; cptr = cptr->lnext) {
  		if (cptr == one)	/* must skip the origin !! */
 			continue;
 		if (IsServer(cptr)) {
@@ -619,13 +612,12 @@ sendto_all_butone(aClient *one, aClient *from, char *fmt, ...)
 {
 	va_list	ap;
 	va_list ap2;
-	int	i;
 	aClient *cptr;
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsMe(cptr) && one != cptr) {
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsMe(cptr) && one != cptr) {
 			va_copy(ap2, ap);
 			vsendto_prefix_one(cptr, from, fmt, ap2);
 			va_end(ap2);
@@ -643,13 +635,12 @@ sendto_ops(char *fmt, ...)
 	va_list	ap;
 	va_list ap2;
 	aClient *cptr;
-	int	i;
 	char	nbuf[1024];
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    SendServNotice(cptr)) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
 				      me.name, cptr->name);
@@ -672,14 +663,13 @@ sendto_failops(char *fmt, ...)
         va_list ap;
 	va_list ap2;
         aClient *cptr;
-        int     i;
         char    nbuf[1024];
 
 
         va_start(ap, fmt);
 
-        for (i = 0; i <= highest_fd; i++)
-                if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+        for (cptr = &me; cptr; cptr = cptr->lnext)
+                if (!IsServer(cptr) && !IsMe(cptr) &&
                     SendFailops(cptr)) {
                         (void)sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
 				      me.name, cptr->name);
@@ -702,13 +692,12 @@ sendto_helpops(char *fmt, ...)
 	va_list ap;
 	va_list ap2;
 	aClient *cptr;
-	int     i;
 	char    nbuf[1024];
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    IsHelpOp(cptr)) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :*** HelpOp -- ",
 				      me.name, cptr->name);
@@ -834,13 +823,12 @@ sendto_flag(int flags, char *fmt, ...)
 	va_list	ap;
 	va_list ap2;
 	aClient *cptr;
-	int	i;
 	char	nbuf[1024];
 
 	va_start(ap, fmt);
 
-	for (i = 0 ; i <= highest_fd ; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    (ClientFlags(cptr) & flags)==flags) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :",
 				      me.name, cptr->name);
@@ -860,13 +848,12 @@ sendto_umode(int flags, char *fmt, ...)
 	va_list ap;
 	va_list ap2;
 	aClient *cptr;
-	int	i;
 	char	nbuf[1024];
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    (ClientUmode(cptr) & flags)==flags) {
                        (void)sprintf(nbuf, ":%s NOTICE %s :",
 				     me.name, cptr->name);
@@ -887,13 +874,12 @@ sendto_umode_except(int flags, int notflags, char *fmt, ...)
 	va_list ap;
 	va_list ap2;
 	aClient *cptr;
-	int     i;
 	char    nbuf[1024];
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    ((ClientUmode(cptr) & flags)==flags) &&
                     !((ClientUmode(cptr) & notflags) == notflags)) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :",
@@ -918,13 +904,12 @@ sendto_failops_whoare_opers(char *fmt, ...)
         va_list ap;
         va_list ap2;
         aClient *cptr;
-        int     i;
         char    nbuf[1024];
 
         va_start(ap, fmt);
 
-        for (i = 0; i <= highest_fd; i++)
-                if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+        for (cptr = &me; cptr; cptr = cptr->lnext)
+                if (!IsServer(cptr) && !IsMe(cptr) &&
                     SendFailops(cptr) && OPCangmode(cptr)) {
                         (void)sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
                                         me.name, cptr->name);
@@ -947,13 +932,12 @@ sendto_locfailops(char *fmt, ...)
         va_list ap;
 	va_list ap2;
         aClient *cptr;
-        int     i;
         char    nbuf[1024];
 
         va_start(ap, fmt);
 
-        for (i = 0; i <= highest_fd; i++)
-                if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+        for (cptr = &me; cptr; cptr = cptr->lnext)
+                if (!IsServer(cptr) && !IsMe(cptr) &&
                     SendFailops(cptr) && IsAnOper(cptr)) {
                         (void)sprintf(nbuf, ":%s NOTICE %s :*** LocOps -- ",
                                         me.name, cptr->name);
@@ -977,13 +961,12 @@ sendto_opers(char *fmt, ...)
 	va_list	ap;
 	va_list	ap2;
 	aClient *cptr;
-	int	i;
 	char	nbuf[1024];
 
 	va_start(ap, fmt);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    IsAnOper(cptr)) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :*** Oper -- ",
 				      me.name, cptr->name);
@@ -1013,8 +996,7 @@ sendto_ops_butone(aClient *one, aClient *from, char *fmt, ...)
 
 	va_start(ap, fmt);
 
-	for (i=0; i <= highest_fd; i++)
-		sentalong[i] = 0;
+	bzero(sentalong, sizeof(sentalong));
 	for (cptr = client; cptr; cptr = cptr->next) {
 		if (!SendWallops(cptr))
 			continue;
@@ -1050,8 +1032,7 @@ sendto_opers_butone(aClient *one, aClient *from, char *fmt, ...)
 
 	va_start(ap, fmt);
 
-	for (i=0; i <= highest_fd; i++)
-		sentalong[i] = 0;
+	bzero(sentalong, sizeof(sentalong));
 	for (cptr = client; cptr; cptr = cptr->next) {
 		if (!IsAnOper(cptr))
 			continue;
@@ -1085,8 +1066,7 @@ sendto_ops_butme(aClient *from, char *fmt, ...)
 
 	va_start(ap, fmt);
 
-	for (i=0; i <= highest_fd; i++)
-		sentalong[i] = 0;
+	bzero(sentalong, sizeof(sentalong));
 	for (cptr = client; cptr; cptr = cptr->next) {
 		if (!SendWallops(cptr))
 			continue;
@@ -1196,13 +1176,12 @@ sendto_realops(char *pattern, ...)
 	va_list	ap;
 	va_list	ap2;
 	aClient *cptr;
-	int	i;
 	char	nbuf[1024];
 
 	va_start(ap, pattern);
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (!IsServer(cptr) && !IsMe(cptr) &&
 		    IsOper(cptr)) {
 			(void)sprintf(nbuf, ":%s NOTICE %s :*** Notice -- ",
 				      me.name, cptr->name);

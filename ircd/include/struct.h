@@ -712,6 +712,7 @@ struct Client	{
 	*/
 	int	count;		/* Amount of data in buffer */
 	char	buffer[BUFSIZE]; /* Incoming message buffer */
+	struct	Client *lnext, *lprev;
 	char	sup_server[HOSTLEN+1], sup_host[HOSTLEN+1];
 	short	lastsq;		/* # of 2k blocks when sendqueued called last*/
 	dbuf	sendQ;		/* Outgoing message queue--if socket full */

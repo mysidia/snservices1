@@ -439,7 +439,6 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 {
 	aClient *acptr;
-	int	i;
 	Link	*lp;
 
 	/*
@@ -457,11 +456,11 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 	 ** need to send different names to different servers
 	 ** (domain name matching)
 	 */
-	 	for (i = 0; i <= highest_fd; i++)
+	 	for (acptr = &me; acptr; acptr = acptr->lnext)
 		    {
 			aConfItem *aconf;
 
-			if (!(acptr = local[i]) || !IsServer(acptr) ||
+			if (!IsServer(acptr) ||
 			    acptr == cptr || IsMe(acptr))
 				continue;
 			if ((aconf = acptr->serv->nline) &&
@@ -549,16 +548,13 @@ void	initstats()
 void	tstats(aClient *cptr, char *name)
 {
 	aClient	*acptr;
-	int	i;
 	struct stats *sp, tmp;
 	time_t	now = NOW;
 
 	sp = &tmp;
 	bcopy((char *)ircstp, (char *)sp, sizeof(*sp));
-	for (i = 0; i < MAXCONNECTIONS; i++)
+	for (acptr = &me; acptr; acptr = acptr->lnext)
 	    {
-		if (!(acptr = local[i]))
-			continue;
 		if (IsServer(acptr))
 		    {
 			sp->is_sbs += acptr->sendB;

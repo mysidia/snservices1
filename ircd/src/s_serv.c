@@ -505,9 +505,9 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		** need to send different names to different servers
 		** (domain name matching)
 		*/
-		for (i = 0; i <= highest_fd; i++)
+		for (bcptr = &me; bcptr; bcptr = bcptr->lnext)
 		    {
-			if (!(bcptr = local[i]) || !IsServer(bcptr) ||
+			if (!IsServer(bcptr) ||
 			    bcptr == cptr || IsMe(bcptr))
 				continue;
 			if (!(aconf = bcptr->serv->nline))
@@ -560,7 +560,7 @@ m_server_estab(aClient *cptr)
 	aClient   *acptr;
 	aConfItem *aconf, *bconf;
 	char      *inpath, *host, *s, *encr;
-	int       split, i;
+	int       split;
 
 	inpath = get_client_name(cptr,TRUE); /* "refresh" inpath with host */
 	split = mycmp(cptr->name, cptr->sockhost);
@@ -627,8 +627,8 @@ m_server_estab(aClient *cptr)
 	 * so check existing clients and discard the new connection
 	 * if a server already exists.
 	 */
-	for (i = 0; i <= highest_fd; i++)
-		if (local[i] && IsServer(local[i]))
+	for (acptr = &me; acptr; acptr = acptr->lnext)
+		if (IsServer(acptr))
 		    {
 			ircstp->is_ref++;
 			sendto_one(cptr, "ERROR :I'm a leaf not a hub");
@@ -702,9 +702,9 @@ m_server_estab(aClient *cptr)
 	** need to send different names to different servers
 	** (domain name matching) Send new server to other servers.
 	*/
-	for (i = 0; i <= highest_fd; i++) 
+	for (acptr = &me; acptr; acptr = acptr->lnext) 
 	    {
-		if (!(acptr = local[i]) || !IsServer(acptr) ||
+		if (!IsServer(acptr) ||
 		    acptr == cptr || IsMe(acptr))
 			continue;
 		if ((aconf = acptr->serv->nline) &&
@@ -1202,7 +1202,6 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	struct	Message	*mptr;
 	aClient	*acptr;
 	char	stat = parc > 1 ? parv[1][0] : '\0';
-	int	i;
 	int	doall = 0, wilds = 0, showports	= IsAnOper(sptr);
 	char	*name;
 	char	buf[HOSTLEN + NICKLEN + 255];
@@ -1238,10 +1237,8 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  	sendto_one(sptr, Sformat, me.name, RPL_STATSLINKINFO, parv[0]);
 		if (IsServer(cptr))
 			doall = wilds = 0;
-		for (i = 0; i <= highest_fd; i++)
+		for (acptr = &me; acptr; acptr = acptr->lnext)
 		    {
-			if (!(acptr = local[i]))
-				continue;
 			if (IsInvisible(acptr) && (doall || wilds) &&
 			    !(MyConnect(sptr) && IsOper(sptr)) &&
 			    !IsAnOper(acptr) && (acptr != sptr))
@@ -1934,13 +1931,11 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	/* report all direct connections */
 	
 	now = NOW;
-	for (i = 0; i <= highest_fd; i++)
+	for (acptr = &me; acptr; acptr = acptr->lnext)
 	    {
 		char	*name;
 		int	class;
 
-		if (!(acptr = local[i])) /* Local Connection? */
-			continue;
 /* More bits of code to allow opers to see all users on remote traces
  *		if (IsInvisible(acptr) && dow &&
  *		if (dow &&
@@ -2006,15 +2001,15 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		case STAT_SERVER:
 			if (acptr->serv->user)
 				sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-					   me.name, parv[0], class, link_s[i],
-					   link_u[i], name, acptr->serv->by,
+					   me.name, parv[0], class, link_s[acptr->fd],
+					   link_u[acptr->fd], name, acptr->serv->by,
 					   acptr->serv->user->username,
 					   acptr->serv->user->host,
    					   now - acptr->lasttime);
 			else
 				sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-					   me.name, parv[0], class, link_s[i],
-					   link_u[i], name, *(acptr->serv->by) ?
+					   me.name, parv[0], class, link_s[acptr->fd],
+					   link_u[acptr->fd], name, *(acptr->serv->by) ?
 					   acptr->serv->by : "*", "*", me.name,
 					   now - acptr->lasttime);
 			cnt++;
@@ -2119,7 +2114,6 @@ int
 m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	aClient	*acptr;
-	int	i;
 	int	closed = 0;
 
 	if (check_registered(sptr))
@@ -2131,10 +2125,8 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		return 0;
 	    }
 
-	for (i = highest_fd; i; i--)
+	for (acptr = &me; acptr; acptr = acptr->lnext)
 	    {
-		if (!(acptr = local[i]))
-			continue;
 		if (!IsUnknown(acptr) && !IsConnecting(acptr) &&
 		    !IsHandshake(acptr))
 			continue;
@@ -2144,7 +2136,7 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 		if (parc <= 1) {
 			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s.%d] [n:%s] [%s]", me.name,
-				       	sptr->name, i, acptr->sockhost, acptr->port,
+				       	sptr->name, acptr->fd, acptr->sockhost, acptr->port,
 				       	BadPtr(acptr->name) ? "" : acptr->name,
 					DoingDNS(acptr) ? "DoingDNS" : "");
 			continue;
@@ -2163,7 +2155,7 @@ int
 m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	aClient	*acptr;
-	int	i, nomatch = 0;
+	int	nomatch = 0;
 
 	if (check_registered(sptr))
                  return 0;
@@ -2201,10 +2193,8 @@ m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				   me.name, get_client_name(sptr, TRUE),
                                    parc > 2 ? parv[2] : "No reason specified");
 
-	for (i = 0; i <= highest_fd; i++)
+	for (acptr = &me; acptr; acptr = acptr->lnext)
 	    {
-		if (!(acptr = local[i]))
-			continue;
 		if (IsClient(acptr))
 			sendto_one(acptr,
 				   ":%s NOTICE %s :Server Terminating. %s (%s)",

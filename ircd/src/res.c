@@ -32,8 +32,6 @@ IRCD_RCSID("$Id$");
 #define DEBUG
 
 extern	int	errno, h_errno;
-extern	int	highest_fd;
-extern	aClient	*local[];
 
 static	char	hostbuf[HOSTLEN+64]; /* must be at least 73 bytes for IPv6 addresses --Onno */
 static	char	dot[] = ".";
@@ -1297,8 +1295,8 @@ aCache	*ocp;
 	** Cleanup any references to this structure by destroying the
 	** pointer.
 	*/
-	for (hashv = highest_fd; hashv >= 0; hashv--)
-		if ((cptr = local[hashv]) && (cptr->hostp == hp))
+	for (cptr = &me; cptr; cptr = cptr->lnext)
+		if (cptr->hostp == hp)
 			cptr->hostp = NULL;
 	/*
 	 * remove cache entry from linked list

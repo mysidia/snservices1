@@ -76,7 +76,7 @@ VOIDSIG s_die(int sig)
 #ifdef	USE_SYSLOG
 	(void)syslog(LOG_CRIT, "Server Killed By SIGTERM");
 #endif
-	flush_connections(me.fd);
+	flush_connections(&me);
 	close_logs();
 	exit(-1);
 }
@@ -123,7 +123,7 @@ char	*mesg;
 
 	sendto_ops("Aieeeee!!!  Restarting server... %s", mesg);
 	Debug((DEBUG_NOTICE,"Restarting server... %s", mesg));
-	flush_connections(me.fd);
+	flush_connections(&me);
 
         close_logs();
 
@@ -160,7 +160,6 @@ time_t	currenttime;
 	aClient *cptr;
 #ifndef HUB
 	aClient *xcptr;
-	int i;
 #endif
 	int	connecting, confrq;
 	int	con_class = 0;
@@ -213,10 +212,9 @@ time_t	currenttime;
 
 #ifndef HUB
 	if (connecting) {
-		for ( i = highest_fd; i > 0; i--)
-			if (!( xcptr = local[i] ))
-				continue;
-			else if (IsServer(xcptr)) {
+		for (xcptr = &me; xcptr; xcptr = xcptr->lnext)
+			if (IsServer(xcptr))
+			{
 				connecting = FALSE;
 				break;
 			}
@@ -278,8 +276,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 #ifdef TIMED_KLINES
 	check_kills = 1;
 #endif
-	for (i = 0; i <= highest_fd; i++) {
-		if (!(cptr = local[i]) || IsMe(cptr) || IsLog(cptr))
+	for (cptr = &me; cptr; cptr = cptr->lnext) {
+		if (IsMe(cptr) || IsLog(cptr))
 			continue;
 
 		/*
@@ -684,7 +682,7 @@ main(int argc, char **argv)
 		** have data in them (or at least try to flush)
 		** -avalon
 		*/
-		flush_connections(me.fd);
+		flush_connections(&me);
 	    }
     }
 
