@@ -50,6 +50,7 @@
 #include <sys/time.h>
 #endif
 
+typedef	union	Address	anAddress;
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
 typedef	struct	Socks	aSocks;
@@ -555,10 +556,33 @@ typedef struct help_struct {
 #define	CURSES_TERM	1
 #define	TERMCAP_TERM	2
 
+/*
+ * Don't use sockaddr_storage: it's too big. --Onno
+ */
+union Address
+{
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+	u_char  addr_dummy[2];
+#define addr_family addr_dummy[1]
+#else
+	unsigned short int	addr_family;
+#endif
+	struct sockaddr_in	in;
+	struct sockaddr_in6	in6;
+};
+
+struct HostEnt
+{
+  char *h_name;                 /* Official name of host.  */
+  char **h_aliases;             /* Alias list.  */
+  anAddress **h_addr_list;      /* List of addresses from name server. */
+#define h_addr  h_addr_list[0]  /* Address, for backward compatibility.  */
+};
+
 struct	ConfItem	{
 	unsigned int	status;	/* If CONF_ILLEGAL, delete when no clients */
 	int	clients;	/* Number of *LOCAL* clients using this */
-	struct	in_addr ipnum;	/* ip number of host field */
+	anAddress	addr;	/* network address of host */
 	char	*host;
 	char	*passwd;
 	char	*name;
@@ -682,7 +706,7 @@ struct Socks {
 	int fd;
 	int status;
 	time_t start;
-	struct in_addr in_addr;
+	anAddress addr;
 	struct Socks *next;
 };
 
@@ -692,7 +716,7 @@ struct Client	{
 	aServer	*serv;		/* ...defined, if this is a server */
 	aSocks  *socks;		/* socks check data */
 	int	hashv;		/* raw hash value */
-	time_t  hurt;           /* hurt til... */  
+	time_t  hurt;           /* hurt til... */
 	time_t	lasttime;	/* ...should be only LOCAL clients? --msa */
 	time_t	firsttime;	/* time client was created */
 	time_t	since;		/* last time we parsed something */
@@ -734,9 +758,9 @@ struct Client	{
 	Link	*confs;		/* Configuration record associated */
 	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
-	struct	in_addr	ip;	/* keep real ip# too */
+	anAddress	addr;	/* keep real ip# too */
 	u_short	port;	/* and the remote port# too :-) */
-	struct	hostent	*hostp;
+	struct	HostEnt	*hostp;
 	LOpts   *lopt;
 #ifdef	pyr
 	struct	timeval	lw;
