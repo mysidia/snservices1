@@ -5379,9 +5379,9 @@ NCMD(ns_list)
 				NickServ, from, i, x, param);
 	}
 
-	sSend(":%s GLOBOPS :%s is listing %s%s (%d/%d matches)",
-		  NickServ, from, list_mode == LIST_email ? " email" 
-		                                          : " mask", 
+	sSend(":%s GLOBOPS :%s is listing %s %s (%d/%d matches)",
+		  NickServ, from, list_mode == LIST_email ? "email" 
+		                                          : "mask", 
 		  param, i, x);
 
 	if (umask != NULL) {
