@@ -24,6 +24,7 @@
 #include "sys.h"
 #include "nameser.h"
 #include "resolv.h"
+#include "ircd/cdefs.h"
 
 IRCD_SCCSID("@(#)res_mkquery.c	6.12 (Berkeley) 6/1/90");
 IRCD_RCSID("$Id$");
