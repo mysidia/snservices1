@@ -153,7 +153,7 @@ AC_ARG_WITH(opsemail,
         AC_CACHE_VAL(svc_cv_opsmailto, [ true ])
 	svc_cv_opsmailto="$withval"
 
-	AC_DEFINE_UNQUOTED(OPSMAILTO, "$withval", "Second e-mail address for akill logs (ie: an ops mailing list)")
+	AC_DEFINE_UNQUOTED(OPSMAILTO, "$withval", "Second e-mail address for akill logs ie an ops mailing list")
    fi
    ],
    [
