@@ -30,8 +30,10 @@
 #include <stdarg.h>
 
 #include "getaddrinfo.h"
+
 #ifdef SOL20
 #include "snprintf.h"
+int inet_aton(const char *cp, struct in_addr *inp);
 #endif
 
 /*

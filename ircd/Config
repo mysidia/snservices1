@@ -26,8 +26,7 @@ LINUX_GLIBC_RRES=undef
 NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
-STRTOUL=undef
-GETADDRINFO=undef
+NGETADDRINFO=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
 SN_MODE='1'
@@ -493,6 +492,7 @@ $RM -f $EXEC $TMP
 echo "What else do I need that you don't have..."
 echo $n "Lets see...$c"
 cat > $TMP <<__EOF__
+#include <unistd.h>
 #include <netdb.h>
 main()
 {
@@ -507,6 +507,7 @@ if [ $? -ne 0 ] ; then
     sed -e "s@^GETADDRINFO=\(.*\)@GETADDRINFO=getaddrinfo.o@" Makefile > Makefile.tmp
     cp Makefile.tmp Makefile
     $RM -f Makefile.tmp
+    NGETADDRINFO=define
 else
     $RM -f Makefile.tmp
     sed -e "s@^GETADDRINFO=\(.*\)@GETADDRINFO=@" Makefile > Makefile.tmp
@@ -650,6 +651,7 @@ cat > $SETUP  <<__EOF__
 #$NINETADDR	NEED_INET_ADDR
 #$NINETNTOA	NEED_INET_NTOA
 #$NINETNETOF	NEED_INET_NETOF
+#$NGETADDRINFO	NEED_GETADDRINFO
 __EOF__
 if [ "$BZERO" = "memset" ] ; then
 	cat >> $SETUP <<__EOF__

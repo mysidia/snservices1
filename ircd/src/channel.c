@@ -2850,7 +2850,8 @@ char	*parv[];
 
 		memset(lopt, 0, sizeof(LOpts));
 
-		lopt->next = (LOpts *)lopt->yeslist = lopt->nolist = (Link *)0;
+		lopt->next = (LOpts *) NULL;
+		lopt->yeslist = lopt->nolist = (Link *) NULL;
 		lopt->usermin = 0;
 		lopt->usermax = -1;
 		lopt->chantimemax = lopt->topictimemax = currenttime + 86400;

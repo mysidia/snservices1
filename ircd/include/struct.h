@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#if defined(SOL20) || defined(__linux__)
+#ifndef va_copy
 #define va_copy(dst, src) ((dst) = (src))
 #endif
 

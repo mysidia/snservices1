@@ -50,7 +50,7 @@ void setlinebuf(FILE *iop);
 #include "inet.h"
 #include "h.h"
 
-#ifdef SOL20
+#ifdef NEED_GETADDRINFO
 #include "getaddrinfo.h"
 #endif
 

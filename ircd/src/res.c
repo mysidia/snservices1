@@ -1233,7 +1233,7 @@ ResRQ	*rptr;
 	/*
 	** build two arrays, one for IP#'s, another of pointers to them.
 	*/
-	t = (char **)hp->h_addr_list = (char **)irc_malloc(sizeof(anAddress *) * (i+1));
+	t = (char **) (hp->h_addr_list = (anAddress **)irc_malloc(sizeof(anAddress *) * (i+1)));
 	bzero((char *)t, sizeof(anAddress *) * (i+1));
 
 	s = (char *)irc_malloc(sizeof(anAddress) * i);
