@@ -184,73 +184,93 @@ int TimeLengthString::getSeconds() const
 	return length.seconds;
 }
 
-const char* TimeLengthString::asShortStr(char* buf, int len, bool pad) const
+const char* TimeLengthString::asString(char* buf, int len, bool pad,
+			bool long_format, bool show_secs) const
 {
-	int k = 0, l = 0;
+	int k = 0, l = 0, showdays, showhours, showmins, showsecs;
+	int flag = 0;
 
 	assert(len >= 10);
 
-	// Number of days output
-	if (length.days > 0) {
-		if (pad == false) 
-			k = snprintf(buf, len, "%dd", length.days);
-		else
-			k = snprintf(buf, len, "%4dd", length.days);
-		if (k < 0)
-			return NULL;
-		l += k;
+	if (pad == false)
+	{
+		showdays = length.days > 0;
+		showhours = length.hours > 0;
+		showmins = length.minutes > 0;
+		showsecs = length.seconds > 0;
+
+		if (show_secs == false)
+			showsecs = 0;
+
+		if (showdays && showsecs)
+			showhours = showmins = 1;
+
+		if (showhours && showsecs)
+			showmins = 1;
+	}
+	else
+	{
+		showsecs = show_secs;
+		showdays = showhours = showmins = 1;
+	}
+
+	if (pad == false && long_format != 0) {
+		showdays = 1;
+		showmins = 1;
+		showhours = 1;
+	}
+
+
+	// Number of nnn output
+	// Macro to produce the code for generating the individual
+	// field info.
+	#define TIME_WRITE(field, f1, f2, f3) \
+	{ \
+		if (l >= len) \
+			return NULL; \
+		\
+		if (long_format == false) { \
+			if (pad == false) \
+				k = snprintf(buf + l, len - l, f1, field); \
+			else \
+				k = snprintf(buf + l, len - l, f2, field); \
+		} \
+		else { \
+			k = snprintf(buf + l, len - l, "%s" f3, \
+				     (flag ? ", " : ""), field); \
+			flag = 1; \
+		} \
+		if (k < 0) \
+			return NULL; \
+		l += k; \
+	}
+
+
+	if (showdays) {
+		TIME_WRITE(length.days, "%dd", "%4dd", "%4d days");
 	}
 
 	// Number of hours output
-	if (length.hours > 0) {
-		if (l >= len)
-			return NULL;
-
-		if (pad == false)
-			k = snprintf(buf + l, len - l, "%dh", length.hours);
-		else
-			k = snprintf(buf + l, len - l, "%2dh", length.hours);
-
-		if (k < 0)
-			return NULL;
-		l += k;
+	if (showhours) {
+		TIME_WRITE(length.hours, "%dh", "%2dm", "%2d hours");
 	}
 
 	// Number of minutes output
-	if (length.minutes > 0) {
-		if (l >= len)
-			return NULL;
-
-		if (pad == false)
-			k = snprintf(buf + l, len - l, "%dm", length.minutes);
-		else
-			k = snprintf(buf + l, len - l, "%2dm", length.minutes);
-
-		if (k < 0)
-			return NULL;
-		l += k;
+	if (showmins) {
+		if (long_format == 0 || showsecs != 0)
+		{
+			TIME_WRITE(length.minutes, "%dm", "%2dm", "%2d minutes");
+		}
+		else 
+		{
+			TIME_WRITE(length.minutes, "%dm", "%2dm", "and %2d minutes");
+		}
 	}
-
-	if (length.seconds > 0) {
-		if (l >= len)
-			return NULL;
-
-		k = snprintf(buf + l, len - l, "%ds", length.seconds);
-		if (k < 0)
-			return NULL;
-		l += k;
+		
+	if (showsecs) {
+		TIME_WRITE(length.seconds, "%ds", "%2ds", "and %2d seconds");
 	}
 
 	return buf;
 }
 
-const char* TimeLengthString::asLongStr(char* buf, int len) const
-{
-	int k =
-	snprintf(buf, len, "%4d days, %2d hours, %2d minutes, and %2d seconds",
-		length.days, length.hours, length.minutes, length.seconds);
-
-	if (k == -1)
-		return NULL;
-	return buf;
-}

@@ -50,6 +50,7 @@
 #include "email.h"
 #include "log.h"
 #include "sipc.h"
+#include "timestr.h"
 
 /*******************************************************************/
 #define NUM_AKTYPE_INDICES 4
@@ -498,7 +499,7 @@ int addakill(long length, char *mask, char *by, char type, char *reason)
 	struct akill *ak;
 	char *akmask;
 	int i, j;
-	char temp[16];
+	char temp[50];
 
 	ak = (struct akill *)oalloc(sizeof(struct akill));
 	akmask = strdup(mask);
@@ -536,8 +537,14 @@ int addakill(long length, char *mask, char *by, char type, char *reason)
 
 	if (length == 0)
 		strcpy(temp, "forever.");
-	else
-		snprintf(temp, 16, "%d hours.", (int)length / 3600);
+	else {
+		TimeLengthString tls(length);
+
+		if (tls.isValid() == false)
+			snprintf(temp, 16, "%d hours.", (int)length / 3600);
+		else
+			tls.asString(temp, 50, true, true, false);
+	}
 
 	sSend(":%s GLOBOPS :%s set %s for %s for %s [%s]", OperServ, by,
 		  aktype_str(type, 0), mask, temp, reason);

@@ -425,7 +425,7 @@ OCMD(os_akill)
 
 				// Sanity check.
 				if (t > 365*24*3600*5) {
-					sSend(":%s NOTICE %s :Sanity check: duration too long... truncating to 5 years, sorry.", OperServ, nick);
+					sSend(":%s NOTICE %s :Sanity check: duration too long... truncating to 5 years, sorry.", OperServ, nick->nick);
 
 					t = 365*24*3600*5;
 				}
@@ -1721,7 +1721,10 @@ OCMD(os_nixghost) {
 		return RET_SYNTAX;
 	if (isGhost(args[1])) {
 		sSend(":%s QUIT :nixxed", args[1]);
+		return RET_OK;
 	}
+
+	return RET_FAIL;
 }
 
 /************************************************************************/

@@ -110,6 +110,8 @@ public:
 	 * @param buf The target memory space
 	 * @param len The size of buf
 	 * @param pad Should each output number be padded for output
+	 * @param long_format Show it long?
+	 * @param show_secs Show the seconds field at all?
 	 * @pre 'buf' points to an allocated space of size len
 	 * @pre len >= 25
 	 * @pre isValid() == true
@@ -120,20 +122,10 @@ public:
 	 *  If a string pointer is returned, it will be into somewhere
 	 *  in the target space (buf).
 	 */
-	const char* asShortStr(char * buf, int len, bool pad) const;
+	const char* TimeLengthString::asString(char* buf, int len, bool pad,
+                        bool long_format, bool show_secs) const;
 
-	/*! Generate a long string inside 'buf'
-	 * @param buf The target space
-	 * @param len The size of the target space
-	 * @pre 'buf' points to allocated space of size len
-	 * @pre len >= 50
-	 * @post Contents of target space buf are unknown
-	 * @return A pointer to a string representation of the short
-	 * string, or a NULL pointer if an error has occured.
-	 * If successful, the pointer will be somewhere in the target
-	 * space.
-	 */
-	const char* asLongStr(char * buf, int len) const;
+
 private:
 	DurationRepresentation length;
 	char* tempstr;
