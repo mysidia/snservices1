@@ -27,6 +27,7 @@ NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
 STRTOUL=undef
+GETADDRINFO=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
 SN_MODE='1'
@@ -468,6 +469,31 @@ if [ $? -ne 0 ] ; then
 else
     $RM -f Makefile.tmp
     sed -e "s@^STRTOUL=\(.*\)@STRTOUL=@" Makefile > Makefile.tmp
+    cp Makefile.tmp Makefile
+    $RM -f Makefile.tmp
+fi
+$RM -f $EXEC $TMP
+
+echo "What else do I need that you don't have..."
+echo $n "Lets see...$c"
+cat > $TMP <<__EOF__
+#include <netdb.h>
+main()
+{
+	int i = getaddrinfo(NULL, NULL, NULL, NULL);
+	exit(0);
+}
+__EOF__
+$COMP >/dev/null 2>&1
+if [ $? -ne 0 ] ; then
+    echo $n " getaddrinfo$c"
+    $RM -f Makefile.tmp
+    sed -e "s@^GETADDRINFO=\(.*\)@GETADDRINFO=getaddrinfo.o@" Makefile > Makefile.tmp
+    cp Makefile.tmp Makefile
+    $RM -f Makefile.tmp
+else
+    $RM -f Makefile.tmp
+    sed -e "s@^GETADDRINFO=\(.*\)@GETADDRINFO=@" Makefile > Makefile.tmp
     cp Makefile.tmp Makefile
     $RM -f Makefile.tmp
 fi
