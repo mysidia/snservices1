@@ -26,9 +26,6 @@ static  char sccsid[] = "@(#)s_misc.c	2.42 3/1/94 (C) 1988 University of Oulu, \
 Computing Center and Jarkko Oikarinen";
 #endif
 
-#include <syslog.h>
-#undef LOG_USER
-
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
@@ -58,6 +55,11 @@ Computing Center and Jarkko Oikarinen";
 # include <io.h>
 #endif
 #include "h.h"
+
+#ifdef SYSLOGH
+#include <syslog.h>
+#endif
+#undef LOG_USER
 
 static	void	exit_one_client PROTO((aClient *,aClient *,aClient *,char *));
 
@@ -732,7 +734,11 @@ int open_logs( )
              slogfiles[i] = -1;
              continue;
          }
+#ifndef _WIN32
          slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND|O_NBVAR);    
+#else
+         slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND);
+#endif
     }
  #endif
     return 0;
