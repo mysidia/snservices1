@@ -27,13 +27,13 @@ IRCD_SCCSID("@(#)s_err.c	1.12 11/1/93 (C) 1992 Darren Reed");
 IRCD_RCSID("$Id$");
 
 typedef	struct	{
-	int	num_val;
-	char	*num_form;
+	int	code;
+	char	*msg;
 } Numeric;
 
-static	char	*prepbuf(char *, int, char *);
-static	char	numbuff[514];
-static	char	numbers[] = "0123456789";
+char numbuf[514];
+
+char *prepbuf(int, char *);
 
 static  Numeric local_replies[] = {
 /* 000 */	{ 0, NULL },
@@ -271,12 +271,17 @@ void
 boot_replies(void)
 {
 	int i;
+	char *s;
+
+	for (i = 0 ; i < 1000 ; i++)
+		replies[i] = NULL;
 
 	for (i = 0 ; i < sizeof(local_replies) / sizeof(Numeric) ; i++) {
-		if (!local_replies[i].num_val
-		    || local_replies[i].num_val > 9999)
+		if (local_replies[i].code < 1 || local_replies[i].code > 999)
 			continue;
-		replies[local_replies[i].num_val] = local_replies[i].num_form;
+
+		s = prepbuf(local_replies[i].code, local_replies[i].msg);
+		replies[local_replies[i].code] = s;
 	}
 }
 
@@ -285,20 +290,20 @@ char *
 err_str(int numeric)
 {
 	if (numeric < 0 || numeric > (ERR_YOURHURT + 400)) {
-		(void)sprintf(numbuff,
+		(void)sprintf(numbuf,
 			      ":%%s %d %%s :INTERNAL ERROR: BAD NUMERIC! %d",
 			      numeric, numeric);
-	} else {
-		if (!replies[numeric])
-			(void)sprintf(numbuff,
-				      ":%%s %d %%s "
-				      ":NO ERROR FOR NUMERIC ERROR %d",
-				      numeric, numeric);
-		else
-			(void)prepbuf(numbuff, numeric, replies[numeric]);
+		return numbuf;
 	}
 
-	return numbuff;
+	if (!replies[numeric]) {
+		(void)sprintf(numbuf,
+			      ":%%s %d %%s :NO ERROR FOR NUMERIC ERROR %d",
+			      numeric, numeric);
+		return numbuf;
+	}
+
+	return replies[numeric];
 }
 
 
@@ -306,37 +311,41 @@ char *
 rpl_str(int numeric)
 {
 	if (numeric < 0 || numeric > 999) {
-		(void)sprintf(numbuff,
+		(void)sprintf(numbuf,
 			      ":%%s %d %%s "
 			      ":INTERNAL REPLY ERROR: BAD NUMERIC! %d",
 			      numeric, numeric);
-	} else {
-		Debug((DEBUG_NUM, "rpl_str: numeric %d num %d %x",
-		       numeric, numeric, replies[numeric]));
-		if (!replies[numeric])
-			(void)sprintf(numbuff,
-				      ":%%s %d %%s "
-				      ":NO REPLY FOR NUMERIC ERROR %d",
-				      numeric, numeric);
-		else
-			(void)prepbuf(numbuff, numeric, replies[numeric]);
+		return numbuf;
 	}
 
-	return numbuff;
+	Debug((DEBUG_NUM, "rpl_str: numeric %d num %d %x",
+	       numeric, numeric, replies[numeric]));
+
+	if (!replies[numeric]) {
+		(void)sprintf(numbuf,
+			      ":%%s %d %%s :NO REPLY FOR NUMERIC ERROR %d",
+			      numeric, numeric);
+		return numbuf;
+	}
+
+	return replies[numeric];
 }
 
-static	char	*prepbuf(char *buffer, int num, char *tail)
+char *
+prepbuf(int num, char *tail)
 {
-	char	*s;
+	char *s;
 
-	(void)strcpy(buffer, ":%s ");
-	s = buffer + 4;
+	/*
+	 * Allocate enough space for the string, as well as our additions.
+	 */
+	if (tail == NULL) {
+		s = irc_strdup(":%%s %03d %%s");
+	} else {
+		s = irc_malloc(strlen(tail) + 11 + 1);
 
-	*s++ = numbers[num/100];
-	num %= 100;
-	*s++ = numbers[num/10];
-	*s++ = numbers[num%10];
-	(void)strcpy(s, " %s ");
-	(void)strcpy(s+4, tail);
-	return buffer;
+		sprintf(s, ":%%s %03d %%s %s", num, tail);
+	}
+
+	return (s);
 }
