@@ -3423,19 +3423,19 @@ CCMD(cs_register)
 	founder->nickId = nick->reg->regnum;
 	founder->uflags = FOUNDER;
 
-	addChanOp(chan->reg, founder);
-	chan->reg->flags |= CKTOPIC;
-	chan->reg->flags |= CIDENT;
-	chan->reg->mlock |= PM_N;
-	chan->reg->mlock |= PM_T;
-	chan->reg->mlock |= MM_H;
-	chan->reg->mlock |= MM_K;
-	chan->reg->facc = 1;
+	addChanOp(reg, founder);
+	reg->flags |= CKTOPIC;
+	reg->flags |= CIDENT;
+	reg->mlock |= PM_N;
+	reg->mlock |= PM_T;
+	reg->mlock |= MM_H;
+	reg->mlock |= MM_K;
+	reg->facc = 1;
 	addRegChan(reg);
 	mostchans++;
-	chanlog->log(nick, CS_REGISTER, chan->name, 0,
+	chanlog->log(nick, CS_REGISTER, chan ? chan->name : args[1], 0,
 				 override ? "(override)" : "");
-	strncpyzt(chan->reg->desc, descbuf, CHANDESCBUF);
+	strncpyzt(reg->desc, descbuf, CHANDESCBUF);
 	return RET_OK_DB;
 }
 
