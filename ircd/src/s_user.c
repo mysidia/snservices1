@@ -39,7 +39,6 @@ IRCD_RCSID("$Id$");
 void	send_umode_out(aClient*, aClient *, aClient *, int);
 void	send_umode(aClient *, aClient *, aClient *, int, int, char *);
 static int is_silenced(aClient *, aClient *);
-aClient *find_server_const(const char *, aClient *);
 
 /* static  Link    *is_banned(aClient *, aChannel *); */
 

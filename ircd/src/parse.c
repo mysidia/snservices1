@@ -731,16 +731,3 @@ static	void	remove_unknown(aClient *cptr, char *sender)
 		sendto_one(cptr, ":%s SQUIT %s :(Unknown from %s)",
 			   me.name, sender, get_client_name(cptr, FALSE));
 }
-
-
-aClient *find_server_const(const char *name, aClient *cptr)
-{
-       char cname[256];
-
-       strncpy(cname, name, 256);
-       cname[255] = '\0';
-
-       if (name)
-               cptr = hash_find_server(cname, cptr);
-       return cptr;
-}
