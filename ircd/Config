@@ -16,7 +16,6 @@ OPTIONS_H=include/options.h
 OPTIONS=./Options
 AUTO_CONFIG=""
 #
-STDLIBH=undef
 STDDEFH=undef
 SYSSYSLOGH=undef
 PARAMH=undef
@@ -393,13 +392,6 @@ COMP="$CCPATH $XCFLAGS $TMP -o $EXEC $LIBS"
 #
 
 echo 'Checking out /usr/include'
-echo $n "...Looking for /usr/include/stdlib.h...$c"
-if [ -r /usr/include/stdlib.h ] ; then
-	STDLIBH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
 echo $n "...Looking for stddef.h...$c"
 if [ -r /usr/include/stddef.h ] ; then
         STDDEFH=define
@@ -740,7 +732,6 @@ cat > $SETUP  <<__EOF__
 #$REDHAT6	REDHAT6
 #$LINUX_GLIBC	LINUX_GLIBC
 /*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
-#$STDLIBH	STDLIBH
 #$STDDEFH	STDDEFH
 #$SYSSYSLOGH	SYSSYSLOGH
 #$NOINDEX	NOINDEX
