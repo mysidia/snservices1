@@ -2276,7 +2276,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		return 0;
 	}
 
-	sendto_one(cptr, ":Auth-C NOTICE %s :Client List", me.name, sptr->name);
+	sendto_one(sptr, ":%s NOTICE %s :Client List", me.name, sptr->name);
 	for(i = 0; i <= highest_fd; i++) {
 		if (!(ptr = local[i]))
 			continue;
@@ -2290,7 +2290,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		if (show_users && !IsPerson(ptr))
 			continue;
 
-		sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s,%s,%d] [%s/%s/%d]", me.name, sptr->name, i,
+		sendto_one(sptr, ":%s NOTICE %s :%d. [%s!%s@%s,%s,%d] [%s/%s/%d]", me.name, sptr->name, i,
 				(BadPtr(ptr->name) ? "-" : ptr->name),
 				 BadPtr(ptr->username) ? "-" : ptr->username,
 				BadPtr( ptr->sockhost) ? "-" : ptr->sockhost,
@@ -2300,11 +2300,11 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 				BadPtr(ptr->sup_host) ? "-" : ptr->sup_host,
 				ptr->port
 				);
-		sendto_one(cptr, ":%s NOTICE %s : [%ld/%ld]  [%s] ",  me.name, sptr->name,
+		sendto_one(sptr, ":%s NOTICE %s : [%ld/%ld]  [%s] ",  me.name, sptr->name,
 			              ptr->firsttime, ptr->lasttime,
 			              BadPtr(ptr->info) ? "" : ptr->info );
 	}
-	sendto_one(cptr, ":Auth-C NOTICE %s :End of List", me.name, sptr->name);
+	sendto_one(sptr, ":%s NOTICE %s :End of List", me.name, sptr->name);
 	return 0;
 }
 
