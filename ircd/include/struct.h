@@ -24,6 +24,7 @@
 #include "config.h"
 #include "common.h"
 #include "sys.h"
+#include "socket.h"
 
 #include <sys/socket.h>
 
@@ -49,7 +50,6 @@
 # include <syslog.h>
 #endif
 
-typedef	union	Address	anAddress;
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
 typedef	struct	Channel	aChannel;
@@ -546,35 +546,18 @@ typedef struct help_struct {
 #define	DEBUG_MALLOC 9	/* malloc/free calls */
 #define	DEBUG_LIST  10	/* debug list use */
 
-/*
- * Don't use sockaddr_storage: it's too big. --Onno
- */
-union Address
-{
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-	u_char  addr_dummy[2];
-#define addr_family addr_dummy[1]
-#else
-	unsigned short int	addr_family;
-#endif
-	struct sockaddr_in	in;
-#ifdef AF_INET6
-	struct sockaddr_in6	in6;
-#endif
-};
-
 struct HostEnt
 {
   char *h_name;                 /* Official name of host.  */
   char **h_aliases;             /* Alias list.  */
-  anAddress **h_addr_list;      /* List of addresses from name server. */
+  sock_address **h_addr_list;      /* List of addresses from name server. */
 #define h_addr  h_addr_list[0]  /* Address, for backward compatibility.  */
 };
 
 struct	ConfItem	{
 	unsigned int	status;	/* If CONF_ILLEGAL, delete when no clients */
 	int	clients;	/* Number of *LOCAL* clients using this */
-	anAddress	addr;	/* network address of host */
+	sock_address	*addr;	/* network address of host */
 	char	*host;
 	char	*passwd;
 	char	*name;
@@ -696,7 +679,6 @@ struct Client	{
 	long	flags;		/* client flags */
 	long	uflags;		/* client usermode */
 	aClient	*from;		/* == self, if Local Client, *NEVER* NULL! */
-	int	fd;		/* >= 0, for local clients */
 	int	hopcount;	/* number of servers to this 0 = local */
 	int	watches;	/* How many watches user has set */
 	short	status;		/* Client type */
@@ -731,8 +713,7 @@ struct Client	{
 	Link	*confs;		/* Configuration record associated */
 	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
-	anAddress	addr;	/* keep real ip# too */
-	u_short	port;	/* and the remote port# too :-) */
+	sock	*sock;
 	struct	HostEnt	*hostp;
 	LOpts   *lopt;
 #ifdef	pyr
@@ -950,7 +931,7 @@ struct Channel	{
 
 #define	isvalid(c) (((c) >= 'A' && (c) <= '~') || isdigit(c) || (c) == '-')
 
-#define	MyConnect(x)			((x)->fd >= 0)
+#define	MyConnect(x)			((x)->sock != NULL)
 #define	MyClient(x)			(MyConnect(x) && IsClient(x))
 #define	MyOper(x)			(MyConnect(x) && IsOper(x))
 

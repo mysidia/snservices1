@@ -33,67 +33,6 @@
 IRCD_SCCSID("@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner; 1992, 1993 Darren Reed");
 IRCD_RCSID("$Id$");
 
-int addr_cmp(const anAddress *a1, const anAddress *a2)
-{
-	if (a1->addr_family != a2->addr_family)
-		return 1;
-	switch (a1->addr_family)
-	{
-		case AF_INET:
-			return bcmp(&a1->in.sin_addr, &a2->in.sin_addr, sizeof(struct in_addr));
-#ifdef AF_INET6
-		case AF_INET6:
-			return bcmp(&a1->in6.sin6_addr, &a2->in6.sin6_addr, sizeof(struct in6_addr));
-#endif
-	}
-	return 1;
-}
-
-/*
-**	inetntoa  --	changed name to remove collision possibility and
-**			so behaviour is gaurunteed to take a pointer arg.
-**			-avalon 23/11/92
-**	inet_ntoa --	returned the dotted notation of a given
-**			internet number (some ULTRIX don't have this)
-**			argv 11/90).
-**	inet_ntoa --	its broken on some Ultrix/Dynix too. -avalon
-*/
-
-char *
-inetntoa(const anAddress *addr)
-{
-	static	char	buf[40];
-	u_char	*s;
-	int	a,b,c,d;
-
-	switch (addr->addr_family)
-	{
-		case AF_INET:
-			s = (u_char *)&addr->in.sin_addr;
-			a = (int)*s++;
-			b = (int)*s++;
-			c = (int)*s++;
-			d = (int)*s++;
-			(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
-			break;
-#ifdef AF_INET6
-		case AF_INET6:
-			sprintf(buf, "%x:%x:%x:%x:%x:%x:%x:%x",
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[0]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[2]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[4]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[6]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[8]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[10]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[12]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[14]));
-			break;
-#endif
-	}
-
-	return buf;
-}
-
 #ifdef NEED_INET_NETOF
 /*
 **	inet_netof --	return the net portion of an internet number

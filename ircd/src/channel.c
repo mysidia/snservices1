@@ -18,19 +18,15 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "struct.h"
-#include "common.h"
+#include "ircd.h"
+
 #include "sys.h"
 #include "numeric.h"
 #include "channel.h"
 #include "hash.h"
 #include "msg.h"
-#include "h.h"
 
 #include "ircd/channel.h"
-#include "ircd/match.h"
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)channel.c	2.58 2/18/94 (C) 1990 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
@@ -188,7 +184,7 @@ aClient *cptr;
   if (!MyClient(cptr))
     return NULL;
 
-  host = inetntoa(&cptr->addr);
+  host = address_tostring(cptr->sock->raddr, 0);
   bzero(namebuf, sizeof(namebuf));
   nick = check_string(nick);
   strncpyzt(namebuf, nick, NICKLEN + 1);

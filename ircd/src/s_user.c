@@ -391,7 +391,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 	     -- OnyxDragon */
 	  for (tmpstr = sptr->sockhost; *tmpstr > ' ' && *tmpstr < 127; tmpstr++);
 	  if (*tmpstr || !*sptr->sockhost || isdigit(*(tmpstr-1)))
-	    strncpyzt(sptr->sockhost, (char *)inetntoa(&sptr->addr),
+	    strncpyzt(sptr->sockhost, address_tostring(sptr->sock->raddr, 0),
 		      sizeof(sptr->sockhost));
 	  strncpyzt(user->host, sptr->sockhost, sizeof(user->host));
 	}
@@ -593,9 +593,13 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 		   sptr->name, olduser, userbad, stripuser);
 #endif
       nextping = NOW;
-      sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client connecting on port %d: %s (%s@%s) [%s] [%s/%s]", 
-		   sptr->acpt->port, nick, user->username,
-		   user->host, inetntoa(&sptr->addr), sptr->sup_host, sptr->sup_server /*[...]*/);
+      sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client connecting on %s from %s: %s (%s@%s) [%s/%s]", 
+		(u1 = irc_strdup(address_tostring(sptr->sock->laddr, 1))),
+		(u2 = irc_strdup(address_tostring(sptr->sock->raddr, 1))),
+		nick, user->username, user->host,
+		sptr->sup_host, sptr->sup_server /*[...]*/);
+	irc_free(u1);
+	irc_free(u2);
     }
   else if (IsServer(cptr))
     {
@@ -1231,8 +1235,8 @@ nickkilldone:
 	  md5data[4] = me.receiveM;
 	  md5data[5] = 0;
 	  md5data[6] = getpid();
-	  md5data[7] = (int) &sptr->addr.in.sin_addr;
-	  md5data[8] = sptr->fd;
+	  md5data[7] = (int) &sptr->sock;
+	  md5data[8] = sptr->sock->fd;
 	  md5data[9] = 0;
 	  md5data[10] = 0;
 	  md5data[11] = 0;
@@ -2280,6 +2284,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 {
 	aClient* ptr;
 	char* pos = NULL, *option, *option_args = NULL;
+	char	*tmp1, *tmp2;
 
 	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
@@ -2359,7 +2364,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 		if (extended == 0) {
 			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%d,%d,%d] [h:%s] [s:%s]",
-					me.name, sptr->name, ptr->fd,
+					me.name, sptr->name, ptr->sock->fd,
 					BadPtr(ptr->name) ? "-" : ptr->name,
 					BadPtr(ptr->username) ? "-" : ptr->username,
 					ptr->sockhost,
@@ -2376,7 +2381,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		/* Extended mode */
 
 		sendto_one(cptr, ":%s NOTICE %s :%s<client id=\"%d\">", me.name, sptr->name,
-				need_start ? "<clients>" : "", ptr->fd);
+				need_start ? "<clients>" : "", ptr->sock->fd);
 		need_start = 0;
 
 		quoteShowConData(BadPtr(ptr->name) ? "" : ptr->name, buf1, BUFSIZE);
@@ -2384,9 +2389,13 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		quoteShowConData(ptr->sockhost, buf3, BUFSIZE);
 		
 		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name><uid>%s</uid>"
-				 "<sockhost rport=\"%d\" lport=\"%d\">%s</sockhost>", 
-				me.name, sptr->name, buf1, buf2, ptr->port,
-			       	ptr->acpt ? ptr->acpt->port : 0, buf3);
+				 "<sockhost raddr=\"%s\" laddr=\"%s\">%s</sockhost>", 
+				me.name, sptr->name, buf1, buf2,
+				tmp1 = irc_strdup(address_tostring(ptr->sock->raddr, 1)),
+				tmp2 = irc_strdup(address_tostring(ptr->sock->laddr, 1)),
+			       	buf3);
+		irc_free(tmp1);
+		irc_free(tmp2);
 
 		quoteShowConData(BadPtr(ptr->info) ? "" : ptr->info, buf1, BUFSIZE);
 
@@ -3471,7 +3480,7 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	 * it doesn't break anything - DuffJ
 	 */
 	if (!(aconf = find_conf_exact(name, sptr->user->username, sptr->sockhost, CONF_OPS)) &&
-	    !(aconf = find_conf_exact(name, sptr->user->username, inetntoa(&cptr->addr), CONF_OPS)))
+	    !(aconf = find_conf_exact(name, sptr->user->username, address_tostring(cptr->sock->raddr, 0), CONF_OPS)))
 	    {
 		sendto_one(sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
                 if (IsHurt(sptr) && MyConnect(sptr))

@@ -195,10 +195,10 @@ char	*get_client_name(aClient *sptr, int showip)
   {
       if (showip)
       {
-	  sprintf(nbuf, "%s[%s@%s.%u]",
+	  sprintf(nbuf, "%s[%s@%s]",
 		  sptr->name,
 		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
-		  inetntoa(&sptr->addr), (unsigned int)sptr->port);
+		  address_tostring(sptr->sock->raddr, 1));
       } 
       else
       {
@@ -226,10 +226,10 @@ char	*get_client_name_mask(aClient *sptr, int showip, int showport, int mask)
   {
       if (showip)
       {
-	  sprintf(nbuf, "%s[%s@%s.%u]",
+	  sprintf(nbuf, "%s[%s@%s]",
 		  sptr->name,
 		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
-		  mask ? genHostMask(inetntoa(&sptr->addr)) : inetntoa(&sptr->addr), showport ? (unsigned int)sptr->port : (unsigned int)0);
+		  mask ? genHostMask(address_tostring(sptr->sock->raddr, 0)) : address_tostring(sptr->sock->raddr, showport));
       }
       else
       {
@@ -370,7 +370,7 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 					);
 		}
 
-		if (sptr->fd >= 0 && !IsConnecting(sptr))
+		if (sptr->sock != NULL && !IsConnecting(sptr))
 		    {
 		      if (cptr != NULL && sptr != cptr)
 			sendto_one(sptr, "ERROR :Closing Link: %s %s (%s)",
@@ -530,10 +530,10 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 
 	/* Remove sptr from the client list */
 	if (del_from_client_hash_table(sptr->name, sptr) != 1)
-		Debug((DEBUG_ERROR, "%#x !in tab %s[%s] %#x %#x %#x %d %d %#x",
+		Debug((DEBUG_ERROR, "%#x !in tab %s[%s] %#x %#x %#x %d %#x",
 			sptr, sptr->name,
 			sptr->from ? sptr->from->sockhost : "??host",
-			sptr->from, sptr->next, sptr->prev, sptr->fd,
+			sptr->from, sptr->next, sptr->prev,
 			sptr->status, sptr->user));
         hash_check_watch(sptr, RPL_LOGOFF);
 	remove_client_from_list(sptr);

@@ -713,7 +713,7 @@ m_server_estab(aClient *cptr)
 		if (split) {
 			sendto_one(acptr,":%s SERVER %s 2 :[%s] %s",
 				   me.name, cptr->name,
-				   /*cptr->sockhost*/ inetntoa(&cptr->addr), cptr->info);
+				   address_tostring(cptr->sock->raddr, 0), cptr->info);
 		}
 		else
 			sendto_one(acptr,":%s SERVER %s 2 :%s",
@@ -1917,15 +1917,20 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	wilds = !parv[1] || index(tname, '*') || index(tname, '?');
 	dow = wilds || doall;
 
+	/*
+	 * This should be done differently, without using file descriptors.
+	 * A good approach would be to use a counter in acptr->from.
+	 */
+
 	for (i = 0; i < MAXCONNECTIONS; i++)
 		link_s[i] = 0, link_u[i] = 0;
 
 	if (doall) {
 		for (acptr = client; acptr; acptr = acptr->next)
 			if (IsPerson(acptr))
-				link_u[acptr->from->fd]++;
+				link_u[acptr->from->sock->fd]++;
 			else if (IsServer(acptr))
-				link_s[acptr->from->fd]++;
+				link_s[acptr->from->sock->fd]++;
 	}
 
 	/* report all direct connections */
@@ -2001,15 +2006,15 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		case STAT_SERVER:
 			if (acptr->serv->user)
 				sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-					   me.name, parv[0], class, link_s[acptr->fd],
-					   link_u[acptr->fd], name, acptr->serv->by,
+					   me.name, parv[0], class, link_s[acptr->sock->fd],
+					   link_u[acptr->sock->fd], name, acptr->serv->by,
 					   acptr->serv->user->username,
 					   acptr->serv->user->host,
    					   now - acptr->lasttime);
 			else
 				sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-					   me.name, parv[0], class, link_s[acptr->fd],
-					   link_u[acptr->fd], name, *(acptr->serv->by) ?
+					   me.name, parv[0], class, link_s[acptr->sock->fd],
+					   link_u[acptr->sock->fd], name, *(acptr->serv->by) ?
 					   acptr->serv->by : "*", "*", me.name,
 					   now - acptr->lasttime);
 			cnt++;
@@ -2020,8 +2025,9 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			cnt++;
 			break;
 		case STAT_LOG:
+			// Is STAT_LOG actually being used anywhere?
 			sendto_one(sptr, rpl_str(RPL_TRACELOG), me.name,
-				   parv[0], LOGFILE, acptr->port);
+				   parv[0], LOGFILE, 0);
 			cnt++;
 			break;
 		default: /* ...we actually shouldn't come here... --msa */
@@ -2043,8 +2049,8 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		 * trace
 		 */
 		sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-			   me.name, parv[0], 0, link_s[me.fd],
-			   link_u[me.fd], me.name, "*", "*", me.name);
+			   me.name, parv[0], 0, 0,
+			   0, me.name, "*", "*", me.name, 0);
 		return 0;
 	    }
 	for (cltmp = FirstClass(); doall && cltmp; cltmp = NextClass(cltmp))
@@ -2135,8 +2141,8 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		}
 
 		if (parc <= 1) {
-			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s.%d] [n:%s] [%s]", me.name,
-				       	sptr->name, acptr->fd, acptr->sockhost, acptr->port,
+			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s] [n:%s] [%s]", me.name,
+				       	sptr->name, acptr->sock->fd, address_tostring(acptr->sock->raddr, 1),
 				       	BadPtr(acptr->name) ? "" : acptr->name,
 					DoingDNS(acptr) ? "DoingDNS" : "");
 			continue;

@@ -18,18 +18,9 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
+#include "ircd.h"
 
 #include <signal.h>
-#include <errno.h>
-
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "h.h"
-
-#include "ircd/send.h"
 
 IRCD_SCCSID("@(#)bsd.c	2.14 1/30/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
@@ -84,7 +75,6 @@ deliver_it(aClient *cptr, char *str, int len)
 #ifdef	DEBUGMODE
 	writecalls++;
 #endif
-	(void)alarm(WRITEWAITDELAY);
 	if (IsDead(cptr)
 	    || (!IsServer(cptr) && !IsPerson(cptr) &&
 		!IsHandshake(cptr) && !IsUnknown(cptr))) {
@@ -95,22 +85,14 @@ deliver_it(aClient *cptr, char *str, int len)
 		return -1;
 	}
 
-	retval = send(cptr->fd, str, len, 0);
+	retval = socket_write(cptr->sock, str, len);
 	/*
 	 * Convert WOULDBLOCK to a return of "0 bytes moved". This
 	 * should occur only if socket was non-blocking. Note, that
 	 * all is Ok, if the 'write' just returns '0' instead of an
 	 * error and errno=EWOULDBLOCK.
 	 */
-	if (retval < 0 && (errno == EWOULDBLOCK || errno == EAGAIN ||
-			   errno == ENOBUFS)) {
-		retval = 0;
-		ClientFlags(cptr) |= FLAGS_BLOCKED;
-	} else if (retval > 0) {
-		ClientFlags(cptr) &= ~FLAGS_BLOCKED;
-	}
 
-	(void )alarm(0);
 #ifdef DEBUGMODE
 	if (retval < 0) {
 		writeb[0]++;
