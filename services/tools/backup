@@ -1,7 +1,0 @@
-#!/bin/sh
-cp nickserv/nickserv.db dbs
-cp chanserv/chanserv.db dbs
-cp memoserv/memoserv.db dbs
-cp operserv/akill.db dbs
-cp operserv/trigger.db dbs
-cp infoserv/infoserv.db dbs
