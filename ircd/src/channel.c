@@ -2825,12 +2825,12 @@ int	m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     showall = 1;
                     switch (*++name) {
                         case '>':
-                            chantimemin = currenttime - 60 *
+                            chantimemax = currenttime - 60 *
                                           strtol(++name, (char **) 0, 10);
                             break;
 
                         case '<':
-                            chantimemax = currenttime - 60 *
+                            chantimemin = currenttime - 60 *
                                           strtol(++name, (char **) 0, 10);
                             break;
 
@@ -2985,9 +2985,9 @@ void    send_list(aClient *cptr, int numsend)
                 continue;
             if (!l->showall && ((chptr->users <= l->usermin) ||
                 ((l->usermax == -1)?0:(chptr->users >= l->usermax)) ||
-                ((chptr->creationtime||1) <= l->chantimemin) ||
+                (chptr->creationtime < l->chantimemin) ||
                 (chptr->topic_time < l->topictimemin) ||
-                (chptr->creationtime >= l->chantimemax) ||
+                (chptr->creationtime > l->chantimemax) ||
                 (chptr->topic_time > l->topictimemax)))
                 continue;
             /* For now, just extend to topics as well. Use patterns starting
