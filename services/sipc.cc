@@ -1654,7 +1654,7 @@ IpcType::makeMessage(IpcConnectType *p, parse_t *pb)
 		if (strcmp(buf, "RCHAN") == 0) {
 			p->sWrite("ERR-UNIMPLEMENTED MAKE RCHAN - Not yet implemented\n");
 		}
-		else if (strcmp(buf, "RNICK") == 0 || strcmp(buf, "FORCE-RNICK")) {
+		else if (strcmp(buf, "RNICK") == 0 || strcmp(buf, "FORCE-RNICK") == 0) {
 			RegNickList *ptrNick;
 			char *nick = parse_getarg(pb);
 			char *email = parse_getarg(pb);
