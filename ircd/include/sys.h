@@ -62,7 +62,7 @@
 #define res_init __res_init
 #endif
 
-extern	VOIDSIG	dummy();
+void dummy_sig(int sig);
 
 #ifdef	NO_U_TYPES
 typedef	unsigned char	u_char;

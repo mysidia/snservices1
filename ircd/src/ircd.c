@@ -69,32 +69,6 @@ time_t nextexpire = 1;		/* next expire run on the dns cache */
 time_t nextsockflush = 1;
 void boot_replies(void);
 
-#if	defined(PROFIL)
-extern	etext();
-
-VOIDSIG
-s_monitor(void)
-{
-	static int mon = 0;
-#ifdef	POSIX_SIGNALS
-	struct sigaction act;
-#endif
-
-	(void)moncontrol(mon);
-	mon = 1 - mon;
-#ifdef	POSIX_SIGNALS
-	act.sa_handler = s_rehash;
-	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGUSR1);
-	(void)sigaction(SIGUSR1, &act, NULL);
-#else
-	(void)signal(SIGUSR1, s_monitor);
-#endif
-}
-#endif
-
-
 VOIDSIG s_die(int sig)
 {
 	IRCD_UNUSED(sig);
@@ -109,19 +83,13 @@ VOIDSIG s_die(int sig)
 
 static VOIDSIG s_rehash()
 {
-#ifdef	POSIX_SIGNALS
 	struct	sigaction act;
-#endif
 	dorehash = 1;
-#ifdef	POSIX_SIGNALS
 	act.sa_handler = s_rehash;
 	act.sa_flags = 0;
 	(void)sigemptyset(&act.sa_mask);
 	(void)sigaddset(&act.sa_mask, SIGHUP);
 	(void)sigaction(SIGHUP, &act, NULL);
-#else
-	(void)signal(SIGHUP, s_rehash);	/* sysV -argv */
-#endif
 }
 
 void	restart(char *mesg)
@@ -137,14 +105,14 @@ VOIDSIG s_restart()
 	static int restarting = 0;
 
 #ifdef	USE_SYSLOG
-	(void)syslog(LOG_WARNING, "Server Restarting on SIGINT");
+	(void)syslog(LOG_WARNING, "Server Restarting on SIGHUP");
 #endif
 	if (restarting == 0)
 	    {
 		/* Send (or attempt to) a dying scream to oper if present */
 
 		restarting = 1;
-		server_reboot("SIGINT");
+		server_reboot("SIGHUP");
 	    }
 }
 
@@ -835,9 +803,11 @@ main(int argc, char **argv)
 static void
 setup_signals(void)
 {
-#ifdef	POSIX_SIGNALS
 	struct	sigaction act;
 
+	/*
+	 * Ignore the following signals:  PIPE, ALRM, WINCH
+	 */
 	act.sa_handler = SIG_IGN;
 	act.sa_flags = 0;
 	(void)sigemptyset(&act.sa_mask);
@@ -848,43 +818,20 @@ setup_signals(void)
 	(void)sigaction(SIGWINCH, &act, NULL);
 # endif
 	(void)sigaction(SIGPIPE, &act, NULL);
-	act.sa_handler = dummy;
+
+	act.sa_handler = dummy_sig;
 	(void)sigaction(SIGALRM, &act, NULL);
+
 	act.sa_handler = s_rehash;
 	(void)sigemptyset(&act.sa_mask);
 	(void)sigaddset(&act.sa_mask, SIGHUP);
 	(void)sigaction(SIGHUP, &act, NULL);
+
 	act.sa_handler = s_restart;
 	(void)sigaddset(&act.sa_mask, SIGINT);
 	(void)sigaction(SIGINT, &act, NULL);
+
 	act.sa_handler = s_die;
 	(void)sigaddset(&act.sa_mask, SIGTERM);
 	(void)sigaction(SIGTERM, &act, NULL);
-
-#else
-# ifndef	HAVE_RELIABLE_SIGNALS
-	(void)signal(SIGPIPE, dummy);
-#  ifdef	SIGWINCH
-	(void)signal(SIGWINCH, dummy);
-#  endif
-# else
-#  ifdef	SIGWINCH
-	(void)signal(SIGWINCH, SIG_IGN);
-#  endif
-	(void)signal(SIGPIPE, SIG_IGN);
-# endif
-	(void)signal(SIGALRM, dummy);   
-	(void)signal(SIGHUP, s_rehash);
-	(void)signal(SIGTERM, s_die); 
-	(void)signal(SIGINT, s_restart);
-#endif
-
-#ifdef RESTARTING_SYSTEMCALLS
-	/*
-	** At least on Apollo sr10.1 it seems continuing system calls
-	** after signal is the default. The following 'siginterrupt'
-	** should change that default to interrupting calls.
-	*/
-	(void)siginterrupt(SIGALRM, 1);
-#endif
 }

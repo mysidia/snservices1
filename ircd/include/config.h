@@ -606,24 +606,6 @@
 # define LOGFILE "/dev/null"
 #endif
 
-#ifdef	BSD_RELIABLE_SIGNALS
-# if defined(SYSV_UNRELIABLE_SIGNALS) || defined(POSIX_SIGNALS)
-error You stuffed up config.h signals #defines use only one.
-# endif
-#define	HAVE_RELIABLE_SIGNALS
-#endif
-
-#ifdef	SYSV_UNRELIABLE_SIGNALS
-# ifdef	POSIX_SIGNALS
-error You stuffed up config.h signals #defines use only one.
-# endif
-#undef	HAVE_RELIABLE_SIGNALS
-#endif
-
-#ifdef	POSIX_SIGNALS
-#define	HAVE_RELIABLE_SIGNALS
-#endif
-
 /*
  * safety margin so we can always have one spare fd, for motd/authd or
  * whatever else.  -4 allows "safety" margin of 1 and space reserved.

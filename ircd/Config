@@ -40,7 +40,6 @@ LRAND48=undef
 STRTOUL=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
-SIGNAL=''
 BLOCKING=''
 SN_MODE='1'
 NETNAME='SorceryNet'
@@ -603,55 +602,6 @@ fi
 $RM -f $TMP $PLATE $EXEC
 echo "Blocking selected: $BLOCK";
 #
-# reliable signals ?
-#
-echo 'Looking for reliable signals...'
-echo "Hmmm...wonder if you have 'action from POSIX..."
-cat > $TMP <<__EOF__
-#include <signal.h>
-
-main()
-{	/* poor replacement for NULL but who cares here ? */
-	sigaction(SIGTERM, (struct sigaction *)0L, (struct sigaction *)0L);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -eq 0 ] ; then
-	echo "Ooooh, you are a lucky one! 'action from POSIX!"
-	SIGNAL=posix
-else
-	$RM -f $EXEC $TMP
-	cat > $TMP <<__EOF__
-#include <signal.h>
-int	calls = 0;
-void	handler()
-{
-	if (calls)
-		return;
-	calls++;
-	kill(getpid(), SIGTERM);
-	sleep(1);
-}
-main()
-{
-	signal(SIGTERM, handler);
-	kill(getpid(), SIGTERM);
-	exit (0);
-}
-__EOF__
-	echo $n "Nope, but you have...$c"
-	$COMP >/dev/null 2>&1
-	$EXEC
-	if [ $? -eq 0 ] ; then
-		echo 'reliable signals! Cheers BSD!'
-		SIGNAL=bsd
-	else
-		echo "yucky, unreliable SYSV!"
-		SIGNAL=sysv
-	fi
-fi
-$RM -f $EXEC $TMP
-#
 echo 'Now those strings libraries...hmm...which one is it...'
 cat > $TMP <<__EOF__
 #$STRINGH STRINGH
@@ -951,25 +901,7 @@ elif [ -z "$cc" ] ; then
 	cc=$BLOCK
 fi
 BLOCK=$cc
-echo "I found $SIGNAL signals."
-if [ "$cc" = "none" ] ; then
-	cc=''
-elif [ "$SIGNAL" = "posix" ] ; then
-	echo "Hmmm...I'm not sure if signal() is reliable or not either..."
-fi
-echo "You can choose between posix, bsd and sysv.  What'll it be ?"
-echo $n "[$SIGNAL] -> $c"
-if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-    read cc
-else
-    cc=""
-fi
-if [ "$cc" = "none" ] ; then
-	cc=''
-elif [ -z "$cc" ] ; then
-	cc=$SIGNAL
-fi
-SIGNAL=$cc
+
 if [ "$TIMES" = "none" ] ; then
 	echo "I didn't find either getrusage or times earlier...If you do have"
 	echo "either of these, please tell me now."
@@ -1033,13 +965,6 @@ elif [ "$BLOCK" = "O_NDELAY" ] ; then
 	echo "#define	NBLOCK_BSD" >> $SETUP
 else
 	echo "#define	NBLOCK_SYSV" >> $SETUP
-fi
-if [ "$SIGNAL" = "posix" ] ; then
-	echo "#define	POSIX_SIGNALS" >> $SETUP
-elif [ "$SIGNAL" = "bsd" ] ; then
-	echo "#define	BSD_RELIABLE_SIGNALS" >> $SETUP
-else
-	echo "#define	SYSV_UNRELIABLE_SIGNALS" >> $SETUP
 fi
 if [ "$TIMES" = "times" ] ; then
 	echo "#define	TIMES_2" >> $SETUP

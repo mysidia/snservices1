@@ -1889,7 +1889,7 @@ struct	HostEnt	*hp;
 
 	set_non_blocking(cptr->fd, cptr);
 	set_sock_opts(cptr->fd, cptr);
-	(void)signal(SIGALRM, dummy);
+	(void)signal(SIGALRM, dummy_sig);
 	(void)alarm(4);
 	if (connect(cptr->fd, svp, len) < 0 && errno != EINPROGRESS)
 	    {

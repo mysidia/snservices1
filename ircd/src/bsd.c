@@ -37,35 +37,23 @@ IRCD_RCSID("$Id$");
 #ifdef DEBUGMODE
 int	writecalls = 0, writeb[10] = {0,0,0,0,0,0,0,0,0,0};
 #endif
-VOIDSIG dummy()
+
+void
+dummy_sig(int sig)
 {
-#ifndef HAVE_RELIABLE_SIGNALS
-	(void)signal(SIGALRM, dummy);
-	(void)signal(SIGPIPE, dummy);
-#ifndef HPUX	/* Only 9k/800 series require this, but don't know how to.. */
-# ifdef SIGWINCH
-	(void)signal(SIGWINCH, dummy);
-# endif
-#endif
-#else
-# ifdef POSIX_SIGNALS
 	struct  sigaction       act;
 
-	act.sa_handler = dummy;
+	act.sa_handler = dummy_sig;
 	act.sa_flags = 0;
 	(void)sigemptyset(&act.sa_mask);
 	(void)sigaddset(&act.sa_mask, SIGALRM);
 	(void)sigaddset(&act.sa_mask, SIGPIPE);
 #  ifdef SIGWINCH
 	(void)sigaddset(&act.sa_mask, SIGWINCH);
+	(void)sigaction(SIGWINCH, &act, NULL);
 #  endif
-	(void)sigaction(SIGALRM, &act, (struct sigaction *)NULL);
-	(void)sigaction(SIGPIPE, &act, (struct sigaction *)NULL);
-#  ifdef SIGWINCH
-	(void)sigaction(SIGWINCH, &act, (struct sigaction *)NULL);
-#  endif
-# endif
-#endif
+	(void)sigaction(SIGALRM, &act, NULL);
+	(void)sigaction(SIGPIPE, &act, NULL);
 }
 
 
