@@ -662,9 +662,7 @@ NospoofText(aClient* acptr)
                      " type /notice %X nospoof now.",
 		     auth_name, acptr->nospoof);
 	  sendto_one(acptr, "NOTICE %s :*** If you still have trouble"
-		     " connecting, please email " NS_ADDRESS " with the"
-		     " name and version of the client you are using,"
-		     " and the server you tried to connect to: (%s)",
+		     " connecting, then please see: " NS_URL ",
 		     auth_name, me.name);
          sendto_one(acptr, "PING :%X", acptr->nospoof);
 #endif	 
