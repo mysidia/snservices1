@@ -157,7 +157,8 @@ GCMD(gs_ww)
 	int flood_multiplier = 1, flood_modifier, botches = 0;
 	int i = 0, roll_value, die_size = 10, successes = 0;
 	ChanList* chan;
-	
+	cNickList* chanUser;
+
 	if (numargs < 2) {
 		sSend(":%s NOTICE %s :Not enough parameters.",
 				GameServ, from);
@@ -175,15 +176,22 @@ GCMD(gs_ww)
 			return RET_NOTARGET;
 		}
 
-		if (!getChanUserData(chan, nick)) {
+		if ((chanUser = getChanUserData(chan, nick)) == NULL) {
 			sSend(":%s NOTICE %s :%s: You are not on that channel.",
 					GameServ, from, chan_name);
 			return RET_NOTARGET;
 		}
 
-		if (getChanOp(chan->reg, nick->nick) < 4 && !isRoot(nick)) {
-			sSend(":%s NOTICE %s :%s: You must be a channel operator to do this.",
-				 GameServ, from, chan_name);
+		if (!(chan->reg->flags & CGAMESERV)
+			&& (getChanOp(chan->reg, nick->nick) < 4) && !isRoot(nick)) 
+		{
+			sSend(":%s NOTICE %s :%s: You must be a channel %s to do this.",
+				 GameServ, from, opLevelName(4, 0), chan_name);
+			return RET_EFAULT;
+		}
+		else if (!chanUser->op) {
+			sSend(":%s NOTICE %s :%s: You must be a +v or +o on the channel to do this.",
+				GameServ, from, chan_name);
 			return RET_EFAULT;
 		}
 	}
@@ -290,6 +298,7 @@ GCMD(gs_roll)
 	int result = 0;
 	char dicebuf[IRCBUF], rollbuf[IRCBUF];
 	ChanList *chan;
+	cNickList *chanUser;
 
 	if (numargs < 2) {
 		sSend(":%s NOTICE %s :Not enough parameters.\r\n"
@@ -305,15 +314,20 @@ GCMD(gs_roll)
 				  GameServ, from, args[1]);
 			return RET_NOTARGET;
 		}
-		if (!getChanUserData(chan, nick)) {
+		if ((chanUser = getChanUserData(chan, nick)) == NULL) {
 			sSend(":%s NOTICE %s :%s: You are not on that channel.",
 				  GameServ, from, args[1]);
 			return RET_EFAULT;
 		}
-		if (getChanOp(chan->reg, nick->nick) < 4 && !isRoot(nick)) {
-			sSend
-				(":%s NOTICE %s :%s: You must be a channel operator to do this.",
-				 GameServ, from, args[1]);
+		if (!(chan->reg->flags & CGAMESERV) 
+		    && getChanOp(chan->reg, nick->nick) < 4 && !isRoot(nick)) {
+			sSend(":%s NOTICE %s :%s: You must be a channel %s to do this.",
+				GameServ, from, opLevelName(4, 0), chan->name);		
+			return RET_EFAULT;
+		}
+		else if (!chanUser->op) {
+			sSend(":%s NOTICE %s :%s: You must be a +v or +o on the channel to do this.",
+				GameServ, from, chan->name);
 			return RET_EFAULT;
 		}
 		to = args[1];

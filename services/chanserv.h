@@ -91,6 +91,7 @@
 #define CFORCEXFER	0x00001000	///< Password is not authoritative
 					///< at the moment for drop command.
 #define CENCRYPT	0x00002000	///< Channel password encrypted
+#define CGAMESERV	0x00004000	///< Enable GameServ
 
 /************************************************************************/
 
@@ -164,5 +165,6 @@ void makeModeLockStr(RegChanList *, char *);
 char *initModeStr(char *chan);
 void banKick(ChanList *, UserList *, char *, ...);
 void rshift_argv(char **args, int x, int numargs);
+const char *opLevelName(int level, int x_case);
 
 #endif /* __CHANSERV_H */
