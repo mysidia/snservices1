@@ -43,27 +43,32 @@
 
 #define IPCBUFSIZE 1024
 
-#define PRIV_QUERY_NICK_ISREG	0x000001
-#define PRIV_QUERY_CHAN_ISREG	0x000002
-#define PRIV_QUERY_AKILL_LIST	0x000004
-#define PRIV_QUERY_NICK_PUBLIC	0x000008
-#define PRIV_QUERY_NICK_PRIVATE	0x000010
-#define PRIV_QUERY_NICK_UNMASK  0x000020
-#define PRIV_MAKE_NICK		0x000020
-#define PRIV_SET_BYPASS		0x000040
-#define PRIV_UNSET_BYPASS	0x000080
-#define PRIV_ALTER_RNICK_GEN	0x000100
-#define PRIV_ALTER_RNICK_2	0x000200
-#define PRIV_UNDEF		0x000400
-#define PRIV_ALTER_RNICK_3	0x000800
-#define PRIV_NOWNER_EQUIV	0x001000
-#define PRIV_COWNER_EQUIV	0x002000
-#define PRIV_RNICK_LOGIN	0x040000
-#define PRIV_RCHAN_LOGIN	0x080000
-#define PRIV_LOGW		0x100000
+#define PRIV_QUERY_NICK_ISREG	0x00000001
+#define PRIV_QUERY_CHAN_ISREG	0x00000002
+#define PRIV_QUERY_AKILL_LIST	0x00000004
+#define PRIV_QUERY_NICK_PUBLIC	0x00000008
+#define PRIV_QUERY_NICK_PRIVATE	0x00000010
+#define PRIV_QUERY_NICK_UNMASK  0x00000020
+#define PRIV_MAKE_NICK		0x00000020
+#define PRIV_SET_BYPASS		0x00000040
+#define PRIV_UNSET_BYPASS	0x00000080
+#define PRIV_ALTER_RNICK_GEN	0x00000100
+#define PRIV_ALTER_RNICK_2	0x00000200
+#define PRIV_UNDEF		0x00000400
+#define PRIV_ALTER_RNICK_3	0x00000800
+#define PRIV_NOWNER_EQUIV	0x00001000
+#define PRIV_COWNER_EQUIV	0x00002000
+#define PRIV_RNICK_LOGIN	0x00040000
+#define PRIV_RCHAN_LOGIN	0x00080000
+#define PRIV_LOGW		0x00100000
+#define PRIV_QUERY_CHAN_PUBLIC  0x01000000
+#define PRIV_QUERY_CHAN_PRIVATE 0x02000000
+#define PRIV_ALTER_RCHAN_GEN	0x04000000
+#define PRIV_ALTER_RCHAN_2	0x08000000
+#define PRIV_ALTER_RCHAN_3	0x10000000
 
-#define OPRIV_OWNER		0x000001
-#define OPRIV_SETPASS		0x000002	
+#define OPRIV_OWNER		0x00000001
+#define OPRIV_SETPASS		0x00000002	
 
 class IpcQ;
 
@@ -279,6 +284,7 @@ class IpcType
 		void querySysMessage(IpcConnectType *, parse_t *);
 		void queryObjMessage(IpcConnectType *, parse_t *);
 		int queryRegNickMessage(RegNickList *, const char *, IpcConnectType *, parse_t *);
+		int queryRegChanMessage(RegChanList *, const char *, IpcConnectType *, parse_t *);
 		void makeMessage(IpcConnectType *, parse_t *);
 		void alterMessage(IpcConnectType *, parse_t *);
 		void logMessage(IpcConnectType *, parse_t *);
