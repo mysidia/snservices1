@@ -1382,16 +1382,6 @@ read_message(time_t delay)
 		}
 	}
 
-       if (me.socks && me.socks->fd >= 0 && FD_ISSET(me.socks->fd, &read_set))
-       {
-               int tmpsock;
-
-               tmpsock = accept(me.socks->fd, NULL, NULL);
-               if(tmpsock >= 0)
-                       closesocket(tmpsock);
-               FD_CLR(me.socks->fd, &read_set);
-       }
-
 	if (udpfd >= 0 && FD_ISSET(udpfd, &read_set))
 	    {
 			polludp();

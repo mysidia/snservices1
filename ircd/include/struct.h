@@ -55,7 +55,6 @@
 typedef	union	Address	anAddress;
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
-typedef	struct	Socks	aSocks;
 typedef	struct	Channel	aChannel;
 typedef	struct	User	anUser;
 typedef	struct	Server	aServer;
@@ -77,14 +76,10 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 /*#define NETWORK                 "SorceryNet"*/
 /*#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"*/
-#define SOCKS_TIMEOUT	30	/* number of seconds to wait before giving
-				   up on a socks request */
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
-
-#define SOCKSPORT		1080
 
 #undef	KEEP_HURTBY            /* remember who hurt a user */
 #undef NICKLEN_CHANGE          /* used for a network nickname length change
@@ -265,22 +260,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 #define FLAGSET_FLOOD   (U_FLOOD)  /* what clients should flood notices be sent to ? */
 #define FLAGSET_CLIENT	(U_CLIENT) /* what clients should client notices be sent to ? */
-#define FLAGSET_SOCKS	(U_OPER)   /* what clients should socks warnings be sent to ?  */
-
-/* socks flags */
-#define	SOCK_WANTCON		BIT01	/* nonblocking connection in progress */
-#define SOCK_CONNECTED		BIT02	/* we can now write to the socket */
-#define SOCK_CANREAD		BIT03	/* we can now read from the socket */
-#define SOCK_GO			BIT04	/* socks check done, for better or for worse */
-#define SOCK_FOUND		BIT05	/* found a socks server;/ */
-#define SOCK_DESTROY		BIT06	/* destroy the ->socks structure and free() it very soon */
-#define SOCK_DONE		SOCK_GO
-#define SOCK_ERROR		BIT07	/* got an error message */
-#define SOCK_SENT		BIT08	/* sent data already */
-#define SOCK_REFUSED		BIT09	/* request refused (good) */
-#define SOCK_NEW		BIT10	/* New */
-#define SOCK_CACHED		BIT11	/* cached */
-#define SOCK_W			BIT12	/* Has appeared in W fd set */
 
 typedef	enum {
 	LOG_OPER, 	LOG_USER,        LOG_NET,
@@ -679,19 +658,10 @@ struct	Server	{
 #endif
 };
 
-struct Socks {
-	int fd;
-	int status;
-	time_t start;
-	anAddress addr;
-	struct Socks *next;
-};
-
 struct Client	{
 	struct	Client *next, *prev, *hnext;
 	anUser	*user;		/* ...defined, if this is a User */
 	aServer	*serv;		/* ...defined, if this is a server */
-	aSocks  *socks;		/* socks check data */
 	int	hashv;		/* raw hash value */
 	time_t  hurt;           /* hurt til... */
 	time_t	lasttime;	/* ...should be only LOCAL clients? --msa */

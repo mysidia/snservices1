@@ -854,36 +854,6 @@ sendto_flag(int flags, char *fmt, ...)
 	va_end(ap);
 }
 
-/*
- * Send message to specified socks struct clients
- */
-void
-sendto_socks(aSocks *socks, char *fmt, ...)
-{
-	va_list	ap;
-	va_list	ap2;
-	aClient *cptr;
-	int	i;
-	char	nbuf[1024];
-
-	va_start(ap, fmt);
-
-	for (i = 0; i <= highest_fd; i++)
-		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
-		    (cptr->socks == socks)) {
-			(void)sprintf(nbuf, ":%s NOTICE AUTH :",
-				      me.name);
-			(void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-			vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-
 void
 sendto_umode(int flags, char *fmt, ...)
 {

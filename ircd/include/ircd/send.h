@@ -70,8 +70,6 @@ void sendto_umode_norep(int flags, int max, char *fmt, ...);
 
 void sendto_flag(int flags, char *fmt, ...);
 
-void sendto_socks(aSocks *socks, char *fmt, ...);
-
 void sendto_umode(int flags, char *fmt, ...);
 
 void sendto_failops_whoare_opers(char *fmt, ...);

@@ -173,8 +173,6 @@ aConfItem *make_conf(void);
 aClass	*make_class(void);
 aServer	*make_server(aClient *);
 aClient	*make_client(aClient *);
-int	free_socks(struct Socks *zap);
-aSocks	*make_socks(aClient *to);
 Link	*find_user_link(Link *, aClient *);
 int	IsMember(aClient *, aChannel *);
 char	*pretty_mask(char *, int);
@@ -219,9 +217,6 @@ void	off_history(aClient *);
 
 int	dopacket(aClient *, char *, int);
 void dumpcore(char *msg, ...);
-
-void send_socksquery (aSocks *);
-void read_socks (aSocks *);
 
 const char* safe_info(int hideIp, aClient* acptr);
 

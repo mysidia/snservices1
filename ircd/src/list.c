@@ -98,7 +98,6 @@ aClient	*make_client(aClient *from)
 	cptr->serv = NULL;
 	cptr->status = STAT_UNKNOWN;
 	cptr->fd = -1;
-	cptr->socks = (void *)0;
 	(void)strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
@@ -110,21 +109,6 @@ aClient	*make_client(aClient *from)
 		cptr->buffer[0] = '\0';
 	    }
 	return (cptr);
-}
-
-int	free_socks(struct Socks *zap)
-{
-	if (zap == NULL)
-		return (-1);
-
-	if (zap->fd >= 0)
-		closesocket(zap->fd);
-	zap->fd = -1;
-
-	irc_free(zap);
-
-	Debug((DEBUG_ERROR, "freeing socks"));
-	return (0);
 }
 
 void	free_client(aClient *cptr)
