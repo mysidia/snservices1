@@ -653,7 +653,6 @@ HEADER	*hptr;
 			    }
 			ans++;
 			adr++;
-			cp += dlen;
  			break;
 #endif
 		case T_PTR :
@@ -663,7 +662,6 @@ HEADER	*hptr;
 				cp = NULL;
 				break;
 			    }
-			cp += n;
 			len = strlen(hostbuf);
 			Debug((DEBUG_INFO,"got host %s",hostbuf));
 			/*
@@ -687,7 +685,6 @@ HEADER	*hptr;
 			ans++;
 			break;
 		case T_CNAME :
-			cp += dlen;
 			Debug((DEBUG_INFO,"got cname %s", hostbuf));
 			if (alias >= &(hp->h_aliases[MAXALIASES-1]))
 				break;
@@ -703,6 +700,8 @@ HEADER	*hptr;
 #endif
 			break;
 		}
+		if (cp)
+			cp += dlen;
 	}
 	return ans;
 }

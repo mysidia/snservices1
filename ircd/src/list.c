@@ -205,6 +205,11 @@ void dup_sup_version(anUser* user, const char* buf)
 {
 	long k;
 	struct StringHashElement *e, *tmp;
+
+	if (user == NULL) 
+	{
+	    return;
+	}
 	
 	if (BadPtr(buf)) {
 		user->sup_version = NULL;

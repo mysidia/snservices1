@@ -263,6 +263,12 @@ typedef	enum {
 	LOG_HI
 } loglevel_value_t;
 
+enum forbidden_result { 
+	NICK_IS_ALLOWED, 
+	NICK_FORBIDDEN
+};
+
+
 #define SET_BIT(x, y)		((x) |= (y))
 #define REMOVE_BIT(x, y)	((x) &= ~(y))
 #define IS_SET(x, y)		((x) & (y))

@@ -352,7 +352,8 @@ canonize(char *buffer)
 **	   nick from local user or kill him/her...
 */
 
-static int register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
+static int
+register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 {
   aConfItem *aconf;
   char *parv[3], *tmpstr;
@@ -677,6 +678,81 @@ static int UserOppedOn(aClient *sptr, char *chan)
     return (lp->flags & CHFL_CHANOP);
 }
 
+/**
+ * is_nick_forbidden 
+ *   answers:  NICK_FORBIDDEN or  NICK_IS_ALLOWED
+ *             implements additional checks on nickname beyond
+ *             the character set.
+ *             
+ * param nick: sz, nickname to check
+ * param reason: pointer to character array, will be pointed to storage
+ *               containing constant reason text.
+ */
+static enum forbidden_result is_nick_forbidden(char const* nick, char const** reason)
+{
+	int i;
+
+	if (BadPtr(nick)) 
+	{
+		*reason = "That nickname is blank.";
+		return NICK_FORBIDDEN;
+	}
+
+	if (myncmp(nick, "Auth-", 5) == 0) 
+	{
+		*reason = "This nickname is reserved for internal use.";
+	    	return NICK_FORBIDDEN;
+	}
+
+	for(i = 0; service_nick[i] != NULL; i++) {
+		if (mycmp(nick, service_nick[i]) == 0) {
+			*reason = "Sorry, this nickname is reserved for services.";
+			return NICK_FORBIDDEN;
+		}
+	}
+
+	return NICK_IS_ALLOWED;
+}
+
+/**
+ * check_forbidden_nickname
+ *      checks if a client sptr (linked from sptr) is prevented from
+ *      using the nickname 'nick' by a nickname forbid.
+ *
+ * answers:  NICK_IS_ALLOWED
+ *      if they are allowed to use it.
+ *
+ * answers: NICK_FORBIDDEN
+ *      if 'sptr' is a local user client, and the nick is forbidden
+ *
+ *      sends an error message for the nick change before returning
+ *      this result code.
+ *
+ *   nick: sz, the nickname that 'sptr' tries to use
+ *   cptr: connection pointer
+ *   sptr: sender pointer
+ */
+static enum forbidden_result check_forbidden_nickname(char const* nick, 
+   const aClient* cptr, aClient* sptr)
+{
+	char const* sendnick = (sptr == NULL || BadPtr(sptr->name)) ? "*" :
+			      sptr->name;
+	char const *reason_text = 0;
+
+	if (!BadPtr(nick) && MyClient(sptr)) 
+	{
+		if (is_nick_forbidden(nick, &reason_text) == NICK_IS_ALLOWED)
+			return NICK_IS_ALLOWED;
+
+		sendto_one(sptr, err_str(ERR_ERRONEUSNICKNAME), me.name,
+				sendnick, nick, reason_text ? reason_text : "*");
+		
+		return NICK_FORBIDDEN;
+	}
+
+	return NICK_IS_ALLOWED;
+}
+
 /*
 ** m_nick
 **	parv[0] = sender prefix
@@ -789,6 +865,12 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0; /* NICK message ignored */
 		    }
 	}
+
+
+        if (check_forbidden_nickname(nick, cptr, sptr) == NICK_FORBIDDEN) {
+	    return 0;
+	}
+	   
 
 	/*
 	** Check for a Q-lined nickname. If we find it, and it's our
@@ -1553,14 +1635,18 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 **	parv[2] = notice text
 */
 
-int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
+int
+m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 #if defined(NOSPOOF)
-	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0])
-	   && cptr->nospoof && (parc > 1) && !myncmp(parv[1], "Auth-", 5))
+	if ((!IsRegistered(cptr) || MyClient(sptr))
+	    && (cptr->name[0])
+	    && cptr->nospoof
+	    && (parc > 1)
+	    && (myncmp(parv[1], "Auth-", 5) == 0))
 	{
 		char version_buf[BUFSIZE];
-		int l;
+		int version_length;
 		
 		if (parc < 3 || BadPtr(parv[1]) || BadPtr(parv[2]))
 			return 0;
@@ -1583,15 +1669,24 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		}
 #endif
 
-		l = strlen(parv[2]) - 9;
+		version_length = strlen(parv[2]) - 9;
 
-		if ( l > 0 ) {
-			strncpyzt(version_buf, parv[2]+9, l);
-			if (version_buf[l - 1] == '\1')
-				version_buf[l - 1] = '\0';
-			dup_sup_version(sptr->user, version_buf);
+		if ((version_length > 0) && (version_length < BUFSIZE)) 
+		{
+			strncpyzt(version_buf, parv[2]+9, version_length);
+
+			if (version_buf[version_length - 1] == '\1')
+			{
+				version_buf[version_length - 1] = '\0';
+			}
+
+			if (sptr->user != NULL && 
+				sptr->user->sup_version == NULL)
+			{
+				dup_sup_version(sptr->user, version_buf);
+			}
+			Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
 		}
-		Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
 		return 0;
 	}
 
