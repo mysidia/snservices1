@@ -117,10 +117,10 @@ extern char *strtoken PROTO((char **, char *, char *));
 
 #ifdef USE_CASETABLES
 extern int casetable;
-extern u_char *tolowertab, tolowertab1[], tolowertab2[];
-extern u_char *touppertab, touppertab1[], touppertab2[];
+extern unsigned char *tolowertab, tolowertab1[], tolowertab2[];
+extern unsigned char *touppertab, touppertab1[], touppertab2[];
 #else
-extern u_char tolowertab[], touppertab[];
+extern unsigned char tolowertab[], touppertab[];
 #endif
 
 #undef tolower
