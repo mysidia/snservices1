@@ -621,7 +621,7 @@ void changeNick(char *from, char *to, char *ts)
 	changeme->oflags &= ~NOISREG;
 	
 	if (changeme == NULL) {
-		nDesynch(from, "NICK");
+		nDesynch(to, "NICK");
 		return;
 	}
 
@@ -4249,60 +4249,40 @@ NCMD(ns_ghost)
 
 	/* From now on, access is assumed */
 
-	if (getGhost(args[1])) {
+	if (getGhost(args[1]))
+	{
 		sSend(":%s NOTICE %s :%s has been ghosted", NickServ,
-			  nick->nick, args[1]);
-		if (isGhost(args[1])) {
-			delGhost(args[1]);
-		}
+			nick->nick, args[1]);
+		delGhost(args[1]);
 		return RET_OK;
 	}
 
-
-	tmp = getRegNickData(args[1]);
 	taruser = getNickData(args[1]);
 
-	if (tmp != NULL)
+	if (taruser == NULL)
 	{
-		taruser = getNickData(args[1]);
+		sSend(":%s NOTICE %s :%s is not online.", NickServ,
+			nick->nick, args[1]);
+		return RET_NOTARGET;
+	}
 
-		if (!taruser && (getGhost(args[1]) == NULL)) {
-			sSend(":%s NOTICE %s :%s is not online.", NickServ,
-				  nick->nick, args[1]);
-		}
-
-		if (!taruser)
-			sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s)", NickServ,
-				  args[1], services[1].host, NickServ, nick->nick, nick->user, nick->host);
-		else {
-			if (strcmp(nick->host, taruser->host))
-				sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s))",
-					  NickServ, args[1], services[1].host, NickServ,
-					  nick->nick, nick->user,
-					  (nick->oflags & NOISMASK) ?
-					   genHostMask(nick->host) : nick->host);
-				else
-					sSend(":%s KILL %s :%s!%s (Ghosted. By: %s)", NickServ,
-						  args[1], services[1].host, NickServ, nick->nick);
-
-			}
-
-			sSend(":%s NOTICE %s :Removing ghost, '%s'", NickServ,
-				  nick->nick, args[1]);
-			remUser(args[1], 1);
-			if (isGhost(args[1])) {
-				delGhost(args[1]);
-			}
-			return RET_OK;
-		} else if ((tmp == NULL)) {
-			sSend(":%s NOTICE %s :%s is not registered.", NickServ,
-				  nick->nick, args[1]);
-			return RET_EFAULT;
-		} else {
-			PutReply(NickServ, nick, ERR_NOACCESS, 0, 0, 0);
-			return RET_NOPERM;
-		}
-	return RET_FAIL;
+	if (strcmp(nick->host, taruser->host))
+	{
+		sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s))",
+			NickServ, args[1], services[1].host, NickServ,
+			nick->nick, nick->user,
+			(nick->oflags & NOISMASK) ?
+			genHostMask(nick->host) : nick->host);
+	}
+	else
+	{
+		sSend(":%s KILL %s :%s!%s (Ghosted. By: %s)", NickServ,
+			  args[1], services[1].host, NickServ, nick->nick);
+	}
+	sSend(":%s NOTICE %s :Removing ghost, '%s'", NickServ,
+		nick->nick, args[1]);
+	remUser(args[1], 1);
+	return RET_OK;
 }
 
 
