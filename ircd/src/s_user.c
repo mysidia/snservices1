@@ -2342,12 +2342,14 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 			continue;
 
 		if (extended == 0) {
-			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%s,%d] [h:%s] [s:%s]",
+			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%d,%d,%d] [h:%s] [s:%s]",
 					me.name, sptr->name, i,
 					BadPtr(ptr->name) ? "-" : ptr->name,
 					BadPtr(ptr->username) ? "-" : ptr->username,
 					ptr->sockhost,
 					IsNotSpoof(ptr) ? "" : "Spoof?",
+					ClientFlags(ptr),
+					ClientUmode(ptr),
 					ptr->status,
 					ptr->sup_host,
 					ptr->sup_server
