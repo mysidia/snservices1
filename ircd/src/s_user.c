@@ -1648,6 +1648,7 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (IsRegisteredUser(cptr) && IsHurt(cptr) 
 		    && cptr->hurt == 4) {
 			sendto_serv_butone(sptr, ":%s HURTSET %s 0", me.name, sptr->name);
+			remove_hurt(cptr);
 		}
 #endif
 
