@@ -135,6 +135,9 @@ sSend(char *format, ...)
 			if (errno == EPIPE || errno == EBADF || errno == EINVAL ||
 	                    errno == EFAULT) {
 	                    logDump(corelog, "Terminating on write error, errno=%d", errno);
+
+			    close(server);
+			    server = -1;
 	                    sshutdown(0);
 	                }
 		}
