@@ -35,8 +35,6 @@ LINUX_GLIBC_RRES=undef
 NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
-GETTIMEOFDAY=undef
-LRAND48=undef
 STRTOUL=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
@@ -484,36 +482,7 @@ else
 	echo "and it wasn't.  No bcopy/bzero/bcmp...hmpf"
 	BZERO=memset
 fi
-echo " "
-echo $n "Which one, gettimeofday, or lrand48..$c"
-cat > $TMP <<__EOF__
-#include <stdio.h>
-#include <sys/time.h>
-main()
- {
-   struct timeval tv;
-   (void) gettimeofday(&tv, NULL);
- }
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -eq 0 ] ; then
-	echo "We have a winner! gettimeofday found."
-	GETTIMEOFDAY=define
-else
-	echo "No gettimeofday. Lets try lrand48."
-cat > $TMP <<__EOF__
-main()
-{
-   int a;
-   a=lrand48();
-}
-__EOF__
-	$COMP >/dev/null 2>&1
-	if [ $? -eq 0 ] ; then
- 		echo "Bingo! lrand48!"
-		LRAND48=define
-	fi
-fi
+
 #
 # check for non-blocking fd style available..
 #
@@ -868,8 +837,6 @@ cat > $SETUP  <<__EOF__
 #$NINETADDR	NEED_INET_ADDR
 #$NINETNTOA	NEED_INET_NTOA
 #$NINETNETOF	NEED_INET_NETOF
-#$GETTIMEOFDAY	GETTIMEOFDAY
-#$LRAND48	LRAND48
 __EOF__
 if [ "$MALLOCH" = "undef" ] ; then
 	echo "#undef	MALLOCH" >> $SETUP
