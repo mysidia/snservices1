@@ -86,31 +86,37 @@ void	det_confs_butmask(aClient *cptr, int mask)
  * 1 = temp
  * 2 = akill
  */
-void	add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp)
+aConfItem *
+add_temp_conf(unsigned int status, char *host, char *passwd, char *name,
+	      int port, int class, int temp)
 {
 	aConfItem *aconf;
+	aConfItem *new_conf = NULL;
 
 	aconf = make_conf();
 
 	aconf->tmpconf = temp;
 	aconf->status = status;
 	if (host)
-	  DupString(aconf->host, host);
+		DupString(aconf->host, host);
 	if (passwd)
-	  DupString(aconf->passwd, passwd);
+		DupString(aconf->passwd, passwd);
 	if (name)
-	  DupString(aconf->name, name);
+		DupString(aconf->name, name);
 	aconf->port = port;
 	if (class)
 		Class(aconf) = find_class(class);
 	if (!find_temp_conf_entry(aconf, status)) {
 		aconf->next = conf;
 		conf = aconf;
+		new_conf = aconf;
 		aconf = NULL;
 	}
 
 	if (aconf)
-	  free_conf(aconf);
+		free_conf(aconf);
+
+	return (new_conf);
 }
 
 /*
@@ -137,6 +143,7 @@ int port, class;
 	if(class)
 		Class(aconf) = find_class(class);
         if (status & CONF_AHURT) mask = status &= ~(CONF_ILLEGAL);
+	else if (status & CONF_ZAP) mask = CONF_ZAP;
 	else                     mask = CONF_KILL;
 	if (bconf=find_temp_conf_entry(aconf,mask)) /* only if non-null ptr */
 	{
@@ -769,7 +776,10 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	for (cltmp = NextClass(FirstClass()); cltmp; cltmp = NextClass(cltmp))
 		MaxLinks(cltmp) = -1;
 
+#ifdef ENABLE_SOCKSCHECK
 	flush_socks(time(NULL), 1);
+#endif
+
 	if (sig != 2)
 		flush_cache();
 	(void) initconf(0);
@@ -794,7 +804,7 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 #endif
 
 	/* Added to make sure K-lines are checked -- Barubary */
-	check_pings(NOW, 1);
+	check_pings(NOW, 1, NULL);
 
 	/* Recheck all U-lines -- Barubary */
 	for (i = 0; i < highest_fd; i++)
@@ -840,6 +850,7 @@ int conf_xbits(aConfItem *aconf, char *field)
                        aconf->bits &= ~(bit);
              else if ((add && bitp) || (!add && !bitp))
                        aconf->bits |= (bit);
+             bit = 0;
           }
      }
 return 0;
@@ -1311,8 +1322,10 @@ int 	initconf(int opt)
 		conf = aconf;
 		aconf = NULL;
 	    }
-	if (aconf)
+	if (aconf) {
 		free_conf(aconf);
+		aconf = NULL;
+	}
 	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
 	(void)close(fd);
 #ifdef	M4_PREPROC
@@ -1371,10 +1384,10 @@ badlookup:
 	return -1;
 }
 
-int	find_kill(aClient *cptr)
+int	find_kill(aClient *cptr, aConfItem *conf_target)
 {
 	char	reply[256], *host, *name, u_ip[HOSTLEN + 25], *u_sip;
-	aConfItem *tmp;
+	aConfItem *tmp = NULL;
 
 	if (!cptr->user)
 		return 0;
@@ -1391,21 +1404,35 @@ int	find_kill(aClient *cptr)
 
 	reply[0] = '\0';
 
-	for (tmp = conf; tmp; tmp = tmp->next)
- 		if ((tmp->status == CONF_KILL) && tmp->host && tmp->name &&
-		    (match(tmp->host, u_ip) == 0 || match(tmp->host, host) == 0) &&
- 		    (!name || match(tmp->name, name) == 0) &&
-		    (!tmp->port || (tmp->port == cptr->acpt->port)))
-                       /* can short-circuit evaluation - not taking chances
-                           cos check_time_interval destroys tmp->passwd
-                                                                - Mmmm
-                         */
-                        if (BadPtr(tmp->passwd))
-                                break;
-                        else if (is_comment(tmp->passwd))
-                                break;
-                        else if (check_time_interval(tmp->passwd, reply))
-                                break;
+	if (conf_target != NULL) {
+		if ((conf_target->status == CONF_KILL) && conf_target->host && conf_target->name &&
+		    (match(conf_target->host, u_ip) == 0 || match(conf_target->host, host) == 0) &&
+		    (!name || match(conf_target->name, name) == 0) &&
+		    (!conf_target->port || (conf_target->port == cptr->acpt->port))) {
+			if (BadPtr(conf_target->passwd))
+				tmp = conf_target;
+			else if (is_comment(conf_target->passwd))
+				tmp = conf_target;
+			else if (check_time_interval(conf_target->passwd, reply))
+				tmp = conf_target;
+		}
+	} else {
+		for (tmp = conf; tmp; tmp = tmp->next)
+			if ((tmp->status == CONF_KILL) && tmp->host && tmp->name &&
+			    (match(tmp->host, u_ip) == 0 || match(tmp->host, host) == 0) &&
+			    (!name || match(tmp->name, name) == 0) &&
+			    (!tmp->port || (tmp->port == cptr->acpt->port)))
+				/* can short-circuit evaluation - not taking chances
+				   cos check_time_interval destroys tmp->passwd
+				   - Mmmm
+				*/
+				if (BadPtr(tmp->passwd))
+					break;
+				else if (is_comment(tmp->passwd))
+					break;
+				else if (check_time_interval(tmp->passwd, reply))
+					break;
+	}
 
 
 	if (reply[0])
@@ -1799,7 +1826,7 @@ int     m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 else
                         sendto_serv_butone(cptr, ":%s RAKILL %s %s", 
 				parv[0], parv[1], parv[2]);
-                check_pings(NOW, 1);
+                check_pings(NOW, 0, NULL);
         }
 
 }
@@ -1811,6 +1838,8 @@ int     m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 */
 int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
+	aConfItem *temp_conf = NULL;
+
 	if (check_registered(sptr))
 		return 0;
 
@@ -1828,9 +1857,9 @@ int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 
 #ifndef COMMENT_IS_FILE
-	 		add_temp_conf(CONF_KILL, parv[1], parv[3], parv[2], 0, 0, 2); 
+	 		temp_conf = add_temp_conf(CONF_KILL, parv[1], parv[3], parv[2], 0, 0, 2); 
 #else
-			add_temp_conf(CONF_KILL, parv[1], NULL, parv[2], 0, 0, 2); 
+			temp_conf = add_temp_conf(CONF_KILL, parv[1], NULL, parv[2], 0, 0, 2); 
 #endif
 		}
 		if(parv[3])
@@ -1839,7 +1868,7 @@ int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		else
 			sendto_serv_butone(cptr, ":%s AKILL %s %s", parv[0],
 				     parv[1], parv[2]);
-		check_pings(NOW, 1);
+		check_pings(NOW, 1, temp_conf);
 	}
 
 }
@@ -1924,6 +1953,7 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	char uhost[80], name[80];
 	int ip1, ip2, ip3, temp;
 	aClient *acptr;
+	aConfItem *temp_conf;
 
         *uhost = *name = (char)0;
         if (!MyClient(sptr) || !OPCanKline(sptr))
@@ -2001,7 +2031,6 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 		/* Add some wildcards */
 
-
 		strncpy(uhost, host, sizeof(uhost) - strlen(uhost));
 		uhost[sizeof(uhost)-1] = 0;
 		if (isdigit(host[strlen(host)-1])) {
@@ -2015,8 +2044,8 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 
 	sendto_ops("%s added a temp k:line for %s@%s %s", parv[0], name, uhost, parv[2] ? parv[2] : "");
- 	add_temp_conf(CONF_KILL, uhost, parv[2], name, 0, 0, 1);
-	check_pings(NOW, 1);
+ 	temp_conf = add_temp_conf(CONF_KILL, uhost, parv[2], name, 0, 0, 1);
+	check_pings(NOW, 1, temp_conf);
         return 0;
     }
 	
@@ -2079,7 +2108,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		}
 	}
 	/* This wasn't here before -- Barubary */
-	check_pings(NOW, 1);
+	check_pings(NOW, 0, NULL);
         return 0;
 }
 
@@ -2257,7 +2286,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
                              this should go after the above check */
             sendto_serv_butone(cptr, ":%s ZLINE %s :%s", parv[0], parv[1], reason?reason:"");
 
-        check_pings(time(NULL), 1);
+        check_pings(time(NULL), 1, NULL);
         return 0;
 }
 

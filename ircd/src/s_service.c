@@ -1,7 +1,6 @@
 /*
- *   IRC - Internet Relay Chat, ircd/s_conf.c
+ *   IRCD - Internet Relay Chat Daemon, src/s_service.c
  *   Copyright (C) 1998 Mysidia
- *                      University of Oulu, Computing Center
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -28,8 +27,6 @@
 #include <sys/stat.h>
 #include "h.h"
 
-
-#define SERVICES_NAME	"services.sorcery.net"
 
 /* these are only considered services when the nicks are U-lined. */
 /* this array is an evil hack so pointer comparisons will do... */

@@ -1561,6 +1561,8 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 						}
 						cptr->socks = NULL;
 					}
+
+#ifdef ENABLE_SOCKSCHECK
                                         if (found_socks && (cptr->socks))
 					{
 						void ApplySocksFound(aClient *cptr);
@@ -1587,6 +1589,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 						ApplySocksFound(cptr);
 						continue;
 					}
+#endif
 				}
 			}
 			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
@@ -1630,6 +1633,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 /*&&&*/
                 do 
                 {
+#ifdef ENABLE_SOCKSCHECK			
                    extern aSocks *socks_list;
                    aSocks *sItem;
 
@@ -1650,6 +1654,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                        FD_SET(sItem->fd, &excpt_set);
 #endif
                    }
+#endif		   
                 } while(0);
 
 		if (schecksfd >= 0)
@@ -1747,6 +1752,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                        continue;
            }*/
         do {
+#ifdef ENABLE_SOCKSCHECK		
            extern aSocks *socks_list;
            aSocks *sItem;
 
@@ -1824,6 +1830,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                       sItem->fd = -1;
                   }
            }
+#endif	   
         } while(0);
 //%%%%
 
@@ -1891,8 +1898,11 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 			*/
 			if (IsConnecting(cptr))
 				  write_err = completed_connection(cptr);
-			if (!write_err)
+			if (!write_err) {
+				  if (DoList(cptr) && IsSendable(cptr))
+					send_list(cptr, 32);
 				  (void)send_queued(cptr);
+			}
 			if (IsDead(cptr) || write_err)
 			    {
 deadsocket:
