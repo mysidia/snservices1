@@ -41,7 +41,12 @@ int   m_services(aClient *cptr, aClient *sptr, int parc, char *parv[])
      const char *nickchan;
      aClient *acptr;
 
-     /* /services <command> <nick|chan> <args> */
+ 	if (check_registered_user(sptr))
+	{
+		return 0;
+	}
+
+    /* /services <command> <nick|chan> <args> */
      if ( parc < 3 && (parc<2 || ( strcasecmp(parv[1], "help") && strcasecmp(parv[1], "info") )) )
      {
              sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "SERVICES");
@@ -74,6 +79,12 @@ int   m_identify(aClient *cptr, aClient *sptr, int parc, char *parv[])
      aClient *acptr;
      const char *sService;
      const char *nickchan, *pass;
+
+	if (check_registered_user(sptr))
+	{
+		return 0;
+	}
+
      /* : /identify <nick|chan> <pass> */
      if ( parc < 2 )
      {
