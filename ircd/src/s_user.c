@@ -2033,7 +2033,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   me.name, parv[0], name, buf);
 
 			sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
-				   me.name, parv[0], name, user->server,
+				   me.name, parv[0], name, a2cptr->name,
 				   a2cptr->info);
 
 			if(IsRegNick(acptr) || IsVerNick(acptr))
