@@ -1,7 +1,8 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/s_misc.c (formerly ircd/date.c)
- *   Copyright (C) 1990 Jarkko Oikarinen and
+ *   Copyright C 1990 Jarkko Oikarinen and
  *                      University of Oulu, Computing Center
+ *   Copyright C 1999-2002 James Hess -- All Rights Reserved
  *
  *   See file AUTHORS in IRC package for additional names of
  *   the programmers.
@@ -21,7 +22,14 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef lint
+static  char sccsid[] = "@(#)s_misc.c	2.42 3/1/94 (C) 1988 University of Oulu, \
+Computing Center and Jarkko Oikarinen";
+#endif
+
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
@@ -30,31 +38,39 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include <sys/param.h>
+#if !defined(ULTRIX) && !defined(SGI) && !defined(sequent) && \
+    !defined(__convex__) && !defined(_WIN32)
+# include <sys/param.h>
+#endif
+#if defined(PCS) || defined(AIX) || defined(SVR3)
+# include <time.h>
+#endif
+#ifdef OS_HPUX
+#include <unistd.h>
+#endif
+#ifdef DYNIXPTX
+#include <sys/types.h>
+#include <time.h>
+#endif
+#ifdef _WIN32
+# include <io.h>
+#endif
 #include "h.h"
-#include "msg.h"
 
 #ifdef SYSLOGH
 #include <syslog.h>
 #endif
-
-#include "ircd/send.h"
-#include "ircd/string.h"
-
-IRCD_SCCSID("@(#)s_misc.c	2.42 3/1/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
-IRCD_RCSID("$Id$");
-
 #undef LOG_USER
 
-static void exit_one_client(aClient *,aClient *,aClient *,char *);
+static	void	exit_one_client PROTO((aClient *,aClient *,aClient *,char *));
 
-static char *months[] = {
+static	char	*months[] = {
 	"January",	"February",	"March",	"April",
 	"May",	        "June",	        "July",	        "August",
 	"September",	"October",	"November",	"December"
 };
 
-static char *weekdays[] = {
+static	char	*weekdays[] = {
 	"Sunday",	"Monday",	"Tuesday",	"Wednesday",
 	"Thursday",	"Friday",	"Saturday"
 };
@@ -64,8 +80,7 @@ static char *weekdays[] = {
  */
 struct	stats	ircst, *ircstp = &ircst;
 
-char *
-date(time_t clock)
+char	*date(time_t clock)
 {
 	static	char	buf[80], plus;
 	struct	tm *lt, *gm;
@@ -300,6 +315,44 @@ char	*my_name_for_link(char *name, aConfItem *aconf)
 	return namebuf;
 }
 
+int remove_dcc_references(aClient *sptr)
+{
+   aClient *acptr;
+   Link *lp, *nextlp;
+   Link **lpp, *tmp;
+   int found;
+
+   lp = sptr->user->dccallow;
+
+   while(lp)
+   {
+      nextlp = lp->next;
+      acptr = lp->value.cptr;
+      for(found = 0, lpp = &(acptr->user->dccallow); *lpp; lpp=&((*lpp)->next))
+      {
+         if(lp->flags == (*lpp)->flags)
+            continue; /* match only opposite types for sanity */
+         if((*lpp)->value.cptr == sptr)
+         {
+            if((*lpp)->flags == DCC_LINK_ME) {
+               sendto_one(acptr, ":%s %d %s :%s has been removed from your DCC allow list for signing off",
+                          me.name, RPL_DCCINFO, acptr->name, sptr->name);
+	    }
+            tmp = *lpp;
+            *lpp = tmp->next;
+            free_link(tmp);
+            found++;
+            break;
+         }
+      }
+
+      free_link(lp);
+      lp = nextlp;
+   }
+   return 0;
+}
+
+
 /*
 ** exit_client
 **	This is old "m_bye". Name  changed, because this is not a
@@ -332,16 +385,23 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
 {
 	aClient	*acptr;
 	aClient	*next;
+	aMachine *mmach;
 #ifdef	FNAME_USERLOG
 	time_t	on_for;
 #endif
 	char	comment1[HOSTLEN + HOSTLEN + 2 + 255];
 
+        if ((mmach = (aMachine *)hash_find_machine(sptr->ip, NULL))) {
+            mmach->online--;
+	    if (mmach->online < 1)
+                add_machine_to_purgelist(mmach);
+	}
+
 	if (MyConnect(sptr))
 	    {
 		ClientFlags(sptr) |= FLAGS_CLOSING;
                 if (IsPerson(sptr))
-                 sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
+                 sendto_umode(U_OPER|U_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
                   sptr->name, sptr->user->username, sptr->user->host, comment);
 		current_load_data.conn_count--;
 		if (IsPerson(sptr)) {
@@ -522,6 +582,7 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 			/* Clean up silencefield */
 			while ((lp = sptr->user->silence))
 				(void)del_silence(sptr, lp->value.cp);
+                        remove_dcc_references(sptr);
 		    }
 	    }
 
@@ -573,7 +634,11 @@ void	tstats(aClient *cptr, char *name)
 
 	sp = &tmp;
 	bcopy((char *)ircstp, (char *)sp, sizeof(*sp));
+#ifndef _WIN32
 	for (i = 0; i < MAXCONNECTIONS; i++)
+#else
+	for (i = 0; i < highest_fd; i++)
+#endif
 	    {
 		if (!(acptr = local[i]))
 			continue;
@@ -643,6 +708,12 @@ void	tstats(aClient *cptr, char *name)
 		   sp->is_ckr, sp->is_cbr, sp->is_skr, sp->is_sbr);
 	sendto_one(cptr, ":%s %d %s :time connected %u %u",
 		   me.name, RPL_STATSDEBUG, name, sp->is_cti, sp->is_sti);
+#ifdef FLUD
+   sendto_one(cptr, ":%s %d %s :CTCP Floods Blocked %u",
+              me.name, RPL_STATSDEBUG, name, sp->is_flud);
+#endif /*
+        * FLUD
+        */
 }
 
 
@@ -654,11 +725,11 @@ int set_hurt(aClient *acptr, const char *from, int ht)
 #ifdef  KEEP_HURTBY
   if (acptr->user && acptr->user->hurtby)
     {
-      irc_ree(acptr->user->hurtby);
+      MyFree(acptr->user->hurtby);
       acptr->user->hurtby = NULL;
     }
   if (acptr->user)
-    acptr->user->hurtby = irc_strdup(from);
+    DupString(acptr->user->hurtby, from);
 #endif
 
   SetHurt(acptr);
@@ -676,7 +747,7 @@ int remove_hurt(aClient *acptr)
 
 #ifdef  KEEP_HURTBY
        if (acptr->user && acptr->user->hurtby) {
-	       irc_free(acptr->user->hurtby);
+	       MyFree(acptr->user->hurtby);
 	       acptr->user->hurtby = NULL;
        }
 #endif
@@ -704,23 +775,26 @@ static char *logfile_n[] = {
 #define O_NBVAR
 #endif
 
-void
-open_logs(void)
+int open_logs( )
 {
 #ifdef IRC_LOGGING
-	int i;
-
-	for (i = 0 ; i <= LOG_HI ; i++)
-		slogfiles[i] = -1;
-	for (i = 0 ; i <= LOG_HI ; i++) {
-		if (!logfile_n[i]) {
-			slogfiles[i] = -1;
-			continue;
-		}
-		slogfiles[i] = open(logfile_n[i],
-				    O_WRONLY|O_APPEND|O_NBVAR);    
-	}
+    int i = 0;
+    for ( i = 0 ; i <= LOG_HI; i++) slogfiles[i] = -1;
+    for ( i = 0 ; i <= LOG_HI; i++)
+    {
+         if (!logfile_n[i])
+         {
+             slogfiles[i] = -1;
+             continue;
+         }
+#ifndef _WIN32
+         slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND|O_NBVAR);    
+#else
+         slogfiles[i] = open(logfile_n[i], O_WRONLY|O_APPEND);
 #endif
+    }
+ #endif
+    return 0;
 }
 
 /* descriptor used for logging ? */
@@ -733,19 +807,19 @@ int LogFd(int descriptor)
     return 0;
 }
 
-void
-close_logs(void)
+int close_logs( )
 {
 #ifdef IRC_LOGGING
-	int i = 0;
-	return;  /* XXXMLG Why is this here? */
-
-	for (i = 0 ; i <= LOG_HI && logfile_n[i] ; i++) {
-		if (slogfiles[i] < 0) continue;    
-		(void)close(slogfiles[i]);
-		slogfiles[i] = -1;
-	}
+    int i = 0;
+return 0;
+    for ( i = 0 ; i <= LOG_HI && logfile_n[i]; i++)
+    {
+          if (slogfiles[i] < 0) continue;    
+          (void)close(slogfiles[i]);
+          slogfiles[i] = -1;
+    }
 #endif
+   return 0;
 }
 
 int tolog( int logtype, char *fmt, ... )
@@ -787,8 +861,7 @@ int tolog( int logtype, char *fmt, ... )
         return 0;
 }
 
-int
-m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
+int m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
   char *message = (parc > 1) ? parv[1] : NULL;
 
@@ -820,6 +893,5 @@ m_log(aClient *cptr, aClient *sptr, int parc, char *parv[])
       return 0;
 
   sendto_serv_butone(sptr, ":%s LOG :%s", parv[0], message);
-
-  return 0;
 }
+

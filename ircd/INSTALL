@@ -1,14 +1,6 @@
 $Id$
 
 Installation Procedures for the SorceryNet IRC Server:
-=======================================================================
-by Alexei Kosut (Lefler) <lefler@dal.net>
-with changes for dal4.3.6 by Mikko Hänninen (Wizzu) <wizzu@dal.net>
-with changes for dal4.4.11 by Cabal95 (cabal95@dal.net)
-             and sor1.1.2 by Cabal95 (cabal95@sorcery.net)
-with changes for sor1.2.6 by Andy (andy@sorcery.net)
-with changes for sor1.3.0 by Mysidia (mysidia@sorcery.net)
-=======================================================================
 
 This document describes how to install ircd, the unix daemon that acts as 
 an IRC server. Specifically, for the SorceryNet IRC Network, though some 
@@ -20,7 +12,6 @@ at <http://www.sorcery.net/>.
 The SorceryNet server is available from ftp://ftp.sorcery.net/, along with
 the latest copy of this document.
 
-
 =======================================================================
 This version of the SorceryNet IRC Server is known to compile on the
 following platforms, and with the following compilers.  If you wish to add
@@ -28,79 +19,43 @@ to this list, send the relevant information to us.
 
 OS and Version      Compiler and Version     Comments
 ------------------- ------------------------ -------------------------------
-NetBSD 1.2B         gcc 2.7.2
+NetBSD 1.51         egcs-1.1.2
 
-FreeBSD 2.1.0       gcc 2.6.3                Do NOT use crypt at all...
+Linux 2.2.16        gcc 2.95.2
 
-SunOS 4.1.4         gcc 2.7-96q1 (Cygnus)
+Linux 2.2.16        gcc 3.0 
 
-Solaris 2.4         gcc 2.7-96q1 (Cygnus)    (SunOS 5.4)
-
-Solaris 2.5         SunWorks Pro C           (SunOS 5.5.1)
-                    cc: SC4.0 18 Oct 1995 C 4.0
-
-Digital Unix 3.2    gcc 2.7-96q3 (Cygnus)
-
-Linux 2.0.24        gcc 2.7.2.1
-
-HPUX 9.01           gcc 2.6.3
-
-HPUX 10.01          gcc 2.7-96q3 (Cygnus)
-
-Windows NT/95       MSVC++ 4.0
-
+FreeBSD 3.3         gcc 2.7.2.3
 
 =======================================================================
 Unpacking the Distribution
 
-If you are reading this, you have most likely already done this, but to 
-recap:
-
 The SorceryNet server
-<ftp://ftp.sorcery.net/sorcery/server/ircd-sor1.3.0.tar.gz> comes tarred
+<ftp://ftp.sorcery.net/sorcery/server/ircd-sor1.4.0.tar.gz> comes tarred
 and gzipped. To uncompress it and expand it, use the following commands at
 the UNIX prompt:
 
-tar zxf ircd-sor1.3.0.tar.gz
+tar zxf ircd-sor1.4.0.tar.gz
 
-This will create a new directory called ircd-sor1.3.0, and unpack the
-source into it.
-
-If you use Windows NT/95, you may need to find a program to extract
-this package.  Take a few minutes to find one, there are plenty about.
-
-=======================================================================
-Editing the Configuration Files
-
-In previous versions of the source code many files had to be edited to
-make things right for any given server.
-
-In this version you DO NOT NEED TO EDIT THE Makefile OR ANY FILES
-IN include!  That is, unless you set some strange options.  If you
-find the need to edit include/config.h, for example, mail us and
-tell us why ; Config can be made smarter, and that will make it so 
-you won't have to edit anything for the next version.
-
-NOTE: If you run Windows NT/95, you may need to edit include/config.h
-to set some minor options, but for the most part using the ./Config.exe
-program will work.
+This will create a new directory called ircd-sor1.4.0, and unpack the
+source.
 
 =======================================================================
 Compiling Your Server
 
-Windows users: You must compile the Config program first. To do this
-run the following command:  $CC src\Config.c
-where $CC is the name of your compiler.  for MSVC users that is 'cl'
+To build the server, you first need to run the 'configure' script with
+your desired options
 
-To build the server, simply run
-	% ./Config
-to start the configuraton program.  This program looks at your system
-and generate the include/setup.h, include/options.h, and Options files.
-You will be asked some questions.  Usually the default answers are the best
-ones and most correct.  To accept the default, just hit RETURN.
+   ./configure --help 
+
+to list your options.
+
+For example:
+
+   ./configure --mode=700 --dpath=/usr/local/lib/ircd --enable-hub
 
 Next, type 'make'. This will compile your server. Depending on your system,
-this may be a good time for a caffeine break. (MSVC users run 'nmake')
+this may be a good time for a caffeine break.
 
 Hopefully, the server will compile without incident. If it does not, and 
 you are not able to determine the error, please email coders@sorcery.net
@@ -110,18 +65,10 @@ do need to fix something, mail there with a patch.
 BE CERTAIN TO INCLUDE OPERATING SYSTEM INFORMATION (uname -a) AND COMPILER
 VERSION (gcc -v, for instance) IN ALL BUG REPORTS.
 
-
 =======================================================================
 Installing the Files
 
-'make install' does not work in this release -- it doesn't do anything
-except a compile if that is needed.
-
-The only files you need are the binary from src/ircd and and an ircd.conf
-(see below for copying doc/example.conf as your initial ircd.conf). You
-probably will want to create a MOTD file too, as well as place the man
-pages from the doc directory to appropriate place in your system.
-
+run 'make install' to install the server files
 
 =======================================================================
 Configuring Your Server

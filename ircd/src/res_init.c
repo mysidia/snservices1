@@ -17,18 +17,21 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#if defined(LIBC_SCCS) && !defined(lint)
+static char sccsid[] = "@(#)res_init.c	6.14.1 (Berkeley) 6/27/90";
+#endif /* LIBC_SCCS and not lint */
+
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
+#endif
 #include <stdio.h>
 #include "config.h"	/* To get #define SOL20		Vesa */
 #include "common.h"
 #include "sys.h"
 #include "nameser.h"
 #include "resolv.h"
-
-IRCD_SCCSID("@(#)res_init.c	6.14.1 (Berkeley) 6/27/90");
-IRCD_RCSID("$Id$");
 
 /*
  * Resolver state default settings
@@ -53,9 +56,13 @@ struct state _res = {
  */
 res_init()
 {
+#ifndef _WIN32
 	FILE *fp;
 	char *cp, *dp, **pp;
 	extern u_long inet_addr();
+#else
+	char *cp, **pp;
+#endif
 	int n;
 	char buf[BUFSIZ];
 	extern char *getenv();
@@ -66,11 +73,7 @@ res_init()
 
 	_res.nsaddr.sin_addr.s_addr = INADDR_ANY;
 	_res.nsaddr.sin_family = AF_INET;
-#ifdef TESTNET
-	_res.nsaddr.sin_port = htons(NAMESERVER_PORT + 10000);
-#else
 	_res.nsaddr.sin_port = htons(NAMESERVER_PORT);
-#endif
 	_res.nscount = 1;
 
 	/* Allow user to override the local domain definition */
@@ -79,6 +82,7 @@ res_init()
 		haveenv++;
 	}
 
+#ifndef _WIN32
 	if ((fp = fopen(_PATH_RESCONF, "r")) != NULL) {
 	    /* read the config file */
 	    while (fgets(buf, sizeof(buf), fp) != NULL) {
@@ -148,12 +152,7 @@ res_init()
 			    continue;
 		    }
 		    _res.nsaddr_list[nserv].sin_family = AF_INET;
-#ifdef TESTNET
-		    _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT +
-		        10000);
-#else
 		    _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-#endif
 		    nserv++;
 		    continue;
 		}
@@ -184,6 +183,7 @@ res_init()
 		_res.nscount = nserv;
 	    (void) fclose(fp);
 	}
+#endif /*_WIN32*/
 	if (_res.defdname[0] == 0) {
 		if (gethostname(buf, sizeof(_res.defdname)) == 0 &&
 		   (cp = index(buf, '.')))

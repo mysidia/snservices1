@@ -1,6 +1,6 @@
 /*
- *   IRC - Internet Relay Chat, ircd/s_misc.c (formerly ircd/date.c)
- *   Copyright (C) 1998 Mysidia
+ *   IRC - Internet Relay Chat, src/s_sock.c
+ *   Copyright C 1998 James Hess -- All Rights Reserved
  *
  *   See file AUTHORS in IRC package for additional names of
  *   the programmers.
@@ -20,11 +20,17 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef lint
+static char rcsid[] = "$Id$";
+#endif
+
 #include <stdio.h>
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 #include <assert.h>
 #include "struct.h"
 #include "common.h"
@@ -32,17 +38,17 @@
 #include "res.h"
 #include "numeric.h"
 #include "patchlevel.h"
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #ifdef  UNIXPORT
 #include <sys/un.h>
 #endif
+#endif
 #include <fcntl.h>
 #include "sock.h"
 #include "h.h"
-
-IRCD_RCSID("$Id$");
 
 /* Send op notices for cached check results ? */
 #undef SHOW_CACHED_SOCKS 
@@ -125,7 +131,7 @@ time_t flush_socks(time_t now, int fAll)
 	    if (socks->fd >= 0)
                 closesocket(socks->fd);
 	    socks->fd = -1;
-	    irc_free(socks);
+	    free(socks);
 	}
    }
    return (now + 5);
@@ -147,7 +153,7 @@ aSocks *get_socks(struct in_addr addy, int new)
     update_time();
     if (!new)
         return NULL;
-    tmpsocks = irc_malloc(sizeof(aSocks));
+    tmpsocks = (aSocks *)MyMalloc(sizeof(aSocks));
     memset(tmpsocks, 0, sizeof(aSocks));
     tmpsocks->status = SOCK_NEW;
     tmpsocks->fd = -1;

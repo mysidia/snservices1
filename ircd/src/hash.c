@@ -1,6 +1,7 @@
-/*
- *   IRC - Internet Relay Chat, ircd/hash.c
- *   Copyright (C) 1991 Darren Reed
+/************************************************************************
+ *   IRC - Internet Relay Chat, src/hash.c
+ *
+ *   Copyright C 1991 Darren Reed
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,15 +17,11 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#ifndef lint
+static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
+#endif
 
 /* Optimized for non-debugmode, increased hash table sizes -Donwulff */
-
-/* You need to define OLDHASH to use the old hashing method -
- * however, it's my sincere belief that the new version will
- * serve better in the intended purpose, even though it's
- * still not perfect. -Donwulff
- */
-#undef OLDHASH
 
 #include "struct.h"
 #include "common.h"
@@ -32,44 +29,40 @@
 #include "hash.h"
 #include "numeric.h"
 #include "h.h"
-#include "msg.h"
-
-#include "ircd/send.h"
-#include "ircd/string.h"
-
-IRCD_SCCSID("@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed");
-IRCD_RCSID("$Id$");
 
 /* Quick & dirty inline version of mycmp for hash-tables -Donwulff */
 #define thecmp(str1, str2, where) { \
                                     char *st1=str1, *st2=str2; \
-                                    while (irc_tolower(*st1)==irc_tolower(*st2)) \
+                                    while (tolower(*st1)==tolower(*st2)) \
                                     { \
                                       if (!*st1) goto where; \
                                       st1++; st2++; \
                                     } \
                                   }
 
+
+#define ipvcmp(v1, v2, where) { \
+				    if (v1.s_addr == v2.s_addr) \
+                                    { \
+                                      goto where; \
+                                    } \
+                             }
+
 #ifdef	DEBUGMODE
 static	aHashEntry	*clientTable = NULL;
 static	aHashEntry	*channelTable = NULL;
+static	aHashEntry	*hostTable = NULL;
 static	int	clhits, clmiss;
 static	int	chhits, chmiss;
+static	int	mmhits, mmmiss;
 int	HASHSIZE = 6007;
 int	CHANNELHASHSIZE = 2003;
 #else /* DEBUGMODE */
+#define MACHINEHASHSIZE	10
 static	aHashEntry	clientTable[HASHSIZE];
 static	aHashEntry	channelTable[CHANNELHASHSIZE];
+static	aHashEntry	hostTable[MACHINEHASHSIZE];
 #endif /* DEBUGMODE */
-
-#ifdef OLDHASH
-static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
-                                199, 211, 223, 227, 229, 233,
-                                239, 241, 251, 257, 263, 269,
-                                271, 277, 281, 293, 307, 311,
-                                401, 409, 419, 421, 431, 433,
-                                439, 443, 449, 457, 461, 463 };
-#endif /* OLDHASH */
 
 /*
  * Hashing.
@@ -99,6 +92,14 @@ static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
  * is moved to the top of the chain.
  */
 
+/* hash_nn_ip */
+int hash_nn_ip(struct in_addr ip)
+{
+     if (((int)ip.s_addr) < 0)
+         return (- (int)ip.s_addr);
+     return ((int)ip.s_addr);
+}
+
 /*
  * hash_nn_name
  *
@@ -108,20 +109,6 @@ static	int	hash_mult[] = { 173, 179, 181, 191, 193, 197,
  * chars long. (With DALnet mods, also nicks can be long) -Donwulff
  * Remember to take modulus by hash table size to avoid overflow!
  */
-#ifdef OLDHASH
-int hash_nn_name(nname)
-char	*nname;
-{
-	u_char	ch, *name = (u_char *)nname;
-	int	i = 30, hash = 1, *tab;
-
-	for (tab = hash_mult; (ch = *name) && --i; name++, tab++)
-		hash += irc_tolower(ch) + *tab + hash + i + i;
-	if (hash < 0)
-		hash = -hash;
-	return (hash);
-}
-#else /* OLDHASH */
 int hash_nn_name(hname)
 char	*hname;
 {
@@ -129,12 +116,11 @@ char	*hname;
 	int	hash = 0x5555;
 
 	for (; *name; name++)
-		hash = (hash<<2) ^ irc_tolower(*name);
+		hash = (hash<<2) ^ tolower(*name);
 	if (hash < 0)
 		hash = -hash;
 	return (hash);
 }
-#endif /* OLDHASH */
 
 /*
  * clear_*_hash_table
@@ -147,7 +133,8 @@ void	clear_client_hash_table()
 	clhits = 0;
 	clmiss = 0;
 	if (!clientTable)
-		clientTable = irc_malloc(HASHSIZE * sizeof(aHashEntry));
+		clientTable = (aHashEntry *)MyMalloc(HASHSIZE *
+						     sizeof(aHashEntry));
 #endif /* DEBUGMODE */
 
 	bzero((char *)clientTable, sizeof(aHashEntry) * HASHSIZE);
@@ -159,10 +146,22 @@ void	clear_channel_hash_table()
 	chmiss = 0;
 	chhits = 0;
 	if (!channelTable)
-		channelTable = irc_malloc(CHANNELHASHSIZE
-					  * sizeof(aHashEntry));
+		channelTable = (aHashEntry *)MyMalloc(CHANNELHASHSIZE *
+						     sizeof(aHashEntry));
 #endif /* DEBUGMODE */
 	bzero((char *)channelTable, sizeof(aHashEntry) * CHANNELHASHSIZE);
+}
+
+void	clear_machine_hash_table()
+{
+#ifdef	DEBUGMODE
+	mmmiss = 0;
+	mmhits = 0;
+	if (!hostTable)
+		hostTable = (aHashEntry *)MyMalloc(MACHINEHASHSIZE *
+						     sizeof(aHashEntry));
+#endif /* DEBUGMODE */
+	bzero((char *)hostTable, sizeof(aHashEntry) * MACHINEHASHSIZE);
 }
 
 /*
@@ -205,6 +204,28 @@ aChannel	*chptr;
 #else /* DEBUGMODE */
 	chptr->hnextch = (aChannel *)channelTable[hashv];
 	channelTable[hashv] = (void *)chptr;
+#endif /* DEBUGMODE */
+	return 0;
+}
+
+/*
+ * add_to_machine_hash_table
+ */
+int	add_to_machine_hash_table(ip, hptr)
+struct in_addr ip;
+aMachine *hptr;
+{
+	int	hashv;
+
+	hashv = hash_nn_ip(ip)%MACHINEHASHSIZE;
+#ifdef DEBUGMODE
+	hptr->hnext = (aMachine *)hostTable[hashv].list;
+	hostTable[hashv].list = (void *)hptr;
+	hostTable[hashv].links++;
+	hostTable[hashv].hits++;
+#else /* DEBUGMODE */
+	hptr->hnext = (aMachine *)hostTable[hashv];
+	hostTable[hashv] = (void *)hptr;
 #endif /* DEBUGMODE */
 	return 0;
 }
@@ -253,6 +274,60 @@ aClient	*cptr;
 				prev->hnext = tmp->hnext;
 			else
 				clientTable[hashv] = (void *)tmp->hnext;
+			tmp->hnext = NULL;
+			return 0; /* Found, we can return -Donwulff */
+		}
+		prev = tmp;
+	    }
+#endif /* DEBUGMODE */
+	return 0;
+}
+
+
+/*
+ * del_from_machine_hash_table
+ */
+int	del_from_machine_hash_table(ip, hptr)
+struct in_addr ip;
+aMachine *hptr;
+{
+	aMachine *tmp, *prev = NULL;
+	int	hashv;
+
+	hashv = hash_nn_ip(ip)%MACHINEHASHSIZE;
+#ifdef DEBUGMODE
+	for (tmp = (aMachine *)hostTable[hashv].list; tmp; tmp = tmp->hnext)
+	    {
+		if (tmp == hptr)
+		    {
+			if (prev)
+				prev->hnext = tmp->hnext;
+			else
+				hostTable[hashv].list = (void *)tmp->hnext;
+			tmp->hnext = NULL;
+			if (hostTable[hashv].links > 0)
+			    {
+				hostTable[hashv].links--;
+				return 1;
+			    } 
+			else
+				/*
+				 * Should never actually return from here and
+				 * if we do it is an error/inconsistency in the
+				 * hash table.
+				 */
+				return -1;
+			return 0; /* Found, we can return -Donwulff */
+		}
+		prev = tmp;
+	}
+#else /* DEBUGMODE */
+	for (tmp = (aMachine *)hostTable[hashv]; tmp; tmp = tmp->hnext) {
+		if (tmp == hptr) {
+			if (prev)
+				prev->hnext = tmp->hnext;
+			else
+				hostTable[hashv] = (void *)tmp->hnext;
 			tmp->hnext = NULL;
 			return 0; /* Found, we can return -Donwulff */
 		}
@@ -366,6 +441,68 @@ c_move_to_top:
 
 		tmp2 = (aClient *)clientTable[hashv];
 		clientTable[hashv] = (void *)tmp;
+		prv->hnext = tmp->hnext;
+		tmp->hnext = tmp2;
+	}
+#endif /* DEBUGMODE */
+	return (tmp);
+}
+
+
+/*
+ * hash_find_machine
+ */
+aMachine *hash_find_machine(ip, hptr)
+struct   in_addr ip;
+aMachine *hptr;
+{
+	aMachine *tmp;
+	aMachine *prv = NULL;
+#ifdef DEBUGMODE
+	aHashEntry	*tmp3;
+#endif /* DEBUGMODE */
+	int	hashv;
+
+	hashv = hash_nn_ip(ip)%MACHINEHASHSIZE;
+
+	/*
+	 * Got the bucket, now search the chain.
+	 */
+#ifdef  DEBUGMODE
+tmp3 = &hostTable[hashv];
+
+	for (tmp = (aMachine *)tmp3->list; tmp; prv = tmp, tmp = tmp->hnext)
+		ipvcmp(ip, tmp->ip, mm_move_to_top);
+	mmmiss++;
+	return (hptr);
+mm_move_to_top:
+	mmhits++;
+	/*
+	 * If the member of the hashtable we found isnt at the top of its
+	 * chain, put it there.  This builds a most-frequently used order into
+	 * the chains of the hash table, giving speadier lookups on those nicks
+	 * which are being used currently.  This same block of code is also
+	 * used for channels and servers for the same performance reasons.
+	 */
+	if (prv)
+	    {
+		aMachine *tmp2;
+
+		tmp2 = (aMachine *)tmp3->list;
+		tmp3->list = (void *)tmp;
+		prv->hnext = tmp->hnext;
+		tmp->hnext = tmp2;
+	    }
+#else /* DEBUGMODE */
+	for (tmp = (aMachine *)hostTable[hashv]; tmp; prv = tmp, tmp = tmp->hnext)
+		ipvcmp(ip, tmp->ip, mm_move_to_top);
+	return (hptr);
+mm_move_to_top:
+	if (prv) {
+		aMachine *tmp2;
+
+		tmp2 = (aMachine *)hostTable[hashv];
+		hostTable[hashv] = (void *)tmp;
 		prv->hnext = tmp->hnext;
 		tmp->hnext = tmp2;
 	}
@@ -503,6 +640,7 @@ aClient *cptr;
 		    }
 		*t = ch;
 	    }
+
 #ifdef	DEBUGMODE
 	clmiss++;
 	return (cptr);
@@ -607,8 +745,7 @@ char	*parv[];
 	char	ch;
 	aHashEntry	*table;
 
-        if (!IsOper(sptr) || !MyClient(sptr))
-		return 0;
+        if (!IsOper(sptr) || !MyClient(sptr)) return;
 	if (parc > 1) {
 		ch = *parv[1];
 		if (islower(ch))
@@ -768,8 +905,13 @@ char	*parv[];
 		l = atoi(parv[2]);
 		if (l < 256)
 			return 0;
-		irc_free(clientTable);
-		clientTable = irc_malloc(sizeof(aHashEntry) * l);
+#ifndef _WIN32
+		(void)free((char *)clientTable);
+		clientTable = (aHashEntry *)malloc(sizeof(aHashEntry) * l);
+#else
+		(void)MyFree((char *)clientTable);
+		clientTable = (aHashEntry *)MyMalloc(sizeof(aHashEntry) * l);
+#endif
 		HASHSIZE = l;
 		clear_client_hash_table();
 		for (acptr = client; acptr; acptr = acptr->next)
@@ -789,8 +931,13 @@ char	*parv[];
 		l = atoi(parv[2]);
 		if (l < 256)
 			return 0;
-		irc_free(channelTable);
-		channelTable = irc_malloc(sizeof(aHashEntry) * l);
+#ifndef _WIN32
+		(void)free((char *)channelTable);
+		channelTable = (aHashEntry *)malloc(sizeof(aHashEntry) * l);
+#else
+		(void)MyFree((char *)channelTable);
+		channelTable = (aHashEntry *)MyMalloc(sizeof(aHashEntry) * l);
+#endif
 		CHANNELHASHSIZE = l;
 		clear_channel_hash_table();
 		for (acptr = channel; acptr; acptr = acptr->nextch)
@@ -896,7 +1043,7 @@ aClient  *cptr;
 
         /* If found NULL (no header for this nick), make one... */
         if (!anptr) {
-                anptr = irc_malloc(sizeof(aWatch)+strlen(nick));
+                anptr = (aWatch *)MyMalloc(sizeof(aWatch)+strlen(nick));
                 anptr->lasttime = NOW;
                 strcpy(anptr->nick, nick);
 
@@ -935,9 +1082,9 @@ aClient  *cptr;
 int   reply;
 {
         int   hashv;
-        int   is_signon = (reply == RPL_LOGON) ? 1 : 0, fm = 0;
+	int   is_signon = (reply == RPL_LOGON) ? 1 : 0, fm = 0;
         aWatch  *anptr;
-        aClient *acptr;
+	aClient *acptr;
         Link  *lp;
 
         /* Get us the right bucket */
@@ -960,7 +1107,8 @@ int   reply;
 	}
 
         /* Send notifies out to everybody on the list in header */
-        for (lp = anptr->watch; lp; lp = lp->next) {
+        for (lp = anptr->watch; lp; lp = lp->next)
+	{
           acptr = lp->value.cptr; /* Person watching cptr */
 
           sendto_one(acptr, rpl_str(reply), me.name,
@@ -968,7 +1116,8 @@ int   reply;
                                          (IsPerson(cptr)?cptr->user->username:"<N/A>"),
                                          (IsPerson(cptr)?UGETHOST(acptr, cptr->user):"<N/A>"),
                                          anptr->lasttime, cptr->info);
-        }
+
+	}
 
 	if (fm) {
 		fm = 0;
@@ -1067,7 +1216,7 @@ aClient  *cptr;
                   watchTable[hashv] = anptr->hnext;
                 else
                   nlast->hnext = anptr->hnext;
-                irc_free(anptr);
+                MyFree(anptr);
         }
 
         /* Update count of notifies on nick */
@@ -1133,7 +1282,7 @@ aClient  *cptr;
                                   nl->hnext = anptr->hnext;
                                 else
                                   watchTable[hashv] = anptr->hnext;
-                                irc_free(anptr);
+                                MyFree(anptr);
                         }
                 }
 
