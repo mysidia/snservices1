@@ -548,16 +548,16 @@ void addNewUser(char **args, int numargs)
 		}
 
 		if (hasValidModeR(newnick)) {
-			newnick->caccess = 2;
+			newnick->caccess = ACC_RECOGNIZED;
 			newnick->reg->timestamp = (time_t) atol(args[3]);
 
 			NickSeeUser(newnick, newnick->reg, 2, 1);
 		}
 		else if (!checkAccess(newnick->user, newnick->host, newnick->reg)) {
-			newnick->caccess = 1;
+			newnick->caccess = ACC_NOT_RECOGNIZED;
 			annoyNickThief(newnick);
 		} else {
-			newnick->caccess = 2;
+			newnick->caccess = ACC_RECOGNIZED;
 			newnick->reg->timestamp = (time_t) atol(args[3]);
 
 			NickSeeUser(newnick, newnick->reg, 2, 1);
@@ -706,7 +706,7 @@ void changeNick(char *from, char *to, char *ts)
 			sSend(":%s NOTICE %s :You have already identified for access.",
 				  NickServ, tmp->nick);
 			clearIdentify(tmp);
-			tmp->caccess = 3;
+			tmp->caccess = ACC_IDENTIFIED;
 			NickSeeUser(tmp, tmp->reg, 3, 1);
 			grantIdentifiedUmode(tmp, (tmp->reg->flags & NVERIFIED));
 
@@ -719,10 +719,10 @@ void changeNick(char *from, char *to, char *ts)
 		else if (!strcasecmp(tmp->nick, changeme->nick))
 			tmp->caccess = changeme->caccess;
 		else if (!checkAccess(tmp->user, tmp->host, tmp->reg)) {
-			tmp->caccess = 0;
+			tmp->caccess = ACC_OFFLINE;
 			annoyNickThief(tmp);
 		} else {
-			tmp->caccess = 2;
+			tmp->caccess = ACC_RECOGNIZED;
 
 			NickSeeUser(tmp, tmp->reg, 2, 1);
 			if (ts[0] == ':')
@@ -919,7 +919,7 @@ int isIdentified(UserList * user, RegNickList * nick)
 			!strcmp(user->id.nick, nick->nick)) return 1;
 		return 0;
 	}
-	return (user->reg == nick && user->reg && (user->caccess > 2));
+	return (user->reg == nick && user->reg && (user->caccess > ACC_RECOGNIZED));
 }
 
 
@@ -943,7 +943,7 @@ int isRecognized(UserList * user, RegNickList * nick)
 		return 1;
 	if (!(user && nick) || user->reg != nick)
 		return isIdentified(user, nick);
-	return (user->reg && user->reg == nick && (user->caccess > 1));
+	return (user->reg && user->reg == nick && (user->caccess > ACC_NOT_RECOGNIZED));
 }
 
 
@@ -2662,7 +2662,7 @@ NCMD(ns_identify)
 
 		/* failed identify takes away even the access list ID */
 		if (nick->reg == tonick) { /* Local */
-			nick->caccess = 1;
+			nick->caccess = ACC_NOT_RECOGNIZED;
 			PutError(NickServ, nick, ERR_BADPW, 0, 0, 0);
 			if (BadPwNick(nick, nick->reg))
 				return RET_KILLED;
@@ -2808,7 +2808,7 @@ NCMD(ns_cidentify)
 		 * Local identify
 		 */
 		if (nick->reg == tonick) {
-			nick->caccess = 4;
+			nick->caccess = ACC_DIGEST_AUTH;
 
 			assert(!strcasecmp(nick->reg->nick, nick->nick));
 			strcpy(nick->reg->nick, nick->nick);	/* Case update */
@@ -3516,7 +3516,7 @@ NCMD(ns_register)
 #ifdef REQ_EMAIL
 	nick->reg->email_key = random();
 #endif
-	nick->caccess = 3;
+	nick->caccess = ACC_IDENTIFIED;
 	nick->reg->flags |= NENCRYPT;
 	pw_enter_password(args[1], nick->reg->password, NickGetEnc(nick->reg));
 
@@ -4149,9 +4149,9 @@ NCMD(ns_acc)
 				int cacc = 1;
 
 				if (isRecognized(info, tmpnick))
-					cacc = 2;
+					cacc = ACC_RECOGNIZED;
 				if (isIdentified(info, tmpnick))
-					cacc = 3;
+					cacc = ACC_IDENTIFIED;
 				if ((info->reg == tmpnick) && (info->caccess > 3))
 					cacc = info->caccess;
 
@@ -5728,8 +5728,8 @@ NCMD(ns_logoff)
 
 	clearIdentify(nick);
 	revokeIdentifiedUmode(nick);
-	if (nick->caccess > 2)
-		nick->caccess = 2;
+	if (nick->caccess > ACC_RECOGNIZED)
+		nick->caccess = ACC_RECOGNIZED;
 	sSend(":%s NOTICE %s :You are no longer identified with %s.", NickServ,
 		  from, NickServ);
 	return RET_OK;
