@@ -31,7 +31,7 @@ int casetable = 0;
 #endif
 
 
-#include <regex.h>
+#include <regex.h> 
 
 /* 
  * Uses 'Regular Expression' matching
@@ -39,6 +39,7 @@ int casetable = 0;
  * instead.
  */
 
+#if 1
 int expr_match(const char *mask, const char *text)
 {
 regex_t *preg;
@@ -64,7 +65,7 @@ if (!preg) return 0;
 return(1);
 
 }
-
+#endif
 
 
 /*

@@ -33,6 +33,7 @@ static char sccsid[] = "@(#)hash.c	2.10 7/3/93 (C) 1991 Darren Reed";
 #include "common.h"
 #include "sys.h"
 #include "hash.h"
+#include "numeric.h"
 #include "h.h"
 
 /* Quick & dirty inline version of mycmp for hash-tables -Donwulff */
@@ -940,7 +941,9 @@ aClient  *cptr;
 int   reply;
 {
         int   hashv;
+        int   is_signon = (reply == RPL_LOGON) ? 1 : 0, fm = 0;
         aWatch  *anptr;
+        aClient *acptr;
         Link  *lp;
 
         /* Get us the right bucket */
@@ -956,13 +959,28 @@ int   reply;
         /* Update the time of last change to item */
         anptr->lasttime = NOW;
 
+	/* XXX: Kludge -- fix watch bug */
+	if (is_signon && !IsMasked(cptr)) {
+		fm = 1;
+		perform_mask(cptr, MODE_ADD);
+	}
+
         /* Send notifies out to everybody on the list in header */
-        for (lp = anptr->watch; lp; lp = lp->next)
-          sendto_one(lp->value.cptr, rpl_str(reply), me.name,
-                                         lp->value.cptr->name, cptr->name,
+        for (lp = anptr->watch; lp; lp = lp->next) {
+          acptr = lp->value.cptr; /* Person watching cptr */
+
+          sendto_one(acptr, rpl_str(reply), me.name,
+                                         acptr->name, cptr->name,
                                          (IsPerson(cptr)?cptr->user->username:"<N/A>"),
-                                         (IsPerson(cptr)?UGETHOST(lp->value.cptr, cptr->user):"<N/A>"),
+                                         (IsPerson(cptr)?UGETHOST(acptr, cptr->user):"<N/A>"),
                                          anptr->lasttime, cptr->info);
+        }
+
+	if (fm) {
+		fm = 0;
+		perform_mask(cptr, MODE_DEL);
+	}
+
         return 0;
 }
 
@@ -1132,5 +1150,18 @@ aClient  *cptr;
 
         cptr->watches = 0;
         return 0;
+}
+
+aChannel *hash_get_chan_bucket(hashv)
+int   hashv;
+{
+        if (hashv > CHANNELHASHSIZE /*CH_MAX*/)
+          return NULL;
+
+#ifdef DEBUGMODE
+        return (aChannel *)channelTable[hashv].list;
+#else
+        return (aChannel *)channelTable[hashv];
+#endif
 }
 

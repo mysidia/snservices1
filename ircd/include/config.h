@@ -51,6 +51,7 @@
 #undef	BOOT_MSGS
 #define	HASH_MSGTAB
 #define	ALLOW_MODEHACK	/* enable Modehack operator flag */
+#define SERVICES_NAME	"services.sorcery.net"
 
 /*
  *  URL people denied access as result of open socks server should be sent to
@@ -726,5 +727,17 @@ error SOCKSFOUND_URL is not defined: Please define in config.h
 #ifdef _WIN32
 # undef FORCE_CORE
 #endif
+
+
+#define Reg1 register
+#define Reg2 register
+#define Reg3 register
+#define Reg4 register
+#define Reg5 register
+#define Reg6 register
+#define Reg7 register
+#define Reg8 register
+#define Reg9 register
+#define Reg10 register
 
 #endif /* __config_include__ */
