@@ -37,6 +37,34 @@ use IO::Socket::INET;
 use IO::Select;
 use Digest::MD5 q/md5_hex/;
 
+my %nick_flags = (
+	'NKILL'         => 0x1       ,  # Nick protection
+	'NVACATION'     => 0x2       ,  # Vacation
+	'NHOLD'         => 0x4       ,  # No expire
+	'NIDENT'        => 0x8       ,  # Ident required
+	'NTERSE'        => 0x10      ,  # Terse mode
+	'NOADDOP'       => 0x40      ,  # NOOP
+	'NEMAIL'        => 0x80      ,  # Hide email
+	'NBANISH'       => 0x100     ,  # Banished NICKNAME
+	'NGRPOP'        => 0x200     ,  # NO FUNCTION
+	'NBYPASS'       => 0x400     ,  # BYPASS+ nick
+	'NUSEDPW'       => 0x800     ,  # Has ever ided?
+	'NDBISMASK'     => 0x1000    ,  # Is +m ?
+	'NMARK'         => 0x2000    ,  # MARKED NICK
+	'NDOEDIT'       => 0x4000    ,  # SraEdit: deprecated, 
+                                        # use /os override
+	'NOGETPASS'     => 0x8000    ,  # NoGetpass
+	'NACTIVE'       => 0x10000   ,  # Activated nick (+a)
+	'NDEACC'        => 0x20000   ,  # Deactivated, newemail (+d)
+	'NFORCEXFER'    => 0x40000   ,  # Suspended for transfer
+	'NENCRYPT'      => 0x80000   ,  # Encrypted password
+	'NAHURT'        => 0x100000  ,  #???
+	'OROOT'         => 0x1       ,
+	'OSERVOP'       => 0x8       ,
+	'OAKILL'        => 0x40      ,
+	'OGRP'          => 0x2000    
+);
+
 $Sipc::revision = '$Id$';
 $Sipc::VERSION='0.1';
 my $ERRORTEXT="_";
