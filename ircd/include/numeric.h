@@ -194,6 +194,7 @@
 #define ERR_BANNEDFROMCHAN   474
 #define	ERR_BADCHANNELKEY    475
 #define	ERR_BADCHANMASK      476
+#define ERR_NEEDREGGEDNICK   477
 #define ERR_BANLISTFULL      478
 
 #define ERR_NOPRIVILEGES     481
@@ -233,6 +234,7 @@
 #define ERR_NOMASKCHAN       625
 #define ERR_BANRULE          626
 #define ERR_BANREQUIRE       627
+#define ERR_NEEDVERNICK      628
 
 
 /*
