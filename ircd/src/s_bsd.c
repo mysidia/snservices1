@@ -1350,8 +1350,8 @@ fd_set	*rfd;
 #else
 		WSASetLastError(0);
 #endif
-		length = recv(cptr->fd, readbuf, sizeof(readbuf), 0);
 
+		length = recv(cptr->fd, readbuf, sizeof(readbuf), 0);
 		cptr->lasttime = now;
 		if (cptr->lasttime > cptr->since)
 			cptr->since = cptr->lasttime;
@@ -1523,8 +1523,8 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 				if (cptr->socks->fd == highest_fd)
 					while(!local[highest_fd])
 						highest_fd--;
-					cptr->socks->fd = -1;
-					cptr->socks->status |= SOCK_GO|SOCK_DESTROY;
+				cptr->socks->fd = -1;
+				cptr->socks->status |= SOCK_GO|SOCK_DESTROY;
 					
 			}
 #endif
@@ -1557,6 +1557,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 #ifdef _WIN32
 							FD_CLR(cptr->socks->fd, &excpt_set);
 #endif
+							cptr->socks->fd = -1;
 						}
 						cptr->socks = NULL;
 					}
@@ -1576,6 +1577,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 							if (cptr->socks->fd == highest_fd)
 								while(!local[highest_fd])
 									highest_fd--;
+							cptr->socks->fd = -1;
 						}
 						FD_CLR(cptr->fd, &read_set);
 						FD_CLR(cptr->fd, &write_set);
@@ -1634,8 +1636,15 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                    for(sItem = socks_list; sItem; sItem = sItem->next) { 
                        if(sItem->fd < 0)
                           continue;
+                       if ((sItem->status & SOCK_DONE)) {
+			   sendto_realops("select() -- socks check fd#%d was not closed properly.", sItem->fd);
+                           closesocket(sItem->fd);
+                           sItem->fd = -1;
+                           continue;
+                       }
                        FD_SET(sItem->fd, &read_set);
-                       FD_SET(sItem->fd, &write_set);
+                       if (!IS_SET(sItem->status, SOCK_W))
+                           FD_SET(sItem->fd, &write_set);
                        FD_SET(sItem->fd, &read_set);
 #ifdef _WIN32
                        FD_SET(sItem->fd, &excpt_set);
@@ -1778,7 +1787,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                    {
 #ifdef ENABLE_SOCKSCHECK
                        nfds--;
-                       sItem->status |= SOCK_CONNECTED;
+                       sItem->status |= (SOCK_CONNECTED|SOCK_W);
 		       FD_CLR(sItem->fd, &write_set);
                        send_socksquery(sItem); /* cptr->socks may now be null */
 #else

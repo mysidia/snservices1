@@ -59,6 +59,7 @@ typedef	struct	Server	aServer;
 typedef	struct	SLink	Link;
 typedef	struct	SMode	Mode;
 typedef struct	Watch	aWatch;
+typedef struct  ListOptions     LOpts;
 
 typedef struct  CloneItem aClone;
 
@@ -71,8 +72,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #include "dbuf.h"	/* THIS REALLY SHOULDN'T BE HERE!!! --msa */
 #endif
 
-#define NETWORK                 "SorceryNet"
-#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"
+/*#define NETWORK                 "SorceryNet"*/
+/*#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"*/
 #define SOCKS_TIMEOUT	30	/* number of seconds to wait before giving
 				   up on a socks request */
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
@@ -80,7 +81,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
 #ifndef _WIN32
-#define ENABLE_SOCKSCHECK	/* enable socks check */
+/*#define ENABLE_SOCKSCHECK*/	/* enable socks check */
 #endif
 
 #define SOCKSPORT		1080
@@ -242,9 +243,13 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define FLAGS_HURT		BIT19 /* if ->hurt is set, user is silenced */
 #define FLAGS_SOCK		BIT20 /* socks check pending */
 #define FLAGS_SOCKS		FLAGS_SOCK	/* same as flags_sock */
+#define FLAGS_GOT_VERSION	BIT21 /* Ctcp version reply received */
+#define FLAGS_GOT_SPOOFCODE	BIT22 /* Is not spoof */
+#define FLAGS_SENT_SPOOFCODE	BIT23
 
 /* usermode flags
      NOTE: these are still held in sptr->flags */
+#define U_FULLMASK	BIT18
 #define U_MASK		BIT21 /* Masked */
 #define	U_OPER		BIT22 /* Global IRCop */
 #define	U_LOCOP		BIT23 /* Local IRCop */
@@ -264,9 +269,9 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD|U_LOG)
 #define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
-#define FLAGSET_FLOOD   (U_OPER|U_FLOOD)  /* what clients should flood notices be sent to ? */
-#define FLAGSET_CLIENT	(U_OPER|U_CLIENT) /* what clients should client notices be sent to ? */
-#define FLAGSET_SOCKS	(U_OPER)          /* what clients should socks warnings be sent to ?  */
+#define FLAGSET_FLOOD   (U_FLOOD)  /* what clients should flood notices be sent to ? */
+#define FLAGSET_CLIENT	(U_CLIENT) /* what clients should client notices be sent to ? */
+#define FLAGSET_SOCKS	(U_OPER)   /* what clients should socks warnings be sent to ?  */
 
 /* socks flags */
 #define	SOCK_WANTCON		BIT01	/* nonblocking connection in progress */
@@ -380,11 +385,18 @@ typedef	enum {
 #define UGETHOST(s, x)		(((s)->user == (x) || !(x)->mask || ((s) && IsOper((s)))) ? (x)->host : (x)->mask)
 
 #ifdef NOSPOOF
-#define	IsNotSpoof(x)		((x)->nospoof == 0)
+/*#define	IsNotSpoof(x)		((x)->nospoof == 0)*/
+#define		IsNotSpoof(x)	((ClientFlags(x)) & FLAGS_GOT_SPOOFCODE)
+#define		SetNotSpoof(x)	((ClientFlags(x)) |= FLAGS_GOT_SPOOFCODE)
+#define		SetSentNoSpoof(x) ((ClientFlags(x)) |= FLAGS_SENT_SPOOFCODE)
+#define         SentNoSpoof(x)  ((ClientFlags(x)) & FLAGS_SENT_SPOOFCODE)
 #else
 #define IsNotSpoof(x)           (1)
+#define SetNotSpoof(x)		(1)
 #endif
 
+#define IsUserVersionKnown(x)	(ClientFlags(x) & FLAGS_GOT_VERSION)
+#define SetUserVersionKnown(x)	(ClientFlags(x) |= FLAGS_GOT_VERSION)
 
 /*
  * defined operator access levels
@@ -682,6 +694,7 @@ struct Client	{
 	*/
 	int	count;		/* Amount of data in buffer */
 	char	buffer[BUFSIZE]; /* Incoming message buffer */
+	char	sup_server[HOSTLEN+1], sup_host[HOSTLEN+1];
 	short	lastsq;		/* # of 2k blocks when sendqueued called last*/
 	dbuf	sendQ;		/* Outgoing message queue--if socket full */
 	dbuf	recvQ;		/* Hold for data incoming yet to be parsed */
@@ -702,6 +715,7 @@ struct Client	{
 	struct	in_addr	ip;	/* keep real ip# too */
 	u_short	port;	/* and the remote port# too :-) */
 	struct	hostent	*hostp;
+	LOpts   *lopt;
 #ifdef	pyr
 	struct	timeval	lw;
 #endif
@@ -746,6 +760,23 @@ struct	stats {
 	unsigned int	is_udp;	/* packets recv'd on udp port */
 	unsigned int	is_loc;	/* local connections made */
 };
+
+struct ListOptions {
+        LOpts   *next;
+        Link    *yeslist, *nolist;
+        int     flag;
+        int     starthash;
+        short int       showall;
+        unsigned short  usermin;
+        int     usermax;
+        time_t  currenttime;
+        time_t  chantimemin;
+        time_t  chantimemax;
+        time_t  topictimemin;
+        time_t  topictimemax;
+};
+
+
 
 /* mode structure for channels */
 
@@ -826,12 +857,22 @@ struct Channel	{
 /* Channel related flags */
 
 #define	CHFL_CHANOP     0x0001 /* Channel operator */
-#define	CHFL_VOICE      0x0002 /* the power to speak */
+#define	CHFL_VOICE      0x0002 /* The power to speak */
 #define	CHFL_DEOPPED	0x0004 /* Is de-opped by a server */
 #define	CHFL_SERVOPOK   0x0008 /* Server op allowed */
 #define	CHFL_ZOMBIE     0x0010 /* Kicked from channel */
-#define	CHFL_BAN	0x0020 /* ban channel flag */
+#define	CHFL_BAN	0x0020 /* Ban channel flag */
+#define CHFL_BQUIET	0x0040 /* Is banned on the channel? */
 #define	CHFL_OVERLAP    (CHFL_CHANOP|CHFL_VOICE)
+
+#define BAN_BLOCK      0x0001
+#define BAN_BQUIET     0x0002
+#define BAN_MASK       0x0004
+#define BAN_REQUIRE    0x0008
+#define BAN_RBLOCK     0x0010
+#define BAN_GECOS      0x0020
+
+#define BAN_STD                (BAN_BLOCK|BAN_BQUIET)
 
 /* Channel Visibility macros */
 
@@ -846,16 +887,26 @@ struct Channel	{
 #define	MODE_KEY	0x0100
 #define	MODE_BAN	0x0200
 #define	MODE_LIMIT	0x0400
+#define MODE_SHOWHOST	0x8000
+#define MODE_NOCOLORS	0x1000
+
 /*
  * mode flags which take another parameter (With PARAmeterS)
  */
 #define	MODE_WPARAS	(MODE_CHANOP|MODE_VOICE|MODE_BAN|MODE_KEY|MODE_LIMIT)
+
 /*
  * Undefined here, these are used in conjunction with the above modes in
  * the source.
 #define	MODE_DEL       0x40000000
 #define	MODE_ADD       0x80000000
  */
+
+/* Lifted somewhat from Undernet code --Rak */
+
+#define IsSendable(x)           (DBufLength(&x->sendQ) < 2048)
+#define DoList(x)               ((x)->lopt)
+
 
 #define	HoldChannel(x)		(!(x))
 /* name invisible */
@@ -865,10 +916,11 @@ struct Channel	{
 /* channel visible */
 #define	ShowChannel(v,c)	(PubChannel(c) || IsMember((v),(c)))
 #define	PubChannel(x)		((!x) || ((x)->mode.mode &\
-				 (MODE_PRIVATE | MODE_SECRET)) == 0)
+				 (MODE_PRIVATE | MODE_SECRET | MODE_SHOWHOST)) == 0)
 
-#define	IsChannelName(name) ((name) && (*(name) == '#' || *(name) == '&'))
-#define IsModelessChannel(name) (0 && (name) && (*(name) == '+'))
+#define	IsChannelName(name) ((name) && (*(name) == '#' || *(name) == '&' || *(name) == '+') \
+                             && (*(name+1) != '#' || *(name) != '+'))
+#define IsModelessChannel(name) (0 /*&& (name) && (*(name) == '+')*/)
 #define IsSystemChannel(name) ((name) && (*name) && (!mycmp((name)+1, HELPOP_CHAN+1)))
 
 /* Misc macros */

@@ -148,7 +148,7 @@
 #define ERR_TOOMANYCHANNELS  405
 #define ERR_WASNOSUCHNICK    406
 #define ERR_TOOMANYTARGETS   407
-#define ERR_NOSUCHSERVICE    408
+#define ERR_NOCOLORSONCHAN   408    /*#define ERR_NOSUCHSERVICE    408*/
 #define	ERR_NOORIGIN         409
 
 #define ERR_NORECIPIENT      411
@@ -211,6 +211,10 @@
 #define ERR_NEEDPONG         513
 #define ERR_YOURHURT         514
 
+
+
+#define ERR_LISTSYNTAX       517
+
 #define	RPL_WHOISMASKED	     550
 
 #define RPL_LOGON	     600
@@ -221,6 +225,11 @@
 #define RPL_NOWOFF	     605
 #define RPL_WATCHLIST	     606
 #define RPL_ENDOFWATCHLIST   607
+
+#define ERR_NOMASKCHAN       625
+#define ERR_BANRULE          626
+#define ERR_BANREQUIRE       627
+
 
 /*
  * Numberic replies from server commands.
@@ -260,6 +269,7 @@
 #define RPL_NOTOPIC          331
 #define RPL_TOPIC            332
 #define RPL_TOPICWHOTIME     333
+#define RPL_COMMANDSYNTAX    334
 
 #define RPL_INVITING         341
 #define	RPL_SUMMONING        342

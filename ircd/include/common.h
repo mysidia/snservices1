@@ -71,7 +71,7 @@ void	free();
 #endif
 #endif
 
-extern	int	match PROTO((char *, char *));
+extern	int	match PROTO((const char *, const char *));
 #define mycmp(a,b) \
  ( (toupper((a)[0])!=toupper((b)[0])) || (((a)[0]!=0) && smycmp((a)+1,(b)+1)) )
 extern int     smycmp PROTO((const char *, const char *));
@@ -108,6 +108,7 @@ extern char *strtoken PROTO((char **, char *, char *));
 #if !defined(MAX)
 #define MAX(a, b)	((a) > (b) ? (a) : (b))
 #endif
+
 #if !defined(MIN)
 #define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif

@@ -4,7 +4,7 @@
 # You may distribute this file without changes freely providing this notice
 # remains intact.
 #
-IRCD_VERSION="sor1.3.3"
+IRCD_VERSION="sor1.3.4_2 (release)"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #
@@ -31,6 +31,7 @@ NSTRTOKEN=undef
 NSTRTOK=undef
 REDHAT6=undef
 LINUX_GLIBC=undef
+LINUX_GLIBC_RRES=undef
 NINETADDR=undef
 NINETNTOA=undef
 NINETNETOF=undef
@@ -41,6 +42,9 @@ TMP=/tmp/.Configtmp$$.c
 CCPATH=''
 SIGNAL=''
 BLOCKING=''
+SN_MODE='1'
+NETNAME='SorceryNet'
+URL_CONNECTHELP='none'
 EXEC=/tmp/.Configtmp$$
 PLATE=/tmp/.ConPlate$$
 c=''
@@ -65,6 +69,7 @@ NOSPOOF_SEED01="0x12345678"
 NOSPOOF_SEED02="0x9abcdef0"
 NS_ADDRESS="nospoof@sorcery.net"
 KLINE_ADDRESS="kline@sorcery.net"
+NETWORK_KLINE_ADDRESS='kline@sorcery.net'
 DOMAINNAME="sorcery.net"
 IMODE="700"
 DPATH="/usr/local/lib/ircd"
@@ -78,6 +83,7 @@ MAXSENDQLENGTH="3000000"
 BUFFERPOOL="(9 * MAXSENDQLENGTH)"
 NICKNAMEHISTORYLENGTH="750"
 MAXCONNECTIONS="1024"
+ENABLE_SOCKSCHECK=''
 
 #
 # load $OPTIONS if present
@@ -154,9 +160,19 @@ case "$OS" in
 	DEFCFLAGS="$DEFOPT"
 	DEFLIBS=""
 	OSNAME="Linux"
-        if [ -e /lib/libc.so.6 ]
+	GUESS="`./config.guess`"
+        
+	echo "Note: If compile fails, try running Config again"
+	echo "and ommitting -DLINUX_GLIBC_RRES as an extra compiler"
+	echo "flag when prompted."
+	
+	if [ -n "`echo $GUESS |grep -- -linux-gnu`" \
+	     -o -e /lib/libc.so.6 -o -L /lib/libc.so.6 \
+	     -o -e /lib/libc.so.6.2 \
+	     -o -e /lib/libc.so.6.1 ]
         then
                 OSNAME="Linux Glibc"
+		DEFCFLAGS="$DEFOPT -DLINUX_GLIBC_RRES"
                 DEFLIBS="-lcrypt -lresolv"
 		LINUX_GLIBC="define"
         fi
@@ -188,6 +204,7 @@ echo " "
 cp Makefile.dist Makefile
 
 cat << __EOF__
+
 Welcome to autoconfigure for the SorceryNet-derived IRC server
 version [1m$IRCD_VERSION[0m.
 
@@ -752,7 +769,7 @@ main()
 }
 __EOF__
 $COMP >/dev/null 2>&1
-if [ "$LINUX_GLIBC" = "define" -o -n "$NEEDSKIPNAME" ] ;
+if [ -n "$NEEDSKIPNAME" ] ;
 then
     NEEDSKIPNAME="define";
     echo $n " dn_skipname$c"
@@ -964,6 +981,7 @@ cat > $SETUP  <<__EOF__
 #$STRINGSH	STRINGSH
 #$REDHAT6	REDHAT6
 #$LINUX_GLIBC	LINUX_GLIBC
+/*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
 #$STDLIBH	STDLIBH
 #$STDDEFH	STDDEFH
 #$SYSSYSLOGH	SYSSYSLOGH
@@ -1021,6 +1039,246 @@ echo "#endif" >> $SETUP
 
 FOO=""
 runonce=""
+
+while [ -z "$FOO" ] ; do
+   FOO="$SN_MODE"
+       if [ -n "$SN_MODE" ] ; then
+             FOO="Yes"
+       else
+             FOO="No"
+      fi
+
+cat <<EOF
+Do you want to compile in SorceryNet mode?
+
+Answer YES here for compiling any server daemon to be linked
+to SorceryNet or any SN test network.
+EOF
+
+   echo $n "[$FOO] -> $c"
+       if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+               read cc
+               runonce=Yes
+    else
+               cc=""
+    fi
+    if [ -z "$cc" ] ; then
+       cc=$FOO
+    fi
+    case "$cc" in
+	            [Yy]*)
+	                SN_MODE="1"
+	            ;;
+	            [Nn]*)
+	                SN_MODE=""
+	            ;;
+	            *)
+			echo ""
+		        echo "You need to enter either Yes or No here..."
+			echo ""
+			FOO=""
+	            ;;
+		    esac
+
+done
+
+if [ -n "$SN_MODE" ] ; then
+	NETNAME='SorceryNet'
+	NETWORK_KLINE_ADDRESS='kline@sorcery.net'
+	URL_CONNECTHELP=''
+	SN_MODE='1'
+elif [ -z "$SN_MODE" ] ; then
+# Lets prompt for the network name
+runonce=""
+FOO=""
+while [ -z "$FOO" ] ; do
+       FOO="$NETNAME"
+       echo "What is the name of your network? This will be the name users"
+       echo "see upon connect."
+       echo $n "[$FOO] -> $c"
+       if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+               read cc
+               runonce=Yes
+    else
+               cc=""
+    fi
+    if [ -z "$cc" ] ; then
+       cc=$FOO
+    fi
+done
+NETNAME=$cc
+
+
+# Ask if there is a webpage for help on connections.
+runonce=""
+FOO=""
+while [ -z "$FOO" ] ; do
+	if [ -n "$URL_CONNECTHELP" ] ; then
+		FOO="$URL_CONNECTHELP"
+	else
+	        FOO='none'
+	fi
+       echo "Do you have a specific webpage for helping users with problems"
+       echo "with their connection? If yes, give it here. If nothing is"
+       echo "given, they will be given the default help message on connect,"
+       echo "and I don\'t think you want that, unless you are linking to"
+       echo "SorceryNet."
+       echo $n "[$FOO] -> $c"
+
+       if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+               read cc
+               runonce=Yes
+       else
+               cc=""
+       fi
+    if [ -z "$cc" ] ; then
+       cc=$FOO
+    fi
+done
+if [ "$cc" != "none" ] ; then
+       URL_CONNECTHELP=$cc
+else
+       URL_CONNECTHELP=""
+fi
+
+
+# NETWORK_KLINE_ADDRESS
+FOO=""
+runonce="a"
+while [ -z "$FOO" ] ; do
+    FOO="$NETWORK_KLINE_ADDRESS"
+    echo " "
+    echo "What is the contact address for connect problems due to the"
+    echo "user being banned from the entire network, shown to the user when"
+    echo "they attempt to connect while autokilled by services."
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" -o -z "$FOO" ] ; then
+	read cc
+	runonce=Yes
+    else
+	cc=""
+    fi
+    if [ -z "$cc" ] ; then
+	cc=$FOO
+    fi
+    case "$cc" in
+	[Kk][Ll][Ii][Nn][Ee]@[sS][oO][rR][cC][eE][rR][yY].[Nn][Ee][Tt])
+	    NETWORK_KLINE_ADDRESS="$cc"
+	    FOO=""
+	    echo " "
+	    while [ -z "$FOO" ] ; do
+		FOO="No"
+		echo "kline@sorcery.net is for SorceryNet servers only"
+
+		echo "Are you sure you want to set the address to kline@sorcery.net?"
+		echo $n "[$FOO] -> $c"
+		if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+		    read cc
+		    runonce=Yes
+		else
+		    cc=""
+		fi
+		if [ -z "$cc" ] ; then
+		    cc=$FOO
+		fi
+		case "$cc" in
+		    [Yy]*)
+			;;
+		    [Nn]*)
+			NETWORK_KLINE_ADDRESS=""
+			;;
+		    *)
+			echo ""
+			echo "You need to enter either Yes or No here..."
+			echo ""
+			FOO=""
+			;;
+		esac
+	    done
+	    FOO="$NETWORK_KLINE_ADDRESS"
+	    ;;
+	*@*.*)
+	    NETWORK_KLINE_ADDRESS=$cc
+	    FOO="$NETWORK_KLINE_ADDRESS"
+	    ;;
+	*)
+	    echo " "
+	    echo "Read the instructions and try again...  You did not enter a"
+	    echo "proper email address (user@host.domain)."
+	    FOO=""
+	    ;;
+    esac
+done
+
+#
+fi
+
+############################################################
+FOO=''
+runonce=''
+
+while [ -z "$FOO" ] ; do
+   FOO="$ENABLE_SOCKSCHECK"
+       if [ -n "$ENABLE_SOCKSCHECK" ] ; then
+             FOO="Yes"
+       else
+             FOO="No"
+      fi
+cat<<EOF
+ENABLE_SOCKSCHECK (DEPRECATED)
+
+Ircd-sor1.3.4 includes a built-in BASIC socks checking facility which
+can be used to help keep users of open SOCKS servers off of your server.
+
+You can enable BASIC socks detection capability here if you like, however,
+this capability is no longer enabled by default as many server admins are
+using external tools such as the Blitzed Open Proxy Monitor for this purpose
+
+See: http://www.blitzed.org/bopm/
+
+A server with socks checking enabled will prevent users from connecting
+until it has attempted to connect back to the user on the SOCKS port (1080)
+to request a connection to itself using SOCKS4 protocol.  The end-user could
+mistake this for an intrusion or an attempt to compromise their security if
+they are running utilities such as nuke nabber.
+
+See the software disclaimer: NO WARRANTY whatsoever; Enable this option at
+your own risk.
+
+EOF
+
+   echo $n "[$FOO] -> $c"
+       if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+               read cc
+               runonce=Yes
+    else
+               cc=""
+    fi
+    if [ -z "$cc" ] ; then
+       cc=$FOO
+    fi
+    case "$cc" in
+	            [Yy]*)
+	                ENABLE_SOCKSCHECK="1"
+	            ;;
+	            [Nn]*)
+	                ENABLE_SOCKSCHECK=""
+	            ;;
+	            *)
+			echo ""
+		        echo "You need to enter either Yes or No here..."
+			echo ""
+			FOO=""
+	            ;;
+		    esac
+
+done
+
+
+
+FOO=""
+runonce=""
 while [ -z "$FOO" ] ; do
     if [ -n "$NOSPOOF" ] ; then
 	FOO="Yes"
@@ -1032,14 +1290,9 @@ while [ -z "$FOO" ] ; do
     echo "This allows IP spoofing attacks, which are very difficult for"
     echo "operators to track down and ban."
     echo ""
-    echo "If you are CERTAIN your operating system has secure TCP stacks"
-    echo "you do not need to define this.  If you are not certain, define"
-    echo "this and find out if you need it later or not.  You can mail the"
-    echo "source mailing list later; someone there can help you determine"
-    echo "if your OS is secure or not."
+    echo "Do you want to prevent users from connecting to the IRC network"
+    echo "with ip addresses spoofed in the most common fashion?"
     echo ""
-    echo "Do you have an insecure operating system and therefore want to"
-    echo "use the server anti-spoof protection?"
     echo $n "[$FOO] -> $c"
     if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
 	read cc
@@ -1064,6 +1317,20 @@ while [ -z "$FOO" ] ; do
 	    FOO=""
 	    ;;
     esac
+
+    if [ -n "$SN_MODE" -a -z "$NOSPOOF" ] ; then
+cat << EOF
+When compiling a SorceryNet server, you need to use the NOSPOOF
+option.
+
+Type 'yes' if you are sure you want to turn this off:
+
+EOF
+      read 'blah'
+       if [ "$blah" != "yes" ] ; then
+	       FOO=''
+       fi
+    fi	  
 done
 
 if [ -n "$NOSPOOF" ] ; then
@@ -1205,7 +1472,7 @@ while [ -z "$FOO" ] ; do
 	cc=$FOO
     fi
     case "$cc" in
-	[Kk][Ll][Ii][Nn][Ee]@[Dd][Aa][Ll].[Nn][Ee][Tt])
+	[Kk][Ll][Ii][Nn][Ee]@[sS][oO][rR][cC][eE][rR][yY].[Nn][Ee][Tt])
 	    KLINE_ADDRESS=$cc
 	    FOO=""
 	    echo " "
@@ -1747,6 +2014,7 @@ cat > $OPTIONS_H << __EOF__
  * the same directory as Config, and rerun to regenerate this file.
  */
 
+#define NETWORK "$NETNAME"
 #define DPATH "$DPATH"
 #define SPATH "$SPATH"
 #define LISTEN_SIZE $LISTEN_SIZE
@@ -1762,12 +2030,26 @@ else
     echo "#undef HUB" >> $OPTIONS_H
 fi
 
+if [ -n "$SN_MODE" ] ; then
+	echo "#define SN_MODE" >> $OPTIONS_H
+fi
+
+if [ -n "$URL_CONNECTHELP" ] ; then
+       echo "#define URL_CONNECTHELP \"$URL_CONNECTHELP\"" >> $OPTIONS_H
+fi
 
 if [ -n "$CRYPT_OPER_PASSWORD" ] ; then
     echo "#define CRYPT_OPER_PASSWORD 1" >> $OPTIONS_H
 else
     echo "#undef CRYPT_OPER_PASSWORD" >> $OPTIONS_H
 fi
+
+if [ -n "$ENABLE_SOCKSCHECK" ] ; then
+    echo "#define ENABLE_SOCKSCHECK 1"  >> $OPTIONS_H
+else
+    echo "#undef ENABLE_SOCKSCHECK" >> $OPTIONS_H
+fi
+
 if [ -n "$CRYPT_LINK_PASSWORD" ] ; then
     echo "#define CRYPT_LINK_PASSWORD 1" >> $OPTIONS_H
 else
@@ -1790,6 +2072,10 @@ fi
 if [ -n "$KLINE_ADDRESS" ] ; then
     echo "#define KLINE_ADDRESS \"$KLINE_ADDRESS\"" >> $OPTIONS_H
 fi
+if [ -n "$NETWORK_KLINE_ADDRESS" ] ; then
+	    echo "#define NETWORK_KLINE_ADDRESS \"$NETWORK_KLINE_ADDRESS\"" >> $OPTIONS_H
+fi 
+
 if [ -n "$DOMAINNAME" ] ; then
     echo "#define DOMAINNAME \"$DOMAINNAME\"" >> $OPTIONS_H
 else
@@ -1810,12 +2096,17 @@ cat > $OPTIONS << __EOF__
 # versions of the DALnet server with ease.
 #
 LAST_VERSION="$IRCD_VERSION"
+SN_MODE="$SN_MODE"
+NETNAME="$NETNAME"
+URL_CONNECTHELP="$URL_CONNECTHELP"
 NOSPOOF="$NOSPOOF"
 NOSPOOF_SEED01="$NOSPOOF_SEED01"
 NOSPOOF_SEED02="$NOSPOOF_SEED02"
 IMODE="$IMODE"
+ENABLE_SOCKSCHECK="$ENABLE_SOCKSCHECK"
 NS_ADDRESS="$NS_ADDRESS"
 KLINE_ADDRESS="$KLINE_ADDRESS"
+NETWORK_KLINE_ADDRESS="$NETWORK_KLINE_ADDRESS"
 DPATH="$DPATH"
 SPATH="$SPATH"
 HUB="$HUB"
@@ -1837,6 +2128,6 @@ cat <<__EOF__
 
  Before compiling, check the contents of [1minclude/config.h[0m for any strange
  things you usually set.  If you want them to be included in the future,
- ask them to be moved to the [1moptions.h[0m file on [1mircd@sorcery.net[0m.
+ ask them to be moved to the [1moptions.h[0m file on [1mcoders@sorcery.net[0m.
 
 __EOF__
