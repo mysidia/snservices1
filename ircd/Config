@@ -18,7 +18,6 @@ AUTO_CONFIG=""
 #
 STDDEFH=undef
 PARAMH=undef
-RUSAGEH=undef
 NOINDEX=undef
 NSTRTOKEN=undef
 NSTRTOK=undef
@@ -402,13 +401,6 @@ if [ "$cc" = "none" ] ; then
 	cc=''
 fi
 
-echo $n "...Looking for /usr/include/sys/rusage.h...$c"
-if [ -r /usr/include/sys/rusage.h ] ; then
-	RUSAGEH=define
-	echo  'found!'
-else
-	echo 'not found (good!)'
-fi
 #
 # to b or not to b
 #

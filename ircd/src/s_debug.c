@@ -61,12 +61,7 @@ char	serveropts[] = {
 #include "hash.h"
 #include <sys/file.h>
 #include <sys/param.h>
-#ifdef SOL20
-# include <sys/time.h>
-# ifdef RUSAGEH
-#  include <sys/rusage.h>
-# endif
-#endif
+#include <sys/time.h>
 #include <sys/resource.h>
 #include "h.h"
 
