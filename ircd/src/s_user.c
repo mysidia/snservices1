@@ -3679,7 +3679,7 @@ static int is_silenced(aClient *sptr, aClient *acptr)
 	sprintf(sendermsk,"%s!%s@%s",sptr->name,user->username, genHostMask(user->host));
 
 	for (; lp; lp = lp->next) {
-		if (!match(lp->value.cp, sender)) {
+		if (!match(lp->value.cp, sender) || !match(lp->value.cp, sendermsk)) {
 			if (!MyConnect(sptr)) {
 				sendto_one(sptr->from,
 					   ":%s SILENCE %s :%s",acptr->name,

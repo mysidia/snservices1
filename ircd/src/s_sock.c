@@ -100,12 +100,16 @@ time_t flush_socks(time_t now, int fAll)
         if (!(socks->status & SOCK_DONE))
             continue;
 	socks->status &= ~(SOCK_DESTROY);
-	if (fAll)
+	if ((fAll>1) || (fAll && (socks->status & SOCK_DONE|SOCK_FOUND|SOCK_DESTROY)))
 	    socks->status |= SOCK_DESTROY;
         if (!(socks->status & SOCK_FOUND) && ((NOW - socks->start) > 3))
             socks->status |= SOCK_DESTROY;
-        if (((NOW - socks->start) > (SOCKS_TIMEOUT*3)) )
+
+        /* The 'real' timeout condition is in s_bsd.c */
+        if (((NOW - socks->start) > (SOCKS_TIMEOUT*3)) &&
+            ((NOW - socks->start) > 60)) {
             socks->status |= SOCK_DESTROY;
+        }
 	if (socks->status & SOCK_DESTROY)
 	    remFromSocks(socks, &flushlist);
    }
@@ -323,7 +327,7 @@ void init_socks(aClient *cptr)
 					   strerror(errno));
 #endif
 				cptr->socks->fd = -1;
-				cptr->socks->status |= (SOCK_DONE | SOCK_DESTROY);
+				cptr->socks->status |= (SOCK_DONE);
 
 				if (!DoingDNS(cptr))
 				SetAccess(cptr);
@@ -386,7 +390,7 @@ void send_socksquery (aSocks *sItem)
 		if (sItem->fd == highest_fd)
 			while (!local[highest_fd])
 				highest_fd--;
-		sItem->status |= (SOCK_DONE | SOCK_DESTROY);
+		sItem->status |= (SOCK_DONE);
 		if ((rv < 0) && (errno == ETIMEDOUT || errno == ENETUNREACH))
 		    sItem->status |= (SOCK_ERROR);
 		else if (rv >= 0)
@@ -431,7 +435,7 @@ void read_socks(aSocks *sItem)
 
 	if (len < 0) {
 		if (erv != EAGAIN)
-			sItem->status |= (SOCK_GO | SOCK_DESTROY);
+			sItem->status |= (SOCK_GO);
 
         for(i = 0; i < highest_fd; i++)
             if (local[i] && !IsLog(local[i]) && local[i]->socks == sItem)
@@ -444,7 +448,7 @@ void read_socks(aSocks *sItem)
 	 * return code of 90 means the connection was granted.
 	 */
 	if ((len >= 2) && (sbuf[1] == 90)) {
-		sItem->status |= (SOCK_FOUND | SOCK_GO | SOCK_DESTROY);
+		sItem->status |= (SOCK_FOUND | SOCK_GO);
                 for(i = 0; i < highest_fd; i++)
 		   if (local[i] && !IsLog(local[i]) && local[i]->socks == sItem)
 			ApplySockConn(local[i]);
@@ -454,7 +458,7 @@ void read_socks(aSocks *sItem)
 	/*
 	 * The request failed.  Good.
 	 */
-	sItem->status |= (SOCK_GO | SOCK_DESTROY);
+	sItem->status |= (SOCK_GO);
 	/*if (!DoingDNS(cptr))
 		SetAccess(cptr);
 	if (cptr != &me)
