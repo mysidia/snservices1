@@ -34,14 +34,8 @@ char	serveropts[] = {
 #ifdef	CHROOTDIR
 'c',
 #endif
-#ifdef	DO_ID
-'d',
-#endif
 #ifdef	DEBUGMODE
 'D',
-#endif
-#ifdef	NOTE_FORWARDER
-'f',
 #endif
 #ifdef	HUB
 'H',
@@ -49,9 +43,6 @@ char	serveropts[] = {
 'i', /* SHOW_INVISIBLE_LUSERS */
 #ifndef	NO_DEFAULT_INVISIBLE
 'I',
-#endif
-#ifdef	M4_PREPROC
-'m',
 #endif
 #ifdef	IDLE_FROM_MSG
 'M',

@@ -326,23 +326,6 @@
 #endif
 
 /*
- * NOTE: defining CMDLINE_CONFIG and installing ircd SUID or SGID is a MAJOR
- *       security problem - they can use the "-f" option to read any files
- *       that the 'new' access lets them. Note also that defining this is
- *       a major security hole if your ircd goes down and some other user
- *       starts up the server with a new conf file that has some extra
- *       O-lines. So don't use this unless you're debugging.
- */
-#undef	CMDLINE_CONFIG /* allow conf-file to be specified on command line */
-#define CMDLINE_CONFIG
-/*
- * To use m4 as a preprocessor on the ircd.conf file, define M4_PREPROC.
- * The server will then call m4 each time it reads the ircd.conf file,
- * reading m4 output as the server's ircd.conf file.
- */
-#undef	M4_PREPROC
-
-/*
  * If you wish to have the server send 'vital' messages about server
  * through syslog, define USE_SYSLOG. Only system errors and events critical
  * to the server are logged although if this is defined with FNAME_USERLOG,
