@@ -2319,6 +2319,10 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		}
 	}
 
+	if (extended == 0) {
+		sendto_one(cptr, ":%s NOTICE %s :Client List", me.name, sptr->name);
+	}
+
 	for(i = 0; i <= highest_fd; i++) {
 		if (!(ptr = local[i]))
 			continue;
@@ -2333,8 +2337,6 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 			continue;
 
 		if (extended == 0) {
-			sendto_one(cptr, ":%s NOTICE %s :Client List",
-				       	me.name, sptr->name);
 			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%s,%d] [h:%s] [s:%s]",
 					me.name, sptr->name, i,
 					BadPtr(ptr->name) ? "-" : ptr->name,
@@ -2345,9 +2347,10 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 					ptr->sup_host,
 					ptr->sup_server
 				  );
-			sendto_one(cptr, ":%s NOTICE %s :End of List",
-					me.name, sptr->name);
+			continue;
 		}
+
+		/* Extended mode */
 
 		sendto_one(cptr, ":%s NOTICE %s :%s<client id=\"%d\">", me.name, sptr->name,
 				need_start ? "<clients>" : "", i);
@@ -2400,7 +2403,15 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		sendto_one(cptr, ":%s NOTICE %s :</client>", me.name, sptr->name);
 
 	}
-	sendto_one(sptr, ":%s NOTICE %s :</clients>", me.name, sptr->name);
+
+	if (extended == 0) {
+		sendto_one(cptr, ":%s NOTICE %s :End of List",  me.name, sptr->name);
+		
+	}
+	else {
+		sendto_one(sptr, ":%s NOTICE %s :</clients>", me.name, sptr->name);
+	}
+
 	return 0;
 }
 
