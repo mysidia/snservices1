@@ -166,7 +166,7 @@ sock *network_connect(aConfItem *aconf)
 		aconf->addr = address_make(aconf->host, (aconf->port > 0 ? aconf->port : portnum));
 	}
 
-	sock = socket_connect((localaddr->addr->sa_family == aconf->addr->addr->sa_family ? localaddr : NULL), aconf->addr, SOCKET_STREAM | (aconf->string4 != NULL && strcmp(aconf->string4, "ssl") ? 0 : SOCKET_SSL));
+	sock = socket_connect((localaddr->addr->sa_family == aconf->addr->addr->sa_family ? localaddr : NULL), aconf->addr, SOCKET_STREAM | (aconf->string4 != NULL && !strcmp(aconf->string4, "ssl") ? SOCKET_SSL : 0));
 	if (sock == NULL)
 	{
 		return NULL;
