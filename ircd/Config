@@ -4,7 +4,7 @@
 # You may distribute this file without changes freely providing this notice
 # remains intact.
 #
-IRCD_VERSION="sor1.3.2"
+IRCD_VERSION="sor1.3.3"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #

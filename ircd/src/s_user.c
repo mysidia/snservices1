@@ -1309,7 +1309,7 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 
 		if ( nick[0] == '+' && (chptr = find_channel(nick+1, NullChn)))
 		    {
-			if (has_voice(sptr, chptr) || IsULine(cptr,sptr))
+                       if (has_voice(sptr, chptr) || is_chan_op(sptr, chptr) || IsULine(cptr,sptr))
 				sendto_channelvoices_butone(cptr, sptr, chptr,
 						      ":%s %s %s :%s",
 						      parv[0], cmd, nick,

@@ -1580,17 +1580,22 @@ aChannel *chptr;
 char	*key;
 {
 	Link	*lp;
+	int invited = 0;
+
+
+       for (lp = sptr->user->invited; lp; lp = lp->next)
+               if (lp->value.chptr == chptr) {
+                       invited = 1;
+                       break;
+               }
+
+        if (invited || IsULine(sptr, sptr))
+            return 0;
 
 	if (is_banned(sptr, chptr))
 		return (ERR_BANNEDFROMCHAN);
 	if (chptr->mode.mode & MODE_INVITEONLY)
-	    {
-		for (lp = sptr->user->invited; lp; lp = lp->next)
-			if (lp->value.chptr == chptr)
-				break;
-		if (!lp)
-			return (ERR_INVITEONLYCHAN);
-	    }
+	        return (ERR_INVITEONLYCHAN);
 
 	if (*chptr->mode.key && (BadPtr(key) || mycmp(chptr->mode.key, key)))
 		return (ERR_BADCHANNELKEY);
@@ -2383,10 +2388,14 @@ char	*parv[];
 			sendto_one(sptr, rpl_str(RPL_AWAY), me.name, parv[0],
 				   acptr->name, acptr->user->away);
 	    }
-	if (MyConnect(acptr))
-		if (chptr && (chptr->mode.mode & MODE_INVITEONLY) &&
-		    sptr->user && (is_chan_op(sptr, chptr) || IsULine(cptr,sptr)))
+	if (MyConnect(acptr)) {
+		if (chptr && sptr->user && (is_chan_op(sptr, chptr) || IsULine(cptr,sptr)))
 			add_invite(acptr, chptr);
+                if (!IsULine(cptr, sptr))
+                    sendto_channelops_butone(NULL, &me, chptr, ":%s NOTICE @%s :%s invited %s into channel %s.",
+                                             me.name, chptr->chname, sptr->name, acptr->name, chptr->chname);
+        }
+
 	sendto_prefix_one(acptr, sptr, ":%s INVITE %s :%s",parv[0],
 			  acptr->name, ((chptr) ? (chptr->chname) : parv[2]));
 	return 0;

@@ -640,7 +640,15 @@ HEADER	*hptr;
 			if (ans == 1)
 				hp->h_addrtype =  (class == C_IN) ?
 							AF_INET : AF_UNSPEC;
-			bcopy(cp, (char *)&dr, dlen);
+
+                                 /* from Christophe Kalt <kalt@stealth.net> */
+                                 if (dlen != sizeof(dr)) {
+                                                sendto_realops("Bad IP length (%d) returned for %s",
+                                                               dlen, hostbuf);
+                                                Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
+                                                return(-2);
+                                 }
+                        memcpy((char *)&dr, cp, sizeof(dr));
 			adr->s_addr = dr.s_addr;
 			Debug((DEBUG_INFO,"got ip # %s for %s",
 				inetntoa((char *)adr), hostbuf));
@@ -1545,6 +1553,8 @@ char	*parv[];
 {
 	aCache	*cp;
 	int	i;
+
+	if (!IsAnOper(sptr)) return;
 
 	if (parv[1] && *parv[1] == 'l') {
 		for(cp = cachetop; cp; cp = cp->list_next)
