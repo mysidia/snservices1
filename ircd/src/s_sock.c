@@ -35,9 +35,6 @@
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
-#ifdef  UNIXPORT
-#include <sys/un.h>
-#endif
 #include <fcntl.h>
 #include "h.h"
 

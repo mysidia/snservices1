@@ -71,9 +71,6 @@ char	serveropts[] = {
 #ifdef	NPATH
 'N',
 #endif
-#ifdef	UNIXPORT
-'X',
-#endif
 #ifdef	USE_SYSLOG
 'Y',
 #endif
