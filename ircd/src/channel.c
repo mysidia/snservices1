@@ -464,11 +464,6 @@ int BanRuleMatch(const char *text, aClient *cptr, int *result,
                return 0;
 	}
 
-	/* Ban flags NV and NR elevate to standard bans if they match */
-	if ((ban_flags == BAN_VERONLY || ban_flags == BAN_REGONLY)) {
-		ban_flags |= BAN_STD;		
-	}
-
 	if (ban_flags == BAN_REQUIRE && pattern_start) {
 	    aChannel *ctmp = find_channel((char *)(text+pattern_start), (aChannel *)0);
 	    Link *lp;
