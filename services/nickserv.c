@@ -781,8 +781,16 @@ void setMode(char *nick, char *mode)
 				changeme->oflags &= ~NISHELPOP;
 			break;
 		case 'r':
-			if (c == 1)
+			if (c == 1) {
 				changeme->oflags |= NOISREG;
+
+				if (hasValidModeR(changeme)) {
+					sSend(":%s NOTICE %s :Since you were previously identified,"
+				              "you will be allowed to remain on your current "
+					      "nickname." ,
+					      NickServ, changeme->nick);
+				}
+			}
 			else
 				changeme->oflags &= ~NOISREG;
 			break;
@@ -5688,6 +5696,7 @@ NCMD(ns_logoff)
 	char *from = nick->nick;
 
 	clearIdentify(nick);
+	revokeIdentifiedUmode(nick);
 	if (nick->caccess > 2)
 		nick->caccess = 2;
 	sSend(":%s NOTICE %s :You are no longer identified with %s.", NickServ,
