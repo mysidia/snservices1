@@ -1,228 +1,87 @@
-<HTML
-><HEAD
-><TITLE
->Installing Services</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.73
-"><LINK
-REL="HOME"
-TITLE="Services installation and operation manual"
-HREF="manual.html"><LINK
-REL="UP"
-TITLE="Getting Started"
-HREF="preinstall.html"><LINK
-REL="PREVIOUS"
-TITLE="Getting Started"
-HREF="preinstall.html"><LINK
-REL="NEXT"
-TITLE="Configuring Services"
-HREF="config.html"></HEAD
-><BODY
-CLASS="SECT1"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->Services installation and operation manual</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="preinstall.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
->Chapter 2. Getting Started</TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="config.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="INSTALL"
->Installing Services</A
-></H1
-><P
->			<P
-></P
-><UL
-><LI
-><P
->					Untar the package (where XXX is the version number)
-<PRE
-CLASS="PROGRAMLISTING"
->				gunzip services-XXX.tar.gz
-				tar xvf services-XXX.tar</PRE
->
-				</P
-></LI
-><LI
-><P
->					Build the package.
-					<P
-></P
-><UL
-><LI
-><P
->cd services
-					</P
-></LI
-><LI
-><P
->Run configure with appropriate options (see ./configure
-            --help)</P
-><P
->Example:
-<PRE
-CLASS="PROGRAMLISTING"
->		./configure --with-cfgpath=/usr/local/lib/services \
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Installing Services</title><meta name="generator" content="DocBook XSL Stylesheets V1.61.3"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="preinstall.html" title="Chapter 2. Getting Started"><link rel="previous" href="preinstall.html" title="Chapter 2. Getting Started"><link rel="next" href="config.html" title="Chapter 3. Configuring Services"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Installing Services</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="preinstall.html">Prev</a> </td><th width="60%" align="center">Chapter 2. Getting Started</th><td width="20%" align="right"> <a accesskey="n" href="config.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="install"></a>Installing Services</h2></div></div><div></div></div><p>
+			</p><div class="itemizedlist"><ul type="disc"><li><p>
+					Untar the package (where XXX is the version number)
+</p><pre class="programlisting">
+				gunzip services-XXX.tar.gz
+				tar xvf services-XXX.tar
+</pre><p>
+				</p></li><li><p>
+					Build the package.
+					</p><div class="itemizedlist"><ul type="circle"><li><p>
+cd services
+					</p></li><li><p>
+Run configure with appropriate options (see ./configure
+            --help)</p><p>Example:
+</p><pre class="programlisting">
+		./configure --with-cfgpath=/usr/local/lib/services \
 			    --with-help=/usr/local/lib/services/help \
 			    --with-network='sorcery.net' \
 			    --with-klinemail='kline@example.net' \
 			    --with-md5 \
+			    --with-opsemail='ircops@bogus.example.net' \
 			    --with-sendmail='/usr/sbin/sendmail -T' \
-			    --disable-grpops</PRE
->
-					</P
-></LI
-><LI
-><P
->Run make
-					</P
-></LI
-></UL
->
-				</P
-></LI
-><LI
-><P
->Install the services binary in the configuration directory by copying
-it there; alternatively, run <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->make install</I
-></SPAN
-> after
+			    --disable-grpops
+</pre><p>
+					</p></li><li><p>
+Run make
+					</p></li></ul></div><p>
+				</p></li><li><p>
+Install the services binary in the configuration directory by copying
+it there; alternatively, run <span class="emphasis"><em>make install</em></span> after
 building services.
-				</P
-></LI
-><LI
-><P
->Switch to the directory you named in the 'cfgpath' compilation option,
+				</p></li><li><p>
+Switch to the directory you named in the 'cfgpath' compilation option,
 and create blank databases to be used when services runs.
 For example:
-<PRE
-CLASS="PROGRAMLISTING"
->		cd /usr/local/lib/services
+</p><pre class="programlisting">
+		cd /usr/local/lib/services
 		mkdir chanserv nickserv memoserv operserv
 		      nickserv/backups chanserv/backups
-		echo 'done' &#62; nickserv/nickserv.db
-		echo 'done' &#62; chanserv/chanserv.db
-		echo 'done' &#62; memoserv/memoserv.db
-		echo 'done' &#62; operserv/trigger.db</PRE
->
-				</P
-></LI
-><LI
-><P
->Write a services.conf file and place it within the directory named
+		echo 'done' &gt; nickserv/nickserv.db
+		echo 'done' &gt; chanserv/chanserv.db
+		echo 'done' &gt; memoserv/memoserv.db
+		echo 'done' &gt; operserv/trigger.db
+</pre><p>
+				</p></li><li><p>
+Write a services.conf file and place it within the directory named
 in the --with-cfgpath option.					
-				</P
-></LI
-><LI
-><P
->To install the services helpfiles, unpack help tarball one level above the directory
+				</p></li><li><p>
+						To install the services helpfiles, unpack the <a href="http://savannah.nongnu.org/download/snservices/services-help-1.0.tar.gz" target="_top">help tarball</a> one level above the directory
 named in the --with-help configure option.  For example:
-<PRE
-CLASS="PROGRAMLISTING"
->		cd /usr/local/lib/services
-		gunzip &lt; /path/to/tarball/services-help.tar.gz | tar -xvf -</PRE
->
+</p><pre class="programlisting">
+		cd /usr/local/lib/services
+		gunzip &lt; /path/to/tarball/services-help.tar.gz | tar -xvf -
+</pre><p>
 					
-				</P
-></LI
-><LI
-><P
->					Add appropriate matching C and N lines for your services.conf
+				</p></li><li><p>
+					Add appropriate matching C and N lines for your services.conf
 				        configuration to your IRC server. The C-line and the N-line should
 				        be identical. The N-line password should match the W-line in
 					services.conf, and the server name in the C and N-lines should
 					match the H-line in services.conf.
 					Example C/N-line pair (supposing that you are using Y-line class 32 for hub connection class):
-					<PRE
-CLASS="PROGRAMLISTING"
->		C:127.0.0.1:mypasswd:services.hostname_here.net::32
+					</p><pre class="programlisting">
+		C:127.0.0.1:mypasswd:services.hostname_here.net::32
 		N:127.0.0.1:mypasswd:services.hostname_here.net::32
-					</PRE
->
-				</P
-></LI
-><LI
-><P
->					Add a U-line and a H-line for services
+					</pre><p>
+				</p></li><li><p>
+					Add a U-line and a H-line for services
 					to your IRC server's configuration file,
 					and have all other servers on the network
 					do the same.
 
-					Be certain the U-line and H-lines are added <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->before</I
-></SPAN
->
+					Be certain the U-line and H-lines are added <span class="emphasis"><em>before</em></span>
 					starting services, or you will need to restart
 					services after adding the lines (and doing a server /rehash)
 					for changes to take effect.
 					Sample U/H-lines:
-					<PRE
-CLASS="PROGRAMLISTING"
->		U:services.hostname_here.net:*:*
+					</p><pre class="programlisting">
+		U:services.hostname_here.net:*:*
 		H:*::services.hostname_here.net
-					</PRE
->
-				</P
-></LI
-></UL
->
-			</P
-><P
->				After services have been installed, in
+					</pre><p>
+				</p></li></ul></div><p>
+			</p><p>
+				After services have been installed, in
 				this manner, you should be able to start
 				them by running the binary.
 				If the IRC server is running and both
@@ -232,23 +91,17 @@ CLASS="PROGRAMLISTING"
 				However, if you have been installing
 				services using administrative access
 				on your machine,
-				<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->					stop now
-				</I
-></SPAN
->, make a separate services
+				<span class="emphasis"><em>
+					stop now
+				</em></span>, make a separate services
 				account, and ensure that the databases
 				and database directories where the
 				logfiles will be written are all owned
 				by that account.
 
 				Never run services as root for any reason.
-			</P
-><P
->				To gain administrative access within
+			</p><p>
+				To gain administrative access within
 				services during the first services session,
 				start services, register your nickname with
 				NickServ, add a line that reads 'SRA:nickname_here'
@@ -258,16 +111,9 @@ CLASS="EMPHASIS"
 				Once you have administrative access, new
 				configuration options can be added and
 				helpfiles can be updated with the
-				<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ reset</I
-></SPAN
-> command.
-			</P
-><P
->				Once services start, and you are able
+				<span class="emphasis"><em>/OperServ reset</em></span> command.
+			</p><p>
+				Once services start, and you are able
 				to interact with services, the installation
 				is completed.
 
@@ -276,101 +122,17 @@ CLASS="EMPHASIS"
 				actions on your part to work properly:
 
 				Test to ensure that requests such as
-				<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/NickServ HELP</I
-></SPAN
->
+				<span class="emphasis"><em>/NickServ HELP</em></span>
 				work (if it fails, you may not have installed
-				the helpfiles properly, see <A
-HREF="install.html"
->the Section called <I
->Installing Services</I
-></A
->&#62;.), and register sample nicks, channels,
+				the helpfiles properly, see <a href="install.html" title="Installing Services">the section called &#8220;Installing Services&#8221;</a>.), and register sample nicks, channels,
 				memos, triggers, and restart services to
 				ensure all databases are being written:
 				if they are not, ensure that the permissions
 				on the files and directories allow the services
 				user full access to those files.
-			</P
-><P
->				If services fail to start, <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->core.log</I
-></SPAN
->,
+			</p><p>
+				If services fail to start, <span class="emphasis"><em>core.log</em></span>,
 				and notices sent to +s users on the IRC server you
 				were trying to connect services to are good places to start looking
 				for information on why the startup failed.
-			</P
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="preinstall.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="manual.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="config.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Getting Started</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="preinstall.html"
-ACCESSKEY="U"
->Up</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Configuring Services</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+			</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="preinstall.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="preinstall.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="config.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Getting Started </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 3. Configuring Services</td></tr></table></div></body></html>
