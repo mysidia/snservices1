@@ -295,7 +295,7 @@ OCMD(os_akill)
 
 	listProper = aktype_str(akill_type, 0);
 
-	if (!str_cmp(args[1], "list") && numargs > 2) {
+	if ((numargs > 2) && !str_cmp(args[1], "list")) {
 		if (args[2][0] == '-') {
 			switch(args[2][1]) {
 			case 'r':
