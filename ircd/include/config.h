@@ -180,7 +180,9 @@
  *       the maintainer.
  */
 
+#if 0
 #define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
+#endif
 
 /*
  * Full pathnames and defaults of irc system's support files. Please note that
