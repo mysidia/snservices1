@@ -147,18 +147,15 @@ void	server_reboot(char *mesg)
 */
 static	time_t	try_connections(time_t currenttime)
 {
-	aConfItem *aconf, **pconf;
-	aConfItem *con_conf = NULL;
+	aConfItem *aconf, **pconf, *con_conf = NULL;
 	aClient *cptr;
 #ifndef HUB
 	aClient *xcptr;
 #endif
-	int	connecting, confrq;
-	int	con_class = 0;
+	int	connecting = FALSE;
 	time_t	next = 0;
-	aClass	*cltmp;
+	class	*cltmp;
 
-	connecting = FALSE;
 	Debug((DEBUG_NOTICE,"Connection check at   : %s",
 		myctime(currenttime)));
 	for (aconf = conf; aconf; aconf = aconf->next )
@@ -166,7 +163,7 @@ static	time_t	try_connections(time_t currenttime)
 		/* Also when already connecting! (update holdtimes) --SRB */
 		if (!(aconf->status & CONF_CONNECT_SERVER) || aconf->port <= 0)
 			continue;
-		cltmp = Class(aconf);
+		cltmp = aconf->class;
 		/*
 		** Skip this entry if the use of it is still on hold until
 		** future. Otherwise handle this entry (and set it on hold
@@ -182,22 +179,19 @@ static	time_t	try_connections(time_t currenttime)
 			continue;
 		    }
 
-		confrq = get_con_freq(cltmp);
-		aconf->hold = currenttime + confrq;
+		aconf->hold = currenttime + cltmp->connfreq;
 		/*
 		** Found a CONNECT config with port specified, scan clients
 		** and see if this server is already connected?
 		*/
 		cptr = find_name(aconf->name, (aClient *)NULL);
 
-		if (!cptr && (Links(cltmp) < MaxLinks(cltmp)) &&
-		    (!connecting || (Class(cltmp) > con_class)))
-		  {
-			con_class = Class(cltmp);
+		if (!cptr && (cltmp->conns < cltmp->maxconns) && !connecting)
+		{
 			con_conf = aconf;
-			/* We connect only one at time... */
 			connecting = TRUE;
-		  }
+			break;
+		}
 		if ((next > aconf->hold) || (next == 0))
 			next = aconf->hold;
 	    }
@@ -289,7 +283,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		if (check_kills && !killflag && IsPerson(cptr))
 			if (find_zap(cptr, 1))
 				killflag = 1;
-		ping = IsRegistered(cptr) ? get_client_ping(cptr) :
+		ping = IsRegistered(cptr) ? cptr->class->pingfreq :
 					    CONNECTTIMEOUT;
 		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d r %d a %d",
 		       cptr->name, cptr->status, ping, killflag, rflag,
@@ -540,7 +534,6 @@ main(int argc, char **argv)
 	fprintf(stderr, "Initializing lists...");
 
 	initlists();
-	initclass();
 	initwhowas();
 	initstats();
 	fprintf(stderr, "done\n");
@@ -550,6 +543,7 @@ main(int argc, char **argv)
 	socket_init(MAXCONNECTIONS);
 	resolver_init();
 	conf_init();
+	class_init();
 
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
@@ -581,7 +575,6 @@ main(int argc, char **argv)
 	me.lasttime = me.since = me.firsttime = NOW;
 	add_to_client_hash_table(me.name, &me);
 
-	check_class();
 	write_pidfile();
 
        Debug((DEBUG_NOTICE,"Server ready..."));

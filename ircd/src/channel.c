@@ -1882,7 +1882,7 @@ static	void	add_invite(aClient *cptr, aChannel *chptr)
 	/*
 	 * delete last link in chain if the list is max length
 	 */
-	if (list_length(cptr->user->invited) >= MAXCHANNELSPERUSER)
+	if (list_length(cptr->user->invited) >= cptr->class->maxchannels)
 	    {
 /*		This forgets the channel side of invitation     -Vesa
 		inv = cptr->user->invited;
@@ -2090,7 +2090,7 @@ int	m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			else
 			    flags = CHFL_DEOPPED;
 
-			if (sptr->user->joined >= MAXCHANNELSPERUSER)
+			if (sptr->user->joined >= sptr->class->maxchannels)
 			    {
 				sendto_one(sptr, err_str(ERR_TOOMANYCHANNELS),
 					   me.name, parv[0], name);

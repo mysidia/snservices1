@@ -1,223 +1,147 @@
 /*
- *   IRC - Internet Relay Chat, ircd/class.c
- *   Copyright (C) 1990 Darren Reed
+ * Copyright (c) 2004, Onno Molenkamp
+ * All rights reserved.
  *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 1, or (at your option)
- *   any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the author nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "ircd.h"
 
-IRCD_SCCSID("@(#)class.c	1.4 6/28/93 (C) 1990 Darren Reed");
 IRCD_RCSID("$Id$");
 
-#define BAD_CONF_CLASS		-1
-#define BAD_PING		-2
-#define BAD_CLIENT_CLASS	-3
+class *classlist;
 
-aClass *classes;
+/*
+ * conf_class is called when a client configuration node is added or removed. 
+ */
 
-int
-get_conf_class(aConfItem *aconf)
+static CONF_HANDLER(conf_class)
 {
-	if ((aconf) && Class(aconf))
-		return (ConfClass(aconf));
+	class	*cl;
+	char	*tmp;
 
-	Debug((DEBUG_DEBUG,"No Class For %s",
-	       (aconf) ? aconf->name : "*No Conf*"));
-
-	return (BAD_CONF_CLASS);
-}
-
-static int
-get_conf_ping(aConfItem *aconf)
-{
-	if ((aconf) && Class(aconf))
-		return (ConfPingFreq(aconf));
-
-	Debug((DEBUG_DEBUG,"No Ping For %s",
-	       (aconf) ? aconf->name : "*No Conf*"));
-
-	return (BAD_PING);
-}
-
-int
-get_client_class(aClient *acptr)
-{
-	Link	*tmp;
-	aClass	*cl;
-	int	retc = BAD_CLIENT_CLASS;
-
-	if (acptr && !IsMe(acptr)  && (acptr->confs))
-		for (tmp = acptr->confs; tmp; tmp = tmp->next) {
-			if (!tmp->value.aconf ||
-			    !(cl = tmp->value.aconf->class))
-				continue;
-			if (Class(cl) > retc)
-				retc = Class(cl);
+	if (n->status != CONFIG_OK)
+	{
+		tmp = config_get_string(n, "name");
+		if (tmp == NULL)
+		{
+			return CONFIG_BAD;
 		}
-
-	Debug((DEBUG_DEBUG,"Returning Class %d For %s",retc,acptr->name));
-
-	return (retc);
-}
-
-int
-get_client_ping(aClient *acptr)
-{
-	int	ping = 0, ping2;
-	aConfItem	*aconf;
-	Link	*link;
-
-	link = acptr->confs;
-
-	if (link) {
-		while (link) {
-			aconf = link->value.aconf;
-			if (aconf->status & (CONF_CLIENT|CONF_CONNECT_SERVER|
-					     CONF_NOCONNECT_SERVER)) {
-				ping2 = get_conf_ping(aconf);
-				if ((ping2 != BAD_PING) && ((ping > ping2) ||
-							    !ping))
-					ping = ping2;
-			}
-			link = link->next;
+		cl = class_get(tmp);
+		if (cl == NULL)
+		{
+			cl = irc_malloc(sizeof(class));
+			cl->name = irc_strdup(tmp);
+			cl->conns = 0;
+			cl->refs = 0;
 		}
-	} else {
-		ping = PINGFREQUENCY;
-		Debug((DEBUG_DEBUG,"No Attached Confs"));
+		else if (cl->maxconns != -1)
+		{
+			return CONFIG_BAD;
+		}
+		tmp = config_get_string(n, "ping-frequency");
+		cl->pingfreq = (tmp == NULL ? PINGFREQUENCY : atoi(tmp));
+		tmp = config_get_string(n, "connect-frequency");
+		cl->connfreq = (tmp == NULL ? CONNECTFREQUENCY : atoi(tmp));
+		tmp = config_get_string(n, "max-connections");
+		cl->maxconns = (tmp == NULL ? MAXCONNECTIONS : atoi(tmp));
+		tmp = config_get_string(n, "send-queue");
+		cl->maxsendq = (tmp == NULL ? MAXSENDQLENGTH : atoi(tmp));
+		tmp = config_get_string(n, "max-channels");
+		cl->maxchannels = (tmp == NULL ? MAXCHANNELSPERUSER : atoi(tmp));
+		cl->refs++;
+
+		cl->next = classlist;
+		classlist = cl;
+		n->data = cl;
 	}
-	if (ping <= 0)
-		ping = PINGFREQUENCY;
-	Debug((DEBUG_DEBUG,"Client %s Ping %d", acptr->name, ping));
-
-	return (ping);
-}
-
-int
-get_con_freq(aClass *clptr)
-{
-	if (clptr)
-		return (ConFreq(clptr));
 	else
-		return (CONNECTFREQUENCY);
+	{
+		cl = (class *) n->data;
+		cl->maxconns = -1;
+		class_free(cl);
+	}
+	return CONFIG_OK;
 }
 
 /*
- * When adding a class, check to see if it is already present first.
- * if so, then update the information for that class, rather than create
- * a new entry for it and later delete the old entry.
- * if no present entry is found, then create a new one and add it in
- * immeadiately after the first one (class 0).
+ * class_free decreases the reference count of a class, and frees it when zero.
+ *
+ * cl         Class to be free'd.
  */
-aClass *add_class(int class, int ping, int confreq, int maxli, long sendq)
+
+void class_free(class *cl)
 {
-	aClass *t, *p;
+	class	**cltmp;
 
-	t = find_class(class);
-	if ((t == classes) && (class != 0)) {
-		p = make_class();
-		NextClass(p) = NextClass(t);
-		NextClass(t) = p;
-	} else
-		p = t;
-
-	Debug((DEBUG_DEBUG,
-	       "Add Class %d: p %x t %x - cf: %d pf: %d ml: %d sq: %l",
-	       class, p, t, confreq, ping, maxli, sendq));
-	Class(p) = class;
-	ConFreq(p) = confreq;
-	PingFreq(p) = ping;
-	MaxLinks(p) = maxli;
-	MaxSendq(p) = (sendq > 0) ? sendq : MAXSENDQLENGTH;
-	if (p != t)
-		Links(p) = 0;
-	return p;
-}
-
-aClass *
-find_class(int cclass)
-{
-	aClass *cltmp;
-
-	for (cltmp = FirstClass(); cltmp; cltmp = NextClass(cltmp))
-		if (Class(cltmp) == cclass)
-			return cltmp;
-	return classes;
-}
-
-void
-check_class(void)
-{
-	aClass *cltmp, *cltmp2;
-
-	Debug((DEBUG_DEBUG, "Class check:"));
-
-	for (cltmp2 = cltmp = FirstClass(); cltmp; cltmp = NextClass(cltmp2)) {
-		Debug((DEBUG_DEBUG,
-		       "Class %d : CF: %d PF: %d ML: %d LI: %d SQ: %ld",
-		       Class(cltmp), ConFreq(cltmp), PingFreq(cltmp),
-		       MaxLinks(cltmp), Links(cltmp), MaxSendq(cltmp)));
-		if (MaxLinks(cltmp) < 0) {
-			NextClass(cltmp2) = NextClass(cltmp);
-			if (Links(cltmp) <= 0)
-				free_class(cltmp);
-		} else
-			cltmp2 = cltmp;
+	cl->refs--;
+	if (cl->maxconns == -1 && cl->refs == 0)
+	{
+		for (cltmp = &classlist; *cltmp != NULL; cltmp = &(*cltmp)->next)
+		{
+			if (*cltmp == cl)
+			{
+				*cltmp = cl->next;
+				break;
+			}
+		}
+		irc_free(cl->name);
+		irc_free(cl);
 	}
 }
 
-void
-initclass(void)
+/*
+ * class_get returns the class with the given name.
+ *
+ * name       Name of class to return.
+ *
+ * returns    Requested class, or NULL if not found.
+ */
+
+class *class_get(char *name)
 {
-	classes = make_class();
+	class	*cl;
 
-	Class(FirstClass()) = 0;
-	ConFreq(FirstClass()) = CONNECTFREQUENCY;
-	PingFreq(FirstClass()) = PINGFREQUENCY;
-	MaxLinks(FirstClass()) = MAXIMUM_LINKS;
-	MaxSendq(FirstClass()) = MAXSENDQLENGTH;
-	Links(FirstClass()) = 0;
-	NextClass(FirstClass()) = NULL;
-}
-
-void
-report_classes(aClient *sptr)
-{
-	aClass *cltmp;
-
-	for (cltmp = FirstClass(); cltmp; cltmp = NextClass(cltmp))
-		sendto_one(sptr, rpl_str(RPL_STATSYLINE), me.name, sptr->name,
-			   'Y', Class(cltmp), PingFreq(cltmp), ConFreq(cltmp),
-			   MaxLinks(cltmp), MaxSendq(cltmp));
-}
-
-long
-get_sendq(aClient *cptr)
-{
-	int	sendq = MAXSENDQLENGTH, retc = BAD_CLIENT_CLASS;
-	Link	*tmp;
-	aClass	*cl;
-
-	if (cptr && !IsMe(cptr)  && (cptr->confs))
-		for (tmp = cptr->confs; tmp; tmp = tmp->next) {
-			if (!tmp->value.aconf ||
-			    !(cl = tmp->value.aconf->class))
-				continue;
-			if (Class(cl) > retc)
-				sendq = MaxSendq(cl);
+	for (cl = classlist; cl != NULL; cl = cl->next)
+	{
+		if (!strcmp(cl->name, name))
+		{
+			return cl;
 		}
+	}
+	return NULL;
+}
 
-	return sendq;
+/*
+ * class_init initializes everything required by the class functions.
+ */
+
+void class_init()
+{
+	classlist = NULL;
+	config_monitor("class", conf_class, CONFIG_LIST);
 }

@@ -542,7 +542,8 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 	  sendto_one(sptr, rpl_str(RPL_CREATED),me.name,nick,creation);
 	  sendto_one(sptr, rpl_str(RPL_MYINFO), me.name, parv[0],
 		     me.name, version);
-	  sendto_one(sptr, rpl_str(RPL_PROTOCTL), me.name, parv[0], network);
+	  sendto_one(sptr, rpl_str(RPL_PROTOCTL), me.name, parv[0], network,
+		sptr->class->maxchannels);
 
 	  m_lusers(sptr, sptr, 1, parv);
 	  update_load();

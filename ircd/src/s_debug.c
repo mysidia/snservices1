@@ -149,14 +149,14 @@ void	send_usage(aClient *cptr, char *nick)
 void	count_memory(aClient *cptr, char *nick)
 {
 	extern	aChannel	*channel;
-	extern	aClass	*classes;
+	extern	class	*classlist;
 	extern	aConfItem	*conf;
 
 	aClient *acptr;
 	Link *link;
 	aChannel *chptr;
 	aConfItem *aconf;
-	aClass *cltmp;
+	class *cltmp;
 
 	int	lc = 0,		/* local clients */
 		ch = 0,		/* channels */
@@ -253,7 +253,7 @@ void	count_memory(aClient *cptr, char *nick)
 		com += sizeof(aConfItem);
 	    }
 
-	for (cltmp = classes; cltmp; cltmp = cltmp->next)
+	for (cltmp = classlist; cltmp; cltmp = cltmp->next)
 		cl++;
 
 	sendto_one(cptr, ":%s %d %s :Client Local %d(%d) Remote %d(%d)",
@@ -280,7 +280,7 @@ void	count_memory(aClient *cptr, char *nick)
 		   me.name, RPL_STATSDEBUG, nick, co, com);
 
 	sendto_one(cptr, ":%s %d %s :Classes %d(%d)",
-		   me.name, RPL_STATSDEBUG, nick, cl, cl*sizeof(aClass));
+		   me.name, RPL_STATSDEBUG, nick, cl, cl*sizeof(class));
 
 	sendto_one(cptr, ":%s %d %s :Channels %d(%d) Bans %d(%d)",
 		   me.name, RPL_STATSDEBUG, nick, ch, chm, chb, chbm);
@@ -308,7 +308,7 @@ void	count_memory(aClient *cptr, char *nick)
 
 	rm = cres_mem(cptr);
 
-	tot = totww + totch + totcl + com + cl*sizeof(aClass) + db + rm;
+	tot = totww + totch + totcl + com + cl*sizeof(class) + db + rm;
 	tot += sizeof(aHashEntry) * HASHSIZE;
 	tot += sizeof(aHashEntry) * CHANNELHASHSIZE;
 

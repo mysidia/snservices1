@@ -506,7 +506,7 @@ struct	ConfItem	{
 	time_t	hold;	/* Hold action until this time (calendar time) */
 	int	tmpconf, bits;
 #ifndef VMSP
-	aClass	*class;  /* Class of connection */
+	class	*class;  /* Class of connection */
 #endif
 	struct	ConfItem *next;
 };
@@ -647,6 +647,7 @@ struct Client	{
 	u_short	receiveB;	/* sent and received. */
 	aClient	*acpt;		/* listening client which we accepted from */
 	Link	*confs;		/* Configuration record associated */
+	class	*class;
 	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
 	sock	*sock;

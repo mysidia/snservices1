@@ -14,6 +14,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 CHANGES SINCE sorircd1.3.4
 *********************************************************************
 
+Mon Oct 25 15:13:33 CEST 2004 sor1.5.0devel - Onno
+ * Classes now have names instead of numeric id's.
+ * Maximum number of channels to join is configurable per class.
+
 Sun Oct 24 16:59:39 CEST 2004 sor1.5.0devel - Echostar
  * Remember channels in whowas history.
 

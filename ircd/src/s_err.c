@@ -44,7 +44,7 @@ static  Numeric local_replies[] = {
 /* 005 ------------------*/	"CHANTYPES=#& "
 /* 005 ------------------*/	"KICKLEN=307 " /*TOPICLEN*/
 /* 005 ------------------*/	"MAXBANS=60 " /*MAXBANS*/
-/* 005 ------------------*/	"MAXCHANNELS=10 " /*MAXCHANNELSPERUSER*/
+/* 005 ------------------*/	"MAXCHANNELS=%d " /*MAXCHANNELSPERUSER*/
 /* 005 ------------------*/	"NICKLEN=17 " /*NICKLEN*/
 /* 005 ------------------*/	"PREFIX=(ov)@+ "
 /* 005 ------------------*/	"SILENCE=5 "
@@ -56,17 +56,16 @@ static  Numeric local_replies[] = {
 /* 201 */	{ RPL_TRACECONNECTING, "Attempt %d %s" },
 /* 202 */	{ RPL_TRACEHANDSHAKE, "Handshaking %d %s" },
 /* 203 */	{ RPL_TRACEUNKNOWN, "???? %d %s" },
-/* 204 */	{ RPL_TRACEOPERATOR, "Operator %d %s %ld" },
-/* 205 */	{ RPL_TRACEUSER, "User %d %s %ld" },
-/* 206 */	{ RPL_TRACESERVER, "Server %d %dS %dC %s %s!%s@%s %ld" },
-/* 207 */	{ RPL_TRACESERVICE, "Service %d %s" },
+/* 204 */	{ RPL_TRACEOPERATOR, "Operator %s %s %ld" },
+/* 205 */	{ RPL_TRACEUSER, "User %s %s %ld" },
+/* 206 */	{ RPL_TRACESERVER, "Server %s %dS %dC %s %s!%s@%s %ld" },
 /* 208 */	{ RPL_TRACENEWTYPE, "<newtype> 0 %s" },
-/* 209 */	{ RPL_TRACECLASS, "Class %d %d" },
+/* 209 */	{ RPL_TRACECLASS, "Class %s %d" },
 /* 211 */	{ RPL_STATSLINKINFO, NULL },
 /* 212 */	{ RPL_STATSCOMMANDS, "%s %u %u" },
-/* 213 */	{ RPL_STATSCLINE, "%c %s * %s %d %d" },
-/* 214 */	{ RPL_STATSNLINE, "%c %s * %s %d %d" },
-/* 215 */	{ RPL_STATSILINE, "%c %s * %s %d %d" },
+/* 213 */	{ RPL_STATSCLINE, "%c %s * %s %d %s" },
+/* 214 */	{ RPL_STATSNLINE, "%c %s * %s %d %s" },
+/* 215 */	{ RPL_STATSILINE, "%c %s * %s %d %s" },
 /* 216 */	{ RPL_STATSKLINE, "%c %s %s %s %d %d" },
 /* 217 */	{ RPL_STATSQLINE, "%c %s %s %s %d %d" },
 /* 218 */	{ RPL_STATSYLINE, "%c %d %d %d %d %ld" },
@@ -79,7 +78,7 @@ static  Numeric local_replies[] = {
 /* 235 */	{ RPL_SERVLISTEND, NULL },
 /* 241 */	{ RPL_STATSLLINE, "%c %s * %s %d %d" },
 /* 242 */	{ RPL_STATSUPTIME, ":Server Up %d days, %d:%02d:%02d" },
-/* 243 */	{ RPL_STATSOLINE, "%c %s * %s %s %d" },
+/* 243 */	{ RPL_STATSOLINE, "%c %s * %s %s %s" },
 /* 244 */	{ RPL_STATSHLINE, "%c %s * %s %d %d" }, 
 /* 245 */	{ RPL_STATSSLINE, "%c %s * %s %d %d" }, 
 /* 247 */	{ RPL_STATSXLINE, "X %s %d" }, 
