@@ -27,6 +27,7 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "getaddrinfo.h"
 #ifdef SOL20

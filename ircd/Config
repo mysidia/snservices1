@@ -500,6 +500,7 @@ fi
 $RM -f $EXEC $TMP
 
 cat >$TMP<<__EOF__
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
