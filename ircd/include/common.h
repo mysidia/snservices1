@@ -43,16 +43,12 @@ int match(const char *, const char *);
 unsigned long inet_addr(char *);
 #endif
 
-#if defined(NEED_INET_NTOA) || defined(NEED_INET_NETOF)
+#if defined(NEED_INET_NTOA)
 #include <netinet/in.h>
 #endif
 
 #ifdef NEED_INET_NTOA
 char *inet_ntoa(struct in_addr);
-#endif
-
-#ifdef NEED_INET_NETOF
-int inet_netof(struct in_addr);
 #endif
 
 char *myctime(time_t);
