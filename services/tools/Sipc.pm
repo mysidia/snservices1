@@ -8,15 +8,28 @@ use IO::Socket::INET;
 use IO::Select;
 use Digest::MD5 q/md5_hex/;
 
-$SIPC::revision = '$Id$';
-$SIPC::VERSION='0.1';
-$SIPC::ERRORTEXT=" ";
+$Sipc::revision = '$Id$';
+$Sipc::VERSION='0.1';
+my $ERRORTEXT="_";
 
 sub Errmsg
 {
-	return $SIPC::ERRORTEXT;
+	my $self = shift;
+
+	return $self->{ERRORTEXT};
 }
 
+sub getPublicChanInfo
+{
+	my $n = {}, $o;
+	my $self = shift;
+	my $target = shift;
+
+	(($n->{CHAN} = $self->queryChan($target, "")) ne undef) or return undef;
+	(($n->{REGTIME} = $self->queryChan($target, "TIMEREG")) ne undef) or return undef;
+	(($n->{DESC} = $self->queryChan($target, "DESC")) ne undef) or return undef;
+	return $n;
+}
 
 sub getPublicNickInfo
 {
@@ -63,20 +76,20 @@ sub queryNick
 	for(;;) {
 		for ($sel->can_read(5)) {
 			if ($_ ne $self->{sock}) {
-				$SIPC::ERRORTEXT = "Wrong socket\n";
+				$self->{ERRORTEXT} = "Wrong socket\n";
 				return undef;
 			}
 			while ($line = $sock->getline) {
 				#print "\n" . $line . "\n";
 				if ($line =~ /^ERR-BADTARGET QUERY OBJECT RNICK=(\S+) - (.*)/)
 				{
-					$SIPC::ERRORTEXT = "Prob: " . $2 . "\n";
+					$self->{ERRORTEXT} = "Prob: " . $2 . "\n";
 					return undef;
 				}
 				elsif ($line =~ /^ERR-BADATT QUERY OBJECT RNICK EATTR - (.*)/) 
 				{
 
-					$SIPC::ERRORTEXT = "Unknown attribute: RNICK " . $qfield;
+					$self->{ERRORTEXT} = "Unknown attribute: RNICK " . $qfield;
 					return undef;
 				}
 				elsif ($line =~ /^OK QUERY OBJECT RNICK=(\S+) ISREG=(\S+) - .*/) {
@@ -91,6 +104,7 @@ sub queryNick
 							return $m_nick;
 						}
 						else {
+							$self->{ERRORTEXT} = $m_nick . ": Nickname not registered";
 							return undef;
 						}
 					}
@@ -100,7 +114,67 @@ sub queryNick
 					if ($1 ne $qtarget) {
 						warn "$1 <> $target" . "\n";
 					}
-					return ($1, $3);
+					return $3;
+				}
+			}
+		}
+	}
+}
+
+
+sub queryChan
+{
+	my $self = shift;
+	my $qtarget = shift;
+	my $qfield = shift;
+	my $sock = $self->{sock};
+	my $sel = $self->{sel};
+
+	$sock->print("QUERY OBJECT RCHAN " . $qtarget . " " . $qfield . "\n");
+
+	for(;;) {
+		for ($sel->can_read(5)) {
+			if ($_ ne $self->{sock}) {
+				$self->{ERRORTEXT} = "Wrong socket\n";
+				return undef;
+			}
+			while ($line = $sock->getline) {
+				#$$$
+				#print "\n" . $line . "\n";
+				if ($line =~ /^ERR-BADTARGET QUERY OBJECT RCHAN=(\S+) - (.*)/)
+				{
+					$self->{ERRORTEXT} = "Prob: " . $2 . "\n";
+					return undef;
+				}
+				elsif ($line =~ /^ERR-BADATT QUERY OBJECT RCHAN EATTR - (.*)/) 
+				{
+
+					$self->{ERRORTEXT} = "Unknown attribute: RCHAN " . $qfield;
+					return undef;
+				}
+				elsif ($line =~ /^OK QUERY OBJECT RCHAN=(\S+) ISREG=(\S+) - .*/) {
+					my $m_chan = $1;
+					my $m_isreg = $2;
+
+					if ($qfield ne "") {
+						return $m_isreg;
+					}
+					else {
+						if ($m_isreg eq "TRUE") {
+							return $m_chan;
+						}
+						else {
+							$self->{ERRORTEXT} = $m_chan . ": Channel not registered.";
+							return undef;
+						}
+					}
+				}
+				elsif ($line =~ /^OK QUERY OBJECT RCHAN=(\S+) (\S+) (.*)/)
+				{
+					if ($1 ne $qtarget) {
+						warn "$1 <> $target" . "\n";
+					}
+					return $3;
 				}
 			}
 		}
@@ -113,7 +187,7 @@ sub Connect
 	my $self = {};
 	my $sock;
 
-	$SIPC::ERRORTEXT = "";
+	$ERRORTEXT = "";
 	$sock = IO::Socket::INET->new(PeerAddr => $host,
                                       PeerPort => $port,
 			              Proto => 'tcp') || return undef;
@@ -139,13 +213,13 @@ sub Connect
 					$sock->print("AUTH SYSTEM PASS " . $hashcode . "\n");
 				}
 				elsif ($line =~ /^ERR-BADLOGIN AUTH SYSTEM LOGIN - (.*)/) {
-					$SIPC::ERRORTEXT = 'Login failed :' . $1 . "\n";
+					$ERRORTEXT = 'Login failed :' . $1 . "\n";
 					$sel->remove($sock);
 					$sock->close;
 					return undef;
 				}
 				elsif ($line =~ /^ERR-\S+\s(\S\s+)+- (.*)/) {
-					$SIPC::ERRORTEXT = 'Login failed :' . $2 . "\n";
+					$ERRORTEXT = 'Login failed :' . $2 . "\n";
 					$sel->remove($sock);
 					$sock->close;
 					return undef;
