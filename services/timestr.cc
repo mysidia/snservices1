@@ -252,23 +252,23 @@ const char* TimeLengthString::asString(char* buf, int len, bool pad,
 
 	// Number of hours output
 	if (showhours) {
-		TIME_WRITE(length.hours, "%dh", "%2dm", "%2d hours");
+		TIME_WRITE(length.hours, "%dh", "%.2dh", "%2d hours");
 	}
 
 	// Number of minutes output
 	if (showmins) {
 		if (long_format == 0 || showsecs != 0)
 		{
-			TIME_WRITE(length.minutes, "%dm", "%2dm", "%2d minutes");
+			TIME_WRITE(length.minutes, "%dm", "%.2dm", "%2d minutes");
 		}
 		else 
 		{
-			TIME_WRITE(length.minutes, "%dm", "%2dm", "and %2d minutes");
+			TIME_WRITE(length.minutes, "%dm", "%.2dm", "and %2d minutes");
 		}
 	}
 		
 	if (showsecs) {
-		TIME_WRITE(length.seconds, "%ds", "%2ds", "and %2d seconds");
+		TIME_WRITE(length.seconds, "%ds", "%.2ds", "and %2d seconds");
 	}
 
 	return buf;
