@@ -792,7 +792,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 				ClientFlags(acptr) &= ~FLAGS_ULINE;
 		}
 
-        /* read_help(1); */
 	return ret;
 }
 

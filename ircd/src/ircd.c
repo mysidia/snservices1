@@ -595,7 +595,6 @@ main(int argc, char **argv)
 		exit(-1);
 	}
 
-        /* read_help (0); */ /* read the helpfile and attach it into memory... */
 	open_logs();
 
 	if ((getuid() == 0) || (geteuid() == 0)) {
