@@ -21,6 +21,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include <sys/stat.h>
 
 #include <fcntl.h>
@@ -38,10 +40,6 @@
 #include "ircd/send.h"
 #include "ircd/string.h"
 #include "ircd/md5.h"
-
-#ifdef CRYPTH
-#include <crypt.h>
-#endif
 
 IRCD_SCCSID("@(#)s_user.c	2.74 2/8/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
@@ -300,12 +298,12 @@ canonize(char *buffer)
 
 	*cp = '\0';
 
-	for (s = strtoken(&p, buffer, ","); s; s = strtoken(&p, NULL, ","))
+	for (s = strtok_r(buffer, ",", &p); s; s = strtok_r(NULL, ",", &p))
 	    {
 		if (l)
 		    {
-			for (p2 = NULL, t = strtoken(&p2, cbuf, ","); t;
-			     t = strtoken(&p2, NULL, ","))
+			for (p2 = NULL, t = strtok_r(cbuf, ",", &p2); t;
+			     t = strtok_r(NULL, ",", &p2))
 				if (!mycmp(s, t))
 					break;
 				else if (p2)
@@ -1451,8 +1449,8 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 
 	if (MyConnect(sptr))
 		parv[1] = canonize(parv[1]);
-	for (p = NULL, nick = strtoken(&p, parv[1], ","); nick;
-	     nick = strtoken(&p, NULL, ","))
+	for (p = NULL, nick = strtok_r(parv[1], ",", &p); nick;
+	     nick = strtok_r(NULL, ",", &p))
 	    {
 		/*
 		** nickname addressed?
@@ -2066,7 +2064,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		parv[1] = parv[2];
 	    }
 
-	for (tmp = parv[1]; (nick = strtoken(&p, tmp, ",")); tmp = NULL)
+	for (tmp = parv[1]; (nick = strtok_r(tmp, ",", &p)); tmp = NULL)
 	    {
 		int	invis, showperson, member, wilds;
 
@@ -2373,8 +2371,8 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 	}
 
 	
-	 for (option = strtoken(&pos, option_args, "+"); option;
-	       option = strtoken(&pos, NULL, "+"))
+	 for (option = strtok_r(option_args, "+", &pos); option;
+	       option = strtok_r(NULL, "+", &pos))
 	 {
 	 	if (mycmp(option, "unknowns") == 0)
 			show_unknowns = 1;
@@ -2720,9 +2718,9 @@ int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	else
 	    multiple = 0;
 	
-	for (p = NULL, hurtct = 0, nick = strtoken(&p, user, ","); nick &&
+	for (p = NULL, hurtct = 0, nick = strtok_r(user, ",", &p); nick &&
 	    ((IsServer(cptr)&&hurtct<50)||hurtct <= MAXHURTS);
-	    nick = strtoken(&p, NULL, ","), hurtct++)
+	    nick = strtok_r(NULL, ",", &p), hurtct++)
 	{
 	    if (!nick) break;
 	    if (!multiple)
@@ -3090,8 +3088,8 @@ int m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
        if (MyClient(sptr))
                user = canonize(user);
 
-       for (p = NULL, nick = strtoken(&p, user, ","); nick;
-               nick = strtoken(&p, NULL, ","))
+       for (p = NULL, nick = strtok_r(user, ",", &p); nick;
+               nick = strtok_r(NULL, ",", &p))
        {
              if (!nick) break;
 
@@ -3712,8 +3710,8 @@ int	m_userhost(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	/*
 	 * for each user found, print an entry if it fits.
 	 */
-	for (s = strtoken(&p, parv[1], " "); s;
-	     s = strtoken(&p, (char *)NULL, " "))
+	for (s = strtok_r(parv[1], " ", &p); s;
+	     s = strtok_r(NULL, " ", &p))
 	  if ((acptr = find_person(s, NULL))) {
 	    catsize = strlen(acptr->name)
 	      + (IsAnOper(acptr) ? 1 : 0)
@@ -3773,7 +3771,7 @@ int     m_ison(aClient *cptr, aClient *sptr, int parc, char *parv[])
         (void)sprintf(buf, rpl_str(RPL_ISON), me.name, *parv);
         len = strlen(buf);
  
-        for (s = strtoken(&p, *++pav, " "); s; s = strtoken(&p, NULL, " "))
+        for (s = strtok_r(*++pav, " ", &p); s; s = strtok_r(NULL, " ", &p))
 	  {
                 if ((user=index(s, '!')))
 			*user++='\0';

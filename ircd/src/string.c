@@ -27,62 +27,6 @@
 
 IRCD_RCSID("$Id$");
 
-#ifdef NEED_STRTOKEN
-/*
-** 	strtoken.c --  	walk through a string of tokens, using a set
-**			of separators
-**			argv 9/90
-**
-*/
-char *
-strtoken(char **save, char *str, char *fs)
-{
-	char *pos = *save;	/* keep last position across calls */
-	char *tmp;
-
-	if (str)
-		pos = str;		/* new string scan */
-
-	while (pos && *pos && index(fs, *pos) != NULL)
-		pos++; 		 	/* skip leading separators */
-
-	if (!pos || !*pos)
-		return (pos = *save = NULL); 	/* string contains only sep's */
-
-	tmp = pos; 			/* now, keep position of the token */
-
-	while (*pos && index(fs, *pos) == NULL)
-		pos++; 			/* skip content of the token */
-
-	if (*pos)
-		*pos++ = '\0';		/* remove first sep after the token */
-	else
-		pos = NULL;		/* end of string */
-
-	*save = pos;
-	return(tmp);
-}
-#endif /* NEED_STRTOKEN */
-
-#if (defined(REDHAT5) || defined(REDHAT6) || defined(LINUX_GLIBC)) && defined(NEED_STRTOK) 
-#undef NEED_STRTOK
-#endif
-
-#ifdef NEED_STRTOK
-/*
-** NOT encouraged to use!
-*/
-
-char *
-strtok(char *str, char *fs)
-{
-	static char *pos;
-
-	return strtoken(&pos, str, fs);
-}
-
-#endif /* NEED_STRTOK */
-
 /*
  *  Case insensitive comparison of two NULL terminated strings.
  *

@@ -19,6 +19,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h" 
@@ -77,7 +79,7 @@ int	do_numeric(int numeric, aClient *cptr, aClient *sptr, int parc, char *parv[]
 		(void)strcat(buffer, " :");
 		(void)strcat(buffer, parv[parc-1]);
 	    }
-	for (; (nick = strtoken(&p, parv[1], ",")); parv[1] = NULL)
+	for (; (nick = strtok_r(parv[1], ",", &p)); parv[1] = NULL)
 	    {
 		if ((acptr = find_client(nick, (aClient *)NULL)))
 		    {

@@ -16,10 +16,7 @@ OPTIONS=./Options
 AUTO_CONFIG=""
 #
 STDDEFH=undef
-CRYPTH=undef
 NOINDEX=undef
-NSTRTOKEN=undef
-NSTRTOK=undef
 REDHAT6=undef
 LINUX_GLIBC=undef
 LINUX_GLIBC_RRES=undef
@@ -50,7 +47,6 @@ DEFCFLAGS="$DEFOPT"
 DEFLIBS="none"
 OSNAME="an unrecgonized operating system"
 #
-DESCRYPT="none"
 NOSPOOF="1"
 NOSPOOF_SEED01="0x12345678"
 NOSPOOF_SEED02="0x9abcdef0"
@@ -116,14 +112,12 @@ OS=`uname -a`
 case "$OS" in
     *NetBSD*)
 	DEFCFLAGS="$DEFOPT"
-        DESCRYPT="fcrypt.o"
 	DEFLIBS="-lcrypt"
 	OSNAME="NetBSD"
 	;;
     *FreeBSD*)
-        DESCRYPT="fcrypt.o"
 	DEFCFLAGS="$DEFOPT"
-	DEFLIBS="none"
+	DEFLIBS="-lcrypt"
 	OSNAME="FreeBSD"
 	;;
     *OSF1*alpha*)
@@ -305,83 +299,9 @@ sed -e "s@^IRCDLIBS=\(.*\)@IRCDLIBS=$LIBS@" Makefile > Makefile.tmp
 cp Makefile.tmp Makefile
 $RM -f Makefile.tmp
 
-
-
-
-#
-# des crypt
-COMP="$CCPATH $XCFLAGS $TMP -o $EXEC $LIBS"
-
 echo " "
-echo $n "checking if crypt() works..." $c
-cat > $TMP <<__EOF__
-#include <unistd.h>
-#include <string.h>
 
-main()
-{
-        char key[10];
-        char salt[5];
-        strcpy(salt, "aa");
-        strcpy(key, "aaaaaaaa");
-        (void)crypt(key, salt);
-	exit(0);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-    if [ $? -eq 0 ] ; then
-      echo "yep ;)"
-      DESCRYPT_CHOICE="y"
-    else 
-      echo "No ;/"
-      DESCRYPT_CHOICE="n"
-      DESCRYPT="fcrypt.o"
-    fi
-rm -f $TMP $EXEC
-
-if [ "$DESCRYPT_CHOICE" = "y" ] ; then
-echo " "
-echo "Des_Crypt"
-echo "  some FreeBsd operating system/compiler combinations may not have"
-echo "the crypt routine. for these systems, part of the DES encryption"
-echo "library can be linked with ircd.. type 'fcrypt.o' if you want"
-echo "to do this, otherwise use 'none'"
-echo "(note: in some cases, just using -lcrypt will work)"
-
-echo $n "[$DESCRYPT] -> $c"
-if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-    read cc
-else
-    cc=""
-fi
-if [ -z "$cc" ] ; then
-	cc="$LIBS"
-fi
-if [ "$cc" = "none" ] ; then
-	cc=''
-fi
-DESCRYPT=$cc
-
-else
-     echo " "
-fi
-
-# 
-# update makefile with descrypt setting # 
-#
-
-$RM -f Makefile.tmp
-sed -e "s@^DESCRYPT=\(.*\)@DESCRYPT=$DESCRYPT@" Makefile > Makefile.tmp
-cp Makefile.tmp Makefile
-$RM -f Makefile.tmp
-
-
-
-
-
-#
 COMP="$CCPATH $XCFLAGS $TMP -o $EXEC $LIBS"
-#
 
 echo 'Checking out /usr/include'
 
@@ -391,28 +311,6 @@ if [ -r /usr/include/stddef.h ] ; then
 	echo  'found!'
 else
 	echo 'not found :('
-fi
-
-if [ -z "$cc" ] ; then
-	cc="$LIBS"
-fi
-if [ "$cc" = "none" ] ; then
-	cc=''
-fi
-
-echo $n "...Looking for crypt.h...$c"
-if [ -r /usr/include/crypt.h ] ; then
-        CRYPTH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
-
-if [ -z "$cc" ] ; then
-	cc="$LIBS"
-fi
-if [ "$cc" = "none" ] ; then
-	cc=''
 fi
 
 #
@@ -465,32 +363,6 @@ $RM -f $EXEC $TMP
 echo "What else do I need that you don't have..."
 echo $n "Lets see...$c"
 cat > $TMP <<__EOF__
-main()
-{
-	unsigned long foo;
-
-	char  *s = strtoul("0x12345", &foo, 16);
-	exit(0);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-    echo $n " strtoul$c"
-    $RM -f Makefile.tmp
-    sed -e "s@^STRTOUL=\(.*\)@STRTOUL=strtoul.o@" Makefile > Makefile.tmp
-    cp Makefile.tmp Makefile
-    $RM -f Makefile.tmp
-else
-    $RM -f Makefile.tmp
-    sed -e "s@^STRTOUL=\(.*\)@STRTOUL=@" Makefile > Makefile.tmp
-    cp Makefile.tmp Makefile
-    $RM -f Makefile.tmp
-fi
-$RM -f $EXEC $TMP
-
-echo "What else do I need that you don't have..."
-echo $n "Lets see...$c"
-cat > $TMP <<__EOF__
 #include <unistd.h>
 #include <netdb.h>
 main()
@@ -537,53 +409,6 @@ else
     $RM -f Makefile.tmp
 fi
 $RM -f $EXEC $TMP
-cat > $TMP <<__EOF__
-#include <string.h>
-#include <strings.h>
-main()
-{
-	char  *t = "a", **p = NULL, *s = strtoken(&p, t, ",");
-	if (!strcmp(t, s))
-		exit(0);
-	exit(1);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-	echo $n " strtoken$c"
-	NSTRTOKEN=define
-else
-	$EXEC
-	if [ $? -ne 0 ] ; then
-		echo $n " strtoken$c"
-		NSTRTOKEN=define
-	fi
-fi
-$RM -f $EXEC $TMP
-cat > $TMP <<__EOF__
-#include <string.h>
-#include <strings.h>
-main()
-{
-	char t[2] = "a";
-	char *s = strtok(t, ",");
-	if (!strcmp(t, s))
-		exit(0);
-	exit(1);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-	echo $n " strtok$c"
-	NSTRTOK=define
-else
-	$EXEC
-	if [ $? -ne 0 ] ; then
-		echo $n " strtok$c"
-		NSTRTOK=define
-	fi
-fi
-$RM -f $EXEC $TMP
 cat > $TMP << __EOF__
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -627,10 +452,7 @@ cat > $SETUP  <<__EOF__
 #$LINUX_GLIBC	LINUX_GLIBC
 /*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
 #$STDDEFH	STDDEFH
-#$CRYPTH	CRYPTH
 #$NOINDEX	NOINDEX
-#$NSTRTOKEN	NEED_STRTOKEN
-#$NSTRTOK	NEED_STRTOK
 #$NINETADDR	NEED_INET_ADDR
 #$NINETNTOA	NEED_INET_NTOA
 #$NGETADDRINFO	NEED_GETADDRINFO

@@ -21,6 +21,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
@@ -2280,7 +2282,7 @@ int   m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 parv[1] = def;
         }
 
-        for (p = NULL, s = strtoken(&p, parv[1], ", "); s; s = strtoken(&p, NULL, ", "))
+        for (p = NULL, s = strtok_r(parv[1], ", ", &p); s; s = strtok_r(NULL, ", ", &p))
         {
                 if ((user = (char *)strchr(s, '!')))
                   *user++ = '\0'; /* Not used */

@@ -25,13 +25,9 @@ OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
 	class.o hash.o ircd.o list.o res.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
 	whowas.o userload.o md5.o version.o network.o socket.o socket_addr.o \
-	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO) $(SOCKET)
+	snprintf.o memory.o string.o $(GETADDRINFO) $(SOCKET)
 
 SRC=$(OBJS:%.o=%.c)
-
-#MAKE = make 'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
-#	    'LDFLAGS=${LDFLAGS}' 'IRCDMODE=${IRCDMODE}' \
-#            'DESCRYPT=${DESCRYPT}'
 
 INCLUDES = ../include/struct.h ../include/config.h ../include/options.h \
 	../include/sys.h ../include/common.h ../include/patchlevel.h \
@@ -47,11 +43,8 @@ version.c:
 version.o: version.c ../include/patchlevel.h
 	$(CC) $(CFLAGS) $(DFLAGS) -c version.c
 
-# XXX on RH6 i get -lresolv and -lcrypt linked twice
-# this is b/c of $(IRCDLIBS) $(DESCRYPT)
-
 ircd: $(OBJS) 
-	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) $(DESCRYPT) -o ircd
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(IRCDLIBS) -o ircd
 	@chmod $(IRCDMODE) ircd
 
 chkconf: ../include/struct.h ../include/config.h ../include/options.h ../include/sys.h \

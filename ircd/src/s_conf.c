@@ -2307,8 +2307,8 @@ banmask_check(char *userhost, int ipstat)
      int l = 0;
 
 
-        for (segno = 0, i = 0, thisseg = strtoken(&p, userhost, (ipv6 ? ":" : ".")); thisseg;
-             thisseg = strtoken(&p, NULL, (ipv6 ? "." : ":")), i++)
+        for (segno = 0, i = 0, thisseg = strtok_r(userhost, (ipv6 ? ":" : "."), &p); thisseg;
+             thisseg = strtok_r(NULL, (ipv6 ? "." : ":"), &p), i++)
         {
             
             l = strlen(thisseg)+2;

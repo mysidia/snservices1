@@ -20,6 +20,10 @@
 #ifndef	__sys_include__
 #define __sys_include__
 
+#ifdef SOL20
+#define __EXTENSIONS__
+#endif
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/time.h>
