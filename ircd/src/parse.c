@@ -505,7 +505,7 @@ struct	Message *mptr;
 					mptr->while_hurt > 1)) {
 
 					{
-					   sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
+					   sendto_one(from, ":%s NOTICE %s :Sorry, but your IRC software "
                                                       "program has not yet reported its version. "
                                                       "Your request (%s) was not "
                                                       "processed.",
