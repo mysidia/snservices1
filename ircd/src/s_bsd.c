@@ -238,7 +238,7 @@ int	port;
 		name = "0.0.0.0";
 		getaddrinfo(name, NULL, NULL, &res);
 	}
-	bcopy(res->ai_addr, &server, sizeof(anAddress));
+	bcopy(res->ai_addr, &server, res->ai_addrlen);
 	freeaddrinfo(res);
 
 	if (cptr != &me)

@@ -1326,20 +1326,28 @@ int 	initconf(int opt)
 		*/
 		if (aconf->status == CONF_ME)
 		    {
+			int fail = 0;
+
 			strncpyzt(me.info, aconf->name, sizeof(me.info));
 			if (me.name[0] == '\0' && aconf->host[0])
 				strncpyzt(me.name, aconf->host,
 					  sizeof(me.name));
 			if (aconf->passwd[0] && (aconf->passwd[0] != '*'))
 			{
-				getaddrinfo(aconf->passwd, NULL, NULL, &res);
+				if (getaddrinfo(aconf->passwd, NULL, NULL, &res))
+					fail = 1;
 			}
 			else
 			{
-				getaddrinfo("0.0.0.0", NULL, NULL, &res);
+				if (getaddrinfo("0.0.0.0", NULL, NULL, &res))
+					fail = 1;
 			}
-			bcopy(res->ai_addr, &me.addr, sizeof(anAddress));
-			freeaddrinfo(res);
+
+			if ( !fail ) {
+				bzero(&me.addr, sizeof(anAddress));
+				bcopy(res->ai_addr, &me.addr, res->ai_addrlen);
+				freeaddrinfo(res);
+			}
 			if (portnum < 0 && aconf->port >= 0)
 				portnum = aconf->port;
 		    }
@@ -1405,8 +1413,10 @@ static	int	lookup_confhost(aConfItem *aconf)
 	ln.value.aconf = aconf;
 	ln.flags = ASYNC_CONF;
 
-	if (getaddrinfo(s, NULL, NULL, &res)) goto badlookup;
-	bcopy(res->ai_addr, &aconf->addr, sizeof(anAddress));
+	if (getaddrinfo(s, NULL, NULL, &res) || !(res->ai_addr))
+		goto badlookup;
+	bzero(&me.addr, sizeof(anAddress));
+	bcopy(&res->ai_addr[0], &aconf->addr, res->ai_addrlen);
 	freeaddrinfo(res);
 
 	return 0;
