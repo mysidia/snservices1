@@ -129,6 +129,7 @@ aClient	*make_client(aClient *from)
 	(void)strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
+	        cptr->lopt = (LOpts *)0;
 		cptr->since = cptr->lasttime =
 		  cptr->lastnick = cptr->firsttime = NOW;
 		cptr->confs = NULL;
@@ -155,6 +156,12 @@ int	free_socks(struct Socks *zap)
 
 void	free_client(aClient *cptr)
 {
+	if (cptr->from == cptr && cptr->lopt) {
+		free_str_list(cptr->lopt->yeslist);
+		free_str_list(cptr->lopt->nolist);
+		MyFree(cptr->lopt);
+	}
+
 	MyFree((char *)cptr);
 }
 
@@ -387,6 +394,7 @@ aConfItem	*make_conf()
 	aconf->port = 0;
 	aconf->hold = 0;
 	aconf->bits = 0;
+	aconf->tmpconf = 0;
 	Class(aconf) = 0;
 	return (aconf);
 }
@@ -464,3 +472,49 @@ void	send_listinfo(aClient *cptr, char *name)
 		   me.name, RPL_STATSDEBUG, name, inuse, mem);
 }
 #endif
+
+void    free_str_list(lp)
+Reg1	Link    *lp;
+{
+        Reg2    Link    *next;
+
+
+        while (lp) {
+                next = lp->next;
+                MyFree((char *)lp->value.cp);
+                free_link(lp);
+                lp = next;
+        }
+
+        return;
+}
+
+
+/*
+ * Look for a match in a list of strings. Go through the list, and run
+ * match() on it. Side effect: if found, this link is moved to the top of
+ * the list.
+ */
+int     find_str_match_link(lp, str)
+Reg1    Link    **lp; /* Two **'s, since we might modify the original *lp */
+Reg2    char    *str;
+{
+        Link    *ptr, **head = lp;
+
+        if (lp && *lp)
+        {
+                if (!match((*lp)->value.cp, str))
+                        return 1;
+                for (; (*lp)->next; *lp = (*lp)->next)
+                        if (!match((*lp)->next->value.cp, str))
+                        {
+                                Link *temp = (*lp)->next;
+                                *lp = (*lp)->next->next;
+                                temp->next = *head;
+                                *head = temp;
+                                return 1;
+                        }
+                return 0;
+        }
+        return 0;
+}
