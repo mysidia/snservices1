@@ -553,10 +553,8 @@ m_server_estab(aClient *cptr)
 	aClient   *acptr;
 	aConfItem *aconf, *bconf;
 	char      *inpath, *host, *s, *encr;
-	int       split;
 
 	inpath = get_client_name(cptr,TRUE); /* "refresh" inpath with host */
-	split = mycmp(cptr->name, cptr->sockhost);
 	host = cptr->name;
 
 	current_load_data.conn_count++;
@@ -685,14 +683,8 @@ m_server_estab(aClient *cptr)
 		if ((aconf = acptr->serv->nline) &&
 		    !match(my_name_for_link(me.name, aconf), cptr->name))
 			continue;
-		if (split) {
-			sendto_one(acptr,":%s SERVER %s 2 :[%s] %s",
-				   me.name, cptr->name,
-				   address_tostring(cptr->sock->raddr, 0), cptr->info);
-		}
-		else
-			sendto_one(acptr,":%s SERVER %s 2 :%s",
-				   me.name, cptr->name, cptr->info);
+		sendto_one(acptr,":%s SERVER %s 2 :%s",
+			me.name, cptr->name, cptr->info);
 	    }
 
 	/*
@@ -725,17 +717,9 @@ m_server_estab(aClient *cptr)
 			if (match(my_name_for_link(me.name, aconf),
 				    acptr->name) == 0)
 				continue;
-			split = (MyConnect(acptr) &&
-				 mycmp(acptr->name, acptr->sockhost));
-			if (split)
-				sendto_one(cptr, ":%s SERVER %s %d :[%s] %s",
-		   			   acptr->serv->up, acptr->name,
-					   acptr->hopcount+1,
-		   			   acptr->sockhost, acptr->info);
-			else
-				sendto_one(cptr, ":%s SERVER %s %d :%s",
-		   			   acptr->serv->up, acptr->name,
-					   acptr->hopcount+1, acptr->info);
+			sendto_one(cptr, ":%s SERVER %s %d :%s",
+		   		acptr->serv->up, acptr->name,
+				acptr->hopcount+1, acptr->info);
 		    }
 	    }
 
@@ -825,52 +809,6 @@ m_info(aClient *cptr, aClient *sptr, int parc, char *parv[])
     return 0;
 }
 
-
-/* Safe_info 
- *
- * Return a "safe" version of the server info reply
- * given a valid `acptr' pointing to a server
- *
- * Safe means: 1. Not null
- *             2. If showIp is 0 then the server's ip address won't
- *                be shown with the info.
- */
-const char* safe_info(int showIp, aClient* acptr)
-{
-	int i, ippfx;
-
-	if (!acptr) {
-		return "*Not On This Net*";
-	}
-	
-	if (!IsServer(acptr) && acptr->info && acptr->info[0])
-		return acptr->info;
-	
-	if (!acptr->info || !acptr->info[0]) {
-		return "(Unknown Location)";
-	}
-
-	if (!showIp && acptr->info[0] == '[') 
-	{
-		for(i = 1, ippfx = 0; acptr->info[i] && (i < 17); i++) {
-			if (acptr->info[i] == ']' && (i >= 7)) {
-				ippfx = 1;
-				break;
-			}
-			
-			if ((acptr->info[i] != '.') && (acptr->info[i] != ':')
-			    && (!isxdigit(acptr->info[i])))
-				break;
-		}
-
-		if (ippfx) {
-			return acptr->info + i + 1;
-		}
-	}
-	
-	return acptr->info;
-}
-
 /*
 ** m_links
 **	parv[0] = sender prefix
@@ -908,7 +846,7 @@ m_links(aClient *cptr, aClient *sptr, int parc, char *parv[])
                
 		sendto_one(sptr, rpl_str(RPL_LINKS),
 			   me.name, parv[0], acptr->name, acptr->serv->up,
-			   acptr->hopcount, safe_info(IsOper(sptr), acptr));
+			   acptr->hopcount, acptr->info);
 	    }
 
 	sendto_one(sptr, rpl_str(RPL_ENDOFLINKS), me.name, parv[0],
