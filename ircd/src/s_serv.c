@@ -1715,8 +1715,8 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (!aconf)
 	    {
 	      sendto_one(sptr,
-			 "NOTICE %s :Connect: Host %s not listed in " CPATH,
-			 parv[0], parv[1]);
+			 "NOTICE %s :Connect: Host %s not listed in %s",
+			 parv[0], parv[1], CPATH);
 	      return 0;
 	    }
 	/*
