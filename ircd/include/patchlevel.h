@@ -39,7 +39,7 @@
 		\
 		\
 		\
-		".CleanSkan"
+		""
 
 /*
  * Deliberate empty lines
@@ -49,7 +49,7 @@
 		\
 		\
 		\
-		".snap3"
+		""
 
 /*
  * Deliberate empty lines
