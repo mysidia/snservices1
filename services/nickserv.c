@@ -3049,6 +3049,44 @@ cmd_return ns_set_idtime(nss_tab *setEnt, UserList *nick,
 	return RET_OK_DB;
 }
 
+/**
+ * \brief The /NICKSERV SET MAXMEMO command
+ */
+cmd_return ns_set_maxmemo(nss_tab *setEnt, UserList *nick,
+			  char *args[], int numargs)
+{
+	const char *from = nick->nick;
+	int maxmemo;
+
+	if (numargs < 2) {
+		if (nick->reg->memos->max > 0)
+			sSend(":%s NOTICE %s :Your current max memo limit "
+			      "is: %d memos", NickServ, from,
+			      nick->reg->memos->max);
+		else
+			sSend(":%s NOTICE %s :Your current max memo limit "
+			      "is: unlimited", NickServ, from);
+		sSend(":%S NOTICE %s :To change this value, specify a new "
+		      "limit", NickServ, from);
+		return RET_OK;
+	}
+
+	if ((maxmemo = atoi(args[1])) && maxmemo >= 0 &&
+	    maxmemo <= MS_DEF_RCV_MAX) {
+		nick->reg->memos->max = maxmemo;
+		sSend(":%s NOTICE %s :Your max memo limit has been set to: "
+		      "%d memo%c", NickServ, from, nick->reg->memos->max,
+		      (maxmemo > 1) ? 's' : 0);
+		return RET_OK;
+	}
+
+	else {
+		sSend(":%s NOTICE %s :Please enter a valid memo limit in the "
+		      "range of 1 to %d memos", NickServ, from,
+		      MS_DEF_RCV_MAX);
+		return RET_EFAULT;
+	}
+}
 
 #ifdef REQ_EMAIL
 /*
@@ -3197,6 +3235,8 @@ NCMD(ns_set)
 			NSS_PROC,	0,			0,		ns_set_url },
 		{ "idtime",		"identify delay",
 			NSS_PROC,	0,			0,		ns_set_idtime },
+		{ "maxmemo",		"max memos",
+			NSS_PROC,	0,			0,		ns_set_maxmemo },
 		{ "email",		"e-mail address",
 			NSS_PROC,	0,			0,		ns_set_email },
 		{ "address",	"e-mail address",
