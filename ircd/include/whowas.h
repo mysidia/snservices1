@@ -21,6 +21,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.4.16.1  2003/05/18 20:23:56  explorer
+ * clean up PROTO() since we are all ANSI here.
+ *
  * Revision 1.4  1998/01/17 10:56:30  mysidia
  *     undid the dreamforge merge. DALnet's code seems to be too buggy...
  * perhaps when they fix the bugs the changes can be [manually] patched
@@ -50,14 +53,6 @@
 #ifndef	__whowas_include__
 #define __whowas_include__
 
-#ifndef PROTO
-#if __STDC__
-#	define PROTO(x)	x
-#else
-#	define PROTO(x) ()
-#endif /* __STDC__ */
-#endif /* ! PROTO */
-
 /*
 ** WHOWAS structure moved here from whowas.c
 */
@@ -76,7 +71,7 @@ typedef struct aname {
 **	Client must be a fully registered user (specifically,
 **	the user structure must have been allocated).
 */
-void	add_history PROTO((aClient *));
+void	add_history(aClient *);
 
 /*
 ** off_history
@@ -85,7 +80,7 @@ void	add_history PROTO((aClient *));
 **	structures and it must know when they cease to exist. This
 **	also implicitly calls AddHistory.
 */
-void	off_history PROTO((aClient *));
+void	off_history(aClient *);
 
 /*
 ** get_history
@@ -93,15 +88,15 @@ void	off_history PROTO((aClient *));
 **	nickname within the timelimit. Returns NULL, if no
 **	one found...
 */
-aClient	*get_history PROTO((char *, time_t));
+aClient	*get_history(char *, time_t);
 					/* Nick name */
 					/* Time limit in seconds */
 
-int	m_whowas PROTO((aClient *, aClient *, int, char *[]));
+int	m_whowas(aClient *, aClient *, int, char *[]);
 
 /*
 ** for debugging...counts related structures stored in whowas array.
 */
-void	count_whowas_memory PROTO((int *, int *, u_long *));
+void	count_whowas_memory(int *, int *, u_long *);
 
 #endif /* __whowas_include__ */

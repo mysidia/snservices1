@@ -28,25 +28,4 @@
 #define	__u_l	unsigned long
 #endif
 
-#ifdef __STDC__
-# ifndef _WIN32
-extern __u_l inet_addr(char *);
-extern char *inet_ntoa(char *);
-# endif
-extern __u_l inet_makeaddr(int , int);
-extern __u_l inet_network(char *);
-extern __u_l inet_lnaof(struct in_addr);
-#else
-# ifndef _WIN32
-extern __u_l inet_addr();
-extern char *inet_ntoa();
-# endif
-#ifndef HPUX
-extern __u_l inet_makeaddr();
-#endif
-#endif
-#ifndef  HPUX
-extern __u_l inet_network();
-extern __u_l inet_lnaof();
-#endif
 #undef __u_l
