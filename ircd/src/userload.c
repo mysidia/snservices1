@@ -25,20 +25,17 @@
 #include "sys.h"
 #include "userload.h"
 #include <stdio.h>
-#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/errno.h>
-#else
-#include <io.h>
-#endif
 #include <string.h>
 #include <signal.h>
-#ifndef _WIN32
 #include <sys/resource.h>
-#endif
 #include "h.h"
 
+#include "ircd/send.h"
+
+IRCD_RCSID("$Id$");
 
 struct current_load_struct current_load_data;
 struct load_entry *load_list_head = NULL, *load_list_tail = NULL,
@@ -59,20 +56,11 @@ void update_load()
     bzero(&current_load_data, sizeof(struct current_load_struct));
   
   memcpy(&last, &now, sizeof(struct timeval));
-#ifndef _WIN32
   if (gettimeofday(&now, NULL) != 0)
     return;  /* error getting time of day--can't calculate time diff */
-#else
-  /* Well, since the windows libs don't have gettimeofday() we have
-   * to improvise a bit, hopefully this will achieve close to the
-   * same result.  -Cabal95
-   */
-  now.tv_sec = time(NULL);
-#endif
 
   if (load_free_tail == NULL) {
-    if ((cur_load_entry =
-	 (struct load_entry *) MyMalloc(sizeof(struct load_entry))) == NULL)
+    if ((cur_load_entry = irc_malloc(sizeof(struct load_entry))) == NULL)
       return;
     /* printf("malloc pointer: %x\n", cur_load_entry); */
   } else {
@@ -83,14 +71,8 @@ void update_load()
     /* printf("free pointer: %x\n", cur_load_entry); */
   }
   if (load_list_tail != NULL) {
-#ifndef _WIN32
     cur_load_entry->time_incr = ((now.tv_sec * 1000 + now.tv_usec / 1000 + 5)
 	   - (last.tv_sec * 1000 + last.tv_usec / 1000)) / 10;
-#else
-    /* Don't even use *.tv_usec since its an unknown value.  -Cabal95 */
-    cur_load_entry->time_incr = ((now.tv_sec * 1000 + 5)
-	   - last.tv_sec * 1000) / 10;
-#endif
     cur_load_entry->local_count = current_load_data.local_count;
     cur_load_entry->client_count = current_load_data.client_count;
     cur_load_entry->conn_count = current_load_data.conn_count;

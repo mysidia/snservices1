@@ -23,9 +23,7 @@
 #define	__config_include__
 
 #include "setup.h"
-#ifndef _WIN32
 #include "options.h"
-#endif
 
 /*
  *
@@ -46,6 +44,12 @@
 #define __inline
 #endif
 
+/**
+ * Number of seconds a client has to reply to CTCP version prior
+ * to disconnection
+ */
+#define MAX_NOVERSION_DELAY 300
+
 #define	MAXKILLS 25     /* maximum # of people listed per kill   */
 #define	MAXHURTS 25     /* maximum # of people listed in a /hurt */
 #undef	BOOT_MSGS
@@ -58,23 +62,6 @@
  *  for help
  */
 #define SOCKSFOUND_URL   "http://www.sorcery.net/help/open_socks.html"
-
-/* Type of host. These should be made redundant somehow. -avalon */
-
-/*	BSD		Nothing Needed 4.{2,3} BSD, SunOS 3.x, 4.x */
-/*	HPUX		Nothing needed (A.08/A.09) */
-/*	ULTRIX		Nothing needed (4.2) */
-/*	OSF		Nothing needed (1.2) */
-/* 	AIX		IBM ugly so-called Unix, AIX */
-/* 	MIPS		MIPS Unix */
-/*	SGI		Nothing needed (IRIX 4.0.4) */
-/*  	SVR3		SVR3 stuff - being worked on where poss. */
-/* 	DYNIXPTX	Sequents Brain-dead Posix implement. */
-/* 	SOL20		Solaris2 */
-/* 	ESIX		ESIX */
-/* 	NEXT		NeXTStep */
-/* 	SVR4 */
-/*	LINUX_GLIBC	Glibc-based Linux distros - sys_errlist */
 
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the
@@ -167,31 +154,11 @@
 #endif
 
 /*
- * Define this to prevent mixed case userids that clonebots use. However
- * this affects the servers running telclients WLD* FIN*  etc.
- */
-#undef	DISALLOW_MIXED_CASE
-
-/*
- * Define this if you wish to ignore the case of the first character of
- * the user id when disallowing mixed case. This allows PC users to
- * enter the more intuitive first name with the first letter capitalised
- */
-#define	IGNORE_CASE_FIRST_CHAR
-
-/*
  * Define this if you wish to output a *file* to a K lined client rather
  * than the K line comment (the comment field is treated as a filename)
  */
 #undef	COMMENT_IS_FILE
 
-
-/* Do these work? I dunno... */
-
-/*
- * NOTE: On some systems, valloc() causes many problems.
- */
-#undef	VALLOC			/* Define this if you have valloc(3) */
 
 /*
  * read/write are restarted after signals defining this 1, gets
@@ -213,13 +180,7 @@
  *       the maintainer.
  */
 
-#undef	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
-
-/*
- * defining FORCE_CORE will automatically "unlimit core", forcing the
- * server to dump a core file whenever it has a fatal error.  -mlv
- */
-#undef FORCE_CORE
+#define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
 
 /*
  * Full pathnames and defaults of irc system's support files. Please note that
@@ -254,32 +215,6 @@
  * NOTE: Failed oper attempts are logged regardless.
  */
 #define FAILOPER_WARN
-
-/* SHOW_PASSWORD
- *
- * When defined, show the password used on a failed oper attempt - identical
- * to the behavior of the .dal3 patch.
- */
-#undef SHOW_PASSWORD
-
-/* CHROOTDIR
- *
- * Define for value added security if you are a rooter.
- *
- * All files you access must be in the directory you define as DPATH.
- * (This may effect the PATH locations above, though you can symlink it)
- *
- * You may want to define IRC_UID and IRC_GID
- */
-/* #define CHROOTDIR */
-
-/* NO_DEFAULT_INVISIBLE
- *
- * When defined, your users will not automatically be attributed with user
- * mode "i" (i == invisible). Invisibility means people dont showup in
- * WHO or NAMES unless they are on the same channel as you.
- */
-#define	NO_DEFAULT_INVISIBLE
 
 /* OPER_* defines
  *
@@ -326,47 +261,6 @@
  * correctly for performance reasons.
  */
 /* #define	HUB */
-
-/* R_LINES:  The conf file now allows the existence of R lines, or
- * restrict lines.  These allow more freedom in the ability to restrict
- * who is to sign on and when.  What the R line does is call an outside
- * program which returns a reply indicating whether to let the person on.
- * Because there is another program involved, Delays and overhead could
- * result. It is for this reason that there is a line in config.h to
- * decide whether it is something you want or need. -Hoppie
- *
- * The default is no R_LINES as most people probably don't need it. --Jto
- */
-#undef	R_LINES
-
-#ifdef	R_LINES
-/* Also, even if you have R lines defined, you might not want them to be 
-   checked everywhere, since it could cost lots of time and delay.  Therefore, 
-   The following two options are also offered:  R_LINES_REHASH rechecks for 
-   R lines after a rehash, and R_LINES_OFTEN, which rechecks it as often
-   as it does K lines.  Note that R_LINES_OFTEN is *very* likely to cause 
-   a resource drain, use at your own risk.  R_LINES_REHASH shouldn't be too
-   bad, assuming the programs are fairly short. */
-#define R_LINES_REHASH
-#define R_LINES_OFTEN
-#endif
-
-/*
- * NOTE: defining CMDLINE_CONFIG and installing ircd SUID or SGID is a MAJOR
- *       security problem - they can use the "-f" option to read any files
- *       that the 'new' access lets them. Note also that defining this is
- *       a major security hole if your ircd goes down and some other user
- *       starts up the server with a new conf file that has some extra
- *       O-lines. So don't use this unless you're debugging.
- */
-#undef	CMDLINE_CONFIG /* allow conf-file to be specified on command line */
-#define CMDLINE_CONFIG
-/*
- * To use m4 as a preprocessor on the ircd.conf file, define M4_PREPROC.
- * The server will then call m4 each time it reads the ircd.conf file,
- * reading m4 output as the server's ircd.conf file.
- */
-#undef	M4_PREPROC
 
 /*
  * If you wish to have the server send 'vital' messages about server
@@ -443,16 +337,6 @@
 #endif
 
 /*
- * IRC_UID
- *
- * If you start the server as root but wish to have it run as another user,
- * define IRC_UID to that UID.  This should only be defined if you are running
- * as root and even then perhaps not.
- */
-/* #undef	IRC_UID */
-/* #undef	IRC_GID */
-
-/*
  * CLIENT_FLOOD
  *
  * this controls the number of bytes the server will allow a client to
@@ -460,11 +344,6 @@
  * flooding it.  Values greater than 8000 make no difference to the server.
  */
 #define	CLIENT_FLOOD	8000
-
-/* Define this if you want the server to accomplish ircII standard */
-/* Sends an extra NOTICE in the beginning of client connection     */
-#undef	IRCII_KLUDGE
-
 
 /*   STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP  */
 
@@ -574,15 +453,6 @@
  */
 #define MAXCHANNELSPERUSER  10	/* Recommended value: 10 */
 
-/*
- * SendQ-Always causes the server to put all outbound data into the sendq and
- * flushing the sendq at the end of input processing. This should cause more
- * efficient write's to be made to the network.
- * There *shouldn't* be any problems with this method.
- * -avalon
- */
-#define	SENDQ_ALWAYS
-
 /* ------------------------- END CONFIGURATION SECTION -------------------- */
 #define MOTD MPATH
 #define	MYNAME SPATH
@@ -599,23 +469,6 @@
 #endif
 #endif
 
-#ifdef _SEQUENT_		/* Dynix 1.4 or 2.0 Generic Define.. */
-#undef BSD
-#define SYSV			/* Also #define SYSV */
-#endif
-
-#ifdef	ultrix
-#define	ULTRIX
-#endif
-
-#ifdef	__hpux
-#define	HPUX
-#endif
-
-#ifdef	sgi
-#define	SGI
-#endif
-
 #ifndef KLINE_TEMP
 #define KLINE_PERM 0
 #define KLINE_TEMP 1
@@ -623,7 +476,6 @@
 #endif
 
 #ifdef DEBUGMODE
-extern	void	debug();
 # define Debug(x) debug x
 # define LOGFILE LPATH
 #else
@@ -631,58 +483,11 @@ extern	void	debug();
 # define LOGFILE "/dev/null"
 #endif
 
-#if defined(mips) || defined(PCS)
-#undef SYSV
-#endif
-
-#ifdef MIPS
-#undef BSD
-#define BSD             1       /* mips only works in bsd43 environment */
-#endif
-
-#ifdef sequent                   /* Dynix (sequent OS) */
-#define SEQ_NOFILE    128        /* set to your current kernel impl, */
-#endif                           /* max number of socket connections */
-
-#ifdef _SEQUENT_
-#define	DYNIXPTX
-#endif
-
-#ifdef	BSD_RELIABLE_SIGNALS
-# if defined(SYSV_UNRELIABLE_SIGNALS) || defined(POSIX_SIGNALS)
-error You stuffed up config.h signals #defines use only one.
-# endif
-#define	HAVE_RELIABLE_SIGNALS
-#endif
-
-#ifdef	SYSV_UNRELIABLE_SIGNALS
-# ifdef	POSIX_SIGNALS
-error You stuffed up config.h signals #defines use only one.
-# endif
-#undef	HAVE_RELIABLE_SIGNALS
-#endif
-
-#ifdef	POSIX_SIGNALS
-#define	HAVE_RELIABLE_SIGNALS
-#endif
-
 /*
  * safety margin so we can always have one spare fd, for motd/authd or
  * whatever else.  -4 allows "safety" margin of 1 and space reserved.
  */
 #define	MAXCLIENTS	(MAXCONNECTIONS-4)
-
-#ifdef HAVECURSES
-# define DOCURSES
-#else
-# undef DOCURSES
-#endif
-
-#ifdef HAVETERMCAP
-# define DOTERMCAP
-#else
-# undef DOTERMCAP
-#endif
 
 #if defined(CLIENT_FLOOD)
 #  if	(CLIENT_FLOOD > 8000)
@@ -702,30 +507,6 @@ error CLIENT_FLOOD undefined
 #ifndef SOCKSFOUND_URL
 #error SOCKSFOUND_URL is not defined: Please define in config.h
 error SOCKSFOUND_URL is not defined: Please define in config.h
-#endif
-
-/*
- * Some ugliness for AIX platforms.
- */
-#ifdef AIX
-# include <sys/machine.h>
-# if BYTE_ORDER == BIG_ENDIAN
-#  define BIT_ZERO_ON_LEFT
-# endif
-# if BYTE_ORDER == LITTLE_ENDIAN
-#  define BIT_ZERO_ON_RIGHT
-# endif
-/*
- * this one is used later in sys/types.h (or so i believe). -avalon
- */
-# define BSD_INCLUDES
-#endif
-
-/*
- * Cleaup for WIN32 platform.
- */
-#ifdef _WIN32
-# undef FORCE_CORE
 #endif
 
 #endif /* __config_include__ */

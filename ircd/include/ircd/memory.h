@@ -35,7 +35,7 @@
 void *irc_malloc(size_t x);
 void *irc_realloc(void *x, size_t y);
 void irc_free(void *x);
-char *irc_strdup(char *s);
+char *irc_strdup(const char *s);
 
 /*
  * Called by the above when memory is not available.

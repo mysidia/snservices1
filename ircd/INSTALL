@@ -28,27 +28,15 @@ to this list, send the relevant information to us.
 
 OS and Version      Compiler and Version     Comments
 ------------------- ------------------------ -------------------------------
-NetBSD 1.2B         gcc 2.7.2
+NetBSD 1.6          gcc 2.7.2
+NetBSD 1.6ZF	    gcc 3.3.2
 
 FreeBSD 2.1.0       gcc 2.6.3                Do NOT use crypt at all...
 
-SunOS 4.1.4         gcc 2.7-96q1 (Cygnus)
-
-Solaris 2.4         gcc 2.7-96q1 (Cygnus)    (SunOS 5.4)
-
-Solaris 2.5         SunWorks Pro C           (SunOS 5.5.1)
+Solaris 2.5         SunWorks Pro C
                     cc: SC4.0 18 Oct 1995 C 4.0
 
-Digital Unix 3.2    gcc 2.7-96q3 (Cygnus)
-
 Linux 2.0.24        gcc 2.7.2.1
-
-HPUX 9.01           gcc 2.6.3
-
-HPUX 10.01          gcc 2.7-96q3 (Cygnus)
-
-Windows NT/95       MSVC++ 4.0
-
 
 =======================================================================
 Unpacking the Distribution
@@ -66,9 +54,6 @@ tar zxf ircd-sor1.3.0.tar.gz
 This will create a new directory called ircd-sor1.3.0, and unpack the
 source into it.
 
-If you use Windows NT/95, you may need to find a program to extract
-this package.  Take a few minutes to find one, there are plenty about.
-
 =======================================================================
 Editing the Configuration Files
 
@@ -81,16 +66,8 @@ find the need to edit include/config.h, for example, mail us and
 tell us why ; Config can be made smarter, and that will make it so 
 you won't have to edit anything for the next version.
 
-NOTE: If you run Windows NT/95, you may need to edit include/config.h
-to set some minor options, but for the most part using the ./Config.exe
-program will work.
-
 =======================================================================
 Compiling Your Server
-
-Windows users: You must compile the Config program first. To do this
-run the following command:  $CC src\Config.c
-where $CC is the name of your compiler.  for MSVC users that is 'cl'
 
 To build the server, simply run
 	% ./Config

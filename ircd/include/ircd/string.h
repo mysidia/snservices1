@@ -63,8 +63,8 @@ extern unsigned char irc_charattrib[];
 #define islower(c) ((irc_charattrib[(u_char)(c)]&IRC_CHAR_ALPHA) && ((u_char)(c) > 0x5f))
 #define isupper(c) ((irc_charattrib[(u_char)(c)]&IRC_CHAR_ALPHA) && ((u_char)(c) < 0x60))
 #define isdigit(c) (irc_charattrib[(u_char)(c)]&IRC_CHAR_DIGIT)
-#define	isxdigit(c) (isdigit(c) || 'a' <= (c) && (c) <= 'f' || \
-		     'A' <= (c) && (c) <= 'F')
+#define	isxdigit(c) (isdigit(c) || ('a' <= (c) && (c) <= 'f') || \
+		     ('A' <= (c) && (c) <= 'F'))
 #define isalnum(c) (irc_charattrib[(u_char)(c)]&(IRC_CHAR_DIGIT|IRC_CHAR_ALPHA))
 #define isprint(c) (irc_charattrib[(u_char)(c)]&IRC_CHAR_PRINT)
 #define isascii(c) ((u_char)(c) >= 0 && (u_char)(c) <= 0x7f)

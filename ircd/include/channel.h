@@ -29,12 +29,7 @@
 #define ChannelExists(n)	(find_channel(n, NullChn) != NullChn)
 
 
-#ifndef	V28PlusOnly
 #define	MAXMODEPARAMS	6
-#else
-#include "msg.h"
-#define	MAXMODEPARAMS	(MAXPARA-2)
-#endif
 
 #ifndef IsULine
 #define IsULine(cptr, sptr)         ((sptr)->flags & FLAGS_ULINE)

@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, ircd/help.c
  *   Copyright (C) 1996 DALnet
  *
@@ -16,9 +16,6 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef lint
-static char sccsid[] = "@(#)help.c	6.00 9/22/96 (C) 1996 DALnet";
-#endif
 
 #include <sys/types.h>
 #include <sys/file.h>
@@ -29,6 +26,12 @@ static char sccsid[] = "@(#)help.c	6.00 9/22/96 (C) 1996 DALnet";
 #include "sys.h"
 #include "h.h"
 #include "msg.h"
+
+#include "ircd/send.h"
+#include "ircd/string.h"
+
+IRCD_SCCSID("@(#)help.c	6.00 9/22/96 (C) 1996 DALnet");
+IRCD_RCSID("$Id$");
 
 int h_nignores = 0;
 char **h_ignores;
@@ -66,9 +69,9 @@ void helpop_ignore(char *mask)
    if (h_ignores)
        h_ignores = realloc(h_ignores, sizeof(char *) * (h_nignores + 3));
    else
-       h_ignores = (char **)MyMalloc(sizeof(char *) * (h_nignores + 3));
+       h_ignores = irc_malloc(sizeof(char *) * (h_nignores + 3));
    ++h_nignores;
-   DupString(h_ignores[h_nignores-1], buf);
+   h_ignores[h_nignores-1] = irc_strdup(buf);
    h_ignores[h_nignores] = NULL;
 }
 
@@ -81,7 +84,7 @@ void helpop_unignore(int num)
    for (i = num; i < h_nignores; i++)
    {
         if (i == num)
-            MyFree(h_ignores[i]);
+            irc_free(h_ignores[i]);
         h_ignores[i] = h_ignores[i+1];
    }
    --h_nignores;
@@ -90,14 +93,16 @@ void helpop_unignore(int num)
 }
 
 
-int nohelp_message(aClient *sptr, int g)
+int
+nohelp_message(aClient *sptr, int g)
 {
-   int going_nowhere = helpop_ignored(sptr);
+	int going_nowhere = helpop_ignored(sptr);
 
-     if (going_nowhere || !g)
-        SND("Your request was not forwarded to the helpops.");
-     else
-        SND("Your request has been forwarded to the Helpops!");
+	if (going_nowhere || !g)
+		SND("Your request was not forwarded to the helpops.");
+	else
+		SND("Your request has been forwarded to the Helpops!");
+
         SND("for further help, please type one of the following");
         SND("commands:");
         SND("   \2/join #Help\2             <-- for human assistance");
@@ -106,7 +111,8 @@ int nohelp_message(aClient *sptr, int g)
         SND("   \2/raw memoserv memoserv\2  <-- for index of memo topics");
         SND("   ircII users use \2/quote\2, pIRCH users use \2/verbose\2");
         SND("   instead of raw.");
-    return (!going_nowhere);
+
+	return (!going_nowhere);
 }
 
 

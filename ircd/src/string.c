@@ -83,33 +83,6 @@ strtok(char *str, char *fs)
 
 #endif /* NEED_STRTOK */
 
-#ifdef NEED_STRERROR
-/*
-**	strerror - return an appropriate system error string to a given errno
-**
-**		   argv 11/90
-*/
-
-char *
-strerror(int err_no)
-{
-	extern	char	*sys_errlist[];	 /* Sigh... hopefully on all systems */
-	extern	int	sys_nerr;
-
-	static	char	buff[40];
-	char	*errp;
-
-	errp = (err_no > sys_nerr ? NULL : sys_errlist[err_no]);
-
-	if (errp == NULL) {
-		errp = buff;
-		(void)sprintf(errp, "Unknown Error %d", err_no);
-	}
-	return errp;
-}
-
-#endif /* NEED_STRERROR */
-
 /*
  *  Case insensitive comparison of two NULL terminated strings.
  *

@@ -17,10 +17,6 @@
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)res_mkquery.c	6.12 (Berkeley) 6/1/90";
-#endif /* LIBC_SCCS and not lint */
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -28,6 +24,9 @@ static char sccsid[] = "@(#)res_mkquery.c	6.12 (Berkeley) 6/1/90";
 #include "sys.h"
 #include "nameser.h"
 #include "resolv.h"
+
+IRCD_SCCSID("@(#)res_mkquery.c	6.12 (Berkeley) 6/1/90");
+IRCD_RCSID("$Id$");
 
 /*
  * Form all types of queries.
