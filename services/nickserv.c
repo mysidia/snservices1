@@ -1361,7 +1361,14 @@ void delRegNick(RegNickList * killme)
 		while (memos != NULL) {
 			memos_next = LIST_NEXT(memos, ml_lst);
 			memos->realto = NULL;
-			LIST_REMOVE(memos, ml_sent);
+			/*
+			 * Only try deleting this memo from someone's sent
+			 * list if we're such a list.
+			 */
+			if (memos->ml_sent.le_prev != NULL)
+			{
+				LIST_REMOVE(memos, ml_sent);
+			}
 			delMemo(killme->memos, memos);
 
 			memos = memos_next;

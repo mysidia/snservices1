@@ -190,7 +190,11 @@ MCMD(ms_read)
 				tmp->flags &= ~MEMO_UNREAD;
 				sender = getRegNickData(tmp->from);
 				if (sender)
+				{
 					LIST_REMOVE(tmp, ml_sent);
+					/* We're not on a list anymore. */
+					tmp->ml_sent.le_prev = NULL;
+				}
 			}
 		}
 		return RET_OK;
@@ -234,7 +238,11 @@ MCMD(ms_read)
 		tmp->flags &= ~MEMO_UNREAD;
 		sender = getRegNickData(tmp->from);
 		if (sender)
+		{
 			LIST_REMOVE(tmp, ml_sent);
+			/* We're not on a list anymore. */
+			tmp->ml_sent.le_prev = NULL;
+		}
 	}
 	return RET_OK;
 }
@@ -655,7 +663,11 @@ MCMD(ms_delete)
 			tmp_next = LIST_NEXT(tmp, ml_lst);
 			tmp->flags |= MEMO_DELETE;
 			if (tmp->flags & MEMO_UNREAD)
+			{
 				LIST_REMOVE(tmp, ml_sent);
+				/* We're not on a list anymore. */
+				tmp->ml_sent.le_prev = NULL;
+			}
 			tmp = tmp_next;
 		}
 		PutReply(MemoServ, nick, RPL_MS_ALLDELETED_1ARG, "", 0, 0);
@@ -669,6 +681,8 @@ MCMD(ms_delete)
 			if (tmp->flags & MEMO_UNREAD) {
 				tmp->flags |= MEMO_DELETE;
 				LIST_REMOVE(tmp, ml_sent);
+				/* We're not on a list anymore. */
+				tmp->ml_sent.le_prev = NULL;
 			}
 			tmp = tmp_next;
 		}
@@ -705,7 +719,11 @@ MCMD(ms_delete)
 		if (idx == i) {
 			tmp->flags |= MEMO_DELETE;
 			if (tmp->flags & MEMO_UNREAD)
+			{
 				LIST_REMOVE(tmp, ml_sent);
+				/* We're not on a list anymore. */
+				tmp->ml_sent.le_prev = NULL;
+			}
 			break;
 		}
 	}
