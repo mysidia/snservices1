@@ -9,26 +9,17 @@
 
   */
 
-/*
- * $Id$
- * $Log$
- * Revision 1.2  1999/05/04 20:43:15  duff
- * changed a lot of function declarations to ANSI C style.
- * I'm sick of making cosmetic changes, I don't think I'm going to do any
- * more for the time being.
- *
- * Revision 1.1  1998/12/05 08:39:20  explorer
- * make changes for slowaris.
- *
- * $EndLog$
- */
-
-
 #ifdef NEED_SNPRINTF
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "ircd/memory.h"
+
+int snprintf(char *str, size_t size, const char *format, ...);
+int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 
 #undef isdigit
 #define isdigit(ch) ((ch) >= '0' && (ch) <= '9')
@@ -50,7 +41,7 @@
 /* Extract a formatting directive from str. Str must point to a '%'. 
    Returns number of characters used or zero if extraction failed. */
 
-int
+static int
 snprintf_get_directive(const char *str, int *flags, int *width,
                        int *precision, char *format_char, va_list *ap)
 {
@@ -186,14 +177,14 @@ snprintf_get_directive(const char *str, int *flags, int *width,
    results.
    */
 
-int
+static int
 snprintf_convert_ulong(char *buffer, size_t buf_size, int base, char *digits,
                        unsigned long int ulong_val, int flags, int width,
                        int precision)
 {
   int tmp_buf_len = 100 + width, len;
   char *tmp_buf, *tmp_buf_ptr, prefix[2];
-  tmp_buf = malloc(tmp_buf_len);
+  tmp_buf = irc_malloc(tmp_buf_len);
 
   prefix[0] = '\0';
   prefix[1] = '\0';
@@ -213,7 +204,7 @@ snprintf_convert_ulong(char *buffer, size_t buf_size, int base, char *digits,
   /* Get the prefix */
   if (!(flags & IS_NEGATIVE))
     {
-      if (base == 16 && (flags & HASH_FLAG))
+      if (base == 16 && (flags & HASH_FLAG)) {
           if (flags && X_UPCASE)
             {
               prefix[0] = 'x';
@@ -224,7 +215,8 @@ snprintf_convert_ulong(char *buffer, size_t buf_size, int base, char *digits,
               prefix[0] = 'X';
               prefix[1] = '0';
             }
-      
+      }
+
       if (base == 8 && (flags & HASH_FLAG))
           prefix[0] = '0';
       
@@ -271,20 +263,20 @@ snprintf_convert_ulong(char *buffer, size_t buf_size, int base, char *digits,
         {
           memcpy(buffer, tmp_buf_ptr, len);
         }
-      free(tmp_buf);
+      irc_free(tmp_buf);
       return len;
     }
   else
     {
       memcpy(buffer, tmp_buf_ptr, buf_size);
-      free(tmp_buf);
+      irc_free(tmp_buf);
       return buf_size;
     }
 }
 
 #ifndef KERNEL
 
-int
+static int
 snprintf_convert_float(char *buffer, size_t buf_size,
                        double dbl_val, int flags, int width,
                        int precision, char format_char)
@@ -335,7 +327,8 @@ snprintf_convert_float(char *buffer, size_t buf_size,
 
 #endif /* KERNEL */
 
-int snprintf(char *str, size_t size, const char *format, ...)
+int
+snprintf(char *str, size_t size, const char *format, ...)
 {
   int ret;
   va_list ap;
@@ -346,7 +339,8 @@ int snprintf(char *str, size_t size, const char *format, ...)
   return ret;
 }
 
-int vsnprintf(char *str, size_t size, const char *format, va_list ap)
+int
+vsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
   int status, left = (int)size - 1;
   const char *format_ptr = format;

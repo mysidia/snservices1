@@ -128,7 +128,7 @@
 #if defined(vax) || defined(ns32000) || defined(sun386) || defined(MIPSEL) || \
     defined(BIT_ZERO_ON_RIGHT) || defined(sequent) || defined(i386) ||\
     defined(___vax__) || defined(__ns32000__) || defined(__sun386__) ||\
-    defined(__alpha) || defined(_WIN32)
+    defined(__alpha)
 #define BYTE_ORDER	LITTLE_ENDIAN
 
 #endif
