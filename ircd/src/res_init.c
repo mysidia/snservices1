@@ -19,9 +19,13 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+
 #include <netinet/in.h>
+
 #include <stdio.h>
-#include "config.h"	/* To get #define SOL20		Vesa */
+#include <stdlib.h>
+
+#include "config.h"
 #include "common.h"
 #include "sys.h"
 #include "nameser.h"
@@ -41,6 +45,10 @@ struct state _res = {
 	1,                         	/* number of name servers */
 };
 
+#ifdef SOL20
+int gethostname(char *name, size_t len);
+#endif
+
 /*
  * Set up default settings.  If the configuration file exist, the values
  * there will have precedence.  Otherwise, the server address is set to
@@ -52,14 +60,12 @@ struct state _res = {
  * Return 0 if completes successfully, -1 on error
  */
 int
-res_init()
+res_init(void)
 {
 	FILE *fp;
 	char *cp, *dp, **pp;
-	extern u_long inet_addr();
 	int n;
 	char buf[BUFSIZ];
-	extern char *getenv();
 	int nserv = 0;    /* number of nameserver records read from file */
 	int norder = 0;
 	int haveenv = 0;
@@ -67,11 +73,7 @@ res_init()
 
 	_res.nsaddr.sin_addr.s_addr = INADDR_ANY;
 	_res.nsaddr.sin_family = AF_INET;
-#ifdef TESTNET
-	_res.nsaddr.sin_port = htons(NAMESERVER_PORT + 10000);
-#else
 	_res.nsaddr.sin_port = htons(NAMESERVER_PORT);
-#endif
 	_res.nscount = 1;
 
 	/* Allow user to override the local domain definition */
@@ -149,12 +151,7 @@ res_init()
 			    continue;
 		    }
 		    _res.nsaddr_list[nserv].sin_family = AF_INET;
-#ifdef TESTNET
-		    _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT +
-		        10000);
-#else
 		    _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-#endif
 		    nserv++;
 		    continue;
 		}
