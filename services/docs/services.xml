@@ -297,7 +297,7 @@ in the --with-cfgpath option.
 				</para></listitem>
 
 				<listitem><para>
-To install the services helpfiles, unpack help tarball one level above the directory
+						To install the services helpfiles, unpack the <ulink url="http://savannah.nongnu.org/download/snservices/services-help-1.0.tar.gz">help tarball</ulink> one level above the directory
 named in the --with-help configure option.  For example:
 <programlisting>
 		cd /usr/local/lib/services
