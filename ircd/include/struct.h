@@ -47,6 +47,7 @@
 
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
+typedef	struct	Socks	aSocks;
 typedef	struct	Channel	aChannel;
 typedef	struct	User	anUser;
 typedef	struct	Server	aServer;
@@ -64,11 +65,17 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #include "dbuf.h"	/* THIS REALLY SHOULDN'T BE HERE!!! --msa */
 #endif
 
+#define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"
+#define SOCKS_TIMEOUT	15	/* number of seconds to wait before giving
+				   up on a socks request */
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
+#define ENABLE_SOCKSCHECK	/* enable socks check */
+#define SOCKSPORT		1080
 
+#undef	KEEP_HURTBY            /* remember who hurt a user */
 #undef NICKLEN_CHANGE          /* used for a network nickname length change
                                 * to reduce nicklen:
                                 * have all servers running with these
@@ -102,6 +109,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	MAXSILELENGTH	128
 
 #define	USERHOST_REPLYLEN	(NICKLEN+HOSTLEN+USERLEN+5)
+#define MAXTIME			0x7FFFFFFF /* largest thing time() returns, when time() exceeds this,
+                                           we're dead meat as far as hurt timing goes:/  */
 
 
 /*
@@ -165,87 +174,181 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	SetLog(x)		((x)->status = STAT_LOG)
 #define	SetService(x)		((x)->status = STAT_SERVICE)
 
-#define	FLAGS_PINGSENT   0x0001	/* Unreplied ping sent */
-#define	FLAGS_DEADSOCKET 0x0002	/* Local socket is dead--Exiting soon */
-#define	FLAGS_KILLED     0x0004	/* Prevents "QUIT" from being sent for this */
-#define	FLAGS_OPER       0x0008	/* Operator */
-#define	FLAGS_LOCOP      0x0010 /* Local operator -- SRB */
-#define	FLAGS_INVISIBLE  0x0020 /* makes user invisible */
-#define	FLAGS_WALLOP     0x0040 /* send wallops to them */
-#define	FLAGS_SERVNOTICE 0x0080 /* server notices such as kill */
-#define	FLAGS_BLOCKED    0x0100	/* socket is in a blocked condition */
-#define	FLAGS_UNIX	 0x0200	/* socket is in the unix domain, not inet */
-#define	FLAGS_CLOSING    0x0400	/* set when closing to suppress errors */
-#define	FLAGS_LISTEN     0x0800 /* used to mark clients which we listen() on */
-#define	FLAGS_CHKACCESS  0x1000 /* ok to check clients access if set */
-#define	FLAGS_DOINGDNS	 0x2000 /* client is waiting for a DNS response */
-#define	FLAGS_AUTH	 0x4000 /* client is waiting on rfc931 response */
-#define	FLAGS_WRAUTH	 0x8000	/* set if we havent writen to ident server */
-#define	FLAGS_LOCAL	0x10000 /* set for local clients */
-#define	FLAGS_GOTID	0x20000	/* successful ident lookup achieved */
-#define	FLAGS_DOID	0x40000	/* I-lines say must use ident return */
-#define	FLAGS_NONL	0x80000 /* No \n in buffer */
-#define FLAGS_TS8	0x100000 /* Why do you want to know? */
-#define FLAGS_FAILOP	0x200000 /* Shows some global messages */
-#define FLAGS_ADMIN	0x400000 /* Admin */
-#define FLAGS_HELPOP	0x800000 /* Help system operator */
-#define FLAGS_ULINE	0x1000000  /* User/server is considered U-lined */
-#define FLAGS_SQUIT	0x2000000  /* Server has been /squit by an oper */
-#define FLAGS_KILLS	0x8000000  /* Show server-kills... */
-#define FLAGS_CLIENT	0x10000000 /* Show client information */
-#define FLAGS_FLOOD	0x20000000 /* Receive flood warnings */
-#define FLAGS_HURT     0x40000000 /* been /hurt ? */
+/* the lovely little bits used in flags  the defines are to shorten lengths
+     BIT32 as a flag is simpler to allign than 0x10000000 */
+#define BIT01		(1 << 0)
+#define BIT02		(1 << 1)
+#define BIT03		(1 << 2)
+#define BIT04		(1 << 3)
+#define BIT05		(1 << 4)
+#define BIT06		(1 << 5)
+#define BIT07		(1 << 6)
+#define BIT08		(1 << 7)
+#define BIT09		(1 << 8)
+#define BIT10		(1 << 9)
+#define BIT11		(1 << 10)
+#define BIT12		(1 << 11)
+#define BIT13		(1 << 12)
+#define BIT14		(1 << 13)
+#define BIT15		(1 << 14)
+#define BIT16		(1 << 15)
+#define BIT17		(1 << 16)
+#define BIT18		(1 << 17)
+#define BIT19		(1 << 18)
+#define BIT20		(1 << 19)
+#define BIT21		(1 << 20)
+#define BIT22		(1 << 21)
+#define BIT23		(1 << 22)
+#define BIT24		(1 << 23)
+#define BIT25		(1 << 24)
+#define BIT26		(1 << 25)
+#define BIT27		(1 << 26)
+#define BIT28		(1 << 27)
+#define BIT29		(1 << 28)
+#define BIT30		(1 << 29)
+#define BIT31		(1 << 30)
+#define BIT32		(1 << 31)
 
-#define	SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_FAILOP|FLAGS_HELPOP)
-#define	ALL_UMODES	(SEND_UMODES|FLAGS_SERVNOTICE|FLAGS_LOCOP|FLAGS_KILLS|FLAGS_CLIENT|FLAGS_FLOOD)
+/* general client flags */
+#define	FLAGS_PINGSENT		BIT01 /* Unreplied ping was sent */
+#define	FLAGS_DEADSOCKET	BIT02 /* Local socket is dead--Exiting soon */
+#define	FLAGS_KILLED		BIT03 /* kill message sent, no QUIT needed */
+#define	FLAGS_BLOCKED		BIT04 /* socket is in a blocked condition */
+/* bit 5 unused */
+#define	FLAGS_CLOSING		BIT06 /* set when closing to suppress errors */
+#define	FLAGS_LISTEN		BIT07 /* used to mark clients which we listen() on */
+#define	FLAGS_CHKACCESS		BIT08 /* ok to check clients access if set */
+#define	FLAGS_DOINGDNS		BIT09 /* client is waiting for a DNS response */
+#define	FLAGS_AUTH		BIT10 /* client is waiting on rfc931 auth/ident response */
+#define	FLAGS_WRAUTH		BIT11 /* set if we havent written to ident server */
+#define	FLAGS_LOCAL		BIT12 /* set for local clients */
+#define	FLAGS_GOTID		BIT13 /* successful ident lookup achieved */
+#define	FLAGS_DOID		BIT14 /* I-lines say must use ident return */
+#define	FLAGS_NONL		BIT15 /* No \n in buffer */
+#define FLAGS_TS8		BIT16 /* TS8 timestamping flag [who knows what it does] */
+#define FLAGS_ULINE		BIT17 /* User/server is considered U-lined */
+#define FLAGS_SQUIT		BIT18 /* Server has been /squit by an oper */
+#define FLAGS_HURT		BIT19 /* if ->hurt is set, user is silenced */
+#define FLAGS_SOCK		BIT20 /* socks check pending */
+#define FLAGS_SOCKS		FLAGS_SOCK	/* same as flags_sock */
+
+/* usermode flags
+     NOTE: these are still held in sptr->flags */
+#define	U_OPER		BIT22 /* Global IRCop */
+#define	U_LOCOP		BIT23 /* Local IRCop */
+#define	U_INVISIBLE	BIT24 /* Invisible user, not shown in user searches */
+#define	U_WALLOP	BIT25 /* User has selected to receive wallops */
+#define	U_SERVNOTICE	BIT26 /* User has selected to receive server notices */
+#define U_FAILOP	BIT27 /* Shows GNOTICE messages */
+#define U_HELPOP	BIT28 /* 'HelpOp' */
+#define U_KILLS		BIT29  /* Show server-kills/nick collisions... */
+#define U_CLIENT	BIT30 /* Show client information [connects/exits/errors] */
+#define U_FLOOD		BIT31 /* Receive flood warnings */
+/*#define FLAGS_ADMIN	BIT32  Admin  I really hope nothing cared about this...-Mysid*/
+
+/* list of usermodes that are propogated/passed on to other servers*/
+#define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP)
+/* list of all usermodes except those that are in send_umodes*/
+#define	ALL_UMODES (SEND_UMODES|U_SERVNOTICE|U_LOCOP|U_KILLS|U_CLIENT|U_FLOOD)
 #define	FLAGS_ID	(FLAGS_DOID|FLAGS_GOTID)
 
-#define IS_LOCO(x) ((x)& OFLAG_REHASH &&\
-(x) & OFLAG_HELPOP &&\
-(x) & OFLAG_GLOBOP &&\
-(x) & OFLAG_WALLOP &&\
-(x) & OFLAG_LOCOP &&\
-(x) & OFLAG_LROUTE &&\
-(x) & OFLAG_LKILL &&\
-(x) & OFLAG_KLINE &&\
-(x) & OFLAG_UNKLINE &&\
-(x) & OFLAG_LNOTICE &&\
-(x) & OFLAG_UMODEC &&\
-(x) & OFLAG_SGLOB &&\
-(x) & OFLAG_UMODEF)   
+#define FLAGSET_FLOOD   (U_OPER|U_FLOOD)  /* what clients should flood notices be sent to ? */
+#define FLAGSET_CLIENT	(U_OPER|U_CLIENT) /* what clients should client notices be sent to ? */
+#define FLAGSET_SOCKS	(U_OPER)          /* what clients should socks warnings be sent to ?  */
 
-#define IS_GLOBO(x) (IS_LOCO(x) &&\
-(x)&OFLAG_DIE &&\
-(x)&OFLAG_RESTART &&\
-(x)&OFLAG_GROUTE &&\
-(x)&OFLAG_GKILL &&\
-(x)&OFLAG_GNOTICE\
-)
+/* socks flags */
+#define	SOCK_WANTCON		BIT01	/* nonblocking connection in progress */
+#define SOCK_CONNECTED		BIT02	/* we can now write to the socket */
+#define SOCK_CANREAD		BIT03	/* we can now read from the socket */
+#define SOCK_GO			BIT04	/* socks check done, for better or for worse */
+#define SOCK_FOUND		BIT05	/* found a socks server;/ */
+#define SOCK_DESTROY		BIT06	/* destroy the ->socks structure and free() it very soon */
+#define SOCK_DONE		SOCK_GO
+#define SOCK_ERROR		BIT07
+#define SOCK_SENT		BIT08	/* sent data already */
 
+#define SET_BIT(x, y)		((x) |= (y))
+#define REMOVE_BIT(x, y)	((x) &= ~(y))
+#define IS_SET(x, y)		((x) & (y))
+#define IS_FLAGGED(x, y)	((x)->flags & (y))
+#define SET_FLAG(x, y)		((x)->flags |= (y))
+#define REMOVE_FLAG(x, y)	((x)->flags &= ~(y))
 
+/* flags macros. */
+#define ClientUmode(x)		(x)->flags
+#define ClientFlags(x)		(x)->flags
 
-/*
- * flags macros.
- */
-#define IsKillsF(x)		((x)->flags & FLAGS_KILLS)
-#define IsClientF(x)		((x)->flags & FLAGS_CLIENT)
-#define IsFloodF(x)		((x)->flags & FLAGS_FLOOD)
-#define IsHelpOp(x)		((x)->flags & FLAGS_HELPOP)
-#define IsAdmin(x)		((x)->flags & FLAGS_ADMIN)
-#define SendFailops(x)		((x)->flags & FLAGS_FAILOP)
-#define	IsOper(x)		((x)->flags & FLAGS_OPER)
-#define	IsLocOp(x)		((x)->flags & FLAGS_LOCOP)
-#define	IsInvisible(x)		((x)->flags & FLAGS_INVISIBLE)
-#define	IsAnOper(x)		((x)->flags & (FLAGS_OPER|FLAGS_LOCOP))
-#define	IsPerson(x)		((x)->user && IsClient(x))
-#define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x))
-#define	SendWallops(x)		((x)->flags & FLAGS_WALLOP)
-#define	SendServNotice(x)	((x)->flags & FLAGS_SERVNOTICE)
-#define	IsUnixSocket(x)		((x)->flags & FLAGS_UNIX)
 #define	IsListening(x)		((x)->flags & FLAGS_LISTEN)
+#define SetListening(x)		((x)->flags |= FLAGS_LISTEN)
+
 #define	DoAccess(x)		((x)->flags & FLAGS_CHKACCESS)
+#define	SetAccess(x)		((x)->flags |= FLAGS_CHKACCESS)
+#define	ClearAccess(x)		((x)->flags &= ~FLAGS_CHKACCESS)
+
+#define IsHurt(x)		((x)->flags & FLAGS_HURT)
+#define SetHurt(x)		((x)->flags |= FLAGS_HURT)
+#define ClearHurt(x)		((x)->flags &= ~FLAGS_HURT)
+#define check_hurt(x)		((IsHurt((x)) && (x)->hurt && ((x)->hurt > 5) && ((x)->hurt < NOW)) ? (remove_hurt((x)) || 1) : 0)
+
+#define	IsPerson(x)		((x)->user && IsClient(x))
 #define	IsLocal(x)		((x)->flags & FLAGS_LOCAL)
 #define	IsDead(x)		((x)->flags & FLAGS_DEADSOCKET)
+
+#define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)
+#define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)
+#define	ClearDNS(x)		((x)->flags &= ~FLAGS_DOINGDNS)
+
+#define	DoingAuth(x)		((x)->flags & FLAGS_AUTH)
+#define SetAuth(x)		((x)->flags |= FLAGS_AUTh)
+#define	ClearAuth(x)		((x)->flags &= ~FLAGS_AUTH)
+
+#define	NoNewLine(x)		((x)->flags & FLAGS_NONL)
+#define DoingSocks(x)		(((x)->flags & FLAGS_SOCKS) && (x)->socks && (!((x)->socks->status & SOCK_DONE)) && (!((x)->socks->status & SOCK_DESTROY)) )
+#define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x))
+#define IsULine(cptr,sptr)      (ClientFlags(sptr) & FLAGS_ULINE)
+
+/* usermode macros */
+#define IsKillsF(x)		(ClientUmode(x) & U_KILLS)
+#define SetKillsF(x)		(ClientUmode(x) |= U_KILLS)
+#define ClearKillsF(x)		(ClientUmode(x) &= ~U_KILLS)
+
+#define IsClientF(x)		(ClientUmode(x) & U_CLIENT)
+#define SetClientF(x)		(ClientUmode(x) |= U_CLIENT)
+#define ClearClientF(x)		(ClientUmode(x) &= ~U_CLIENT)
+
+#define IsFloodF(x)		(ClientUmode(x) & U_FLOOD)
+#define SetFloodF(x)		(ClientUmode(x) |= U_FLOOD)
+#define ClearFloodF(x)		(ClientUmode(x) &= ~U_FLOOD)
+
+#define IsHelpOp(x)		(ClientUmode(x) & U_HELPOP)
+#define SetHelpOp(x)		(ClientUmode(x) |= U_HELPOP)
+#define ClearHelpOp(x)		(ClientUmode(x) &= ~U_HELPOP)
+
+#define SendFailops(x)		(ClientUmode(x) & U_FAILOP)
+#define SetFailops(x)		(ClientUmode(x) & U_FAILOP)
+#define ClearFailops(x)		(ClientUmode(x) &= ~U_FAILOP)
+
+#define	IsOper(x)		(ClientUmode(x) & U_OPER)
+#define	SetOper(x)		(ClientUmode(x) |= U_OPER)
+#define	ClearOper(x)		(ClientUmode(x) &= ~U_OPER)
+
+#define	IsAnOper(x)		(ClientUmode(x) & (U_OPER|U_LOCOP))
+#define	IsLocOp(x)		(ClientUmode(x) & U_LOCOP)
+#define	SetLocOp(x)    		(ClientUmode(x) |= U_LOCOP)
+#define	ClearLocOp(x)		(ClientUmode(x) &= ~U_LOCOP)
+
+#define	IsInvisible(x)		(ClientUmode(x) & U_INVISIBLE)
+#define	SetInvisible(x)		(ClientUmode(x) |= U_INVISIBLE)
+#define	ClearInvisible(x)	(ClientUmode(x) &= ~U_INVISIBLE)
+
+
+#define	SendWallops(x)		(ClientUmode(x) & U_WALLOP)
+#define	SetWallops(x)  		(ClientUmode(x) |= U_WALLOP)
+#define	ClearWallops(x)		(ClientUmode(x) &= ~U_WALLOP)
+
+#define	SendServNotice(x)	(ClientUmode(x) & U_SERVNOTICE)
+#define SetServNotice(x)	(ClientUmode(x) |= U_SERVNOTICE)
+
 
 #ifdef NOSPOOF
 #define	IsNotSpoof(x)		((x)->nospoof == 0)
@@ -253,33 +356,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define IsNotSpoof(x)           (1)
 #endif
 
-#define SetKillsF(x)		((x)->flags |= FLAGS_KILLS)
-#define SetClientF(x)		((x)->flags |= FLAGS_CLIENT)
-#define SetFloodF(x)		((x)->flags |= FLAGS_FLOOD)
-#define SetHelpOp(x)		((x)->flags |= FLAGS_HELPOP)
-#define	SetOper(x)		((x)->flags |= FLAGS_OPER)
-#define	SetLocOp(x)    		((x)->flags |= FLAGS_LOCOP)
-#define	SetInvisible(x)		((x)->flags |= FLAGS_INVISIBLE)
-#define	SetWallops(x)  		((x)->flags |= FLAGS_WALLOP)
-#define	SetUnixSock(x)		((x)->flags |= FLAGS_UNIX)
-#define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)
-#define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)
-#define	SetAccess(x)		((x)->flags |= FLAGS_CHKACCESS)
-#define	DoingAuth(x)		((x)->flags & FLAGS_AUTH)
-#define	NoNewLine(x)		((x)->flags & FLAGS_NONL)
-
-#define ClearKillsF(x)		((x)->flags &= ~FLAGS_KILLS)
-#define ClearClientF(x)		((x)->flags &= ~FLAGS_CLIENT)
-#define ClearFloodF(x)		((x)->flags &= ~FLAGS_FLOOD)
-#define ClearHelpOp(x)		((x)->flags &= ~FLAGS_HELPOP)
-#define ClearFailops(x)		((x)->flags &= ~FLAGS_FAILOP)
-#define	ClearOper(x)		((x)->flags &= ~FLAGS_OPER)
-#define	ClearLocOp(x)		((x)->flags &= ~FLAGS_LOCOP)
-#define	ClearInvisible(x)	((x)->flags &= ~FLAGS_INVISIBLE)
-#define	ClearWallops(x)		((x)->flags &= ~FLAGS_WALLOP)
-#define	ClearDNS(x)		((x)->flags &= ~FLAGS_DOINGDNS)
-#define	ClearAuth(x)		((x)->flags &= ~FLAGS_AUTH)
-#define	ClearAccess(x)		((x)->flags &= ~FLAGS_CHKACCESS)
 
 /*
  * defined operator access levels
@@ -303,11 +379,12 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OFLAG_UMODEC	0x01000000  /* Oper can set umode +c */
 #define OFLAG_UMODEF	0x02000000  /* Oper can set umode +f */
 #define OFLAG_SGLOB	0x04000000  /* Oper can send globops */
+#define OFLAG_ZLINE     0x08000000  /* Oper can use /zline and /unzline */
 
 #define OFLAG_SGLOBOP	(OFLAG_GLOBOP|OFLAG_SGLOB)
 #define OFLAG_LOCAL	(OFLAG_REHASH|OFLAG_HELPOP|OFLAG_SGLOBOP|OFLAG_GLOBOP|OFLAG_WALLOP|OFLAG_LOCOP|OFLAG_LROUTE|OFLAG_LKILL|OFLAG_KLINE|OFLAG_UNKLINE|OFLAG_LNOTICE|OFLAG_UMODEC|OFLAG_UMODEF)
-#define OFLAG_GLOBAL	(OFLAG_LOCAL|OFLAG_DIE|OFLAG_RESTART|OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE)
-#define OFLAG_ISGLOBAL	(OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE)
+#define OFLAG_GLOBAL	(OFLAG_LOCAL|OFLAG_DIE|OFLAG_RESTART|OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE|OFLAG_ZLINE)
+#define OFLAG_ISGLOBAL	(OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE|OFLAG_ZLINE)
 
 #define OPCanRehash(x)	((x)->oflag & OFLAG_REHASH)
 #define OPCanDie(x)	((x)->oflag & OFLAG_DIE)
@@ -328,6 +405,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OPIsAdmin(x)	((x)->oflag & OFLAG_ADMIN)
 #define OPCanUModeC(x)	((x)->oflag & OFLAG_UMODEC)
 #define OPCanUModeF(x)	((x)->oflag & OFLAG_UMODEF)
+#define OPCanZline(x)	((x)->oflag & OFLAG_ZLINE)
 
 #define OPSetRehash(x)	((x)->oflag |= OFLAG_REHASH)
 #define OPSetDie(x)	((x)->oflag |= OFLAG_DIE)
@@ -347,6 +425,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OPSSetAdmin(x)	((x)->oflag |= OFLAG_ADMIN)
 #define OPSetUModeC(x)	((x)->oflag |= OFLAG_UMODEC)
 #define OPSetUModeF(x)	((x)->oflag |= OFLAG_UMODEF)
+#define OPSetZline(x)	((x)->oflag |= OFLAG_ZLINE)
 
 #define OPClearRehash(x)	((x)->oflag &= ~OFLAG_REHASH)
 #define OPClearDie(x)		((x)->oflag &= ~OFLAG_DIE)  
@@ -366,6 +445,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OPClearAdmin(x)		((x)->oflag &= ~OFLAG_ADMIN)
 #define OPClearUModeC(x)	((x)->oflag &= ~OFLAG_UMODEC)
 #define OPClearUModeF(x)	((x)->oflag &= ~OFLAG_UMODEF)
+#define OPClearZline(x) 	((x)->oflag &= ~OFLAG_ZLINE)
 
 
 /*
@@ -431,11 +511,13 @@ struct	ConfItem	{
 #define CONF_CRULEALL           0x200000
 #define CONF_CRULEAUTO          0x400000
 #define CONF_MISSING		0x800000
+#define CONF_AHURT		0x1000000
 
+#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER)
 #define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | \
-				 CONF_SERVER_MASK)
+				 CONF_SERVER_MASK )
 #define CONF_CRULE              (CONF_CRULEALL | CONF_CRULEAUTO)
 #define CONF_QUARANTINE		(CONF_QUARANTINED_SERVER|CONF_QUARANTINED_NICK)
 
@@ -457,6 +539,9 @@ struct	User	{
 	char	username[USERLEN+1];
 	char	host[HOSTLEN+1];
         char	server[HOSTLEN+1];
+#ifdef  KEEP_HURTBY
+	char    *hurtby;
+#endif
 				/*
 				** In a perfect world the 'server' name
 				** should not be needed, a pointer to the
@@ -481,10 +566,17 @@ struct	Server	{
 #endif
 };
 
+struct Socks {
+	int fd;
+	int status;
+	time_t start;
+};
+
 struct Client	{
 	struct	Client *next, *prev, *hnext;
 	anUser	*user;		/* ...defined, if this is a User */
 	aServer	*serv;		/* ...defined, if this is a server */
+	aSocks  *socks;		/* socks check data */
 	int	hashv;		/* raw hash value */
 	time_t  hurt;           /* hurt til... */  
 	time_t	lasttime;	/* ...should be only LOCAL clients? --msa */
@@ -591,6 +683,13 @@ struct	Message	{
 		/* bit 0 set means that this command is allowed to be used
 		 * only on the average of once per 2 seconds -SRB */
 	unsigned long	bytes;
+	int while_hurt;
+};
+
+/* message hashtable structure */
+struct  HMessage {
+        struct Message  *mptr;
+        struct HMessage *next;
 };
 
 /* general link structure used for chains */
@@ -725,6 +824,7 @@ struct Channel	{
 
 extern	char	*version, *infotext[];
 extern	char	*generation, *creation;
+extern	int	schecksfd;
 
 /* misc defines */
 

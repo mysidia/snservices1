@@ -68,6 +68,7 @@ extern	aConfItem *det_confs_butone PROTO((aClient *, aConfItem *));
 extern	aConfItem *find_conf PROTO((Link *, char*, int));
 extern	aConfItem *find_conf_exact PROTO((char *, char *, char *, int));
 extern	aConfItem *find_conf_host PROTO((Link *, char *, int));
+extern  aConfItem *find_socksline_host(char *host);
 extern	aConfItem *find_iline_host PROTO((char *));
 extern	aConfItem *find_conf_ip PROTO((Link *, char *, char *, int));
 extern	aConfItem *find_conf_name PROTO((char *, int));
@@ -163,6 +164,7 @@ extern  void    sendto_failops();
 extern  void    sendto_opers();
 /*VARARGS?*/
 extern	void	sendto_flag();
+extern	void	sendto_flag_norep();
 
 extern	int	writecalls, writeb[];
 extern	int	deliver_it PROTO((aClient *, char *, int));
@@ -171,6 +173,9 @@ extern	int	check_registered PROTO((aClient *));
 extern	int	check_registered_user PROTO((aClient *));
 extern	char	*get_client_name PROTO((aClient *, int));
 extern	char	*get_client_host PROTO((aClient *));
+extern 	int remove_hurt(aClient *acptr);
+extern 	int set_hurt(aClient *acptr, const char *from, int ht);
+
 extern	char	*my_name_for_link PROTO((char *, aConfItem *));
 extern	char	*myctime PROTO((time_t)), *date PROTO((time_t));
 extern	int	exit_client PROTO((aClient *, aClient *, aClient *, char *));
@@ -199,6 +204,8 @@ extern	aConfItem *make_conf PROTO(());
 extern	aClass	*make_class PROTO(());
 extern	aServer	*make_server PROTO(());
 extern	aClient	*make_client PROTO((aClient *));
+extern	int	free_socks PROTO((struct Socks *zap));
+extern	aSocks	*make_socks PROTO((aClient *to));
 extern	Link	*find_user_link PROTO((Link *, aClient *));
 extern	int	IsMember PROTO((aClient *, aChannel *));
 extern	char	*pretty_mask PROTO((char *));
@@ -242,6 +249,10 @@ extern	void	initwhowas PROTO(());
 extern	void	off_history PROTO((aClient *));
 
 extern	int	dopacket PROTO((aClient *, char *, int));
+
+extern void send_socksquery (aClient *cptr);
+extern void read_socks (aClient *cptr);
+
 
 #ifdef	CLIENT_COMPILE
 extern	char	*mycncmp PROTO((char *, char *));
