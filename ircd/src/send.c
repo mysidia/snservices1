@@ -297,7 +297,7 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 
 		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
 			va_copy(ap2, ap);
-			sendto_prefix_one(acptr, from, fmt, ap2);
+			vsendto_prefix_one(acptr, from, fmt, ap2);
 			va_end(ap2);
 
 			sentalong[i] = 1;
@@ -308,7 +308,7 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 		 */
 			if (sentalong[i] == 0) {
 				va_copy(ap2, ap);
-				sendto_prefix_one(acptr, from, fmt, ap2);
+				vsendto_prefix_one(acptr, from, fmt, ap2);
 				va_end(ap2);
 
 				sentalong[i] = 1;
