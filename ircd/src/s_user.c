@@ -1210,7 +1210,8 @@ nickkilldone:
 			  send_umode(cptr, sptr, sptr, oldmode, ALL_UMODES, modebuf);
 		  }
 	  }
-	  
+
+	  sendto_prefix_one(sptr, sptr, ":%s NICK :%s", parv[0], nick);
 	  sendto_common_channels(sptr, ":%s NICK :%s", parv[0], nick);
 	  if (IsPerson(sptr))
 	    add_history(sptr);
@@ -4550,6 +4551,7 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
  /* at this point the CNICK must -NOT- fail, even kill clients using the
     nick if necessary... */
+   sendto_prefix_one(acptr, acptr, ":%s NICK :%s", parv[1], parv[2]);
    sendto_common_channels(acptr, ":%s NICK :%s", parv[1], parv[2]);
    if (IsPerson(acptr))
    (void)add_history(acptr);
