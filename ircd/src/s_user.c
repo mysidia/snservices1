@@ -1623,54 +1623,16 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 		*/
 
 		server = (char *)index(nick, '@');
-		acptr = NULL;
 		if (server)
-		    acptr = find_server(server + 1, NULL);
-
-		if (acptr && server)
-		    {
-			int count = 0;
-
-			/*
-			** Not destined for a user on me :-(
-			*/
-			if (!IsMe(acptr))
-			    {
+		{
+			acptr = find_server(server + 1, NULL);
+			if (acptr && !IsMe(acptr))
+			{
 				sendto_one(acptr,":%s %s %s :%s", parv[0],
-					   cmd, nick, parv[2]);
+					cmd, nick, parv[2]);
 				continue;
-			    }
-			*server = '\0';
-			if ((host = (char *)index(nick, '%')))
-				*host++ = '\0';
-
-			/*
-			** Look for users which match the destination host
-			** (no host == wildcard) and if one and one only is
-			** found connected to me, deliver message!
-			*/
-			acptr = find_userhost(nick, host, NULL, &count);
-			if (acptr && !IsULine(acptr, acptr))
-				acptr = NULL;
-			if (server)
-				*server = '@';
-			if (host)
-				*--host = '%';
-			if (acptr)
-			    {
-				if (count == 1)
-					sendto_prefix_one(acptr, sptr,
-							  ":%s %s %s :%s",
-					 		  parv[0], cmd,
-							  nick, parv[2]);
-				else if (!notice)
-					sendto_one(sptr,
-						   err_str(ERR_TOOMANYTARGETS),
-						   me.name, parv[0], nick);
-			    }
-			if (acptr)
-				continue;
-		    }
+			}
+		}
 		sendto_one(sptr, err_str(ERR_NOSUCHNICK), me.name,
 			   parv[0], nick);
             }
