@@ -4063,7 +4063,7 @@ NCMD(ns_ghost)
 			return RET_EFAULT;
 		}
 
-		if (Valid_pw(args[2], tmp->password, NickGetEnc(tmp)) ||
+		if ((numargs > 2 && Valid_pw(args[2], tmp->password, NickGetEnc(tmp))) ||
 			( !(tmp->flags & NIDENT) &&
 			  checkAccess(tmp->user, tmp->host, nick->reg) )
 		)
@@ -4083,7 +4083,8 @@ NCMD(ns_ghost)
 
 	if (tmp != NULL)
 		if (checkAccess(nick->user, nick->host, tmp)
-			|| Valid_pw(args[2], tmp->password, NickGetEnc(tmp))) {
+			|| ((numargs > 2) && Valid_pw(args[2], tmp->password, NickGetEnc(tmp)))) 
+	{
 			taruser = getNickData(args[1]);
 
 			if (!taruser && (getGhost(args[1]) == NULL)) {
