@@ -39,7 +39,7 @@
 		\
 		\
 		\
-		".1"
+		""
 
 /*
  * Deliberate empty lines
@@ -127,7 +127,4 @@
 
 /* Do NOT edit below this line */
 
-#define BASE_VERSION "sor1.4.0-BETA"
-
-/* #define SORIRC_VERSION (((1) << 16) + ((4) << 8) + (0)) */
-#define SORIRC_VERSION 0x00010400
+#define BASE_VERSION "sor1.3.4_3"

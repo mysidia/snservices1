@@ -1,8 +1,7 @@
 /*
  *   IRC - Internet Relay Chat, ircd/ircd.c
- *   Copyright C 1990 Jarkko Oikarinen and
- *                    University of Oulu, Computing Center
- *   Copyright C 1997-2002 James Hess -- All Rights Reserved
+ *   Copyright (C) 1990 Jarkko Oikarinen and
+ *                      University of Oulu, Computing Center
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -42,13 +41,13 @@ static	char rcsid[] = "$Id$";
 #include <io.h>
 #include <direct.h>
 #endif
-#ifdef OS_HPUX
+#ifdef HPUX
 #define _KERNEL            /* HPUX has the world's worst headers... */
 #endif
 #ifndef _WIN32
 #include <sys/resource.h>
 #endif
-#ifdef OS_HPUX
+#ifdef HPUX
 #undef _KERNEL
 #endif
 #include <errno.h>
@@ -56,6 +55,8 @@ static	char rcsid[] = "$Id$";
 
 aClient me;			/* That's me */
 aClient *client = &me;		/* Pointer to beginning of Client list */
+
+void NospoofText(aClient* acptr);
 
 time_t    NOW, tm_offset = 0;
 void	server_reboot(char *);
@@ -326,23 +327,10 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 	int	killflag;
 	int	ping = 0, i, rflag = 0;
 	time_t	oldest = 0, timeout;
-	extern aMachine *mPurgeList;
-	aMachine *mmach, *mmach_next;
 
 #ifdef TIMED_KLINES
 	check_kills = 1;
 #endif
-
-	for(mmach = mPurgeList; mmach; mmach = mmach_next) {
-	    mmach_next = mmach->next;
-
-		if ((mmach->last_at + 90) < NOW) {
-                    rem_machine_from_purgelist(mmach);
-                    del_from_machine_hash_table(mmach->ip, mmach);
-                    free_machine(mmach);
-		}
-	}
-
 	for (i = 0; i <= highest_fd; i++)
 	    {
 		if (!(cptr = local[i]) || IsMe(cptr) || IsLog(cptr))
@@ -392,6 +380,7 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		    (!IsRegistered(cptr) &&
 		     (currenttime - cptr->firsttime) >= ping))
 		    {
+#ifdef ENABLE_SOCKSCHECK
                         if (cptr->socks && cptr->socks->fd >= 0)
                         {
                               int q;
@@ -412,10 +401,11 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
                                         socks->fd = -1;
                                         MyFree(socks);
                                   }
-                              }
+                              }			      
                               cptr->socks = NULL;
                               ClientFlags(cptr) &= ~FLAGS_SOCKS;
                         }
+#endif
 
 			if (!IsRegistered(cptr) && (DoingDNS(cptr) || DoingSocks(cptr)))
 			    {
@@ -501,8 +491,25 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 			cptr->lasttime = currenttime - ping;
 			sendto_one(cptr, "PING :%s", me.name);
 		    }
+#ifdef NOSPOOF		
+/*		else if (!IsRegistered(cptr) && cptr->nospoof &&
+			!DoingDNS(cptr) && !DoingSocks(cptr) &&
+			!IsNotSpoof(cptr) && !SentNoSpoof(cptr) &&
+			(currenttime - cptr->firsttime) >= 5)
+		{
+			NospoofText(cptr);
+			SetSentNoSpoof(cptr);
+		}*/
+#endif			
 ping_timeout:
 		timeout = cptr->lasttime + ping;
+		/*if (ping > 20 && !IsRegistered(cptr) &&
+			!DoingDNS(cptr) && !DoingSocks(cptr) &&
+			!IsNotSpoof(cptr) && !SentNoSpoof(cptr)
+                    ) {
+                    timeout = cptr->lasttime + (ping = 20);
+                }*/
+
 		while (timeout <= currenttime)
 			timeout += ping;
 		if (timeout < oldest || !oldest)
@@ -576,6 +583,21 @@ char	*argv[];
 	(void)signal(SIGUSR1, s_monitor);
 # endif
 #endif
+
+#ifdef	CHROOTDIR
+	if (chdir(dpath))
+	    {
+		perror("chdir");
+		exit(-1);
+	    }
+	res_init();
+	if (chroot(DPATH))
+	  {
+	    (void)fprintf(stderr,"ERROR:  Cannot chdir/chroot\n");
+	    exit(5);
+	  }
+#endif /*CHROOTDIR*/
+
 	myargv = argv;
 #ifndef _WIN32
 	(void)umask(077);                /* better safe than sorry --SRB */
@@ -727,15 +749,18 @@ char	*argv[];
 	    }
 	loadmsg("\n");
 
+#ifndef	CHROOT
 	if (chdir(dpath)) {
-#ifndef _WIN32
+# ifndef _WIN32
 		perror("chdir");
-#else
+# else
 		MessageBox(NULL, strerror(GetLastError()), "wIRCD: chdir()",
 			   MB_OK);
-#endif
+# endif
 		exit(-1);
 	}
+#endif
+
         /* read_help (0); */ /* read the helpfile and attach it into memory... */
 	open_logs( );
 
@@ -942,11 +967,14 @@ void    SocketLoop(void *dummy)
 		if (now >= nextping) {
 			nextping = check_pings(now, 0);
                 }
+
+#ifdef ENABLE_SOCKSCHECK
 		if (now >= nextsockflush)
 		{
 			(void)flush_socks(now, 0);
 			nextsockflush = (now+3);
 		}
+#endif		
 
 		if (dorehash)
 		    {

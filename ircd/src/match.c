@@ -148,7 +148,7 @@ int match(const char *mask, const char *string)
 int r_match(const char *mask, const char *name)
 {
   const u_char *m, *n;
-  const char	 *ma, *na;
+  const char *ma, *na;
   int	  wild, q;
 
   m = (const u_char *)mask;
@@ -163,16 +163,16 @@ int r_match(const char *mask, const char *name)
       while (*m == '*')
 	m++;
       wild = 1;
-      ma = (const char *)m;
-      na = (const char *)n;
+      ma = (char *)m;
+      na = (char *)n;
     }
     
     if (!*m) {
       if (!*n)
 	return 0;
-      for (m--; (m > (u_char *)mask) && (*m == '?'); m--)
+      for (m--; (m > (const u_char *)mask) && (*m == '?'); m--)
 	;
-      if ((*m == '*') && (m > (u_char *)mask) &&
+      if ((*m == '*') && (m > (const u_char *)mask) &&
 	  (m[-1] != '\\'))
 	return 0;
       if (!wild) 

@@ -1,8 +1,7 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/s_bsd.c
- *   Copyright C 1990 Jarkko Oikarinen and
- *                    University of Oulu, Computing Center
- *   Copyright C 1997-2002 James Hess -- All Rights Reserved
+ *   Copyright (C) 1990 Jarkko Oikarinen and
+ *                      University of Oulu, Computing Center
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -75,9 +74,6 @@ Computing Center and Jarkko Oikarinen";
 #include "sock.h"	/* If FD_ZERO isn't define up to this point,  */
 			/* define it (BSD4.2 needs this) */
 #include "h.h"
-#ifdef USE_POLL
-#include <poll.h>
-#endif
 
 #ifndef IN_LOOPBACKNET
 #define IN_LOOPBACKNET	0x7f
@@ -87,9 +83,6 @@ Computing Center and Jarkko Oikarinen";
 extern	HWND	hwIRCDWnd;
 #endif
 aClient	*local[MAXCONNECTIONS];
-#ifdef USE_POLL
-struct pollfd fds[MAXCONNECTIONS];
-#endif
 int	highest_fd = 0, readcalls = 0, udpfd = -1, resfd = -1;
 static	struct	sockaddr_in	mysk;
 static	void	polludp();
@@ -283,8 +276,11 @@ int	port;
 		server.sin_family = AF_INET;
 		/* per-port bindings, fixes /stats l */
 		server.sin_addr.s_addr = inet_addr(ipname);
+#ifdef TESTNET
+		server.sin_port = htons(port + 10000);
+#else
 		server.sin_port = htons(port);
-
+#endif
 		/*
 		 * Try 10 times to bind the socket with an interval of 20
 		 * seconds. Do this so we dont have to keepp trying manually
@@ -312,14 +308,23 @@ int	port;
 	    {
 		char	buf[1024];
 
+#ifdef TESTNET
+		(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
+		    ntohs(server.sin_port) - 10000);
+#else
 		(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
 		    ntohs(server.sin_port));
+#endif
 		(void)write(0, buf, strlen(buf));
 	    }
 	if (cptr->fd > highest_fd)
 		highest_fd = cptr->fd;
 	cptr->ip.s_addr = name ? inet_addr(ipname) : me.ip.s_addr;
+#ifdef TESTNET
+	cptr->port = (int)ntohs(server.sin_port) - 10000;
+#else
 	cptr->port = (int)ntohs(server.sin_port);
+#endif
 	(void)listen(cptr->fd, LISTEN_SIZE);
 	local[cptr->fd] = cptr;
 
@@ -494,7 +499,7 @@ void	init_sys()
 
 	(void)setvbuf(stderr,logbuf,_IOLBF,sizeof(logbuf));
 #else
-# if defined(OS_HPUX)
+# if defined(HPUX)
 	(void)setvbuf(stderr, NULL, _IOLBF, 0);
 # else
 #  if !defined(SOL20) && !defined(_WIN32)
@@ -531,7 +536,7 @@ void	init_sys()
 			(void)close(fd);
 		    }
 #endif
-#if defined(OS_HPUX) || defined(SOL20) || defined(DYNIXPTX) || \
+#if defined(HPUX) || defined(SOL20) || defined(DYNIXPTX) || \
     defined(_POSIX_SOURCE) || defined(SVR4) || defined(SGI)
 		(void)setsid();
 #else
@@ -605,7 +610,11 @@ char	*sockn;
 	    }
 	bcopy((char *)&sk.sin_addr, (char *)&cptr->ip,
 		sizeof(struct in_addr));
+#ifdef TESTNET
+	cptr->port = (int)ntohs(sk.sin_port) - 10000;
+#else
 	cptr->port = (int)ntohs(sk.sin_port);
+#endif
 
 	return 0;
 }
@@ -901,7 +910,6 @@ check_serverback:
 static	int completed_connection(cptr)
 aClient	*cptr;
 {
-	extern u_int32_t mask_seed4;
 	aConfItem *aconf;
 
 	SetHandshake(cptr);
@@ -921,7 +929,6 @@ aClient	*cptr;
 		sendto_ops("Lost N-Line for %s", get_client_name(cptr,FALSE));
 		return -1;
 	    }
-        sendto_one(cptr, "CAPAB :VER=%x SEED=%x LTIME=%x", SORIRC_VERSION, mask_seed4, time(NULL));
 	sendto_one(cptr, "SERVER %s 1 :%s",
 		   my_name_for_link(me.name, aconf), me.info);
 
@@ -1244,37 +1251,6 @@ int	fd;
 		get_sockhost(acptr, (char *)inetntoa((char *)&addr.sin_addr));
 		bcopy ((char *)&addr.sin_addr, (char *)&acptr->ip,
 			sizeof(struct in_addr));
-		if (!iscons) {
-                     aMachine *mmach = (aMachine *)hash_find_machine(acptr->ip, NULL);
-		     aConfItem *tc = find_iline_host(cptr->sockhost);
-		     int trig_lev = tc ? tc->exval1 : 5;
-
-		     trig_lev = MAX(3, MIN(127, trig_lev));
-
-			if (mmach && (mmach->num_conn > trig_lev)) {
-	                         char throt_buf[BUFSIZE];
-	
-	                         if ((NOW - mmach->last_at) > 240)
-	                             mmach->num_conn = 1;
-	                         else if ((NOW - mmach->last_at) >= 45)
-	                             mmach->num_conn >>= 1;
-	
-				if (mmach->num_conn > trig_lev)
-				{
-		                         sprintf(throt_buf, "ERROR: Closing link: [%s] "
-	                                         "(Anticlone throttling: There have been " 
-	                                         "too many connects from your host. Please "
-	                                         "wait a few minutes before attempting "
-	                                         "further connections.)\r\n",
-		                                 inetntoa((char *)&acptr->ip));
-					 sendto_umode(U_OPER|U_CLIENT, "Throttling connection from [%s]", inetntoa((char *)&acptr->ip));
-		                         send(fd, throt_buf, strlen(throt_buf), 0);
-		                         mmach->last_at = NOW;
-		                         mmach->num_conn++;
-		                         goto add_con_refuse;
-				}
-	                     }
-		}
 		/* Check for zaps -- Barubary */
 		if (!iscons && find_zap(acptr, 0))
 		{
@@ -1283,7 +1259,11 @@ int	fd;
 			send(fd, zlinebuf, strlen(zlinebuf), 0);
 			goto add_con_refuse;
 		}
+#ifdef TESTNET
+		acptr->port = ntohs(addr.sin_port) - 10000;
+#else
 		acptr->port = ntohs(addr.sin_port);
+#endif
 #if 0
 		/*
 		 * Some genious along the lines of ircd took out the code
@@ -1355,23 +1335,14 @@ int	fd;
 ** Do some tricky stuff for client connections to make sure they don't do
 ** any flooding >:-) -avalon
 */
-#ifdef USE_POLL
-static	int	read_packet(cptr)
-aClient *cptr;
-#else
 static	int	read_packet(cptr, rfd)
 aClient *cptr;
 fd_set	*rfd;
-#endif
 {
 	int	dolen = 0, length = 0, done;
 	time_t	now = NOW;
 
-#ifdef USE_POLL
-	if ((fds[cptr->fd].revents & POLLIN) &&
-#else
 	if (FD_ISSET(cptr->fd, rfd) &&
-#endif
 	    !(IsPerson(cptr) && DBufLength(&cptr->recvQ) > 6090))
 	    {
 #ifndef _WIN32
@@ -1495,21 +1466,15 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 {
 	aClient	*cptr;
 	int	nfds;
-#ifdef USE_POLL
-	int	wait;
-#else
 	struct	timeval	wait;
-#endif
 #ifdef	pyr
 	struct	timeval	nowt;
 	u_long	us;
 #endif
-#ifndef USE_POLL
 #ifndef _WIN32
 	fd_set	read_set, write_set;
 #else
 	fd_set	read_set, write_set, excpt_set;
-#endif
 #endif
 	time_t	delay2 = delay, now;
 	u_long	usec = 0;
@@ -1531,20 +1496,14 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 
 	for (res = 0;;)
 	    {
-#ifndef USE_POLL
 		FD_ZERO(&read_set);
 		FD_ZERO(&write_set);
 #ifdef _WIN32
 		FD_ZERO(&excpt_set);
 #endif
-#endif
 
 		for (i = highest_fd; i >= 0; i--)
 		    {
-#ifdef USE_POLL
-			fds[i].fd = i;
-			fds[i].events = 0;
-#endif
 			if (!(cptr = local[i]))
 				continue;
 			if (IsLog(cptr))
@@ -1593,19 +1552,17 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 							if (cptr->socks->fd == highest_fd)
 								while(!local[highest_fd])
 									highest_fd--;
-#ifdef USE_POLL
-							fds[cptr->socks->fd].events = 0;
-#else
 							FD_CLR(cptr->socks->fd, &read_set);
 							FD_CLR(cptr->socks->fd, &write_set);
 #ifdef _WIN32
 							FD_CLR(cptr->socks->fd, &excpt_set);
 #endif
-#endif
 							cptr->socks->fd = -1;
 						}
 						cptr->socks = NULL;
 					}
+
+#ifdef ENABLE_SOCKSCHECK
                                         if (found_socks && (cptr->socks))
 					{
 						void ApplySocksFound(aClient *cptr);
@@ -1613,14 +1570,10 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 						found_socks = 0;
 						if (cptr->socks->fd >= 0)
 						{
-#ifdef USE_POLL
-							fds[cptr->socks->fd].events = 0;
-#else
 							FD_CLR(cptr->socks->fd, &read_set);
 							FD_CLR(cptr->socks->fd, &write_set);
 #ifdef _WIN32
 							FD_CLR(cptr->socks->fd, &excpt_set);
-#endif
 #endif
 							closesocket(cptr->socks->fd);
 							if (cptr->socks->fd == highest_fd)
@@ -1628,18 +1581,15 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 									highest_fd--;
 							cptr->socks->fd = -1;
 						}
-#ifdef USE_POLL
-						fds[cptr->fd].events = 0;
-#else
 						FD_CLR(cptr->fd, &read_set);
 						FD_CLR(cptr->fd, &write_set);
 #ifdef _WIN32
 						FD_CLR(cptr->fd, &excpt_set);
 #endif
-#endif
 						ApplySocksFound(cptr);
 						continue;
 					}
+#endif
 				}
 			}
 			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
@@ -1647,39 +1597,23 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 
 			if (IsMe(cptr) && IsListening(cptr))
 			    {
-#ifdef USE_POLL
-				fds[i].events |= POLLIN;
-#else
 				FD_SET(i, &read_set);
-#endif
 			    }
 			else if (!IsMe(cptr))
 			    {
 				if (DBufLength(&cptr->recvQ) && delay2 > 2)
 					delay2 = 1;
 				if (DBufLength(&cptr->recvQ) < 4088)
-#ifdef USE_POLL
-					fds[i].events |= POLLIN;
-#else
 					FD_SET(i, &read_set);
-#endif
 			    }
 
 			if (DBufLength(&cptr->sendQ) || IsConnecting(cptr))
 #ifndef	pyr
-#ifdef USE_POLL
-				fds[i].events |= POLLOUT;
-#else
 				FD_SET(i, &write_set);
-#endif
 #else
 			    {
 				if (!(ClientFlags(cptr) & FLAGS_BLOCKED))
-#ifdef USE_POLL
-					fds[i].events |= POLLOUT;
-#else
 					FD_SET(i, &write_set);
-#endif
 				else
 					delay2 = 0, usec = 500000;
 			    }
@@ -1699,6 +1633,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 /*&&&*/
                 do 
                 {
+#ifdef ENABLE_SOCKSCHECK			
                    extern aSocks *socks_list;
                    aSocks *sItem;
 
@@ -1711,11 +1646,6 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                            sItem->fd = -1;
                            continue;
                        }
-#ifdef USE_POLL
-			fds[sItem->fd].events |= POLLIN;
-                       if (!IS_SET(sItem->status, SOCK_W))
-				fds[sItem->fd].events |= POLLOUT;
-#else
                        FD_SET(sItem->fd, &read_set);
                        if (!IS_SET(sItem->status, SOCK_W))
                            FD_SET(sItem->fd, &write_set);
@@ -1723,23 +1653,10 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 #ifdef _WIN32
                        FD_SET(sItem->fd, &excpt_set);
 #endif
-#endif
                    }
+#endif		   
                 } while(0);
 
-#ifdef USE_POLL
-		if (schecksfd >= 0)
-			fds[schecksfd].events |= POLLIN;
-		if (udpfd >= 0)
-			fds[udpfd].events |= POLLIN;
-#ifndef _WIN32
-		if (resfd >= 0)
-			fds[resfd].events |= POLLIN;
-#endif
-		wait = (MIN(delay2, delay)*1000)+(usec/1000);
-		nfds = poll(fds, highest_fd+1, wait);
-		update_time();
-#else
 		if (schecksfd >= 0)
 			FD_SET(schecksfd, &read_set);
 
@@ -1753,7 +1670,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 
 		wait.tv_sec = MIN(delay2, delay);
 		wait.tv_usec = usec;
-#ifdef	OS_HPUX
+#ifdef	HPUX
 		nfds = select(FD_SETSIZE, (int *)&read_set, (int *)&write_set,
 				0, &wait);
 #else
@@ -1763,7 +1680,6 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 		nfds = select(FD_SETSIZE, &read_set, &write_set, &excpt_set, &wait);
 # endif
 		update_time();
-#endif
 #endif
 #ifndef _WIN32
 		if (nfds == -1 && errno == EINTR)
@@ -1791,30 +1707,18 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 		}
 	    }
 
-#ifdef USE_POLL
-       if (me.socks && me.socks->fd >= 0 && (fds[me.socks->fd].revents & POLLIN))
-#else
        if (me.socks && me.socks->fd >= 0 && FD_ISSET(me.socks->fd, &read_set))
-#endif
        {
                int tmpsock;
 
                tmpsock = accept(me.socks->fd, NULL, NULL);
                if(tmpsock >= 0)
                        closesocket(tmpsock);
-#ifdef USE_POLL
-		fds[me.socks->fd].revents &= ~POLLIN;
-#else
                FD_CLR(me.socks->fd, &read_set);
-#endif
        }
 
 	if (schecksfd > 0)
-#ifdef USE_POLL
-		if (fds[schecksfd].revents & POLLIN) {
-#else
 		if (FD_ISSET(schecksfd, &read_set)) {
-#endif
 			int c_res = 0;
 			struct sockaddr c_add;
 			int c_len = sizeof(struct sockaddr);
@@ -1824,35 +1728,19 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 				close(c_res);
 		}
 
-#ifdef USE_POLL
-	if (udpfd >= 0 && (fds[udpfd].revents & POLLIN))
-#else
 	if (udpfd >= 0 && FD_ISSET(udpfd, &read_set))
-#endif
 	    {
 			polludp();
 			update_time();
 			nfds--;
-#ifdef USE_POLL
-			fds[udpfd].revents &= ~POLLIN;
-#else
 			FD_CLR(udpfd, &read_set);
-#endif
 	    }
 #ifndef _WIN32
-#ifdef USE_POLL
-	if (resfd >= 0 && (fds[resfd].revents & POLLIN))
-#else
 	if (resfd >= 0 && FD_ISSET(resfd, &read_set))
-#endif
 	    {
 			do_dns_async();
 			nfds--;
-#ifdef USE_POLL
-			fds[resfd].revents &= ~POLLIN;
-#else
 			FD_CLR(resfd, &read_set);
-#endif
 	    }
 #endif
 
@@ -1864,6 +1752,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                        continue;
            }*/
         do {
+#ifdef ENABLE_SOCKSCHECK		
            extern aSocks *socks_list;
            aSocks *sItem;
 
@@ -1900,40 +1789,24 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                socks--;
 	if (!(sItem->status & SOCK_SENT)  && (sItem->fd >= 0)
                   /*&& (sItem->status & SOCK_CONNECTED)*/
-#ifdef USE_POLL
-                  && (nfds > 0) && (fds[sItem->fd].revents & (POLLOUT | POLLHUP)))
-#else
                   && (nfds > 0) && FD_ISSET(sItem->fd, &write_set))
-#endif
                    {
 #ifdef ENABLE_SOCKSCHECK
                        nfds--;
                        sItem->status |= (SOCK_CONNECTED|SOCK_W);
-#ifdef USE_POLL
-			fds[sItem->fd].revents &= ~POLLOUT;
-#else
 		       FD_CLR(sItem->fd, &write_set);
-#endif
                        send_socksquery(sItem); /* cptr->socks may now be null */
 #else
                        nfds--;
                        sItem->status = SOCK_GO|SOCK_DESTROY;
 #endif
                    }
-#ifdef USE_POLL
-                  else if ((nfds > 0 ) && (fds[sItem->fd].revents & POLLIN))
-#else
                   else if ((nfds > 0) && FD_ISSET(sItem->fd, &read_set))
-#endif
                    {
 #ifdef ENABLE_SOCKSCHECK
                        nfds--;
                        sItem->status |= SOCK_CONNECTED;
-#ifdef USE_POLL
-			fds[sItem->fd].revents &= ~POLLIN;
-#else
 		       FD_CLR(sItem->fd, &read_set);
-#endif
                        read_socks(sItem); /* cptr->socks may now be null */
 #else
                        nfds--;
@@ -1957,24 +1830,17 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                       sItem->fd = -1;
                   }
            }
+#endif	   
         } while(0);
 //%%%%
 
 
 
 	for (i = highest_fd; i >= 0; i--)
-#ifdef USE_POLL
-		if ((cptr = local[i]) && (fds[i].revents & POLLIN) &&
-#else
 		if ((cptr = local[i]) && FD_ISSET(i, &read_set) &&
-#endif
 		    IsListening(cptr))
 		    {
-#ifdef USE_POLL
-			fds[i].revents &= ~POLLIN;
-#else
 			FD_CLR(i, &read_set);
-#endif
 			nfds--;
 			cptr->lasttime = NOW;
 			/*
@@ -2023,11 +1889,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 	    {
 		if (!(cptr = local[i]) || IsMe(cptr))
 			continue;
-#ifdef USE_POLL
-		if (fds[i].revents & POLLOUT)
-#else
 		if (FD_ISSET(i, &write_set))
-#endif
 		    {
 			int	write_err = 0;
 			nfds--;
@@ -2044,18 +1906,10 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 			if (IsDead(cptr) || write_err)
 			    {
 deadsocket:
-#ifdef USE_POLL
-				if (fds[i].revents & POLLIN)
-#else
 				if (FD_ISSET(i, &read_set))
-#endif
 				    {
 					nfds--;
-#ifdef USE_POLL
-					fds[i].revents &= ~POLLIN;
-#else
 					FD_CLR(i, &read_set);
-#endif
 				    }
 				(void)exit_client(cptr, cptr, &me,
 						  ((sockerr = get_sockerr(cptr))
@@ -2065,22 +1919,13 @@ deadsocket:
 			    }
 		    }
 		length = 1;	/* for fall through case */
-#ifdef USE_POLL
-		if (!NoNewLine(cptr) || (fds[i].revents & POLLIN))
-			length = read_packet(cptr);
-#else
 		if (!NoNewLine(cptr) || FD_ISSET(i, &read_set))
 			length = read_packet(cptr, &read_set);
-#endif
 		if (length > 0)
 			flush_connections(i);
 		if ((length != FLUSH_BUFFER) && IsDead(cptr))
 			goto deadsocket;
-#ifdef USE_POLL
-		if (!(fds[i].revents & POLLIN) && length > 0)
-#else
 		if (!FD_ISSET(i, &read_set) && length > 0)
-#endif
 			continue;
 		nfds--;
 		readcalls++;
@@ -2110,10 +1955,10 @@ deadsocket:
 		if (length != -2 && (IsServer(cptr) || IsHandshake(cptr)))
 		    {
 			if (length == 0) {
-				 sendto_realops("Server %s closed the connection",
+				 sendto_ops("Server %s closed the connection",
 					    get_client_name(cptr,FALSE));
 				 sendto_serv_butone(&me,
-					":%s GLOBOPS :Server %s closed the connection",
+					":%s GNOTICE :Server %s closed the connection",
 					me.name, get_client_name(cptr,FALSE));
 			}
 			else
@@ -2385,7 +2230,12 @@ int	*lenp;
 		sizeof(struct in_addr));
 	bcopy((char *)&aconf->ipnum, (char *)&cptr->ip,
 		sizeof(struct in_addr));
+#ifdef TESTNET
+	server.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum)
+	    + 10000);
+#else
 	server.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum));
+#endif
 	*lenp = sizeof(server);
 	return	(struct sockaddr *)&server;
 }
@@ -2466,7 +2316,11 @@ int	setup_ping()
 
 	bzero((char *)&from, sizeof(from));
 	from.sin_addr = me.ip;
+#ifdef TESTNET
+	from.sin_port = htons(17007);
+#else
 	from.sin_port = htons(7007);
+#endif
 	from.sin_family = AF_INET;
 
 	if ((udpfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)

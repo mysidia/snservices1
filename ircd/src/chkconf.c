@@ -91,11 +91,43 @@ char	*argv[];
  * openconf
  *
  * returns -1 on any error or else the fd opened from which to read the
- * configuration file from.
+ * configuration file from.  This may either be th4 file direct or one end
+ * of a pipe from m4.
  */
 static	int	openconf()
 {
+#ifdef	M4_PREPROC
+	int	pi[2];
+
+	if (pipe(pi) == -1)
+		return -1;
+	switch(fork())
+	{
+	case -1 :
+		return -1;
+	case 0 :
+		(void)close(pi[0]);
+		if (pi[1] != 1)
+		    {
+			(void)dup2(pi[1], 1);
+			(void)close(pi[1]);
+		    }
+		(void)dup2(1,2);
+		/*
+		 * m4 maybe anywhere, use execvp to find it.  Any error
+		 * goes out with report_error.  Could be dangerous,
+		 * two servers running with the same fd's >:-) -avalon
+		 */
+		(void)execlp("m4", "m4", "ircd.m4", configfile, 0);
+		perror("m4");
+		exit(-1);
+	default :
+		(void)close(pi[1]);
+		return pi[0];
+	}
+#else
 	return open(configfile, O_RDONLY);
+#endif
 }
 
 static int oper_access[] = {
@@ -142,6 +174,9 @@ int	opt;
 	(void)fprintf(stderr, "initconf(): ircd.conf = %s\n", configfile);
 	if ((fd = openconf()) == -1)
 	    {
+#ifdef	M4_PREPROC
+		(void)wait(0);
+#endif
 		return NULL;
 	    }
 
@@ -530,6 +565,9 @@ print_confline:
 	    }
         printf("\n");
 	(void)close(fd);
+#ifdef	M4_PREPROC
+	(void)wait(0);
+#endif
 	return ctop;
 }
 

@@ -20,6 +20,9 @@
 #ifndef	__hash_include__
 #define __hash_include__
 
+extern aChannel *hash_get_chan_bucket(int);
+
+
 #define WATCHHASHSIZE 300
 
 /* Ditch the stats if not running in debugmode */
