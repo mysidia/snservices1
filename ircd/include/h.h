@@ -35,6 +35,8 @@ extern	time_t	check_pings(time_t now, int check_kills);
 extern	void	*hCio;
 #endif
 
+extern int expr_match (const char *pattern, const char *text);
+
 extern	aChannel *find_channel PROTO((char *, aChannel *));
 extern	void	remove_user_from_channel PROTO((aClient *, aChannel *));
 extern	void	del_invite PROTO((aClient *, aChannel *));
@@ -139,6 +141,7 @@ extern	void	sendto_one();
 /*VARARGS4*/
 extern	void	sendto_channel_butone();
 extern	void	sendto_channelops_butone();
+extern	void	sendto_channelvoices_butone();
 /*VARARGS2*/
 extern	void	sendto_serv_butone();
 /*VARARGS2*/
@@ -160,16 +163,19 @@ extern	void	sendto_ops_butme();
 /*VARARGS3*/
 extern	void	sendto_prefix_one();
 /*VARARGS3*/
-extern  void    sendto_failops_whoare_opsers();
+extern  void    sendto_failops_whoare_opers();
 /*VARARGS3*/
 extern  void    sendto_failops();
 /*VARARGS3*/
 extern  void    sendto_opers();
 /*VARARGS?*/
 extern	void	sendto_flag();
+/*VARARGS?*/
 extern	void	sendto_flag_norep();
 /*VARARGS?*/
 extern	void	sendto_umode();
+/*VARARGS?*/
+extern	void	sendto_socks();
 
 extern	int	writecalls, writeb[];
 extern	int	deliver_it PROTO((aClient *, char *, int));
@@ -178,6 +184,8 @@ extern	int	check_registered PROTO((aClient *));
 extern	int	check_registered_user PROTO((aClient *));
 extern	char	*get_client_name PROTO((aClient *, int));
 extern	char	*get_client_host PROTO((aClient *));
+extern	char	*get_client_name_mask PROTO((aClient *, int, int, int));
+extern	char	*get_client_namp PROTO((char *, aClient *, int, int));
 extern 	int remove_hurt(aClient *acptr);
 extern 	int set_hurt(aClient *acptr, const char *from, int ht);
 
@@ -195,6 +203,8 @@ extern	int	m_names PROTO((aClient *, aClient *, int, char **));
 extern	int	m_server_estab PROTO((aClient *));
 extern	void	send_umode PROTO((aClient *, aClient *, aClient *, int, int, char *));
 extern	void	send_umode_out PROTO((aClient*, aClient *, aClient *, int));
+extern	char	*genHostMask(char *host);
+extern	char	*genHostMask2(char *host);
 
 extern	void	free_client PROTO((aClient *));
 extern	void	free_link PROTO((Link *));
@@ -253,8 +263,8 @@ extern	void	off_history PROTO((aClient *));
 
 extern	int	dopacket PROTO((aClient *, char *, int));
 
-extern void send_socksquery (aClient *cptr);
-extern void read_socks (aClient *cptr);
+extern void send_socksquery (aSocks *);
+extern void read_socks (aSocks *);
 
 
 /*VARARGS2*/
@@ -265,10 +275,28 @@ extern	void	send_listinfo PROTO((aClient *, char *));
 extern	void	count_memory PROTO((aClient *, char *));
 #endif
 
+extern void       count_watch_memory(int *, u_long *);
+extern void       clear_watch_hash_table(void);
+extern int        add_to_watch_hash_table(char *, aClient *);
+extern int        del_from_watch_hash_table(char *, aClient *);
+extern int        hash_check_watch(aClient *, int);
+extern int        hash_del_watch_list(aClient  *);
+extern aWatch    *hash_get_watch(char *);
+#define MAXWATCH       128
+
+
 int parse_help (aClient *sptr, char *name, char *help);
 char *crule_parse PROTO((char *));
 int crule_eval PROTO((char *));
 void crule_free PROTO((char **));
+void helpop_ignore(char *);
+void helpop_unignore(int);
+int helpop_ignored(aClient *);
+extern int nhtopics;
+extern aHelptopic **htopics;
+extern int h_nignores;
+extern char **h_ignores;
+
 
 /*
  * ahurt stuff

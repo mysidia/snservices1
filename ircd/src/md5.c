@@ -53,9 +53,7 @@
  * QUESTION: Replace this with SHA, which as generally received better
  * reviews from the cryptographic community?
  */
-void
-MD5Init(buf)
-	u_int32_t	buf[4];
+void MD5Init(u_int32_t buf[4])
 {
 	buf[0] = 0x67452301;
 	buf[1] = 0xefcdab89;
@@ -79,12 +77,9 @@ MD5Init(buf)
  * The core of the MD5 algorithm, this alters an existing MD5 hash to
  * reflect the addition of 16 longwords of new data.
  */
-void
-MD5Transform(buf, in)
-	u_int32_t	buf[4];
-	u_int32_t in[16];
+void MD5Transform(u_int32_t buf[4], u_int32_t in[16])
 {
-	u_int32_t	a, b, c, d;
+	u_int32_t a, b, c, d;
 
 	a = buf[0];
 	b = buf[1];
@@ -164,4 +159,3 @@ MD5Transform(buf, in)
 	buf[2] += c;
 	buf[3] += d;
 }
-

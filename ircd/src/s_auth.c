@@ -54,8 +54,7 @@ static  char sccsid[] = "@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed";
  * identifing process fail, it is aborted and the user is given a username
  * of "unknown".
  */
-void	start_auth(cptr)
-Reg1	aClient	*cptr;
+void	start_auth(aClient *cptr)
 {
 	struct	sockaddr_in	sock;
 	int	addrlen = sizeof(struct sockaddr_in);
@@ -143,8 +142,7 @@ Reg1	aClient	*cptr;
  * problem since the socket should have a write buffer far greater than
  * this message to store it in should problems arise. -avalon
  */
-void	send_authports(cptr)
-aClient	*cptr;
+void	send_authports(aClient *cptr)
 {
 	struct	sockaddr_in	us, them;
 	char	authbuf[32];
@@ -202,11 +200,10 @@ authsenderr:
  * The actual read processijng here is pretty weak - no handling of the reply
  * if it is fragmented by IP.
  */
-void	read_authports(cptr)
-Reg1	aClient	*cptr;
+void	read_authports(aClient *cptr)
 {
-	Reg1	char	*s, *t;
-	Reg2	int	len;
+	char	*s, *t;
+	int	len;
 	char	ruser[USERLEN+1], system[8];
 	u_short	remp = 0, locp = 0;
 

@@ -37,11 +37,10 @@ static  char sccsid[] = "@(#)whowas.c	2.16 08 Nov 1993 (C) 1988 Markku Savela";
 static	aName	was[NICKNAMEHISTORYLENGTH];
 static	int	ww_index = 0;
 
-void	add_history(cptr)
-Reg1	aClient	*cptr;
+void	add_history(aClient *cptr)
 {
 	aName	ntmp;
-	Reg2	aName	*np = &ntmp, *np2;
+	aName	*np = &ntmp, *np2;
 
 	strncpyzt(np->ww_nick, cptr->name, NICKLEN+1);
 	strncpyzt(np->ww_info, cptr->info, REALLEN+1);
@@ -68,12 +67,10 @@ Reg1	aClient	*cptr;
 **      nickname within the timelimit. Returns NULL, if no
 **      one found...
 */
-aClient *get_history(nick, timelimit)
-char    *nick;
-time_t  timelimit;
+aClient *get_history(char *nick, time_t timelimit)
 {
-        Reg1    aName   *wp, *wp2;
-        Reg2    int     i = 0;
+        aName   *wp, *wp2;
+        int     i = 0;
 
 	if (ww_index == 0)
 	  wp = wp2 = &was[NICKNAMEHISTORYLENGTH - 1];
@@ -98,11 +95,10 @@ time_t  timelimit;
 	return (NULL);
 }
 
-void	off_history(cptr)
-Reg3	aClient	*cptr;
+void	off_history(aClient *cptr)
 {
-	Reg1	aName	*wp;
-	Reg2	int	i;
+	aName	*wp;
+	int	i;
 
 	for (i = NICKNAMEHISTORYLENGTH, wp = was; i; wp++, i--)
 		if (wp->ww_online == cptr)
@@ -112,7 +108,7 @@ Reg3	aClient	*cptr;
 
 void	initwhowas()
 {
-	Reg1	int	i;
+	int	i;
 
 	for (i = 0; i < NICKNAMEHISTORYLENGTH; i++)
 		bzero((char *)&was[i], sizeof(aName));
@@ -125,14 +121,11 @@ void	initwhowas()
 **	parv[0] = sender prefix
 **	parv[1] = nickname queried
 */
-int	m_whowas(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-	Reg1	aName	*wp, *wp2 = NULL;
-	Reg2	int	j = 0;
-	Reg3	anUser	*up = NULL;
+	aName	*wp, *wp2 = NULL;
+	int	j = 0;
+	anUser	*up = NULL;
 	int	max = -1;
 	char	*p, *nick, *s;
 
@@ -189,12 +182,10 @@ char	*parv[];
     }
 
 
-void	count_whowas_memory(wwu, wwa, wwam)
-int	*wwu, *wwa;
-u_long	*wwam;
+void	count_whowas_memory(int *wwu, int *wwa, u_long *wwam)
 {
-	Reg1	anUser	*tmp;
-	Reg2	int	i, j;
+	anUser	*tmp;
+	int	i, j;
 	int	u = 0, a = 0;
 	u_long	am = 0;
 

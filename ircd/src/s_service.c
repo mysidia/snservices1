@@ -41,12 +41,9 @@
 const char *service_nick[] = { "NickServ", "ChanServ", "MemoServ", "OperServ", 
                                "InfoServ", (char *)0, (char *)0, (char *)0 };
 
-extern inline int    m_sendto_service();
+extern __inline int    m_sendto_service();
 
-int   m_services(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-	int	parc;
-	char	*parv[];
+int   m_services(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
      const char *sService;
      const char *nickchan;
@@ -80,10 +77,7 @@ aClient	*cptr, *sptr;
 
 
 
-int   m_identify(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-	int	parc;
-	char	*parv[];
+int   m_identify(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
      aClient *acptr;
      const char *sService;
@@ -118,10 +112,7 @@ aClient	*cptr, *sptr;
 
 
 #define SERVICES_FUNC(function, service)                                       \
-int    function(cptr, sptr, parc, parv)                                        \
-aClient	*cptr, *sptr;                                                          \
-	int	parc;                                                          \
-	char	*parv[];                                                       \
+int    function(aClient *cptr, aClient *sptr, int parc, char *parv[])          \
 {                                                                              \
      int fOper;                                                                \
      const char *sService = (service);                                         \
@@ -145,7 +136,8 @@ SERVICES_FUNC(m_operserv, cOperServ);
 SERVICES_FUNC(m_infoserv, cInfoServ);
 
 
-inline int    m_sendto_service(cptr, sptr, parc, parv, fOper, sService)
+__inline int
+m_sendto_service(cptr, sptr, parc, parv, fOper, sService)
 aClient	*cptr, *sptr;
 	int	parc;
 	char	*parv[];

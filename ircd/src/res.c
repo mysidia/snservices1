@@ -165,9 +165,9 @@ ResRQ *new;
 static	void	rem_request(old)
 ResRQ	*old;
 {
-	Reg1	ResRQ	**rptr, *r2ptr = NULL;
-	Reg2	int	i;
-	Reg3	char	*s;
+	ResRQ	**rptr, *r2ptr = NULL;
+	int	i;
+	char	*s;
 
 	if (!old)
 		return;
@@ -211,7 +211,7 @@ ResRQ	*old;
 static	ResRQ	*make_request(lp)
 Link	*lp;
 {
-	Reg1	ResRQ	*nreq;
+	ResRQ	*nreq;
 
 	nreq = (ResRQ *)MyMalloc(sizeof(ResRQ));
 	bzero((char *)nreq, sizeof(ResRQ));
@@ -246,8 +246,8 @@ Link	*lp;
 time_t	timeout_query_list(now)
 time_t	now;
 {
-	Reg1	ResRQ	*rptr, *r2ptr;
-	Reg2	time_t	next = 0, tout;
+	ResRQ	*rptr, *r2ptr;
+	time_t	next = 0, tout;
 	aClient	*cptr;
 
 	Debug((DEBUG_DNS,"timeout_query_list at %s",myctime(now)));
@@ -273,21 +273,16 @@ time_t	now;
 				case ASYNC_CLIENT :
                                         connotice(cptr, REPORT_FAIL_DNS);
 					ClearDNS(cptr);
-					if (!DoingAuth(cptr))
-						SetAccess(cptr);
+					SetAccess(cptr);
 					break;
 				case ASYNC_SERVER :
-					sendto_ops("Host %s unknown",
-						   rptr->name);
+					sendto_ops("Host %s unknown", rptr->name);
 					ClearDNS(cptr);
-					if (check_server(cptr, NULL,
-							 NULL, NULL, 1))
-						(void)exit_client(cptr, cptr,
-							&me, "No Permission");
+					if (check_server(cptr, NULL, NULL, NULL, 1))
+					  (void)exit_client(cptr, cptr, &me, "No Permission");
 					break;
 				case ASYNC_CONNECT :
-					sendto_ops("Host %s unknown",
-						   rptr->name);
+					sendto_ops("Host %s unknown", rptr->name);
 					break;
 				}
 				rem_request(rptr);
@@ -323,7 +318,7 @@ time_t	now;
 void	del_queries(cp)
 char	*cp;
 {
-	Reg1	ResRQ	*rptr, *r2ptr;
+	ResRQ	*rptr, *r2ptr;
 
 	for (rptr = first; rptr; rptr = r2ptr)
 	    {
@@ -345,7 +340,7 @@ static	int	send_res_msg(msg, len, rcount)
 char	*msg;
 int	len, rcount;
 {
-	Reg1	int	i;
+	int	i;
 	int	sent = 0, max;
 
 	if (!msg)
@@ -381,7 +376,7 @@ int	len, rcount;
 static	ResRQ	*find_id(id)
 int	id;
 {
-	Reg1	ResRQ	*rptr;
+	ResRQ	*rptr;
 
 	for (rptr = first; rptr; rptr = rptr->next)
 		if (rptr->id == id)
@@ -393,7 +388,7 @@ struct	hostent	*gethost_byname(name, lp)
 char	*name;
 Link	*lp;
 {
-	Reg1	aCache	*cp;
+	aCache	*cp;
 
 	reinfo.re_na_look++;
 	if ((cp = find_cache_name(name)))
@@ -430,7 +425,7 @@ Link	*lp;
 static	int	do_query_name(lp, name, rptr)
 Link	*lp;
 char	*name;
-Reg1	ResRQ	*rptr;
+ResRQ	*rptr;
 {
 #ifndef _WIN32
 	char	hname[HOSTLEN+1];
@@ -473,11 +468,11 @@ Reg1	ResRQ	*rptr;
 static	int	do_query_number(lp, numb, rptr)
 Link	*lp;
 struct	in_addr	*numb;
-Reg1	ResRQ	*rptr;
+ResRQ	*rptr;
 {
 #ifndef _WIN32
 	char	ipbuf[32];
-	Reg2	u_char	*cp;
+	u_char	*cp;
 
 	cp = (u_char *)&numb->s_addr;
 	(void)sprintf(ipbuf,"%u.%u.%u.%u.in-addr.arpa.",
@@ -585,8 +580,8 @@ ResRQ	*rptr;
 char	*buf, *eob;
 HEADER	*hptr;
 {
-	Reg1	char	*cp, **alias;
-	Reg2	struct	hent	*hp;
+	char	*cp, **alias;
+	struct	hent	*hp;
 	int	class, type, dlen, len, ans = 0, n;
 	struct	in_addr	dr, *adr;
 
@@ -710,30 +705,23 @@ HEADER	*hptr;
 }
 #endif /*_WIN32*/
 
-/*
- * read a dns reply from the nameserver and process it.
- */
-#ifndef _WIN32
-struct	hostent	*get_res(lp)
-char	*lp;
-#else
-struct	hostent	*get_res(lp, id)
-char	*lp;
-long   id;
-#endif
-{
-#ifndef _WIN32
-	static	char	buf[sizeof(HEADER) + MAXPACKET];
-	Reg1	HEADER	*hptr;
-	struct	sockaddr_in	sin;
-	int	rc, a, len = sizeof(sin), max;
-#else
-	Reg3	struct hostent	*he;
-#endif
-	Reg2	ResRQ	*rptr = NULL;
-	aCache	*cp;
 
 #ifndef _WIN32
+
+/*
+ * read a dns reply from the nameserver and process it.
+ * UNIX version.
+ */
+struct	hostent	*get_res(lp)
+char	*lp;
+{
+	static	char	buf[sizeof(HEADER) + MAXPACKET];
+	HEADER	*hptr;
+	struct	sockaddr_in	sin;
+	int	rc, a, len = sizeof(sin), max;
+	ResRQ	*rptr = NULL;
+	aCache	*cp;
+
 	(void)alarm((unsigned)4);
 	rc = recvfrom(resfd, buf, sizeof(buf), 0, (struct sockaddr *)&sin,
 		      &len);
@@ -753,20 +741,17 @@ long   id;
 	Debug((DEBUG_NOTICE, "get_res:id = %d rcode = %d ancount = %d",
 		hptr->id, hptr->rcode, hptr->ancount));
 #endif
-#endif
+
 	reinfo.re_replies++;
 	/*
 	 * response for an id which we have already received an answer for
 	 * just ignore this response.
 	 */
-#ifndef _WIN32
+
 	rptr = find_id(hptr->id);
-#else
-	rptr = find_id(id);
-#endif
 	if (!rptr)
 		goto getres_err;
-#ifndef _WIN32
+
 	/*
 	 * check against possibly fake replies
 	 */
@@ -899,7 +884,33 @@ getres_err:
 		else if (lp)
 			bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
 	    }
-#else /*_WIN32*/
+
+	return (struct hostent *)NULL;
+}
+
+#else
+/*
+ * read a dns reply from the nameserver and process it.
+ * WIN32 version.
+ */
+struct	hostent	*get_res(lp, id)
+char	*lp;
+long   id;
+{
+
+	struct hostent	*he;
+	ResRQ	*rptr = NULL;
+	aCache	*cp;
+
+	reinfo.re_replies++;
+	/*
+	 * response for an id which we have already received an answer for
+	 * just ignore this response.
+	 */
+	rptr = find_id(id);
+	if (!rptr)
+		goto getres_err;
+
 	he = rptr->he;
 
 	if (he && he->h_name && ((struct in_addr *)he->h_addr)->s_addr &&
@@ -925,9 +936,9 @@ getres_err:
 	if (lp)
 		bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
 	cp = make_cache(rptr);
-# ifdef DEBUG
+#ifdef DEBUG
 	Debug((DEBUG_INFO,"get_res:cp=%#x rptr=%#x (made)", cp, rptr));
-# endif
+#endif
 	rptr->locked = 0;
 	rem_request(rptr);
 	return cp ? (struct hostent *)cp->he : NULL;
@@ -935,14 +946,16 @@ getres_err:
 getres_err:
 	if (lp && rptr)
 		bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
-#endif
+
 	return (struct hostent *)NULL;
 }
 
+#endif /* _WIN32 */
+
 static	int	hash_number(ip)
-Reg1 unsigned char *ip;
+unsigned char *ip;
 {
-	Reg1	u_int	hashv = 0;
+	u_int	hashv = 0;
 
 	/* could use loop but slower */
 	hashv += (int)*ip++;
@@ -954,9 +967,9 @@ Reg1 unsigned char *ip;
 }
 
 static	int	hash_name(name)
-register	char	*name;
+char	*name;
 {
-	Reg1	u_int	hashv = 0;
+	u_int	hashv = 0;
 
 	for (; *name && *name != '.'; name++)
 		hashv += *name;
@@ -968,10 +981,10 @@ register	char	*name;
 ** Add a new cache item to the queue and hash table.
 */
 static	aCache	*add_to_cache(ocp)
-Reg1	aCache	*ocp;
+aCache	*ocp;
 {
-	Reg1	aCache	*cp = NULL;
-	Reg2	int	hashv;
+	aCache	*cp = NULL;
+        int	hashv;
 
 #ifdef DEBUG
 	Debug((DEBUG_INFO,
@@ -1038,9 +1051,9 @@ static	void	update_list(rptr, cachep)
 ResRQ	*rptr;
 aCache	*cachep;
 {
-	Reg1	aCache	**cpp, *cp = cachep;
-	Reg2	char	*s, *t, **base;
-	Reg3	int	i, j;
+        aCache	**cpp, *cp = cachep;
+	char	*s, *t, **base;
+	int	i, j;
 	int	addrcount;
 
 	/*
@@ -1154,9 +1167,9 @@ aCache	*cachep;
 static	aCache	*find_cache_name(name)
 char	*name;
 {
-	Reg1	aCache	*cp;
-	Reg2	char	*s;
-	Reg3	int	hashv, i;
+	aCache	*cp;
+	char	*s;
+	int	hashv, i;
 
 	hashv = hash_name(name);
 
@@ -1214,8 +1227,8 @@ static	aCache	*find_cache_number(rptr, numb)
 ResRQ	*rptr;
 char	*numb;
 {
-	Reg1	aCache	*cp;
-	Reg2	int	hashv,i;
+	aCache	*cp;
+	int	hashv,i;
 #ifdef	DEBUG
 	struct	in_addr	*ip = (struct in_addr *)numb;
 #endif
@@ -1285,10 +1298,10 @@ char	*numb;
 static	aCache	*make_cache(rptr)
 ResRQ	*rptr;
 {
-	Reg1	aCache	*cp;
-	Reg2	int	i, n;
-	Reg3	struct	hostent	*hp;
-	Reg3	char	*s, **t;
+	aCache	*cp;
+	int	i, n;
+	struct	hostent	*hp;
+	char	*s, **t;
 
 	/*
 	** shouldn't happen but it just might...
@@ -1395,14 +1408,14 @@ ResRQ	*rptr;
 static	void	rem_cache(ocp)
 aCache	*ocp;
 {
-	Reg1	aCache	**cp;
+	aCache	**cp;
 #ifndef _WIN32
-	Reg2	struct	hostent *hp = &ocp->he;
+	struct	hostent *hp = &ocp->he;
 #else
-	Reg2	struct	hostent *hp = ocp->he;
+	struct	hostent *hp = ocp->he;
 #endif
-	Reg3	int	hashv;
-	Reg4	aClient	*cptr;
+	int	hashv;
+	aClient	*cptr;
 
 #ifdef	DEBUG
 	Debug((DEBUG_DNS, "rem_cache: ocp %#x hp %#x l_n %#x aliases %#x",
@@ -1496,8 +1509,8 @@ aCache	*ocp;
 time_t	expire_cache(now)
 time_t	now;
 {
-	Reg1	aCache	*cp, *cp2;
-	Reg2	time_t	next = 0;
+	aCache	*cp, *cp2;
+	time_t	next = 0;
 
 	for (cp = cachetop; cp; cp = cp2)
 	    {
@@ -1519,7 +1532,7 @@ time_t	now;
  */
 void	flush_cache()
 {
-	Reg1	aCache	*cp;
+	aCache	*cp;
 
 	while ((cp = cachetop))
 		rem_cache(cp);
@@ -1530,8 +1543,8 @@ aClient *cptr, *sptr;
 int	parc;
 char	*parv[];
 {
-	Reg1	aCache	*cp;
-	Reg2	int	i;
+	aCache	*cp;
+	int	i;
 
 	if (parv[1] && *parv[1] == 'l') {
 		for(cp = cachetop; cp; cp = cp->list_next)
@@ -1580,9 +1593,9 @@ char	*parv[];
 u_long	cres_mem(sptr)
 aClient	*sptr;
 {
-	register aCache	*c = cachetop;
-	register struct	hostent	*h;
-	register int	i;
+	aCache	*c = cachetop;
+	struct	hostent	*h;
+	int	i;
 	u_long	nm = 0, im = 0, sm = 0, ts = 0;
 
 	for ( ;c ; c = c->list_next)

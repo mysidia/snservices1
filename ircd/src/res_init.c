@@ -57,13 +57,13 @@ struct state _res = {
 res_init()
 {
 #ifndef _WIN32
-	register FILE *fp;
-	register char *cp, *dp, **pp;
+	FILE *fp;
+	char *cp, *dp, **pp;
 	extern u_long inet_addr();
 #else
-	register char *cp, **pp;
+	char *cp, **pp;
 #endif
-	register int n;
+	int n;
 	char buf[BUFSIZ];
 	extern char *getenv();
 	int nserv = 0;    /* number of nameserver records read from file */

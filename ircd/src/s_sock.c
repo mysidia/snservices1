@@ -25,6 +25,7 @@ static char rcsid[] = "$Id$";
 #endif
 
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -57,8 +58,7 @@ static char rcsid[] = "$Id$";
  * request a sockets connection 
  * if we can't create it we let the user connect...
  */
-void
-init_socks(aClient *cptr)
+void init_socks(aClient *cptr)
 {
 	struct sockaddr_in sin, sock;
 	int addrlen = sizeof (struct sockaddr_in);
@@ -66,7 +66,8 @@ init_socks(aClient *cptr)
 	Debug((DEBUG_ERROR, "Starting socks check for cptr %p, cptr->fd %d\n",
 	       cptr, cptr->fd));
 
-	if (cptr->socks == NULL) {
+	if (cptr->socks == NULL)
+	{
 		cptr->socks = (aSocks *)MyMalloc(sizeof(aSocks));
 		bzero(cptr->socks, sizeof(aSocks));
 		cptr->socks->fd = -1;
@@ -77,21 +78,23 @@ init_socks(aClient *cptr)
 
 #if 0
 	/* we can't use all the fds! */
-	if (cptr->socks->fd >= (MAXCLIENTS + 3)) {
+	if (cptr->socks->fd >= (MAXCLIENTS + 3))
+	{
 		sendto_realops("Warning: out of client fds on socks check %s",
 			       get_client_name(cptr, TRUE));
 		close(cptr->socks->fd);
 		cptr->socks->fd = -1;
 		cptr->socks->status |= (SOCK_GO | SOCK_DESTROY);
-		if (!DoingDNS(cptr) && !DoingAuth(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 		return;
 	}
 #endif
 
-	if (cptr->socks->fd < 0) {
+	if (cptr->socks->fd < 0)
+	{
 		cptr->socks->status = (SOCK_DONE | SOCK_DESTROY);
-		if (!DoingDNS(cptr) && !DoingAuth(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 		sendto_realops("[***] error in init_socks() while making socket for %s",
 			       get_client_name(cptr, TRUE));
@@ -120,11 +123,13 @@ init_socks(aClient *cptr)
 	sock.sin_port = htons(SOCKSPORT);
 	sock.sin_family = AF_INET;
 	if (connect(cptr->socks->fd, (struct sockaddr *)&sock,
-		    sizeof(struct sockaddr_in)) < 0) {
+		    sizeof(struct sockaddr_in)) < 0)
+	{
 
 		if (errno != EAGAIN
 		    && errno != EWOULDBLOCK
-		    && errno != EINPROGRESS) {
+		    && errno != EINPROGRESS)
+		{
 			/*
 			 * Assume all errors at this point are good, and let
 			 * them in.
@@ -137,7 +142,7 @@ init_socks(aClient *cptr)
 			cptr->socks->fd = -1;
 			cptr->socks->status |= (SOCK_DONE | SOCK_DESTROY);
 
-			if (!DoingDNS(cptr) && !DoingAuth(cptr))
+			if (!DoingDNS(cptr))
 				SetAccess(cptr);
 
 			if (cptr != &me)
@@ -149,12 +154,15 @@ init_socks(aClient *cptr)
 
 	cptr->socks->status = SOCK_WANTCON;
 	ClientFlags(cptr) |= FLAGS_SOCK;
+#if 0
 	addrlen = sizeof(struct sockaddr_in);
 	if (getpeername(cptr->socks->fd, (struct sockaddr *)&sin,
-			&addrlen) != -1) {
+			&addrlen) != -1)
+	{
 		cptr->socks->status |= SOCK_CONNECTED;
 		send_socksquery(cptr);
 	}
+#endif
 	if (cptr != &me)
 		connotice(cptr, REPORT_START_SOCKS);
 }
@@ -163,8 +171,7 @@ init_socks(aClient *cptr)
  * send_socksquery
  * send the actual request to the socks server
  */
-void send_socksquery (cptr)
-     aClient *cptr;
+void send_socksquery (aClient *cptr)
 {
 	int rv;
 	unsigned char sbuf[12];
@@ -224,8 +231,7 @@ void send_socksquery (cptr)
  *     allow them in if connection refused
  *     block connection if open socks found
  */
-void
-read_socks(aClient *cptr)
+void read_socks(aClient *cptr)
 {
 	unsigned char sbuf[9];
 	int len, erv;
@@ -250,7 +256,7 @@ read_socks(aClient *cptr)
 	if (len < 0) {
 		if (erv != EAGAIN) {
 			cptr->socks->status |= (SOCK_GO | SOCK_DESTROY);
-			if (!DoingDNS(cptr) && !DoingAuth(cptr))
+			if (!DoingDNS(cptr))
 				SetAccess(cptr);
 		}
 
@@ -274,7 +280,7 @@ read_socks(aClient *cptr)
 		if (cptr != &me)
 			connotice(cptr, REPORT_FIN_SOCKS);
 		cptr->socks->status |= (SOCK_FOUND | SOCK_GO);
-		if (!DoingDNS(cptr) && !DoingAuth(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 
 		return;
@@ -284,7 +290,7 @@ read_socks(aClient *cptr)
 	 * The request failed.  Good.
 	 */
 	cptr->socks->status |= (SOCK_GO | SOCK_DESTROY);
-	if (!DoingDNS(cptr) && !DoingAuth(cptr))
+	if (!DoingDNS(cptr))
 		SetAccess(cptr);
 	if (cptr != &me)
 		connotice(cptr, REPORT_OK_SOCKS);
