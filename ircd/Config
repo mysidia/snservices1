@@ -19,8 +19,6 @@ AUTO_CONFIG=""
 STDDEFH=undef
 SYSSYSLOGH=undef
 PARAMH=undef
-STRINGH=undef
-STRINGSH=undef
 RUSAGEH=undef
 NOINDEX=undef
 NSTRERROR=undef
@@ -413,20 +411,6 @@ if [ "$cc" = "none" ] ; then
 	cc=''
 fi
 
-echo $n "...Looking for /usr/include/string.h...$c"
-if [ -r /usr/include/string.h ] ; then
-	STRINGH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
-echo $n "...Looking for /usr/include/strings.h...$c"
-if [ -r /usr/include/strings.h ] ; then
-	STRINGSH=define
-	echo  'found!'
-else
-	echo 'not found :('
-fi
 echo $n "...Looking for /usr/include/sys/rusage.h...$c"
 if [ -r /usr/include/sys/rusage.h ] ; then
 	RUSAGEH=define
@@ -461,14 +445,8 @@ fi
 #
 echo 'Now those strings libraries...hmm...which one is it...'
 cat > $TMP <<__EOF__
-#$STRINGH STRINGH
-#$STRINGSH STRINGSH
-#ifdef STRINGH
 #include <string.h>
-#endif
-#ifdef STRINGSH
 #include <strings.h>
-#endif
 main()
 {
 	char *s = index("foo", 'o');
@@ -597,14 +575,8 @@ else
 fi
 $RM -f $EXEC $TMP
 cat > $TMP <<__EOF__
-#$STRINGH STRINGH
-#$STRINGSH STRINGSH
-#ifdef STRINGH
 #include <string.h>
-#endif
-#ifdef STRINGSH
 #include <strings.h>
-#endif
 main()
 {
 	char  *t = "a", **p = NULL, *s = strtoken(&p, t, ",");
@@ -626,14 +598,8 @@ else
 fi
 $RM -f $EXEC $TMP
 cat > $TMP <<__EOF__
-#$STRINGH STRINGH
-#$STRINGSH STRINGSH
-#ifdef STRINGH
 #include <string.h>
-#endif
-#ifdef STRINGSH
 #include <strings.h>
-#endif
 main()
 {
 	char t[2] = "a";
@@ -711,8 +677,6 @@ cat > $SETUP  <<__EOF__
 #ifndef __setup_include__
 #define __setup_include__
 #$PARAMH	PARAMH
-#$STRINGH	STRINGH
-#$STRINGSH	STRINGSH
 #$REDHAT6	REDHAT6
 #$LINUX_GLIBC	LINUX_GLIBC
 /*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
