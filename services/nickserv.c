@@ -1160,6 +1160,8 @@ void addRegNick(RegNickList * newnick)
 	 * If this nick is already registered, don't do a thing.
 	 */
 	if ((tmp = getRegNickData(newnick->nick))) {
+		logDump(corelog, "addRegNick(%p) : %s already exists",
+				newnick, newnick->nick);
 		assert(tmp == NULL);
 
 		abort();

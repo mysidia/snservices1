@@ -94,6 +94,19 @@ void AppendBuffer(char **p, const char *);
 char *str_dup(const char*);
 
 /**
+ * @brief Handle an unexpected EOF in database file error
+ * @pre   file_name points to a valid Zero-terminated character array
+ * @post  None
+ */
+void unexpected_eof( const char* file_name )
+{
+	fprintf(stderr, "Unexpected EOF: %s\n", file_name);
+	logDump(corelog, "Unexpected EOF: %s", file_name);
+	sshutdown(-1);
+}
+		
+
+/**
  * \pre  fp Points to an open infile in which a multi-line dbString has been
  *          reached
  */
@@ -267,6 +280,9 @@ void readNickData()
 
 	while (!done) {
 		if (!(sfgets(dbLine, 1024, db.ns))) {
+			if (!done) {
+				unexpected_eof(NS_DB);
+			}
 			done = 1;
 			fclose(db.ns);
 			return;
@@ -624,6 +640,9 @@ void readChanData()
 
 	while (!done) {
 		if ((sfgets(dbLine, 2048, db.cs)) == 0) {
+			if (!done) {
+				unexpected_eof(CS_DB);
+			}
 			done = 1;
 			fclose(db.cs);
 			return;
@@ -914,6 +933,9 @@ void readMemoData(void)
 
 	while (!done) {
 		if (!(sfgets(dbLine, 2048, db.ms))) {
+			if (!done) {
+				unexpected_eof(MS_DB);
+			}
 			done = 1;
 			fclose(db.ms);
 			return;
@@ -1095,6 +1117,9 @@ void readTriggerData(void)
 
 	while (!done) {
 		if (!(sfgets(dbLine, 2048, db.trigger))) {
+			if (!done) {
+				unexpected_eof(TRG_DB);
+			}
 			done = 1;
 			fclose(db.trigger);
 			return;
@@ -1208,6 +1233,9 @@ void readInfoData(void)
 
 	while (!done) {
 		if (!(sfgets(dbLine, 2048, db.is))) {
+			if (!done) {
+				unexpected_eof(IS_DB);
+			}
 			done = 1;
 			fclose(db.is);
 			return;
