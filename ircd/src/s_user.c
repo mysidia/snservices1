@@ -1668,7 +1668,7 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 #ifdef REQ_VERSION_RESPONSE
 	if (MyClient(sptr) && !IsUserVersionKnown(sptr)) {
-		sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
+		sendto_one(sptr, ":%s NOTICE %s :Sorry, but your IRC software "
                            "program has not yet reported its version. "
                            "Your request (NOTICE) was not processed.",
                             me.name, sptr->name);
