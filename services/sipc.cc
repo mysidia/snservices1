@@ -1865,6 +1865,12 @@ IpcType::queryObjMessage(IpcConnectType *p, parse_t *pb)
 				return;
 			}
 
+			if (req == NULL || strcmp(req, "ISREG") == 0) {
+				p->fWriteLn("OK QUERY OBJECT RNICK=%s ISREG=TRUE - Channel is registered.", buf);
+				return;
+                        }
+
+
 			if (queryRegChanMessage(reg_chan, req, p, pb))
 				return;			
 
