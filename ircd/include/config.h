@@ -229,13 +229,6 @@
  */
 #define FAILOPER_WARN
 
-/* SHOW_PASSWORD
- *
- * When defined, show the password used on a failed oper attempt - identical
- * to the behavior of the .dal3 patch.
- */
-#undef SHOW_PASSWORD
-
 /* NO_DEFAULT_INVISIBLE
  *
  * When defined, your users will not automatically be attributed with user

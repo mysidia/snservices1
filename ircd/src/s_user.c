@@ -3265,28 +3265,25 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 }  else sptr->since += 2;
 
 
-#ifndef	SHOW_PASSWORD
 #ifdef  FAILOPER_WARN
 		sendto_one(sptr,":%s NOTICE :Your attempt has been logged.",me.name);
 #endif
-                  sendto_realops("Failed OPER attempt by %s (%s@%s) using UID %s [NOPASSWORD]",
-                   parv[0], sptr->user->username, sptr->sockhost, name);
-#else
-		  sendto_realops("Failed OPER attempt by %s (%s@%s) [%s]",
-		   parv[0], sptr->user->username, sptr->sockhost,password);
-#endif
-		  sendto_serv_butone(&me, ":%s GLOBOPS :Failed OPER attempt by %s (%s@%s) using UID %s [---]",
-		    me.name, parv[0], sptr->user->username, sptr->sockhost, name);
+		sendto_realops("Failed OPER attempt by %s (%s@%s) using UID %s [NOPASSWORD]",
+			       parv[0], sptr->user->username,
+			       sptr->sockhost, name);
+		sendto_serv_butone(&me, ":%s GLOBOPS :Failed OPER attempt by %s (%s@%s) using UID %s [---]",
+				   me.name, parv[0], sptr->user->username,
+				   sptr->sockhost, name);
 		sptr->since += 7;
                 if (IsPerson(sptr))
-                 tolog(LOG_OPER, "FAILED OPER (%s) (%s) by (%s!%s@%s)\n",
-                                      name, encr,
-                                      parv[0], sptr->user->username,
-                                      sptr->sockhost);
+			tolog(LOG_OPER,
+			      "FAILED OPER (%s) (%s) by (%s!%s@%s)\n",
+			      name, encr,
+			      parv[0], sptr->user->username,
+			      sptr->sockhost);
 	    }
 	return 0;
-    }
-
+}
 
 /*
  * m_pass() - Added Sat, 4 March 1989
