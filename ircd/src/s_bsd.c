@@ -72,7 +72,7 @@ static	anAddress *connect_inet(aConfItem *, aClient *, int *);
 static	int	completed_connection(aClient *);
 static	int	check_init(aClient *, char *);
 static	void	do_dns_async(void);
-	void	set_sock_opts(int, aClient *);
+static  void	set_sock_opts(int, aClient *, int);
 extern	int LogFd(int descriptor);
 
 static	char	readbuf[8192];
@@ -213,7 +213,7 @@ int	port;
 		(void)closesocket(cptr->fd);
 		return -1;
 	    }
-	set_sock_opts(cptr->fd, cptr);
+	set_sock_opts(cptr->fd, cptr, server.addr_family);
 	switch(server.addr_family)
 	{
 		case AF_INET:
@@ -966,9 +966,8 @@ aClient *cptr;
 /*
 ** set_sock_opts
 */
-void	set_sock_opts(fd, cptr)
-int	fd;
-aClient	*cptr;
+void
+set_sock_opts(int fd, aClient *cptr, int family)
 {
 	int	opt;
 #ifdef SO_REUSEADDR
@@ -976,56 +975,31 @@ aClient	*cptr;
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (OPT_TYPE *)&opt, sizeof(opt)) < 0)
 		report_error("setsockopt(SO_REUSEADDR) %s:%s", cptr);
 #endif
-#if  defined(SO_DEBUG) && defined(DEBUGMODE) && 0
-/* Solaris with SO_DEBUG writes to syslog by default */
-#if !defined(SOL20) || defined(USE_SYSLOG)
-	opt = 1;
-	if (setsockopt(fd, SOL_SOCKET, SO_DEBUG, (OPT_TYPE *)&opt, sizeof(opt)) < 0)
-		report_error("setsockopt(SO_DEBUG) %s:%s", cptr);
-#endif /* SOL20 */
-#endif
+
 #if defined(SO_USELOOPBACK)
 	opt = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_USELOOPBACK, (OPT_TYPE *)&opt, sizeof(opt)) < 0)
 		report_error("setsockopt(SO_USELOOPBACK) %s:%s", cptr);
 #endif
+
 #ifdef	SO_RCVBUF
 	opt = 8192;
 	if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (OPT_TYPE *)&opt, sizeof(opt)) < 0)
 		report_error("setsockopt(SO_RCVBUF) %s:%s", cptr);
 #endif
+
 #ifdef	SO_SNDBUF
-# ifdef	_SEQUENT_
-/* seems that Sequent freezes up if the receving buffer is a different size
- * to the sending buffer (maybe a tcp window problem too).
- */
 	opt = 8192;
-# else
-	opt = 8192;
-# endif
 	if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (OPT_TYPE *)&opt, sizeof(opt)) < 0)
 		report_error("setsockopt(SO_SNDBUF) %s:%s", cptr);
 #endif
-#if defined(IP_OPTIONS) && defined(IPPROTO_IP)
-	{
-/*
-	char	*s = readbuf, *t = readbuf + sizeof(readbuf) / 2;
 
-	opt = sizeof(readbuf) / 8;
-	if (getsockopt(fd, IPPROTO_IP, IP_OPTIONS, (OPT_TYPE *)t, &opt) < 0)
-		report_error("getsockopt(IP_OPTIONS) %s:%s", cptr);
-	else if (opt > 0 && opt != sizeof(readbuf) / 8)
-	    {
-		for (*readbuf = '\0'; opt > 0; opt--, s+= 3)
-			(void)sprintf(s, "%02x:", *t++);
-		*s = '\0';
-		sendto_ops("Connection %s using IP opts: (%s)",
-			   get_client_name(cptr, TRUE), readbuf);
-	     }
-*/
-	if (setsockopt(fd, IPPROTO_IP, IP_OPTIONS, (OPT_TYPE *)NULL, 0) < 0)
-		report_error("setsockopt(IP_OPTIONS) %s:%s", cptr);
-	}
+#if defined(IP_OPTIONS) && defined(IPPROTO_IP)
+#if defined(AF_INET6)
+	if (family != AF_INET6)
+#endif
+		if (setsockopt(fd, IPPROTO_IP, IP_OPTIONS, NULL, 0) < 0)
+			report_error("setsockopt(IP_OPTIONS) %s:%s", cptr);
 #endif
 }
 
@@ -1132,7 +1106,7 @@ int	fd;
 		if (!iscons && find_zap(acptr, 0))
 		{
 			set_non_blocking(fd, acptr);
-			set_sock_opts(fd, acptr);
+			set_sock_opts(fd, acptr, addr.addr_family);
 			send(fd, zlinebuf, strlen(zlinebuf), 0);
 			goto add_con_refuse;
 		}
@@ -1175,7 +1149,7 @@ int	fd;
 	acptr->acpt = cptr;
 	add_client_to_list(acptr);
 	set_non_blocking(acptr->fd, acptr);
-	set_sock_opts(acptr->fd, acptr);
+	set_sock_opts(acptr->fd, acptr, addr.addr_family);
 
 	return acptr;
 }
@@ -1571,7 +1545,7 @@ struct	HostEnt	*hp;
 	    }
 
 	set_non_blocking(cptr->fd, cptr);
-	set_sock_opts(cptr->fd, cptr);
+	set_sock_opts(cptr->fd, cptr, AF_INET); /* XXXMLG hard-coded! */
 	(void)signal(SIGALRM, dummy_sig);
 	(void)alarm(4);
 	if (connect(cptr->fd, svp, len) < 0 && errno != EINPROGRESS)
