@@ -1215,9 +1215,18 @@ int 	initconf(int opt)
 				aconf = NULL;
 				continue;
 			}
-			for (; *tempc; tempc++)
-				if ((*tempc >= '0') && (*tempc <= '9'))
-					goto zap_safe;
+
+			if (!strchr(tempc, ':')) {
+				for (; *tempc; tempc++)
+					if ((*tempc >= '0') && (*tempc <= '9'))
+						goto zap_safe;
+			}
+			else {
+				for(; *tempc; tempc++) {
+					if (isxdigit(*tempc))
+						goto zap_safe;
+				}
+			}
 			free_conf(aconf);
 			aconf = NULL;
 			continue;
@@ -2544,9 +2553,11 @@ int banmask_check(char *userhost, int ipstat)
    int	retval = TRUE;
    char	*up = NULL, *p, *thisseg;
    int	numdots=0, segno=0, numseg, i=0;
-   char	*ipseg[10+2];
+   char	*ipseg[HOSTLEN+1];
    char	safebuffer[512]=""; /* buffer strtoken() can mess up to its heart's content...;>*/
 
+  if (strlen(userhost) > HOSTLEN)
+	  return 0;
   strcpy(safebuffer, userhost);
 
 #define userhost safebuffer
@@ -2554,11 +2565,16 @@ int banmask_check(char *userhost, int ipstat)
 
    if (ipstat == UNSURE)
    {
+        if (strchr(safebuffer, ':'))
+		return TRUE;
         ipstat=TRUE;
-        for (;*up;up++) 
+        for (up = userhost;*up;up++) 
         {
-           if (*up=='.') numdots++;
-           if (!isdigit(*up) && !ispunct(*up)) {ipstat=FALSE; continue;}
+           if (*up=='.'||*up==':') numdots++;
+           if (!isdigit(*up) && !ispunct(*up)) {
+		   ipstat=FALSE; 
+		   continue;
+	   }
         }
         if (numdots != 3) ipstat=FALSE;
         if (numdots < 1 || numdots > 9)  return(0);
@@ -2567,6 +2583,13 @@ int banmask_check(char *userhost, int ipstat)
      /* fill in the array elements with the corresponding ip segments */
   {
      int l = 0;
+
+
+     if ((ipstat == TRUE) && strchr(safebuffer, ':')) {
+	     /* IPv6 Address */
+	     return TRUE;
+     }
+
         for (segno = 0, i = 0, thisseg = strtoken(&p, userhost, "."); thisseg;
              thisseg = strtoken(&p, NULL, "."), i++)
         {
