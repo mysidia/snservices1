@@ -12,6 +12,9 @@
 		<!-- Name of the server. -->
 		<name>server.sorcery.net</name>
 
+		<!-- Name of the network. -->
+		<network>SorceryNet</network>
+
 		<!-- Info-line of the server. -->
 		<info>East Coast SorceryNet Server</info>
 
