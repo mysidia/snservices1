@@ -18,38 +18,47 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* Changed all calls of check_pings so that only when a kline-related command
+   is used will a kline check occur -- Barubary */
+
 #define KLINE_RET_AKILL 3
 #define KLINE_RET_PERM 2
 #define KLINE_RET_DELOK 1
 #define KLINE_DEL_ERR 0
+
+
+#ifndef lint
+static  char sccsid[] = "@(#)s_conf.c	2.56 02 Apr 1994 (C) 1988 University of Oulu, \
+Computing Center and Jarkko Oikarinen";
+#endif
 
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "numeric.h"
 #include <fcntl.h>
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/wait.h>
+#else
+#include <io.h>
+#endif
 #include <sys/stat.h>
+#ifdef __hpux
+#include "inet.h"
+#endif
+#if defined(PCS) || defined(AIX) || defined(DYNIXPTX) || defined(SVR3)
+#include <time.h>
+#endif
 #ifdef	R_LINES
 #include <signal.h>
 #endif
-#include <arpa/inet.h>
 
 #include "h.h"
-#include "msg.h"
 
-#include "ircd/match.h"
-#include "ircd/send.h"
-#include "ircd/string.h"
-
-IRCD_SCCSID("@(#)s_conf.c	2.56 02 Apr 1994 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
-IRCD_RCSID("$Id$");
-
-static int check_time_interval(char *, char *);
-static int lookup_confhost(aConfItem *);
-static int is_comment(char *);
-static int banmask_check(char *userhost, int ipstat);
+static	int	check_time_interval PROTO((char *, char *));
+static	int	lookup_confhost PROTO((aConfItem *));
+static	int	is_comment PROTO((char *));
 
 aConfItem	*conf = NULL;
 extern char	zlinebuf[];
@@ -77,37 +86,34 @@ void	det_confs_butmask(aClient *cptr, int mask)
  * 1 = temp
  * 2 = akill
  */
-aConfItem *
-add_temp_conf(unsigned int status, char *host, char *passwd, char *name,
-	      int port, int class, int temp)
+void	add_temp_conf(unsigned int status, char *host, char *passwd, char *name, char *real, int port, int class, int temp)
 {
 	aConfItem *aconf;
-	aConfItem *new_conf = NULL;
 
 	aconf = make_conf();
 
 	aconf->tmpconf = temp;
 	aconf->status = status;
 	if (host)
-		aconf->host = irc_strdup(host);
+	  DupString(aconf->host, host);
 	if (passwd)
-		aconf->passwd = irc_strdup(passwd);
+	  DupString(aconf->passwd, passwd);
 	if (name)
-		aconf->name = irc_strdup(name);
+	  DupString(aconf->name, name);
+        if (real)
+	  DupString((char *)aconf->other_p, real);
+
 	aconf->port = port;
 	if (class)
 		Class(aconf) = find_class(class);
 	if (!find_temp_conf_entry(aconf, status)) {
 		aconf->next = conf;
 		conf = aconf;
-		new_conf = aconf;
 		aconf = NULL;
 	}
 
 	if (aconf)
-		free_conf(aconf);
-
-	return (new_conf);
+	  free_conf(aconf);
 }
 
 /*
@@ -125,18 +131,18 @@ int port, class;
 	
 	aconf->status=status;
 	if(host)
-		aconf->host = irc_strdup(host);
+		DupString(aconf->host, host);
 	if(passwd)
-		aconf->passwd = irc_strdup(passwd);
+		DupString(aconf->passwd, passwd);
 	if(name)
-		aconf->name = irc_strdup(name);
+		DupString(aconf->name, name);
 	aconf->port = port;
 	if(class)
 		Class(aconf) = find_class(class);
         if (status & CONF_AHURT) mask = status &= ~(CONF_ILLEGAL);
-	else if (status & CONF_ZAP) mask = CONF_ZAP;
 	else                     mask = CONF_KILL;
-	if ((bconf = find_temp_conf_entry(aconf, mask))) {
+	if (bconf=find_temp_conf_entry(aconf,mask)) /* only if non-null ptr */
+	{
 /* Completely skirt the akill error messages if akill is set to 1
  * this allows RAKILL to do its thing without having to go through the
  * error checkers.  If it had to it would go kaplooey. --Russell
@@ -196,12 +202,12 @@ int	attach_Iline(aClient *cptr, struct hostent *hp, char *sockhost)
 					*uhost = '\0';
 				(void)strncat(uhost, fullname,
 					sizeof(uhost) - strlen(uhost));
-				if (*uhost != '%') {
-					if (!match(aconf->name, uhost))
-						goto attach_iline;
-					else if (!match(aconf->name, uhost+1))
-						goto attach_iline;
-				}
+                               if (*uhost != '%')
+				if (!match(aconf->name, uhost))
+					goto attach_iline;
+                               else
+				if (!match(aconf->name, uhost+1))
+					goto attach_iline;
 			    }
 
 		if (index(aconf->host, '@'))
@@ -703,6 +709,11 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	if (sig == 1)
 	    {
 		sendto_ops("Got signal SIGHUP, reloading ircd conf. file");
+#ifdef	ULTRIX
+		if (fork() > 0)
+			exit(0);
+		write_pidfile();
+#endif
 	    }
 
 	for (i = 0; i <= highest_fd; i++)
@@ -761,10 +772,7 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	for (cltmp = NextClass(FirstClass()); cltmp; cltmp = NextClass(cltmp))
 		MaxLinks(cltmp) = -1;
 
-#ifdef ENABLE_SOCKSCHECK
 	flush_socks(time(NULL), 1);
-#endif
-
 	if (sig != 2)
 		flush_cache();
 	(void) initconf(0);
@@ -789,7 +797,7 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 #endif
 
 	/* Added to make sure K-lines are checked -- Barubary */
-	check_pings(NOW, 1, NULL);
+	check_pings(NOW, 1);
 
 	/* Recheck all U-lines -- Barubary */
 	for (i = 0; i < highest_fd; i++)
@@ -826,6 +834,9 @@ int conf_xbits(aConfItem *aconf, char *field)
                  { bitp = 1; bit = CFLAG_NOIDENT; }
              else if (!strncmp(s, "!s", 2) || !strcasecmp( s, "!sockscheck" ))
                  { bitp = 1; bit = CFLAG_NOSOCKS; }
+             else if (!strncasecmp(s, "t=", 2) && s[2]) {
+		aconf->exval1 = atoi(s + 2);
+             }
              break;
           }
 
@@ -976,7 +987,7 @@ int 	initconf(int opt)
 				if (!*(tmp+1))
 					break;
 				else
-					for (s = tmp ; (*s = *(s+1)) ; s++)
+					for (s = tmp; *s = *(s+1); s++)
 						;
 			    }
 			else if (*tmp == '#')
@@ -1034,6 +1045,9 @@ int 	initconf(int opt)
 			case 'k':
 				aconf->status = CONF_KILL;
 				break;
+			case 't':
+				aconf->status = CONF_TRIGGER;
+			break;
 			/* Operator. Line should contain at least */
 			/* password and host where connection is  */
 			case 'L': /* guaranteed leaf server */
@@ -1104,13 +1118,13 @@ int 	initconf(int opt)
 		    {
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
-			aconf->host = irc_strdup(tmp);
+			DupString(aconf->host, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
-			aconf->passwd = irc_strdup(tmp);
+			DupString(aconf->passwd, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
-			aconf->name = irc_strdup(tmp);
+			DupString(aconf->name, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
 			if (aconf->status & CONF_OPS) {
@@ -1140,8 +1154,12 @@ int 	initconf(int opt)
 			{
 				if ((tmp = getfield(NULL)) == NULL)
 					break;
-				else
-				 conf_xbits(aconf, tmp);
+				else {
+                                 if (aconf->status & CONF_CLIENT)
+				     conf_xbits(aconf, tmp);
+				 else if (aconf->status & CONF_KILL)
+				    DupString((char *)aconf->other_p, tmp);
+				}
 			}
 		        break;
 		    }
@@ -1155,7 +1173,20 @@ int 	initconf(int opt)
 		** is much better!  -Aeto
 		*/
 		if ((aconf->status & CONF_CONFIG) == CONF_CONFIG) {
-			continue;
+#ifdef USE_CASETABLES
+		  if (mycmp(aconf->host,"casetable") == 0) {
+		    if (atoi(aconf->passwd) == 1)
+                    {
+                       casetable = 1;
+                      touppertab = touppertab2;
+                      tolowertab = tolowertab2;
+                    }
+		    else if (casetable == 1)
+		      sendto_ops ("WARNING -- rehash tried to reduce casetable value, which is illegal.  Restart to reduce it.");
+
+		  }
+#endif
+		  continue;
 		}
 
 		/* Check for bad Z-lines masks as they are *very* dangerous
@@ -1203,7 +1234,8 @@ int 	initconf(int opt)
 		    {
 			aConfItem *bconf;
 
-			if ((bconf = find_conf_entry(aconf, aconf->status))) {
+			if (bconf = find_conf_entry(aconf, aconf->status))
+			    {
 				delist_conf(bconf);
 				bconf->status &= ~CONF_ILLEGAL;
 				if (aconf->status == CONF_CLIENT)
@@ -1233,9 +1265,9 @@ int 	initconf(int opt)
 				int	len = 3;	/* *@\0 = 3 */
 
 				len += strlen(aconf->host);
-				newhost = irc_malloc(len);
+				newhost = (char *)MyMalloc(len);
 				(void)sprintf(newhost, "*@%s", aconf->host);
-				irc_free(aconf->host);
+				MyFree(aconf->host);
 				aconf->host = newhost;
 			    }
 		if (IsCNLine(aconf))
@@ -1250,7 +1282,7 @@ int 	initconf(int opt)
                 ** If there's a parsing error, nuke the conf structure */
                 if (aconf->status & (CONF_CRULEALL | CONF_CRULEAUTO))
 		  {
-		    irc_free (aconf->passwd);
+		    MyFree (aconf->passwd);
 		    if ((aconf->passwd =
 			 (char *) crule_parse (aconf->name)) == NULL)
 		      {
@@ -1355,16 +1387,18 @@ badlookup:
 	return -1;
 }
 
-int	find_kill(aClient *cptr, aConfItem *conf_target)
+int	find_kill(aClient *cptr)
 {
-	char	reply[256], *host, *name, u_ip[HOSTLEN + 25], *u_sip;
-	aConfItem *tmp = NULL;
+	char	reply[256], *host, *name, *real, u_ip[HOSTLEN + 25], *u_sip;
+	aConfItem *tmp;
 
-	if (!cptr->user)
+	if (!cptr->user || !MyConnect(cptr) || IsPrivileged(cptr))
 		return 0;
 
 	host = cptr->sockhost;
 	name = cptr->user->username;
+        real = cptr->info;
+
         if ((u_sip = inetntoa((char *) &cptr->ip)))
             strncpyzt(u_ip, u_sip, HOSTLEN);
         else u_ip[0] = '\0';
@@ -1375,70 +1409,74 @@ int	find_kill(aClient *cptr, aConfItem *conf_target)
 
 	reply[0] = '\0';
 
-	if (conf_target != NULL) {
-		if ((conf_target->status == CONF_KILL) && conf_target->host && conf_target->name &&
-		    (match(conf_target->host, u_ip) == 0 || match(conf_target->host, host) == 0) &&
-		    (!name || match(conf_target->name, name) == 0) &&
-		    (!conf_target->port || (conf_target->port == cptr->acpt->port))) {
-			if (BadPtr(conf_target->passwd))
-				tmp = conf_target;
-			else if (is_comment(conf_target->passwd))
-				tmp = conf_target;
-			else if (check_time_interval(conf_target->passwd, reply))
-				tmp = conf_target;
-		}
-	} else {
-		for (tmp = conf; tmp; tmp = tmp->next)
-			if ((tmp->status == CONF_KILL) && tmp->host && tmp->name &&
-			    (match(tmp->host, u_ip) == 0 || match(tmp->host, host) == 0) &&
-			    (!name || match(tmp->name, name) == 0) &&
-			    (!tmp->port || (tmp->port == cptr->acpt->port))) {
-				/* can short-circuit evaluation - not taking chances
-				   cos check_time_interval destroys tmp->passwd
-				   - Mmmm
-				*/
-				if (BadPtr(tmp->passwd))
-					break;
-				else if (is_comment(tmp->passwd))
-					break;
-				else if (check_time_interval(tmp->passwd, reply))
-					break;
-			}
-	}
+	for (tmp = conf; tmp; tmp = tmp->next)
+ 		if ((tmp->status == CONF_KILL) && tmp->host && tmp->name &&
+		    (match(tmp->host, u_ip) == 0 || match(tmp->host, host) == 0) &&
+ 		    (!name || match(tmp->name, name) == 0) &&
+                    (!real || !tmp->other_p || match((char *)tmp->other_p, real) == 0) &&
+		    (!tmp->port || (tmp->port == cptr->acpt->port)))
+                       /* can short-circuit evaluation - not taking chances
+                           cos check_time_interval destroys tmp->passwd
+                                                                - Mmmm
+                         */
+                        if (BadPtr(tmp->passwd))
+                                break;
+                        else if (is_comment(tmp->passwd))
+                                break;
+                        else if (check_time_interval(tmp->passwd, reply))
+                                break;
 
 
 	if (reply[0])
 		sendto_one(cptr, reply,
 			   me.name, ERR_YOUREBANNEDCREEP, cptr->name);
-	else if (tmp) {
+	else if (tmp)
             if (BadPtr(tmp->passwd))
 		sendto_one(cptr,
 			   ":%s %d %s :*** You are not welcome on this server."
 			   "  Email " KLINE_ADDRESS " for more information.",
 			   me.name, ERR_YOUREBANNEDCREEP, cptr->name);
-	    else {
+             else
 #ifdef COMMENT_IS_FILE
                    m_killcomment(cptr,cptr->name, tmp->passwd);
 #else
-		   if (tmp->tmpconf == KLINE_AKILL)
-			   sendto_one(cptr,
-				      ":%s %d %s :*** %s",
-				      me.name, ERR_YOUREBANNEDCREEP,
-				      cptr->name, tmp->passwd);
-		   else
-			   sendto_one(cptr,
+	     {
+	      if (tmp->tmpconf == KLINE_AKILL)
+              sendto_one(cptr,
+                         ":%s %d %s :*** %s",
+                         me.name, ERR_YOUREBANNEDCREEP, cptr->name,
+                         tmp->passwd);
+	      else
+              sendto_one(cptr,
                          ":%s %d %s :*** You are not welcome on this server: "
 			 "%s.  Email " KLINE_ADDRESS " for more information.",
                          me.name, ERR_YOUREBANNEDCREEP, cptr->name,
                          tmp->passwd);
+	     }
 #endif  /* COMMENT_IS_FILE */
-	    }
-	}
 
  	return (tmp ? -1 : 0);
 }
 
 
+aConfItem * find_trigger(aClient *cptr)
+{
+	char	  u_ip[HOSTLEN + 25], *u_sip;
+	aConfItem *tmp;
+
+	if (!cptr->user)
+		return  NULL;
+
+        if ((u_sip = inetntoa((char *) &cptr->ip)))
+            strncpyzt(u_ip, u_sip, HOSTLEN);
+        else u_ip[0] = '\0';
+
+	for (tmp = conf; tmp; tmp = tmp->next)
+ 		if ((tmp->status == CONF_TRIGGER) &&
+                    tmp->host && !mycmp(tmp->host, u_ip))
+                     break;
+ 	return (tmp);
+}
 
 aConfItem	*find_ahurt(aClient *cptr)
 {
@@ -1798,9 +1836,9 @@ int     m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 else
                         sendto_serv_butone(cptr, ":%s RAKILL %s %s", 
 				parv[0], parv[1], parv[2]);
+                check_pings(NOW, 1);
         }
 
-	return 0;
 }
 /* ** m_akill;
 **	parv[0] = sender prefix
@@ -1810,7 +1848,9 @@ int     m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 */
 int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-	aConfItem *temp_conf = NULL;
+	char *k_parv1, *k_parv2, *k_parv3, *k_real, *p;
+	char buf[512], buf2[512];
+	int i, x;
 
 	if (check_registered(sptr))
 		return 0;
@@ -1822,6 +1862,51 @@ int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		return 0;
 	    }
 
+	k_parv1 = parv[1];
+	k_parv2 = parv[2];
+	k_real = NULL;
+	*buf = '\0';
+
+	strncpy(buf, k_parv2, sizeof(buf));
+	buf[sizeof(buf) - 1] = '\0';
+
+	if ((p = strchr(buf, '$'))) {
+		k_parv2 = buf;
+		*p = '\0';
+
+		k_real = p+1;
+		*buf2 = '\0';
+		x = i = 0;
+
+		for(p = k_real; *p; p++) {
+			if (*p == '\\') {
+				if (!i) {
+					i = 1;
+					continue;
+				}
+			}
+			else if (i) {
+				if (*p == 's') {
+					buf2[x++] = ' ';
+					i = 0;
+					continue;
+				}
+				i = 0;
+				continue;
+			}
+			buf2[x++] = *p;	
+			i = 0;
+		}
+		buf2[x++] = '\0';
+		k_real = buf2;
+	}
+	
+
+	if (parc >= 4)
+		k_parv3 = parv[3];
+	else
+		k_parv3 = NULL;
+
 	if (IsServer(cptr) &&
 	    find_conf_host(cptr->confs, sptr->name, CONF_UWORLD))
 	{
@@ -1829,21 +1914,20 @@ int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 
 #ifndef COMMENT_IS_FILE
-	 		temp_conf = add_temp_conf(CONF_KILL, parv[1], parv[3], parv[2], 0, 0, 2); 
+	 		add_temp_conf(CONF_KILL, k_parv1, k_parv3, k_parv2, k_real, 0, 0, 2); 
 #else
-			temp_conf = add_temp_conf(CONF_KILL, parv[1], NULL, parv[2], 0, 0, 2); 
+			add_temp_conf(CONF_KILL, k_parv1, NULL, k_parv2, k_real, 0, 0, 2); 
 #endif
 		}
-		if(parv[3])
+		if(k_parv3)
 			sendto_serv_butone(cptr, ":%s AKILL %s %s :%s", parv[0],
-				     parv[1], parv[2], parv[3]);
+				     k_parv1, parv[2], k_parv3);
 		else
 			sendto_serv_butone(cptr, ":%s AKILL %s %s", parv[0],
-				     parv[1], parv[2]);
-		check_pings(NOW, 1, temp_conf);
+				     k_parv1, parv[2]);
+		check_pings(NOW, 1);
 	}
 
-	return 0;
 }
 
 
@@ -1856,6 +1940,7 @@ int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 */
 int     m_rahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
+        int i = 0;
         if (check_registered(sptr))
                 return 0;
 
@@ -1902,7 +1987,7 @@ int	m_ahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if (!IsULine(cptr, sptr))
                  return 0;
-		add_temp_conf(CONF_AHURT, parv[1], parv[3], parv[2], 0, 0, KLINE_AKILL); 
+		add_temp_conf(CONF_AHURT, parv[1], parv[3], parv[2], NULL, 0, 0, KLINE_AKILL); 
 		if(parv[3])
 			sendto_serv_butone(cptr, ":%s AHURT %s %s :%s", parv[0],
 				     parv[1], parv[2], parv[3]);
@@ -1925,7 +2010,6 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	char uhost[80], name[80];
 	int ip1, ip2, ip3, temp;
 	aClient *acptr;
-	aConfItem *temp_conf;
 
         *uhost = *name = (char)0;
         if (!MyClient(sptr) || !OPCanKline(sptr))
@@ -2003,6 +2087,7 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 		/* Add some wildcards */
 
+
 		strncpy(uhost, host, sizeof(uhost) - strlen(uhost));
 		uhost[sizeof(uhost)-1] = 0;
 		if (isdigit(host[strlen(host)-1])) {
@@ -2016,8 +2101,8 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 
 	sendto_ops("%s added a temp k:line for %s@%s %s", parv[0], name, uhost, parv[2] ? parv[2] : "");
- 	temp_conf = add_temp_conf(CONF_KILL, uhost, parv[2], name, 0, 0, 1);
-	check_pings(NOW, 1, temp_conf);
+ 	add_temp_conf(CONF_KILL, uhost, parv[2], name, NULL, 0, 0, 1);
+	check_pings(NOW, 1);
         return 0;
     }
 	
@@ -2079,6 +2164,8 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0;
 		}
 	}
+	/* This wasn't here before -- Barubary */
+	check_pings(NOW, 1);
         return 0;
 }
 
@@ -2100,7 +2187,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	char userhost[512+2]="", *in;
-	int uline=0, i=0, propo=0;
+	int result=0, uline=0, i=0, propo=0;
 	char *reason, *mask, *server, *person;
 	aClient *acptr;
 	
@@ -2144,7 +2231,8 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  return -1;
 	}
 
-	if ((acptr = find_client(parv[1], NULL))) {
+	if (acptr = find_client(parv[1], NULL))
+	{
 	  strcpy(userhost, inetntoa((char *) &acptr->ip));
 	  person = &acptr->name[0];
 	  acptr = NULL;
@@ -2202,7 +2290,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    sendto_ops("%s added a temp z:line for %s (*@%s) [%s]", parv[0], person, userhost, reason?reason:"");
 	  else
 	    sendto_ops("%s added a temp z:line *@%s [%s]", parv[0], userhost, reason?reason:"");
-	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_TEMP); 
+	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, NULL, 0, 0, KLINE_TEMP); 
         }
 	else
 	 {
@@ -2210,7 +2298,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:NETWORK , reason?reason:"");
 	 else
 	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:NETWORK , reason?reason:"");
-	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
+	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, NULL, 0, 0, KLINE_AKILL); 
         }
 
                                            /* something's wrong if i'm
@@ -2255,7 +2343,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
                              this should go after the above check */
             sendto_serv_butone(cptr, ":%s ZLINE %s :%s", parv[0], parv[1], reason?reason:"");
 
-        check_pings(time(NULL), 1, NULL);
+        check_pings(time(NULL), 1);
         return 0;
 }
 
@@ -2270,6 +2358,8 @@ int m_unzline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
    char userhost[512+2]="", *in;
    int result=0, uline=0, akill=0;
+   aConfItem *aconf, *tmp;
+   aConfItem dummy;
    char *mask = NULL, *server = NULL;
 
    uline = IsULine(cptr, sptr)? 1 : 0;
@@ -2405,8 +2495,7 @@ retry_unzline:
  *         FALSE == mask is not ok
  *        UNSURE == [unused] something went wrong
  */
-static int
-banmask_check(char *userhost, int ipstat)
+int banmask_check(char *userhost, int ipstat)
 {
    int	retval = TRUE;
    char	*up = NULL, *p, *thisseg;
@@ -2439,7 +2528,7 @@ banmask_check(char *userhost, int ipstat)
         {
             
             l = strlen(thisseg)+2;
-            ipseg[segno] = irc_malloc(l+1);
+            ipseg[segno] = MyMalloc(l+1);
             if (!ipseg[segno]) {
                  sendto_realops("[***] PANIC! UNABLE TO ALLOCATE MEMORY (banmask_check)"); 
                  for (l = 0; l < segno ; l++) free(ipseg[segno]);
@@ -2457,7 +2546,7 @@ banmask_check(char *userhost, int ipstat)
       {
             if (!IP_WILDS_OK(i) && (index(ipseg[i], '*')||index(ipseg[i], '?')))
                retval=FALSE;            
-            irc_free(ipseg[i]);
+            MyFree(ipseg[i]);
       }
      else
      {
@@ -2473,7 +2562,7 @@ banmask_check(char *userhost, int ipstat)
            {
              retval=FALSE;
            }
-            irc_free(ipseg[i]);
+            MyFree(ipseg[i]);
       }
      }
      return(retval);

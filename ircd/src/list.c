@@ -1,7 +1,8 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/list.c
- *   Copyright (C) 1990 Jarkko Oikarinen and
- *                      University of Oulu, Finland
+ *   Copyright C 1990 Jarkko Oikarinen and
+ *                     University of Oulu, Finland
+ *   Copyright C 1997-2002 James Hess All Rights Reserved
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,25 +19,57 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* -- Jto -- 20 Jun 1990
+ * extern void free() fixed as suggested by
+ * gruner@informatik.tu-muenchen.de
+ */
+
+/* -- Jto -- 03 Jun 1990
+ * Added chname initialization...
+ */
+
+/* -- Jto -- 24 May 1990
+ * Moved is_full() to channel.c
+ */
+
+/* -- Jto -- 10 May 1990
+ * Added #include <sys.h>
+ * Changed memset(xx,0,yy) into bzero(xx,yy)
+ */
+
+#ifndef lint
+static  char sccsid[] = "@(#)list.c	2.24 4/20/94 (C) 1988 University of Oulu, \
+Computing Center and Jarkko Oikarinen";
+#endif
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"
 #include "h.h"
 #include "numeric.h"
-
-#include "ircd/send.h"
-
-IRCD_SCCSID("@(#)list.c	2.24 4/20/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
-IRCD_RCSID("$Id$");
-
-void	free_link(Link *);
-Link	*make_link(void);
+#ifdef	DBMALLOC
+#include "malloc.h"
+#endif
+void	free_link PROTO((Link *));
+Link	*make_link PROTO(());
+aMachine *mPurgeList;
 
 #ifdef	DEBUGMODE
 static	struct	liststats {
 	int	inuse;
 } cloc, crem, users, servs, links, classs, aconfs;
+
 #endif
+
+#ifdef FLUD
+BlockHeap  *free_fludbots;
+
+#endif /*
+        * FLUD
+        */
+
+
+void	outofmemory();
 
 int	numclients = 0;
 
@@ -53,6 +86,13 @@ void	initlists()
 #endif
 }
 
+void	outofmemory()
+{
+	Debug((DEBUG_FATAL, "Out of memory: restarting server..."));
+	restart("Out of Memory");
+}
+
+	
 /*
 ** Create a new aClient structure and set it to initial state.
 **
@@ -75,7 +115,8 @@ aClient	*make_client(aClient *from)
 	if (!from)
 		size = CLIENT_LOCAL_SIZE;
 
-	cptr = irc_malloc(size);
+	if (!(cptr = (aClient *)MyMalloc(size)))
+		outofmemory();
 	bzero((char *)cptr, (int)size);
 
 #ifdef	DEBUGMODE
@@ -117,7 +158,7 @@ int	free_socks(struct Socks *zap)
 		closesocket(zap->fd);
 	zap->fd = -1;
 
-	irc_free(zap);
+	MyFree(zap);
 
 	Debug((DEBUG_ERROR, "freeing socks"));
 	return (0);
@@ -128,10 +169,10 @@ void	free_client(aClient *cptr)
 	if (cptr->from == cptr && cptr->lopt) {
 		free_str_list(cptr->lopt->yeslist);
 		free_str_list(cptr->lopt->nolist);
-		irc_free(cptr->lopt);
+		MyFree(cptr->lopt);
 	}
 
-	irc_free(cptr);
+	MyFree((char *)cptr);
 }
 
 /*
@@ -145,7 +186,7 @@ anUser	*make_user(aClient *cptr)
 	user = cptr->user;
 	if (!user)
 	    {
-		user = irc_malloc(sizeof(anUser));
+		user = (anUser *)MyMalloc(sizeof(anUser));
 #ifdef	DEBUGMODE
 		users.inuse++;
 #endif
@@ -157,6 +198,9 @@ anUser	*make_user(aClient *cptr)
 		user->invited = NULL;
 		user->silence = NULL;
 		user->mask = NULL;
+		user->dccallow = NULL;
+		user->auth_a = 0;
+		user->auth_b = 0;
 #ifdef  KEEP_HURTBY
 		user->hurtby = NULL;
 #endif
@@ -174,7 +218,7 @@ aServer	*make_server(aClient *cptr)
 
 	if (!serv)
 	    {
-		serv = irc_malloc(sizeof(aServer));
+		serv = (aServer *)MyMalloc(sizeof(aServer));
 #ifdef	DEBUGMODE
 		servs.inuse++;
 #endif
@@ -197,13 +241,13 @@ void	free_user(anUser *user, aClient *cptr)
 	if (--user->refcnt <= 0)
 	    {
 		if (user->away)
-			irc_free(user->away);
+			MyFree((char *)user->away);
 		if (user->mask)
-			irc_free(user->mask);
+			MyFree((char *)user->mask);
 
 #ifdef  KEEP_HURTBY
 		if (user->hurtby)
-			irc_free(user->hurtby);
+			MyFree((char *)user->hurtby);
 		user->hurtby = NULL;
 #endif
 		/*
@@ -224,7 +268,7 @@ void	free_user(anUser *user, aClient *cptr)
 				user->invited, user->channel, user->joined,
 				user->refcnt);
 #endif
-		irc_free(user);
+		MyFree((char *)user);
 #ifdef	DEBUGMODE
 		users.inuse--;
 #endif
@@ -258,7 +302,7 @@ void	remove_client_from_list(aClient *cptr)
 	    {
 		if (cptr->serv->user)
 			free_user(cptr->serv->user, cptr);
-		irc_free(cptr->serv);
+		MyFree((char *)cptr->serv);
 #ifdef	DEBUGMODE
 		servs.inuse--;
 #endif
@@ -312,7 +356,7 @@ Link	*make_link()
 {
 	Link	*lp;
 
-	lp = irc_malloc(sizeof(Link));
+	lp = (Link *)MyMalloc(sizeof(Link));
 #ifdef	DEBUGMODE
 	links.inuse++;
 #endif
@@ -321,7 +365,7 @@ Link	*make_link()
 
 void	free_link(Link *lp)
 {
-	irc_free(lp);
+	MyFree((char *)lp);
 #ifdef	DEBUGMODE
 	links.inuse--;
 #endif
@@ -332,7 +376,7 @@ aClass	*make_class()
 {
 	aClass	*tmp;
 
-	tmp = irc_malloc(sizeof(aClass));
+	tmp = (aClass *)MyMalloc(sizeof(aClass));
 #ifdef	DEBUGMODE
 	classs.inuse++;
 #endif
@@ -341,7 +385,7 @@ aClass	*make_class()
 
 void	free_class(aClass *tmp)
 {
-	irc_free(tmp);
+	MyFree((char *)tmp);
 #ifdef	DEBUGMODE
 	classs.inuse--;
 #endif
@@ -351,25 +395,26 @@ aConfItem	*make_conf()
 {
 	aConfItem *aconf;
 
-	aconf = irc_malloc(sizeof(aConfItem));
+	aconf = (struct ConfItem *)MyMalloc(sizeof(aConfItem));
 #ifdef	DEBUGMODE
 	aconfs.inuse++;
 #endif
 	bzero((char *)&aconf->ipnum, sizeof(struct in_addr));
 	aconf->next = NULL;
 	aconf->host = aconf->passwd = aconf->name = NULL;
+	aconf->other_p = NULL;
 	aconf->status = CONF_ILLEGAL;
 	aconf->clients = 0;
 	aconf->port = 0;
 	aconf->hold = 0;
 	aconf->bits = 0;
+	aconf->exval1 = 0;
 	aconf->tmpconf = 0;
 	Class(aconf) = 0;
 	return (aconf);
 }
 
-void
-delist_conf(aConfItem *aconf)
+void	delist_conf(aConfItem *aconf)
 {
 	if (aconf == conf)
 		conf = conf->next;
@@ -387,12 +432,14 @@ delist_conf(aConfItem *aconf)
 void	free_conf(aConfItem *aconf)
 {
 	del_queries((char *)aconf);
-	irc_free(aconf->host);
+	MyFree(aconf->host);
 	if (aconf->passwd)
 		bzero(aconf->passwd, strlen(aconf->passwd));
-	irc_free(aconf->passwd);
-	irc_free(aconf->name);
-	irc_free(aconf);
+	MyFree(aconf->passwd);
+	MyFree(aconf->name);
+	if (aconf->other_p != 0x0)
+	    MyFree(aconf->other_p);
+	MyFree((char *)aconf);
 #ifdef	DEBUGMODE
 	aconfs.inuse--;
 #endif
@@ -443,15 +490,59 @@ void	send_listinfo(aClient *cptr, char *name)
 }
 #endif
 
-void    free_str_list(lp)
-	Link    *lp;
+aMachine *make_machine()
 {
-        Link    *next;
+	aMachine *p = (aMachine *)MyMalloc(sizeof(aMachine));
+	p->next = p->hnext = NULL;
+	bzero(p, sizeof(aMachine));
+
+	return p;
+}
+
+void free_machine(aMachine *p)
+{
+	if (!p)
+	    return;
+	MyFree(p);
+	return;
+}
+
+void add_machine_to_purgelist(aMachine *p) {
+   aMachine *tmp;
+
+   if (!p)
+       return;
+   for(tmp = mPurgeList; tmp; tmp = tmp->next)
+       if (tmp == p)
+           return;
+   p->next = mPurgeList;
+   mPurgeList = p;
+}
+
+void rem_machine_from_purgelist(aMachine *zap) {
+   aMachine *tmp, *it, *it_next;
+
+   for(it = mPurgeList, tmp = NULL; it; it = it_next) {
+       it_next = it->next;
+       if (it == zap) {
+           if (tmp) tmp->next = zap->next;
+           else     mPurgeList = zap->next;
+	   zap->next = NULL;
+           return;
+       }
+       else tmp = it;
+   }
+}
+
+void    free_str_list(lp)
+Reg1    Link    *lp;
+{
+        Reg2    Link    *next;
 
 
         while (lp) {
                 next = lp->next;
-                irc_free(lp->value.cp);
+                MyFree((char *)lp->value.cp);
                 free_link(lp);
                 lp = next;
         }
@@ -465,16 +556,19 @@ void    free_str_list(lp)
  * match() on it. Side effect: if found, this link is moved to the top of
  * the list.
  */
-int
-find_str_match_link(Link **lp, char *str)
+int     find_str_match_link(lp, str)
+Reg1    Link    **lp; /* Two **'s, since we might modify the original *lp */
+Reg2    char    *str;
 {
-        Link    **head = lp;
+        Link    *ptr, **head = lp;
 
-        if (lp && *lp) {
+        if (lp && *lp)
+        {
                 if (!match((*lp)->value.cp, str))
                         return 1;
                 for (; (*lp)->next; *lp = (*lp)->next)
-                        if (!match((*lp)->next->value.cp, str)) {
+                        if (!match((*lp)->next->value.cp, str))
+                        {
                                 Link *temp = (*lp)->next;
                                 *lp = (*lp)->next->next;
                                 temp->next = *head;
@@ -485,3 +579,11 @@ find_str_match_link(Link **lp, char *str)
         }
         return 0;
 }
+
+
+/*
+            if ((mmach->online < 1)) {
+                del_from_machine_hash_table(sptr->ip, mmach);
+                free_machine(mmach);
+            }
+*/
