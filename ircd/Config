@@ -25,7 +25,6 @@ LINUX_GLIBC=undef
 LINUX_GLIBC_RRES=undef
 NINETADDR=undef
 NINETNTOA=undef
-NINETNETOF=undef
 NGETADDRINFO=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
@@ -615,22 +614,6 @@ if [ $? -ne 0 ] ; then
 	echo $n " inet_ntoa$c"
 fi
 $RM -f $EXEC $TMP
-cat > $TMP << __EOF__
-#include <sys/types.h>
-#include <netinet/in.h>
-main()
-{
-	struct	in_addr	in;
-	in.s_addr = 0x87654321;
-	(void)inet_netof(in);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-	echo $n " inet_netof$c"
-	NINETNETOF=define
-fi
-$RM -f $EXEC $TMP
 echo " "
 #
 #
@@ -650,7 +633,6 @@ cat > $SETUP  <<__EOF__
 #$NSTRTOK	NEED_STRTOK
 #$NINETADDR	NEED_INET_ADDR
 #$NINETNTOA	NEED_INET_NTOA
-#$NINETNETOF	NEED_INET_NETOF
 #$NGETADDRINFO	NEED_GETADDRINFO
 __EOF__
 if [ "$BZERO" = "memset" ] ; then

@@ -111,16 +111,8 @@ int	get_sockerr(aClient *);
 void	init_sys(void);
 int	read_message(time_t);
 int	read_packet(aClient *cptr);
-void	report_error(char *, aClient *);
-void	set_non_blocking(int, aClient *);
-int	setup_ping(void);
-void	summon(aClient *, char *, char *, char *);
 
 void	do_dns_async();
-
-void	start_auth(aClient *);
-void	read_authports(aClient *);
-void	send_authports(aClient *);
 
 void	restart(char *);
 void	send_channel_modes(aClient *, aChannel *);

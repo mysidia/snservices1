@@ -33,29 +33,6 @@
 IRCD_SCCSID("@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner; 1992, 1993 Darren Reed");
 IRCD_RCSID("$Id$");
 
-#ifdef NEED_INET_NETOF
-/*
-**	inet_netof --	return the net portion of an internet number
-**			argv 11/90
-**
-*/
-
-int
-inet_netof(struct in_addr in)
-{
-    int addr = in.s_net;
-
-    if (addr & 0x80 == 0)
-	return ((int) in.s_net);
-
-    if (addr & 0x40 == 0)
-	return ((int) in.s_net * 256 + in.s_host);
-
-    return ((int) in.s_net * 256 + in.s_host * 256 + in.s_lh);
-}
-#endif /* NEED_INET_NETOF */
-
-
 #if defined(DEBUGMODE)
 void
 dumpcore(char *fmt, ...)
