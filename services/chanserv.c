@@ -1489,7 +1489,7 @@ char *initModeStr(ChanList * chan)
 			snprintf(parastr + l, IRCBUF - l, " %ld", chan->reg->limit);
 		}
 
-		if (((chan->reg->mlock & PM_K) || (chan->reg->mlock & MM_K)) &&
+		if ((chan->reg->mlock & PM_K) &&
                      ((l = strlen(parastr)) < IRCBUF)) 
 		{
 			snprintf(parastr + l, IRCBUF - l, " %s", chan->reg->key
@@ -1715,7 +1715,7 @@ void addUserToChan(UserList * nick, char *channel)
 				tmp->reg = getRegChanData(chan);
 
 				if (tmp->reg) {
-					char mode[20];
+					char *mode;
 					char themask[NICKLEN + USERLEN + HOSTLEN + 3];
 					cAkickList* akickRecord = 0;
 
@@ -1849,33 +1849,12 @@ void addUserToChan(UserList * nick, char *channel)
 						sSend(":%s NOTICE %s :[%s] %s", ChanServ,
 							  nick->nick, tmp->name, tmp->reg->autogreet);
 
-					makeModeLockStr(tmp->reg, mode);
+					mode = initModeStr(tmp);
 
-					if (mode[0] != 0) {
-						char parastr[IRCBUF * 2];
-
-						*parastr = '\0';
-						if ((tmp->reg->mlock & PM_L))
-							sprintf(parastr + strlen(parastr), " %ld",
-									tmp->reg->limit);
-						if ((tmp->reg->mlock & PM_K)
-							|| (tmp->reg->mlock & MM_K)) sprintf(parastr +
-																 strlen
-																 (parastr),
-																 " %s",
-																 tmp->reg->
-																 key
-																 && *tmp->
-																 reg->
-																 key ?
-																 tmp->reg->
-																 key :
-																 "*");
-						sSend(":%s MODE %s %s%s", ChanServ, tmp->name,
-							  mode, parastr);
+					if (*mode != 0) {
+						sSend(":%s MODE %s %s", ChanServ, tmp->name, mode);
 #ifdef IRCD_MLOCK
-						sSend(":%s MLOCK %s %s%s", ChanServ, tmp->name,
-							  mode, parastr);
+						sSend(":%s MLOCK %s %s", ChanServ, tmp->name, mode);
 #endif
 					}
 				}
@@ -2141,7 +2120,7 @@ void setChanMode(char **args, int numargs)
 	ChanList *tmp = getChanData(args[2]);
 	cBanList *tmpban;
 	cNickList *tmpnick;
-	char mode[20];
+	char *mode;
 
 	if (tmp == NULL)
 		return;
@@ -2395,21 +2374,12 @@ void setChanMode(char **args, int numargs)
 	}
 
 	if (tmp->reg) {
-		makeModeLockStr(tmp->reg, mode);
-		if (mode[0] != 0) {
-			char parastr[IRCBUF * 2];
+		mode = initModeStr(tmp);
 
-			*parastr = '\0';
-			if ((tmp->reg->mlock & PM_L))
-				sprintf(parastr + strlen(parastr), " %ld",
-						tmp->reg->limit);
-			if ((tmp->reg->mlock & PM_K) || (tmp->reg->mlock & MM_K))
-				sprintf(parastr + strlen(parastr), " %s",
-						(tmp->reg->key
-						 && *tmp->reg->key ? tmp->reg->key : "*"));
-			sSend(":%s MODE %s %s%s", ChanServ, tmp->name, mode, parastr);
+		if (*mode != 0) {
+			sSend(":%s MODE %s %s", ChanServ, tmp->name, mode);
 #ifdef IRCD_MLOCK
-			sSend(":%s MLOCK %s %s%s", ChanServ, tmp->name, mode, parastr);
+			sSend(":%s MLOCK %s %s", ChanServ, tmp->name, mode);
 #endif
 		}
 	}
@@ -5954,7 +5924,7 @@ cmd_return cs_set_mlock(cs_settbl_t * cmd, UserList * nick,
 	*parastr = '\0';
 	if ((regchan->mlock & PM_L))
 		sprintf(parastr + strlen(parastr), " %ld", regchan->limit);
-	if ((regchan->mlock & PM_K) || (regchan->mlock & MM_K))
+	if ((regchan->mlock & PM_K))
 		sprintf(parastr + strlen(parastr), " %s", regchan->key
 				&& *regchan->key ? regchan->key : "*");
 	sSend(":%s MODE %s %s%s", ChanServ, regchan->name, mode, parastr);
