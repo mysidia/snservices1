@@ -1,3 +1,0 @@
-/**
- * \brief A foolist item
- */
