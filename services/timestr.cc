@@ -43,10 +43,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <assert.h>
 
 #include "timestr.h"
-#include "options.h"
+#include "services.h"
 
 bool TimeLengthString::isValid() const
 {
@@ -190,7 +189,7 @@ const char* TimeLengthString::asString(char* buf, int len, bool pad,
 	int k = 0, l = 0, showdays, showhours, showmins, showsecs;
 	int flag = 0;
 
-	assert(len >= 10);
+	ASSERT(len >= 10);
 
 	if (pad == false)
 	{

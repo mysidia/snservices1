@@ -85,6 +85,7 @@
 
 #ifndef _TESTMODE
 /// DEBUG: Terminate if x is false with a fatal error
+#define ASSERT(x) assert(x)
 #define assert(x) \
         (!(x) ? fatalSvsError(__FILE__, __LINE__, #x) : 0)
 #endif

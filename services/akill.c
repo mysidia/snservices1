@@ -178,7 +178,7 @@ void listAkills(char *from, char type)
 {
 	struct akill *ak;
 	char mask[NICKLEN + USERLEN + HOSTLEN + 3];
-	char length[16];
+	char length[16] = {};
 	struct tm *t;
 
 	if (!firstBanItem) {
@@ -198,9 +198,22 @@ void listAkills(char *from, char type)
 
 			t = localtime(&(ak->set));
 
-			if (ak->unset)
-				sprintf(length, "%luh",
-						(long)(ak->unset - ak->set) / 3600);
+			if (ak->unset) 
+			{
+				TimeLengthString tls(ak->unset - ak->set);
+
+				ASSERT((ak->unset - ak->set) >= 0);
+
+				if (tls.isValid() == false) 
+				{
+					sprintf(length, "%luh",
+							(long)(ak->unset - ak->set) / 3600);
+				}
+				else
+				{
+					tls.asString(length, sizeof(length) - 1, true, false, false);
+				}
+			}
 			else
 				strcpy(length, "forever");
 
@@ -499,7 +512,7 @@ int addakill(long length, char *mask, char *by, char type, char *reason)
 	struct akill *ak;
 	char *akmask;
 	int i, j;
-	char temp[50];
+	char temp[75] = {};
 
 	ak = (struct akill *)oalloc(sizeof(struct akill));
 	akmask = strdup(mask);
@@ -543,7 +556,7 @@ int addakill(long length, char *mask, char *by, char type, char *reason)
 		if (tls.isValid() == false)
 			snprintf(temp, 16, "%d hours.", (int)length / 3600);
 		else
-			tls.asString(temp, 50, true, true, false);
+			tls.asString(temp, sizeof(temp) - 1, true, true, false);
 	}
 
 	sSend(":%s GLOBOPS :%s set %s for %s for %s [%s]", OperServ, by,
