@@ -1,3 +1,4 @@
+# Sipc.pm
 #
 # Services IPC Perl Interface: [INCOMPLETE]
 #
@@ -227,8 +228,13 @@ sub loginObject
 				if ($line =~ /^OK AUTH OBJECT (\S+) LOGIN/) {
 				}
 				elsif ($line =~ /^AUTH COOKIE (\S+)/) {
-					$hashcode = md5_hex($1 . ":" . $passw);
-					$sock->print("AUTH OBJECT " . $logintype . " " . $hashcode . "\n");
+					if ($logintype eq "PASS") {
+						$hashcode = md5_hex($1 . ":" . $passw);
+						$sock->print("AUTH OBJECT " . $logintype . " " . $hashcode . "\n");
+					}
+					elsif ($logintype eq "CHPASSKEY") {
+						$sock->print("AUTH OBJECT " . $logintype . " " . $passw . "\n");
+					}
 				}
 				elsif ($line =~ /^ERR-BADLOGIN /) {
 					$self->{ERRORTEXT} = "Invalid login details";
@@ -430,3 +436,154 @@ sub Connect
 	$sock->close;
 	return undef;
 }
+
+sub Close
+{
+	my $self = shift;
+	my $sock = $self->{sock};
+	my $sel = $self->{sel};
+
+	$self->remove($sock);
+	$sock->close;
+}
+
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Sipc - Services Inter-Process Communication Interface Module
+
+=head1 STATUS
+
+Warning: IPC is still an experimental interface, and a work in progress.
+
+=head1 SYNOPSIS
+
+use Sipc;
+
+=head1
+
+This module provides an interface for communicating directly with an IRC Services process
+using the IPC interface and a TCP socket.
+
+=head1 FUNCTIONS
+
+=over 4
+
+=item validNickName(nick)
+
+   Checks if a nickname is legitimate for most IRC networks.   The length is not
+   checked, only the set of characters contained.
+
+   Example:  if (validNickName("Guest-1234") == 1) { print "Valid nick!\n"; }
+
+=item validChankName(nick)
+
+   Checks if a channel name is legitimate for most IRC networks.   The length is not
+   checked, only the set of characters contained.
+
+   Example:  if (validChanName("#") == 1) { print "Valid chan!\n"; }
+
+=item hashPw(password)
+
+   Converts a plaintext password to a hash suitable for use witht the Login
+   method.
+
+   Example:
+
+   my $hashpw = Sipc->hashPw('foopass');
+
+=back
+ 
+
+=head1 CONSTRUCTION
+
+=over 4
+
+=item Connect(ip_address, port_number, login_info, password)
+
+ For example:
+   my $handle = Sipc->Connect('127.0.0.1', 3166, 'WWW/blah', 'xyzpass') || die 'Connection failed';
+
+=back
+
+  Methods:
+
+=over 4
+
+=item Errmsg
+  If a Connection, login, or query operation fails, this method returns text providing some
+  indication of the cause of the error.
+
+=item getPublicNickInfo(nick_name)
+  Queries a nickname for all public information available.
+
+  Returns a hash ref of the contents, or 'undef' if an error occured.
+
+  Example:
+
+     if ($x = $handle->getPublicNickInfo('Joe')) {
+     	print "Joe's current access level is " . $x->{ACC} . " and his registration time was " 
+                 . $x->{TIMEREG} . "\n";
+     }
+
+=item loginNickl(nickl, hashed_password)
+
+=item loginChannel(channel, hashed_password)
+
+     Attempts to login to the specified channel or nick using a hashed version of the 
+     owner password (see hashPw).
+
+     Logging into a channel or nickname can be used to authenticate the owner using
+     a script outside of services.
+
+     If the script's login has the PRIV_NOWNER_EQUIV for a nickname login or a 
+     PRIV_COWNER_EQUIV permission flag for a channel login, then authenticating
+     to the nickname grants the script the 'PRIV_OWNER' permission to that object
+     for the rest of the IPC session, or until another login command is issued.
+
+     It returns 1 if the login was successful, or undef otherwise.
+
+     Example:
+     if () {
+     }
+
+=item loginObject(obj_type, auth_type, obj_name, authenticator)
+
+     Attempts to login to the specified object, using the specified authenticator
+     type, and hash code.
+
+     Returns 1 if the login was successful or undef otherwise.
+
+     WARNING: this function is under construction, and behavior is undefined for
+     auth types other than PASS and object types other than RNICK and RCHAN
+
+     Example:
+
+     $handle->loginObject('RNICK', 'PASS', 'fooNick', Sipc->hashPw('barPass'));
+
+    is the same as
+     $handle->loginNick('fooNick', Sipc->hashPw('barPass'));
+    
+     Example: 
+     $handle->loginObject('RNICK', 'CHPASSKEY', '#foo', 'asdfxyz');
+
+=item queryNick(target, field)
+
+=item queryChan(target, field)
+
+     Queries the given nickname or channel (respectively) called 'target' for the value
+     of the proprerty 'field'.      
+
+     Returns the information if available; otherwise 'undef' if there was an error 
+     looking up the information.
+     
+=item Close
+
+     Closes the IPC connection.
+
+
+=cut
