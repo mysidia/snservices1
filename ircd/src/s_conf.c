@@ -519,13 +519,16 @@ aConfItem *find_conf_ip(Link *lp, sock_address *addr, char *user, int statmask)
 		if (!(tmp->status & statmask))
 			continue;
 		s = index(tmp->host, '@');
-		*s = '\0';
-		if (match(tmp->host, user))
-		    {
+		if (s != NULL)
+		{
+			*s = '\0';
+			if (match(tmp->host, user))
+			{
+				*s = '@';
+				continue;
+			}
 			*s = '@';
-			continue;
-		    }
-		*s = '@';
+		}
 		if (!address_compare(tmp->addr, addr))
 			return tmp;
 	    }
