@@ -3496,7 +3496,7 @@ CCMD(cs_register)
 		  ChanServ, from, args[2]);
 	sSend(":%s NOTICE %s :We are NOT responsible for lost passwords.",
 		  ChanServ, from);
-	sSend(":%s NOTICE %s :Your channel is modelocked +tn-k", ChanServ,
+	sSend(":%s NOTICE %s :Your channel is modelocked +tn-kH", ChanServ,
 		  from);
 	sSend(":%s NOTICE %s :And topic preservation is set on", ChanServ,
 		  from);
