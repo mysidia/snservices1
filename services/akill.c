@@ -170,26 +170,59 @@ void makeSetterExcludedFromKlineMails(const char* nick)
  * \brief Handles an AutoKill/AutoHurt/Ignore/... list request
  * \param from Oper requesting list
  * \param type Type of list requested (ie: #A_AKILL)
+ * \param search Search string
+ * \param method Search method
  * \pre From points to a valid NUL-terminated character array bearing
  *      the nickname of an online IRC oper.  Type is one of the akill
  *      type constants (ex: #A_AKILL, #A_IGNORE, #A_AHURT);
  */
-void listAkills(char *from, char type)
+void listAkills(char *from, char type, char *search, ak_search_method method)
 {
 	struct akill *ak;
 	char mask[NICKLEN + USERLEN + HOSTLEN + 3];
 	char length[16] = {};
 	struct tm *t;
+	int matched = 0, total = 0;
+	MaskData *umask = NULL;
 
 	if (!firstBanItem) {
 		sSend(":%s NOTICE %s :There are no autokills/ignores.", OperServ,
 			  from);
 		return;
 	}
-	sSend(":%s NOTICE %s :%-14s %-8s %-20s %-10s %s", OperServ, from,
-		  "SetTime", "Length", "Mask", "Set By", "Reason");
+
+	if (method != SEARCH_NONE && (!search || strlen(search) == 0)) {
+		sSend(":%s NOTICE %s :Bad list parameters", OperServ, from);
+		return;
+	}
+
+	if (method == SEARCH_UMASK) {
+		umask = make_mask();
+
+		if (split_userhost(search, umask) < 0) {
+			free_mask(umask);
+
+			sSend(":%s NOTICE %s :Unable to read mask.", NickServ,
+			      from);
+			return;
+		}
+	}
+
 	for (ak = firstBanItem; ak; ak = ak->next) {
-		if (ak->type == type || ak->type == 0) {
+		if ((ak->type == type || ak->type == 0) &&
+		    ((method == SEARCH_UMASK &&
+		      match(umask->nick, ak->nick) == 0 &&
+		      match(umask->user, ak->user) == 0 &&
+		      match(umask->host, ak->host) == 0) ||
+		     (method == SEARCH_REASON &&
+		      match(search, ak->reason) == 0) ||
+		     (method == 0))) {
+
+			if (matched == 0)
+				sSend(":%s NOTICE %s :%-14s %-8s %-20s %-10s %s",
+				      OperServ, from, "SetTime", "Length",
+				      "Mask", "Set By", "Reason");
+
 			strcpy(mask, ak->nick);
 			strcat(mask, "!");
 			strcat(mask, ak->user);
@@ -222,9 +255,27 @@ void listAkills(char *from, char type)
 				 OperServ, from, t->tm_mon + 1, t->tm_mday,
 				 (t->tm_year % 100), t->tm_hour, t->tm_min, length, mask,
 				 ak->setby, ak->reason);
+			matched++;
+		}
+
+		total++;
+	}
+
+	if (method != SEARCH_NONE) {
+		if (matched > 0) {
+			sSend(":%s NOTICE %s :Matched %d/%d autokill/hurts",
+			      OperServ, from, matched, total);
+		} else {
+			sSend(":%s NOTICE %s :No autokills/hurts match",
+			      OperServ, from);
 		}
 	}
-	sSend(":%s NOTICE %s :End of list.", OperServ, from);
+
+	if (method == SEARCH_UMASK)
+		free_mask(umask);
+
+	if (method == SEARCH_NONE || matched > 0)
+		sSend(":%s NOTICE %s :End of list.", OperServ, from);
 }
 
 /**

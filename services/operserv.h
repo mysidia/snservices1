@@ -58,6 +58,14 @@ struct akill
 	int tid;						/*!< Id# of an associated timer */
 };
 
+/* Various search methods that are used by listAkills() */
+enum ak_search_method
+  {
+    SEARCH_NONE,	/* Do not search */
+    SEARCH_REASON,	/* Search by reason */
+    SEARCH_UMASK	/* Search by user mask */
+  };
+
 /**
  * ===DOC=== 
  * Straightforward I hope...simple AKill structure
