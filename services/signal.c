@@ -197,7 +197,7 @@ void sshutdown(int type)
 	}
 	else if (type == 0) {
 		sSend("SQUIT %s :Services %s shutdown", hostname, VERSION_NUM);
-		close(server);
+		if (server != -1) { close(server); }
 		exit(66);
 	}
 	else {
