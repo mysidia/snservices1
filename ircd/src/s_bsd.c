@@ -606,7 +606,7 @@ void	close_connection(aClient *cptr)
 		 */
 		aconf->hold = NOW;
 		aconf->hold += (aconf->hold - cptr->since > HANGONGOODLINK) ?
-				HANGONRETRYDELAY : ConfConFreq(aconf);
+				HANGONRETRYDELAY : aconf->class->connfreq;
 		if (nextconnect > aconf->hold)
 			nextconnect = aconf->hold;
 	    }

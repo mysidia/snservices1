@@ -1,61 +1,60 @@
-/************************************************************************
- *   IRC - Internet Relay Chat, include/class.h
- *   Copyright (C) 1990 Darren Reed
+/*
+ * Copyright (c) 2004, Onno Molenkamp
+ * All rights reserved.
  *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 1, or (at your option)
- *   any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the author nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	__class_include__
-#define __class_include__
+/*
+ * $Id$
+ */
 
-typedef struct Class {
-	int	class;
-	int	conFreq;
-	int	pingFreq;
-	int	maxLinks;
-	long	maxSendq;
-	int	links;
-	struct Class *next;
-} aClass;
+#ifndef CLASS_H
+#define CLASS_H
 
-#define	Class(x)	((x)->class)
-#define	ConFreq(x)	((x)->conFreq)
-#define	PingFreq(x)	((x)->pingFreq)
-#define	MaxLinks(x)	((x)->maxLinks)
-#define	MaxSendq(x)	((x)->maxSendq)
-#define	Links(x)	((x)->links)
+typedef struct class_t class;
 
-#define	ConfLinks(x)	(Class(x)->links)
-#define	ConfMaxLinks(x)	(Class(x)->maxLinks)
-#define	ConfClass(x)	(Class(x)->class)
-#define	ConfConFreq(x)	(Class(x)->conFreq)
-#define	ConfPingFreq(x)	(Class(x)->pingFreq)
-#define	ConfSendq(x)	(Class(x)->maxSendq)
+struct class_t
+{
+	char	*name;
+	int	connfreq;
+	int	pingfreq;
+	int	maxconns;
+	int	maxsendq;
+	int	maxchannels;
+	int	conns;
+	int	refs;
+	class	*next;
+};
 
-#define	FirstClass() 	classes
-#define	NextClass(x)	((x)->next)
+void class_init();
+class *class_get(char *name);
+void class_free(class *cl);
 
-extern	aClass	*classes;
+extern class *classlist;
 
-extern	aClass	*find_class(int);
-extern	int	get_conf_class(aConfItem *);
-extern	int	get_client_class(aClient *);
-extern	int	get_client_ping(aClient *);
-extern	int	get_con_freq(aClass *);
-extern	aClass	*add_class(int, int, int, int, long);
-extern	void	check_class(void);
-extern	void	initclass(void);
-
-#endif /* __class_include__ */
+#endif

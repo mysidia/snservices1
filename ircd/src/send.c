@@ -106,11 +106,11 @@ send_message(aClient *to, char *msg, int len)
 	if (IsDead(to))
 		return 0; /* This socket has already been marked as dead */
 
-	if (DBufLength(&to->sendQ) > get_sendq(to)) {
+	if (DBufLength(&to->sendQ) > (to->class == NULL ? MAXSENDQLENGTH : to->class->maxsendq)) {
 		if (IsServer(to))
 			sendto_ops("Max SendQ limit exceeded for %s: %d > %d",
 				   get_client_name(to, FALSE),
-				   DBufLength(&to->sendQ), get_sendq(to));
+				   DBufLength(&to->sendQ), (to->class == NULL ? MAXSENDQLENGTH : to->class->maxsendq));
 		return dead_link(to, "Max Sendq exceeded");
 	} else if (dbuf_put(&to->sendQ, msg, len) < 0)
 		return dead_link(to, "Buffer allocation error for %s");

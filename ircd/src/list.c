@@ -423,26 +423,6 @@ void	free_link(Link *lp)
 #endif
 }
 
-
-aClass	*make_class()
-{
-	aClass	*tmp;
-
-	tmp = irc_malloc(sizeof(aClass));
-#ifdef	DEBUGMODE
-	classs.inuse++;
-#endif
-	return tmp;
-}
-
-void	free_class(aClass *tmp)
-{
-	irc_free(tmp);
-#ifdef	DEBUGMODE
-	classs.inuse--;
-#endif
-}
-
 aConfItem	*make_conf()
 {
 	aConfItem *aconf;
@@ -464,7 +444,7 @@ aConfItem	*make_conf()
 	aconf->string5 = 0;
 	aconf->string6 = 0;
 	aconf->string7 = 0;
-	Class(aconf) = 0;
+	aconf->class = NULL;
 	return (aconf);
 }
 
@@ -487,6 +467,10 @@ delist_conf(aConfItem *aconf)
 void	free_conf(aConfItem *aconf)
 {
 	del_queries((char *)aconf);
+	if (aconf->class)
+	{
+		class_free(aconf->class);
+	}
 	irc_free(aconf->host);
 	if (aconf->passwd)
 		bzero(aconf->passwd, strlen(aconf->passwd));

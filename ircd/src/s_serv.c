@@ -978,12 +978,12 @@ static	void	report_configured_links(aClient *sptr, int mask)
 					sendto_one(sptr, rpl_str(p[1]), me.name,
 						sptr->name, c,  host,
 						name, oflag_list,
-						get_conf_class(tmp) );
+						tmp->class->name );
 			       else
 					sendto_one(sptr, rpl_str(p[1]), me.name,
 						sptr->name, c,  "*",
 						name, oflag_list,
-						get_conf_class(tmp) );
+						tmp->class->name );
 
 				continue;
 			}
@@ -1041,7 +1041,7 @@ static	void	report_configured_links(aClient *sptr, int mask)
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c,  host,
 					   buf, name, port,
-					   get_conf_class(tmp));
+					   tmp->class->name);
 			}
 			/* Only display on X if server is missing */
 			else if (mask == CONF_MISSING) {
@@ -1055,11 +1055,11 @@ static	void	report_configured_links(aClient *sptr, int mask)
 				      && tmp->status != CONF_CLIENT)))
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c, host, name, port,
-					   get_conf_class(tmp));
+					   tmp->class->name);
 				else
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c, "*", name, port,
-					   get_conf_class(tmp));
+					   tmp->class->name);
                                }
 		    }
 	return;
@@ -1229,7 +1229,6 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		report_configured_links(sptr, CONF_MISSING);
 		break;
 	case 'Y' : case 'y' :
-		report_classes(sptr);
 		break;
 	case 'Z' : case 'z' :
 		if (IsAnOper(sptr)) { 
@@ -1779,7 +1778,7 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	int	i;
 	aClient	*acptr;
-	aClass	*cltmp;
+	class	*cltmp;
 	char	*tname;
 	int	doall, link_s[MAXCONNECTIONS], link_u[MAXCONNECTIONS];
 	int	cnt = 0, wilds, dow;
@@ -1841,7 +1840,6 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	for (acptr = &me; acptr; acptr = acptr->lnext)
 	    {
 		char	*name;
-		int	class;
 
 /* More bits of code to allow opers to see all users on remote traces
  *		if (IsInvisible(acptr) && dow &&
@@ -1858,25 +1856,24 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			name = get_client_name(acptr,FALSE);
 		else
 			name = get_client_name_mask(acptr,FALSE,FALSE,TRUE);
-		class = get_client_class(acptr);
 
 		switch(acptr->status)
 		{
 		case STAT_CONNECTING:
 			sendto_one(sptr, rpl_str(RPL_TRACECONNECTING), me.name,
-				   parv[0], class, name);
+				   parv[0], acptr->class->name, name);
 			cnt++;
 			break;
 		case STAT_HANDSHAKE:
 			sendto_one(sptr, rpl_str(RPL_TRACEHANDSHAKE), me.name,
-				   parv[0], class, name);
+				   parv[0], acptr->class->name, name);
 			cnt++;
 			break;
 		case STAT_ME:
 			break;
 		case STAT_UNKNOWN:
 			sendto_one(sptr, rpl_str(RPL_TRACEUNKNOWN),
-				   me.name, parv[0], class, name);
+				   me.name, parv[0], acptr->class->name, name);
 			cnt++;
 			break;
 		case STAT_CLIENT:
@@ -1895,12 +1892,12 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					sendto_one(sptr,
 						   rpl_str(RPL_TRACEOPERATOR),
 						   me.name,
-						   parv[0], class, name,
+						   parv[0], acptr->class->name, name,
 						   now - acptr->lasttime);
 				else
 					sendto_one(sptr,rpl_str(RPL_TRACEUSER),
 						   me.name, parv[0],
-						   class, name,
+						   acptr->class->name, name,
 						   now - acptr->lasttime);
 				cnt++;
 			    }
@@ -1908,14 +1905,14 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		case STAT_SERVER:
 			if (acptr->serv->user)
 				sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-					   me.name, parv[0], class, link_s[acptr->sock->fd],
+					   me.name, parv[0], acptr->class->name, link_s[acptr->sock->fd],
 					   link_u[acptr->sock->fd], name, acptr->serv->by,
 					   acptr->serv->user->username,
 					   acptr->serv->user->host,
    					   now - acptr->lasttime);
 			else
 				sendto_one(sptr, rpl_str(RPL_TRACESERVER),
-					   me.name, parv[0], class, link_s[acptr->sock->fd],
+					   me.name, parv[0], acptr->class->name, link_s[acptr->sock->fd],
 					   link_u[acptr->sock->fd], name, *(acptr->serv->by) ?
 					   acptr->serv->by : "*", "*", me.name,
 					   now - acptr->lasttime);
@@ -1950,10 +1947,10 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			   0, me.name, "*", "*", me.name, 0);
 		return 0;
 	    }
-	for (cltmp = FirstClass(); doall && cltmp; cltmp = NextClass(cltmp))
-		if (Links(cltmp) > 0)
+	for (cltmp = classlist; doall && cltmp; cltmp = cltmp->next)
+		if (cltmp->conns > 0)
 			sendto_one(sptr, rpl_str(RPL_TRACECLASS), me.name,
-				   parv[0], Class(cltmp), Links(cltmp));
+				   parv[0], cltmp->name, cltmp->conns);
 	return 0;
     }
 

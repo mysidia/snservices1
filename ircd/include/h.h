@@ -75,7 +75,7 @@ char    *find_sup_zap(aClient *, int);
 int	find_restrict(aClient *);
 int	rehash(aClient *, aClient *, int);
 void	conf_init();
-aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp);
+aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int temp);
 
 extern	char	*network, *kline, *network_kline;
 
@@ -161,12 +161,10 @@ void	free_client(aClient *);
 void	free_link(Link *);
 void delist_conf(aConfItem *aconf);
 void	free_conf(aConfItem *);
-void	free_class(aClass *);
 void	free_user(anUser *, aClient *);
 Link	*make_link(void);
 anUser	*make_user(aClient *);
 aConfItem *make_conf(void);
-aClass	*make_class(void);
 aServer	*make_server(aClient *);
 aClient	*make_client(aClient *);
 Link	*find_user_link(Link *, aClient *);
@@ -175,15 +173,6 @@ char	*pretty_mask(char *, int);
 void	add_client_to_list(aClient *);
 void	remove_client_from_list(aClient *);
 void	initlists(void);
-
-aClass	*add_class(int, int, int, int, long);
-void	fix_class(aConfItem *, aConfItem *);
-long	get_sendq(aClient *);
-int	get_con_freq(aClass *);
-int	get_client_ping(aClient *);
-int	get_client_class(aClient *);
-int	get_conf_class(aConfItem *);
-void	report_classes(aClient *);
 
 struct	HostEnt	*get_res(char *);
 

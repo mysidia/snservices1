@@ -72,7 +72,7 @@ void	det_confs_butmask(aClient *cptr, int mask)
  */
 aConfItem *
 add_temp_conf(unsigned int status, char *host, char *passwd, char *name,
-	      int port, int class, int temp)
+	      int port, int temp)
 {
 	aConfItem *aconf;
 	aConfItem *new_conf = NULL;
@@ -89,8 +89,6 @@ add_temp_conf(unsigned int status, char *host, char *passwd, char *name,
 		aconf->name = irc_strdup(name);
 
 	aconf->port = port;
-	if (class)
-		Class(aconf) = find_class(class);
 	if (!find_temp_conf_entry(aconf, status)) {
 		aconf->next = conf;
 		conf = aconf;
@@ -107,7 +105,7 @@ add_temp_conf(unsigned int status, char *host, char *passwd, char *name,
 /*
  * delete a temporary conf line.  *only* temporary conf lines may be deleted.
  */
-int del_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, unsigned int akill)
+int del_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, unsigned int akill)
 {
 	aConfItem	*aconf, *bconf;
 	u_int	mask, result = KLINE_DEL_ERR;
@@ -122,8 +120,6 @@ int del_temp_conf(unsigned int status, char *host, char *passwd, char *name, int
 	if(name)
 		aconf->name = irc_strdup(name);
 	aconf->port = port;
-	if(class)
-		Class(aconf) = find_class(class);
         if (status & CONF_AHURT) mask = status &= ~(CONF_ILLEGAL);
 	else if (status & CONF_ZAP) mask = CONF_ZAP;
 	else                     mask = CONF_KILL;
@@ -243,33 +239,36 @@ int	detach_conf(aClient *cptr, aConfItem *aconf)
 
 	lp = &(cptr->confs);
 
+	if (cptr->class == aconf->class)
+	{
+		cptr->class = NULL;
+	}
+
 	while (*lp)
-	    {
-		if ((*lp)->value.aconf == aconf)
-		    {
-			if ((aconf) && (Class(aconf)))
-			    {
-				if (aconf->status & CONF_CLIENT_MASK)
-					if (ConfLinks(aconf) > 0)
-						--ConfLinks(aconf);
-       				if (ConfMaxLinks(aconf) == -1 &&
-				    ConfLinks(aconf) == 0)
-		 		    {
-					free_class(Class(aconf));
-					Class(aconf) = NULL;
-				    }
-			     }
+	{
+		tmp = *lp;
+		if (tmp->value.aconf == aconf)
+		{
+			if (aconf->class != NULL)
+			{
+				aconf->class->conns--;
+				class_free(aconf->class);
+			}
 			if (aconf && !--aconf->clients && IsIllegal(aconf))
 				free_conf(aconf);
-			tmp = *lp;
 			*lp = tmp->next;
 			free_link(tmp);
-			return 0;
-		    }
+		}
 		else
+		{
+			if (cptr->class == NULL)
+			{
+				cptr->class = tmp->value.aconf->class;
+			}
 			lp = &((*lp)->next);
-	    }
-	return -1;
+		}
+	}
+	return 0;
 }
 
 static int is_attached(aConfItem *aconf, aClient *cptr)
@@ -299,15 +298,19 @@ int	attach_conf(aClient *cptr, aConfItem *aconf)
 	if (IsIllegal(aconf))
 		return -1;
 	if ((aconf->status & (CONF_LOCOP | CONF_OPERATOR | CONF_CLIENT)) &&
-	    aconf->clients >= ConfMaxLinks(aconf) && ConfMaxLinks(aconf) > 0)
+	    aconf->clients >= aconf->class->maxconns && aconf->class->maxconns > 0)
 		return -3;	/* Use this for printing error message */
 	lp = make_link();
 	lp->next = cptr->confs;
 	lp->value.aconf = aconf;
 	cptr->confs = lp;
 	aconf->clients++;
-	if (aconf->status & CONF_CLIENT_MASK)
-		ConfLinks(aconf)++;
+	if (aconf->class != NULL)
+	{
+		cptr->class = aconf->class;
+		cptr->class->conns++;
+		cptr->class->refs++;
+	}
 	return 0;
 }
 
@@ -411,7 +414,7 @@ aConfItem *find_conf_exact(char *name, char *user, char *host, int statmask)
 			continue;
 		if (tmp->status & (CONF_OPERATOR|CONF_LOCOP))
 		    {
-			if (tmp->clients < MaxLinks(Class(tmp)))
+			if (tmp->clients < tmp->class->maxconns)
 				return tmp;
 			else
 				continue;
@@ -748,7 +751,6 @@ static CONF_HANDLER(conf_listener)
 		{
 			aconf->name = irc_strdup(tmp);
 		}
-		Class(aconf) = find_class(0);
 
 		n->data = add_listener(aconf);
 
@@ -773,6 +775,7 @@ static CONF_HANDLER(conf_client)
 {
 	aConfItem	*aconf;
 	char	*amask, *dmask, *password, *class;
+
 	if (n->status != CONFIG_OK)
 	{
 		amask = config_get_string(n, "address-mask");
@@ -780,7 +783,8 @@ static CONF_HANDLER(conf_client)
 		password = config_get_string(n, "password");
 		class = config_get_string(n, "class");
 
-		if (amask == NULL || dmask == NULL || class == NULL)
+		if (amask == NULL || dmask == NULL || class == NULL
+			|| class_get(class) == NULL)
 		{
 			return CONFIG_BAD;
 		}
@@ -793,7 +797,7 @@ static CONF_HANDLER(conf_client)
 			aconf->passwd = irc_strdup(password);
 		}
 		aconf->name = irc_strdup(dmask);
-		Class(aconf) = find_class(class == NULL?0:atoi(class));
+		aconf->class = class_get(class);
 		n->data = aconf;
 		aconf->next = conf;
 		conf = aconf;
@@ -824,7 +828,9 @@ static CONF_HANDLER(conf_server)
 		services = config_get_string(n, "services");
 		ssl = config_get_string(n, "ssl");
 
-		if (name == NULL || ((address == NULL || password == NULL || class == NULL) && services == NULL))
+		if (name == NULL || ((address == NULL || password == NULL
+			|| class == NULL || class_get(class) == NULL)
+			&& services == NULL))
 		{
 			return CONFIG_BAD;
 		}
@@ -837,7 +843,7 @@ static CONF_HANDLER(conf_server)
 			aconf->host = irc_strdup(address);
 			aconf->passwd = irc_strdup(password);
 			aconf->name = irc_strdup(name);
-			Class(aconf) = find_class(class == NULL?0:atoi(class));
+			aconf->class = class_get(class);
 			lookup_confhost(aconf);
 			aconf->next = conf;
 			conf = aconf;
@@ -858,7 +864,7 @@ static CONF_HANDLER(conf_server)
 				{
 					aconf->string4 = irc_strdup(ssl);
 				}
-				Class(aconf) = find_class(class == NULL?0:atoi(class));
+				aconf->class = class_get(class);
 				lookup_confhost(aconf);
 				aconf->next = conf;
 				conf = aconf;
@@ -899,36 +905,6 @@ static CONF_HANDLER(conf_server)
 	return CONFIG_OK;
 }
 
-static CONF_HANDLER(conf_class)
-{
-	aClass	*class;
-	char	*name, *pingfreq, *connfreq, *maxconn, *sendqueue;
-
-	if (n->status != CONFIG_OK)
-	{
-		name = config_get_string(n, "name");
-		if (name == NULL)
-		{
-			return CONFIG_BAD;
-		}
-		pingfreq = config_get_string(n, "ping-frequency");
-		connfreq = config_get_string(n, "connect-frequency");
-		maxconn = config_get_string(n, "max-connections");
-		sendqueue = config_get_string(n, "send-queue");
-		n->data = add_class((name == NULL?0:atoi(name)),
-			(pingfreq == NULL?0:atoi(pingfreq)),
-			(connfreq == NULL?0:atoi(connfreq)),
-			(maxconn == NULL?0:atoi(maxconn)),
-			(sendqueue == NULL?0:atoi(sendqueue)));
-	}
-	else
-	{
-		class = (aClass *) n->data;
-		MaxLinks(class) = -1;
-	}
-	return CONFIG_OK;
-}
-
 static CONF_HANDLER(conf_operator)
 {
 	aConfItem	*aconf;
@@ -944,7 +920,8 @@ static CONF_HANDLER(conf_operator)
 		class = config_get_string(n, "class");
 		flags = config_get_string(n, "flags");
 
-		if (nick == NULL || mask == NULL || password == NULL)
+		if (nick == NULL || mask == NULL || password == NULL
+			|| class == NULL || class_get(class) == NULL)
 		{
 			return CONFIG_BAD;
 		}
@@ -954,7 +931,7 @@ static CONF_HANDLER(conf_operator)
 		aconf->host = irc_strdup(mask);
 		aconf->passwd = irc_strdup(password);
 		aconf->name = irc_strdup(nick);
-		Class(aconf) = find_class(class == NULL?0:atoi(class));
+		aconf->class = class_get(class);
 
 		for (m = (*flags) ? flags : m; *m; m++)
 		{
@@ -1011,7 +988,6 @@ void conf_init()
 	config_monitor("server", conf_server, CONFIG_LIST);
 	config_monitor("client", conf_client, CONFIG_LIST);
 	config_monitor("operator", conf_operator, CONFIG_LIST);
-	config_monitor("class", conf_class, CONFIG_LIST);
 	config_monitor("config", conf_me, CONFIG_SINGLE);
 
 	network = irc_strdup(net);
@@ -1455,10 +1431,10 @@ int     m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 #ifndef COMMENT_IS_FILE
                 	del_temp_conf(CONF_KILL, parv[1], parv[3], 
-				parv[2], 0, 0, 1); 
+				parv[2], 0, 1); 
 #else
                 	del_temp_conf(CONF_KILL, parv[1], NULL,
-				parv[2], 0, 0, 1);
+				parv[2], 0, 1);
 #endif
 		}
                 if(parv[3])
@@ -1498,9 +1474,9 @@ int	m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 
 #ifndef COMMENT_IS_FILE
-	 		temp_conf = add_temp_conf(CONF_KILL, parv[1], parv[3], parv[2], 0, 0, 2); 
+	 		temp_conf = add_temp_conf(CONF_KILL, parv[1], parv[3], parv[2], 0, 2); 
 #else
-			temp_conf = add_temp_conf(CONF_KILL, parv[1], NULL, parv[2], 0, 0, 2); 
+			temp_conf = add_temp_conf(CONF_KILL, parv[1], NULL, parv[2], 0, 2); 
 #endif
 		}
 		if(parv[3])
@@ -1539,7 +1515,7 @@ int     m_rahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
                return 0;
 
                 	del_temp_conf(CONF_AHURT, parv[1], NULL, 
-				parv[2], 0, 0, 1); 
+				parv[2], 0, 1); 
 
                 if(parv[3])
                         sendto_serv_butone(cptr, ":%s RAHURT %s %s :%s", 
@@ -1571,7 +1547,7 @@ int	m_ahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if (!IsULine(cptr, sptr))
                  return 0;
-		add_temp_conf(CONF_AHURT, parv[1], parv[3], parv[2], 0, 0, KLINE_AKILL); 
+		add_temp_conf(CONF_AHURT, parv[1], parv[3], parv[2], 0, KLINE_AKILL); 
 		if(parv[3])
 			sendto_serv_butone(cptr, ":%s AHURT %s %s :%s", parv[0],
 				     parv[1], parv[2], parv[3]);
@@ -1685,7 +1661,7 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 
 	sendto_ops("%s added a temp k:line for %s@%s %s", parv[0], name, uhost, parv[2] ? parv[2] : "");
- 	temp_conf = add_temp_conf(CONF_KILL, uhost, parv[2], name, 0, 0, 1);
+ 	temp_conf = add_temp_conf(CONF_KILL, uhost, parv[2], name, 0, 1);
 	check_pings(NOW, 1, temp_conf);
         return 0;
     }
@@ -1729,7 +1705,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0;
 		}
 		result = del_temp_conf(CONF_KILL, host, NULL, name, 
-			0, 0, 0);
+			0, 0);
 		if (result == KLINE_RET_AKILL) {	/* akill - result = 3 */
 			sendto_one(sptr, "NOTICE %s :You may not remove autokills.  Only U:lined clients may.", parv[0]);
 			return 0;
@@ -1872,7 +1848,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    sendto_ops("%s added a temp z:line for %s (*@%s) [%s]", parv[0], person, userhost, reason?reason:"");
 	  else
 	    sendto_ops("%s added a temp z:line *@%s [%s]", parv[0], userhost, reason?reason:"");
-	  add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_TEMP); 
+	  add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, KLINE_TEMP); 
         }
 	else
 	 {
@@ -1880,7 +1856,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:network , reason?reason:"");
 	 else
 	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:network , reason?reason:"");
-	 add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
+	 add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, KLINE_AKILL); 
         }
 
                                            /* something's wrong if i'm
@@ -2023,7 +1999,7 @@ retry_unzline:
 
         if (uline == 0)
         {
-           result = del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, akill);
+           result = del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, akill);
 	  if ((result) == KLINE_RET_DELOK)
           {
    	      sendto_one(sptr,":%s NOTICE %s :temp z:line *@%s removed", me.name, parv[0], userhost);
@@ -2048,8 +2024,8 @@ retry_unzline:
         else    
         {      /* services did it, services should be able to remove
                   both types...;> */
-	  if (del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, 1) == KLINE_RET_DELOK||
-              del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, 0) == KLINE_RET_DELOK)
+	  if (del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 1) == KLINE_RET_DELOK||
+              del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0) == KLINE_RET_DELOK)
           {
               if (MyClient(sptr))
    	      sendto_one(sptr,"NOTICE %s :temp z:line *@%s removed", parv[0], userhost);
