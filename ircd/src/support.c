@@ -33,7 +33,7 @@ static  char sccsid[] = "@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner;\
 #ifdef _WIN32
 #include <io.h>
 #else
-
+#include <sys/socket.h>
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
 #endif
 extern	void	outofmemory();
@@ -132,6 +132,20 @@ char *strerror(int err_no)
 
 #endif /* NEED_STRERROR */
 
+int addr_cmp(const anAddress *a1, const anAddress *a2)
+{
+	if (a1->addr_family != a2->addr_family)
+		return 1;
+	switch (a1->addr_family)
+	{
+		case AF_INET:
+			return bcmp(&a1->in.sin_addr, &a2->in.sin_addr, sizeof(struct in_addr));
+		case AF_INET6:
+			return bcmp(&a1->in6.sin6_addr, &a2->in6.sin6_addr, sizeof(struct in6_addr));
+	}
+	return 1;
+}
+
 /*
 **	inetntoa  --	changed name to remove collision possibility and
 **			so behaviour is gaurunteed to take a pointer arg.
@@ -142,18 +156,34 @@ char *strerror(int err_no)
 **	inet_ntoa --	its broken on some Ultrix/Dynix too. -avalon
 */
 
-char	*inetntoa(char *in)
+char	*inetntoa(const anAddress *addr)
 {
-	static	char	buf[16];
-	u_char	*s = (u_char *)in;
+	static	char	buf[40];
+	u_char	*s;
 	int	a,b,c,d;
 
-	a = (int)*s++;
-	b = (int)*s++;
-	c = (int)*s++;
-	d = (int)*s++;
-	(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
-
+	switch (addr->addr_family)
+	{
+		case AF_INET:
+			s = (u_char *)&addr->in.sin_addr;
+			a = (int)*s++;
+			b = (int)*s++;
+			c = (int)*s++;
+			d = (int)*s++;
+			(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
+			break;
+		case AF_INET6:
+			sprintf(buf, "%x:%x:%x:%x:%x:%x:%x:%x",
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[0]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[2]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[4]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[6]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[8]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[10]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[12]),
+				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[14]));
+			break;
+	}
 	return buf;
 }
 

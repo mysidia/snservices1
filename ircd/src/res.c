@@ -37,7 +37,7 @@ extern	int	errno, h_errno;
 extern	int	highest_fd;
 extern	aClient	*local[];
 
-static	char	hostbuf[HOSTLEN+1];
+static	char	hostbuf[HOSTLEN+64]; /* must be at least 73 bytes for IPv6 addresses --Onno */
 static	char	dot[] = ".";
 static	int	incache = 0;
 static	CacheTable	hashtable[ARES_CACSIZE];
@@ -46,19 +46,19 @@ static	ResRQ	*last, *first;
 
 static	void	rem_cache PROTO((aCache *));
 static	void	rem_request PROTO((ResRQ *));
-static	int	do_query_name PROTO((Link *, char *, ResRQ *));
-static	int	do_query_number PROTO((Link *, struct in_addr *, ResRQ *));
+static	int	do_query_name PROTO((Link *, char *, int, ResRQ *));
+static	int	do_query_number PROTO((Link *, anAddress *, ResRQ *));
 static	void	resend_query PROTO((ResRQ *));
 static	int	proc_answer PROTO((ResRQ *, HEADER *, char *, char *));
 static	int	query_name PROTO((char *, int, int, ResRQ *));
 static	aCache	*make_cache PROTO((ResRQ *));
 static	aCache	*find_cache_name PROTO((char *));
-static	aCache	*find_cache_number PROTO((ResRQ *, char *));
+static	aCache	*find_cache_number PROTO((ResRQ *, anAddress *));
 static	int	add_request PROTO((ResRQ *));
 static	ResRQ	*make_request PROTO((Link *));
 static	int	send_res_msg PROTO((char *, int, int));
 static	ResRQ	*find_id PROTO((int));
-static	int	hash_number PROTO((unsigned char *));
+static	int	hash_number PROTO((anAddress *));
 static	void	update_list PROTO((ResRQ *, aCache *));
 static	int	hash_name PROTO((char *));
 
@@ -226,13 +226,11 @@ Link	*lp;
 		bzero((char *)&nreq->cinfo, sizeof(Link));
 	nreq->timeout = 4;	/* start at 4 and exponential inc. */
 #ifndef _WIN32
-	nreq->he.h_addrtype = AF_INET;
 	nreq->he.h_name = NULL;
 	nreq->he.h_aliases[0] = NULL;
 #else
-	nreq->he = (struct hostent *)MyMalloc(MAXGETHOSTSTRUCT);
+	nreq->he = (struct HostEnt *)MyMalloc(MAXGETHOSTSTRUCT);
 	bzero((char *)nreq->he, MAXGETHOSTSTRUCT);
-	nreq->he->h_addrtype = AF_INET;
 	nreq->he->h_name = NULL;
 #endif
 	(void)add_request(nreq);
@@ -384,8 +382,9 @@ int	id;
 	return NULL;
 }
 
-struct	hostent	*gethost_byname(name, lp)
+struct	HostEnt	*gethost_byname(name, af, lp)
 char	*name;
+int	af;
 Link	*lp;
 {
 	aCache	*cp;
@@ -393,18 +392,18 @@ Link	*lp;
 	reinfo.re_na_look++;
 	if ((cp = find_cache_name(name)))
 #ifndef _WIN32
-		return (struct hostent *)&(cp->he);
+		return (struct HostEnt *)&(cp->he);
 #else
-		return (struct hostent *)cp->he;
+		return (struct HostEnt *)cp->he;
 #endif
 	if (!lp)
 		return NULL;
-	(void)do_query_name(lp, name, NULL);
+	(void)do_query_name(lp, name, af, NULL);
 	return NULL;
 }
 
-struct	hostent	*gethost_byaddr(addr, lp)
-char	*addr;
+struct	HostEnt	*gethost_byaddr(addr, lp)
+anAddress	*addr;
 Link	*lp;
 {
 	aCache	*cp;
@@ -412,19 +411,20 @@ Link	*lp;
 	reinfo.re_nu_look++;
 	if ((cp = find_cache_number(NULL, addr)))
 #ifndef _WIN32
-		return (struct hostent *)&(cp->he);
+		return (struct HostEnt *)&(cp->he);
 #else
-		return (struct hostent *)cp->he;
+		return (struct HostEnt *)cp->he;
 #endif
 	if (!lp)
 		return NULL;
-	(void)do_query_number(lp, (struct in_addr *)addr, NULL);
+	(void)do_query_number(lp, addr, NULL);
 	return NULL;
 }
 
-static	int	do_query_name(lp, name, rptr)
+static	int	do_query_name(lp, name, af, rptr)
 Link	*lp;
 char	*name;
+int	af;
 ResRQ	*rptr;
 {
 #ifndef _WIN32
@@ -448,12 +448,26 @@ ResRQ	*rptr;
 	if (!rptr)
 	    {
 		rptr = make_request(lp);
-		rptr->type = T_A;
+		switch (af)
+		{
+			case AF_INET:
+				rptr->type = T_A;
+				break;
+			case AF_INET6:
+				rptr->type = T_AAAA;
+				break;
+		}
 		rptr->name = (char *)MyMalloc(strlen(name) + 1);
 		(void)strcpy(rptr->name, name);
 	    }
 #ifndef _WIN32
-	return (query_name(hname, C_IN, T_A, rptr));
+	switch (af)
+	{
+		case AF_INET:
+			return (query_name(hname, C_IN, T_A, rptr));
+		case AF_INET6:
+			return (query_name(hname, C_IN, T_AAAA, rptr));
+	}
 #else
 
 	rptr->id = _beginthread(async_dns, 0, (void *)rptr);
@@ -467,29 +481,42 @@ ResRQ	*rptr;
  */
 static	int	do_query_number(lp, numb, rptr)
 Link	*lp;
-struct	in_addr	*numb;
+anAddress	*numb;
 ResRQ	*rptr;
 {
 #ifndef _WIN32
-	char	ipbuf[32];
-	u_char	*cp;
+	char	ipbuf[73];
+	u_char	*cp, *cp2;
 
-	cp = (u_char *)&numb->s_addr;
-	(void)sprintf(ipbuf,"%u.%u.%u.%u.in-addr.arpa.",
-		(u_int)(cp[3]), (u_int)(cp[2]),
-		(u_int)(cp[1]), (u_int)(cp[0]));
+	switch (numb->addr_family)
+	{
+		case AF_INET:
+			cp = (u_char *)&numb->in.sin_addr.s_addr;
+			(void)sprintf(ipbuf,"%u.%u.%u.%u.in-addr.arpa.",
+				(u_int)(cp[3]), (u_int)(cp[2]),
+				(u_int)(cp[1]), (u_int)(cp[0]));
+			break;
+		case AF_INET6:
+			cp = (u_char *)&numb->in6.sin6_addr.s6_addr[15];
+			cp2 = (u_char *)ipbuf;
+			while (cp >= &numb->in6.sin6_addr.s6_addr[0])
+			{
+				sprintf(cp2, "%x.%x.",(*cp & 0xf),(*cp >> 4));
+				cp--;
+				cp2++; cp2++; cp2++; cp2++;
+			}
+			sprintf(cp2,"ip6.int.");
+			break;
+	}
 #endif
 	if (!rptr)
 	    {
 		rptr = make_request(lp);
 		rptr->type = T_PTR;
-		rptr->addr.s_addr = numb->s_addr;
+		bcopy((char *)numb, (char *)&rptr->addr, sizeof(anAddress));
 #ifndef _WIN32
-		bcopy((char *)&numb->s_addr,
-			(char *)&rptr->he.h_addr, sizeof(struct in_addr));
-		rptr->he.h_length = sizeof(struct in_addr);
-#else
-		rptr->he->h_length = sizeof(struct in_addr);
+		bcopy((char *)numb,
+			(char *)&rptr->he.h_addr, sizeof(anAddress));
 #endif
 	    }
 #ifndef _WIN32
@@ -564,8 +591,10 @@ ResRQ	*rptr;
 		(void)do_query_number(NULL, &rptr->addr, rptr);
 		break;
 	case T_A:
-		(void)do_query_name(NULL, rptr->name, rptr);
+		(void)do_query_name(NULL, rptr->name, AF_INET, rptr);
 		break;
+	case T_AAAA:
+		(void)do_query_name(NULL, rptr->name, AF_INET6, rptr);
 	default:
 		break;
 	}
@@ -583,12 +612,12 @@ HEADER	*hptr;
 	char	*cp, **alias;
 	struct	hent	*hp;
 	int	class, type, dlen, len, ans = 0, n;
-	struct	in_addr	dr, *adr;
+	anAddress	dr, *adr;
 
 	cp = buf + sizeof(HEADER);
 	hp = (struct hent *)&(rptr->he);
 	adr = &hp->h_addr;
-	while (adr->s_addr)
+	while (adr->addr_family)
 		adr++;
 	alias = hp->h_aliases;
 	while (*alias)
@@ -636,22 +665,42 @@ HEADER	*hptr;
 		switch(type)
 		{
 		case T_A :
-			hp->h_length = dlen;
-			if (ans == 1)
-				hp->h_addrtype =  (class == C_IN) ?
-							AF_INET : AF_UNSPEC;
-
                                  /* from Christophe Kalt <kalt@stealth.net> */
-                                 if (dlen != sizeof(dr)) {
+                                 if (dlen != sizeof(struct in_addr)) {
                                                 sendto_realops("Bad IP length (%d) returned for %s",
                                                                dlen, hostbuf);
                                                 Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
                                                 return(-2);
                                  }
-                        memcpy((char *)&dr, cp, sizeof(dr));
-			adr->s_addr = dr.s_addr;
+			memcpy((char *)&dr.in.sin_addr, cp, sizeof(struct in_addr));
+			adr->in.sin_addr = dr.in.sin_addr;
+			dr.addr_family = AF_INET;
+			adr->addr_family = AF_INET;
 			Debug((DEBUG_INFO,"got ip # %s for %s",
-				inetntoa((char *)adr), hostbuf));
+				inetntoa(adr), hostbuf));
+			if (!hp->h_name)
+			    {
+				hp->h_name =(char *)MyMalloc(len+1);
+				(void)strcpy(hp->h_name, hostbuf);
+			    }
+			ans++;
+			adr++;
+			cp += dlen;
+ 			break;
+		case T_AAAA:
+                                 /* from Christophe Kalt <kalt@stealth.net> */
+                                 if (dlen != sizeof(struct in6_addr)) {
+                                                sendto_realops("Bad IP length (%d) returned for %s",
+                                                               dlen, hostbuf);
+                                                Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
+                                                return(-2);
+                                 }
+			memcpy((char *)&dr.in6.sin6_addr, cp, sizeof(struct in6_addr));
+			memcpy((char *)&adr->in6.sin6_addr, cp, sizeof(struct in6_addr));
+			dr.addr_family = AF_INET6;
+			adr->addr_family = AF_INET6;
+			Debug((DEBUG_INFO,"got ip # %s for %s",
+				inetntoa(adr), hostbuf));
 			if (!hp->h_name)
 			    {
 				hp->h_name =(char *)MyMalloc(len+1);
@@ -720,7 +769,7 @@ HEADER	*hptr;
  * read a dns reply from the nameserver and process it.
  * UNIX version.
  */
-struct	hostent	*get_res(lp)
+struct	HostEnt	*get_res(lp)
 char	*lp;
 {
 	static	char	buf[sizeof(HEADER) + MAXPACKET];
@@ -819,20 +868,20 @@ char	*lp;
 #endif
 	if (a && rptr->type == T_PTR)
 	    {
-		struct	hostent	*hp2 = NULL;
+		struct	Hostent	*hp2 = NULL;
 
                 if (rptr->he.h_name == NULL)
                     goto getres_err;
 
 		Debug((DEBUG_DNS, "relookup %s <-> %s",
-			rptr->he.h_name, inetntoa((char *)&rptr->he.h_addr)));
+			rptr->he.h_name, inetntoa(&rptr->he.h_addr)));
 		/*
 		 * Lookup the 'authoritive' name that we were given for the
 		 * ip#.  By using this call rather than regenerating the
 		 * type we automatically gain the use of the cache with no
 		 * extra kludges.
 		 */
-		if ((hp2 = gethost_byname(rptr->he.h_name, &rptr->cinfo)))
+		if ((hp2 = gethost_byname(rptr->he.h_name, rptr->addr.addr_family, &rptr->cinfo)))
 			if (lp)
 				bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
 		/*
@@ -868,7 +917,7 @@ char	*lp;
 	else
 		if (!rptr->sent)
 			rem_request(rptr);
-	return cp ? (struct hostent *)&cp->he : NULL;
+	return cp ? (struct HostEnt *)&cp->he : NULL;
 
 getres_err:
 	/*
@@ -896,7 +945,7 @@ getres_err:
 			bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
 	    }
 
-	return (struct hostent *)NULL;
+	return (struct HostEnt *)NULL;
 }
 
 #else
@@ -904,12 +953,12 @@ getres_err:
  * read a dns reply from the nameserver and process it.
  * WIN32 version.
  */
-struct	hostent	*get_res(lp, id)
+struct	HostEnt	*get_res(lp, id)
 char	*lp;
 long   id;
 {
 
-	struct hostent	*he;
+	struct HostEnt	*he;
 	ResRQ	*rptr = NULL;
 	aCache	*cp;
 
@@ -934,7 +983,7 @@ long   id;
 		char	tempname[120];
 		int	i;
 		long	amt;
-		struct	hostent	*hp, *he = rptr->he;
+		struct	HostEnt	*hp, *he = rptr->he;
 
 		strcpy(tempname, he->h_name);
 		hp = gethostbyname(tempname);
@@ -952,27 +1001,42 @@ long   id;
 #endif
 	rptr->locked = 0;
 	rem_request(rptr);
-	return cp ? (struct hostent *)cp->he : NULL;
+	return cp ? (struct HostEnt *)cp->he : NULL;
 
 getres_err:
 	if (lp && rptr)
 		bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
 
-	return (struct hostent *)NULL;
+	return (struct HostEnt *)NULL;
 }
 
 #endif /* _WIN32 */
 
 static	int	hash_number(ip)
-unsigned char *ip;
+anAddress *ip;
 {
+	char *p4;
+	int *p6;
 	u_int	hashv = 0;
 
-	/* could use loop but slower */
-	hashv += (int)*ip++;
-	hashv += hashv + (int)*ip++;
-	hashv += hashv + (int)*ip++;
-	hashv += hashv + (int)*ip++;
+	switch (ip->addr_family)
+	{
+		case AF_INET:
+			/* could use loop but slower */
+			p4 = (char *)&ip->in.sin_addr;
+			hashv = (int)*p4++;
+			hashv += hashv + (int)*p4++;
+			hashv += hashv + (int)*p4++;
+			hashv += hashv + (int)*p4;
+			break;
+		case AF_INET6:
+			p6 = (int *)&ip->in6.sin6_addr;
+			hashv = *p6++;
+			hashv += hashv + *p6++;
+			hashv += hashv + *p6++;
+			hashv += hashv + *p6;
+			break;
+	}
 	hashv %= ARES_CACSIZE;
 	return (hashv);
 }
@@ -1015,9 +1079,9 @@ aCache	*ocp;
 	hashtable[hashv].name_list = ocp;
 
 #ifndef _WIN32
-	hashv = hash_number((u_char *)ocp->he.h_addr);
+	hashv = hash_number((anAddress *)ocp->he.h_addr);
 #else
-	hashv = hash_number((u_char *)ocp->he->h_addr);
+	hashv = hash_number((anAddress *)ocp->he->h_addr);
 #endif
 	ocp->hnum_next = hashtable[hashv].num_list;
 	hashtable[hashv].num_list = ocp;
@@ -1131,11 +1195,11 @@ aCache	*cachep;
 	/*
 	 * Do the same again for IP#'s.
 	 */
-	for (s = (char *)&rptr->he.h_addr.s_addr;
-	     ((struct in_addr *)s)->s_addr; s += sizeof(struct in_addr))
+	for (s = (char *)&rptr->he.h_addr;
+	     ((anAddress *)s)->addr_family; s += sizeof(anAddress))
 	    {
-		for (i = 0; (t = cp->he.h_addr_list[i]); i++)
-			if (!bcmp(s, t, sizeof(struct in_addr)))
+		for (i = 0; (t = (char *)cp->he.h_addr_list[i]); i++)
+			if (!addr_cmp((anAddress *) s, (anAddress *) t))
 				break;
 		if (i >= MAXADDRS || addrcount >= MAXADDRS)
 			break;
@@ -1149,13 +1213,13 @@ aCache	*cachep;
 		 */
 		if (!t)
 		    {
-			base = cp->he.h_addr_list;
+			base = (char **)cp->he.h_addr_list;
 			addrcount++;
 			t = (char *)MyRealloc(*base,
-					addrcount * sizeof(struct in_addr));
+					addrcount * sizeof(anAddress));
 			base = (char **)MyRealloc((char *)base,
 					(addrcount + 1) * sizeof(char *));
-			cp->he.h_addr_list = base;
+			cp->he.h_addr_list = (anAddress**) base;
 #ifdef	DEBUG
 			Debug((DEBUG_DNS,"u_l:add IP %x hal %x ac %d",
 				ntohl(((struct in_addr *)s)->s_addr),
@@ -1165,10 +1229,10 @@ aCache	*cachep;
 			for (; addrcount; addrcount--)
 			    {
 				*base++ = t;
-				t += sizeof(struct in_addr);
+				t += sizeof(anAddress);
 			    }
 			*base = NULL;
-			bcopy(s, *--base, sizeof(struct in_addr));
+			bcopy(s, *--base, sizeof(anAddress));
 		    }
 	    }
 #endif /*_WIN32*/
@@ -1236,31 +1300,29 @@ char	*name;
  */
 static	aCache	*find_cache_number(rptr, numb)
 ResRQ	*rptr;
-char	*numb;
+anAddress	*numb;
 {
 	aCache	*cp;
 	int	hashv,i;
 #ifdef	DEBUG
-	struct	in_addr	*ip = (struct in_addr *)numb;
+	anAddress	*ip = numb;
 #endif
 
-	hashv = hash_number((u_char *)numb);
+	hashv = hash_number(numb);
 
 	cp = hashtable[hashv].num_list;
 #ifdef DEBUG
-	Debug((DEBUG_DNS,"find_cache_number:find %s[%08x]: hashv = %d",
-		inetntoa(numb), ntohl(ip->s_addr), hashv));
+	Debug((DEBUG_DNS,"find_cache_number:find %s: hashv = %d",
+		inetntoa(numb), hashv));
 #endif
 
 	for (; cp; cp = cp->hnum_next)
 #ifndef _WIN32
 		for (i = 0; cp->he.h_addr_list[i]; i++)
-			if (!bcmp(cp->he.h_addr_list[i], numb,
-				  sizeof(struct in_addr)))
+			if (!addr_cmp(cp->he.h_addr_list[i], numb))
 #else
 		for (i = 0; cp->he->h_addr_list && cp->he->h_addr_list[i]; i++)
-			if (!bcmp(cp->he->h_addr_list[i], numb,
-				  sizeof(struct in_addr)))
+			if (!addr_cmp(cp->he->h_addr_list[i], numb))
 #endif
 			    {
 				cainfo.ca_nu_hits++;
@@ -1285,17 +1347,17 @@ char	*numb;
 		 * are looking for, its been done already.
 		 */
 #ifndef _WIN32
-		if (hashv == hash_number((u_char *)cp->he.h_addr_list[0]))
+		if (hashv == hash_number(cp->he.h_addr_list[0]))
 			continue;
 		for (i = 1; cp->he.h_addr_list[i]; i++)
 			if (!bcmp(cp->he.h_addr_list[i], numb,
-				  sizeof(struct in_addr)))
+				  sizeof(anAddress)))
 #else
 		if (hashv == hash_number((u_char *)cp->he->h_addr_list[0]))
  			continue;
 		for (i = 1; cp->he->h_addr_list && cp->he->h_addr_list[i]; i++)
 			if (!bcmp(cp->he->h_addr_list[i], numb,
-				  sizeof(struct in_addr)))
+				  sizeof(anAddress)))
 #endif
 			    {
 				cainfo.ca_nu_hits++;
@@ -1311,14 +1373,14 @@ ResRQ	*rptr;
 {
 	aCache	*cp;
 	int	i, n;
-	struct	hostent	*hp;
+	struct	HostEnt	*hp;
 	char	*s, **t;
 
 	/*
 	** shouldn't happen but it just might...
 	*/
 #ifndef _WIN32
-	if (!rptr->he.h_name || !rptr->he.h_addr.s_addr)
+	if (!rptr->he.h_name || !rptr->he.h_addr.addr_family)
 #else
 	if (!rptr->he->h_name || !((struct in_addr *)rptr->he->h_addr)->s_addr)
 #endif
@@ -1328,16 +1390,16 @@ ResRQ	*rptr;
 	** and if so, return a pointer to it.
 	*/
 #ifndef _WIN32
-	if ((cp = find_cache_number(rptr, (char *)&rptr->he.h_addr.s_addr)))
+	if ((cp = find_cache_number(rptr, &rptr->he.h_addr)))
 		return cp;
-	for (i = 1; rptr->he.h_addr_list[i].s_addr; i++)
+	for (i = 1; rptr->he.h_addr_list[i].addr_family; i++)
 		if ((cp = find_cache_number(rptr,
-				(char *)&(rptr->he.h_addr_list[i].s_addr))))
+				&(rptr->he.h_addr_list[i]))))
 #else
-	if ((cp = find_cache_number(rptr, (char *)&((struct in_addr *)rptr->he->h_addr)->s_addr)))
+	if ((cp = find_cache_number(rptr, &((anAddress *)rptr->he->h_addr))))
 		return cp;
 	for (i = 1; rptr->he->h_addr_list[i] &&
-	     ((struct in_addr *)rptr->he->h_addr_list[i])->s_addr; i++)
+	     ((anAddress *)rptr->he->h_addr_list[i])->addr_family; i++)
  		if ((cp = find_cache_number(rptr,
 				(char *)&((struct in_addr *)rptr->he->h_addr_list[i])->s_addr )))
 #endif
@@ -1345,32 +1407,31 @@ ResRQ	*rptr;
 
 	/*
 	** a matching entry wasnt found in the cache so go and make one up.
-	*/ 
+	*/
 	cp = (aCache *)MyMalloc(sizeof(aCache));
 	bzero((char *)cp, sizeof(aCache));
 #ifdef _WIN32
-	cp->he = (struct hostent *)MyMalloc(MAXGETHOSTSTRUCT);
+	cp->he = (struct HostEnt *)MyMalloc(MAXGETHOSTSTRUCT);
 	res_copyhostent(rptr->he, cp->he);
 #else
 	hp = &cp->he;
 	for (i = 0; i < MAXADDRS; i++)
-		if (!rptr->he.h_addr_list[i].s_addr)
+		if (!rptr->he.h_addr_list[i].addr_family)
 			break;
 
 	/*
 	** build two arrays, one for IP#'s, another of pointers to them.
 	*/
-	t = hp->h_addr_list = (char **)MyMalloc(sizeof(char *) * (i+1));
-	bzero((char *)t, sizeof(char *) * (i+1));
+	t = (char **)hp->h_addr_list = (char **)MyMalloc(sizeof(anAddress *) * (i+1));
+	bzero((char *)t, sizeof(anAddress *) * (i+1));
 
-	s = (char *)MyMalloc(sizeof(struct in_addr) * i);
-	bzero(s, sizeof(struct in_addr) * i);
+	s = (char *)MyMalloc(sizeof(anAddress) * i);
+	bzero(s, sizeof(anAddress) * i);
 
-	for (n = 0; n < i; n++, s += sizeof(struct in_addr))
+	for (n = 0; n < i; n++, s += sizeof(anAddress))
 	    {
 		*t++ = s;
-		bcopy((char *)&(rptr->he.h_addr_list[n].s_addr), s,
-		      sizeof(struct in_addr));
+		bcopy(&rptr->he.h_addr_list[n], s, sizeof(anAddress));
 	    }
 	*t = (char *)NULL;
 
@@ -1388,8 +1449,6 @@ ResRQ	*rptr;
 		rptr->he.h_aliases[n] = NULL;
 	    }
 
-	hp->h_addrtype = rptr->he.h_addrtype;
-	hp->h_length = rptr->he.h_length;
 	hp->h_name = rptr->he.h_name;
 #endif
 	if (rptr->ttl < 600)
@@ -1421,9 +1480,9 @@ aCache	*ocp;
 {
 	aCache	**cp;
 #ifndef _WIN32
-	struct	hostent *hp = &ocp->he;
+	struct	HostEnt *hp = &ocp->he;
 #else
-	struct	hostent *hp = ocp->he;
+	struct	HostEnt *hp = ocp->he;
 #endif
 	int	hashv;
 	aClient	*cptr;
@@ -1466,7 +1525,7 @@ aCache	*ocp;
 	/*
 	 * remove cache entry from hashed number list
 	 */
-	hashv = hash_number((u_char *)hp->h_addr);
+	hashv = hash_number(hp->h_addr);
 #ifdef	DEBUG
 	Debug((DEBUG_DEBUG,"rem_cache: h_addr %s hashv %d next %#x first %#x",
 		inetntoa(hp->h_addr), hashv, ocp->hnum_next,
@@ -1610,7 +1669,7 @@ u_long	cres_mem(sptr)
 aClient	*sptr;
 {
 	aCache	*c = cachetop;
-	struct	hostent	*h;
+	struct	HostEnt	*h;
 	int	i;
 	u_long	nm = 0, im = 0, sm = 0, ts = 0;
 
@@ -1625,7 +1684,7 @@ aClient	*sptr;
 		for (i = 0; h->h_addr_list[i]; i++)
 		    {
 			im += sizeof(char *);
-			im += sizeof(struct in_addr);
+			im += sizeof(anAddress);
 		    }
 		im += sizeof(char *);
 		for (i = 0; h->h_aliases[i]; i++)
@@ -1653,7 +1712,7 @@ aClient	*sptr;
 void	async_dns(void *parm)
 {
 	ResRQ	*rptr = (ResRQ *)parm;
-	struct hostent	*hp, *he = rptr->he;
+	struct HostEnt	*hp, *he = rptr->he;
 	int	i, x;
 	long	amt;
 
@@ -1696,17 +1755,15 @@ void	async_dns(void *parm)
 	_endthread();
 }
 
-int	res_copyhostent(struct hostent *from, struct hostent *to)
+int	res_copyhostent(struct HostEnt *from, struct HostEnt *to)
 {
 	int	amt, x, i;
 
-	to->h_addrtype = from->h_addrtype;
-	to->h_length = from->h_length;
 	/*
 	 * Get to "primary" offset in to hostent buffer and copy over
 	 * to hostname.
 	 */
-	amt = (long)to + sizeof(struct hostent);
+	amt = (long)to + sizeof(struct HostEnt);
 	to->h_name = (char *)amt;
 	strcpy(to->h_name, from->h_name);
 	amt += strlen(to->h_name)+1;

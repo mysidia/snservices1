@@ -488,7 +488,7 @@ aConfItem	*make_conf()
 #ifdef	DEBUGMODE
 	aconfs.inuse++;
 #endif
-	bzero((char *)&aconf->ipnum, sizeof(struct in_addr));
+	bzero((char *)&aconf->addr, sizeof(anAddress));
 	aconf->next = NULL;
 	aconf->host = aconf->passwd = aconf->name = NULL;
 	aconf->status = CONF_ILLEGAL;

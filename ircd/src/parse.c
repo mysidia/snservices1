@@ -688,6 +688,16 @@ char	*newline;
 		return(NULL);
 
 	field = line;
+	if (*line == '<')
+	{
+		if ((line = (char *)index(line,'>')) == NULL)
+			line = field;
+		else
+		{
+			field++;
+			*line++ = '\0';
+		}
+	}
 	if ((end = (char *)index(line,':')) == NULL)
 	    {
 		line = NULL;

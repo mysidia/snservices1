@@ -386,7 +386,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	     -- OnyxDragon */
 	  for (tmpstr = sptr->sockhost; *tmpstr > ' ' && *tmpstr < 127; tmpstr++);
 	  if (*tmpstr || !*sptr->sockhost || isdigit(*(tmpstr-1)))
-	    strncpyzt(sptr->sockhost, (char *)inetntoa((char *)&sptr->ip),
+	    strncpyzt(sptr->sockhost, (char *)inetntoa(&sptr->addr),
 		      sizeof(sptr->sockhost));
 	  strncpyzt(user->host, sptr->sockhost, sizeof(user->host));
 	}
@@ -637,7 +637,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
       nextping = NOW;
       sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client connecting on port %d: %s (%s@%s) [%s] [%s/%s]", 
 		   sptr->acpt->port, nick, user->username,
-		   user->host, inetntoa((char *)&sptr->ip), sptr->sup_host, sptr->sup_server /*[...]*/);
+		   user->host, inetntoa(&sptr->addr), sptr->sup_host, sptr->sup_server /*[...]*/);
     }
   else if (IsServer(cptr))
     {
@@ -1192,7 +1192,7 @@ nickkilldone:
 	  md5data[4] = me.receiveM;
 	  md5data[5] = 0;
 	  md5data[6] = getpid();
-	  md5data[7] = sptr->ip.s_addr;
+	  md5data[7] = (int) &sptr->addr.in.sin_addr;
 	  md5data[8] = sptr->fd;
 	  md5data[9] = 0;
 	  md5data[10] = 0;
@@ -3197,7 +3197,7 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	 * it doesn't break anything - DuffJ
 	 */
 	if (!(aconf = find_conf_exact(name, sptr->user->username, sptr->sockhost, CONF_OPS)) &&
-	    !(aconf = find_conf_exact(name, sptr->user->username, inetntoa((char *)&cptr->ip), CONF_OPS)))
+	    !(aconf = find_conf_exact(name, sptr->user->username, inetntoa(&cptr->addr), CONF_OPS)))
 	    {
 		sendto_one(sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
                 if (IsHurt(sptr) && MyConnect(sptr))
@@ -3809,6 +3809,21 @@ void perform_mask(aClient *acptr, int v)
     }
 }
 
+int ip6TokPut(char *s, int n)
+{
+	const char tb[] = "zvpd63g8x7omwb1yecrfl2qs9h4t0j5an_k";
+	int i = 0;
+
+	while ( n > (sizeof tb) ) {
+		s[i++] = tb[n % ((sizeof tb) - 1)];
+		n /= ((sizeof tb) - 1);
+	}
+
+	s[i++] = tb[n % ((sizeof tb) - 1)];
+	return i;
+}
+
+
 char *genHostMask(char *host)
 {
     char tok1[USERLEN+HOSTLEN+255];
@@ -3817,7 +3832,101 @@ char *genHostMask(char *host)
     char fintmp[USERLEN+HOSTLEN+255];
     int i, fIp = TRUE;
 
-    if (!host || !strchr(host, '.'))
+    if (!host)
+        return (host ? host : "");
+
+    if (strchr(host, ':'))
+    {
+        /* ipv6 address */
+	struct in6_addr addr_dst;
+	u_int32_t	     md5data[16];
+	static u_int32_t     md5hash[4];
+	int k, x[8] = {}, j;
+	char* s;
+	
+        strcpy(tok2,host);
+        tok1[0] = '\0';
+	k = 0;
+
+	for(q = 0, k = 0, p = host; (p && *p);)
+	{
+		x[k++] = (short int)strtol(p, (char **)&s, 16);
+		if ( s == p ) {
+			if ( *p == ':' )
+				s++;
+		}
+
+		if (s && *s && *s != ':') {
+			return (host ? host : "");
+		}
+
+		if (k > 7)
+			break;
+		p = s + 1;
+	}
+
+	if ( k != 8 )
+		return (host ? host : "");
+
+	memset(md5data, 0, sizeof(md5data));
+	for(k = 0, j = 0; k < 16; k += 2, j++)
+		md5data[k] = x[j];
+	md5data[1] = '6';
+	md5data[3] = 0x6f1553bc;
+	md5data[5] = 0x7ef01c9e;
+	md5data[7] = 0x606b909f;
+	md5data[9] = 0x9495742e;
+	md5data[11] = 0xe8f50e06;
+	md5data[13] = 0xd7b58f7f;
+	md5data[15] = 0x4c27d776;
+
+
+        MD5Init(md5hash);
+        MD5Transform(md5hash, md5data);
+
+	fin[0] = '\0';
+	k = 0;
+
+	k += ip6TokPut(fin + k, md5hash[0]);
+	fin[k++] = '.';
+	
+	k += ip6TokPut(fin + k, md5hash[1]);
+	fin[k++] = '.';
+
+	k += ip6TokPut(fin + k, x[2]);
+	k += ip6TokPut(fin + k, x[3]);
+	fin[k++] = '.';
+
+	k += ip6TokPut(fin + k, x[4]);
+	k += ip6TokPut(fin + k, x[5]);
+	fin[k++] = '.';
+
+	k += ip6TokPut(fin + k, x[6]);
+	k += ip6TokPut(fin + k, x[7]);
+	fin[k++] = '.';
+	fin[k++] = 'i';
+	fin[k++] = 'p';
+	fin[k++] = 'v';
+	fin[k++] = '6';
+	fin[k++] = '\0';
+
+	return fin;
+	
+//        while (( p = strrchr(tok2, ':') ))
+  //      {
+//inet_addr_ipv6		
+/*                strcat(tok1,((i & 2)?(p+1):tokenEncode(p+1)));
+                strcat(tok1,".");
+                *p = '\0';
+                i++;*/
+    //    }
+    //
+
+        sprintf(fin,"%s%s.imsk",tok1,tok2);
+        return fin;
+    }
+
+    if (!strchr(host, '.'))
         return (host ? host : "");
     for (i = 0; host[i]; i++)
          if ((host[i] < '0' || host[i] > '9') && host[i] != '.')

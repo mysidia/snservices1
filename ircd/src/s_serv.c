@@ -736,7 +736,7 @@ int	m_server_estab(aClient *cptr)
 		if (split) {
 			sendto_one(acptr,":%s SERVER %s 2 :[%s] %s",
 				   me.name, cptr->name,
-				   /*cptr->sockhost*/ inetntoa((char *)&cptr->ip), cptr->info);
+				   /*cptr->sockhost*/ inetntoa(&cptr->addr), cptr->info);
 		}
 		else
 			sendto_one(acptr,":%s SERVER %s 2 :%s",
@@ -909,7 +909,8 @@ const char* safe_info(int showIp, aClient* acptr)
 				break;
 			}
 			
-			if (acptr->info[i] != '.' && !isdigit(acptr->info[i]))
+			if (acptr->info[i] != '.' && acptr->info[i] != ':' 
+			    && !isxdigit(acptr->info[i]))
 				break;
 		}
 

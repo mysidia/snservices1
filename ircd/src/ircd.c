@@ -309,7 +309,7 @@ time_t	currenttime;
 			(*pconf = con_conf)->next = 0;
 		    }
 		if (connect_server(con_conf, (aClient *)NULL,
-				   (struct hostent *)NULL) == 0)
+				   (struct HostEnt *)NULL) == 0)
 			sendto_ops("Connection to %s[%s] activated.",
 				   con_conf->name, con_conf->host);
 	    }

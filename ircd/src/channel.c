@@ -187,7 +187,7 @@ aClient *cptr;
   if (!MyClient(cptr))
     return NULL;
 
-  host = inetntoa((char *)&cptr->ip);
+  host = inetntoa(&cptr->addr);
   bzero(namebuf, sizeof(namebuf));
   nick = check_string(nick);
   strncpyzt(namebuf, nick, NICKLEN + 1);
