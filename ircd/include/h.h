@@ -78,7 +78,7 @@ int	rehash(aClient *, aClient *, int);
 void	conf_init();
 aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int temp);
 
-extern	char	*network, *kline, *network_kline;
+extern	char	*network, *kline, *network_kline, *help_url;
 
 char	*debugmode, *configfile, *sbrk0;
 char	*getfield(char *);

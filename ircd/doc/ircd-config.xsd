@@ -8,6 +8,7 @@
 						<xs:sequence>
 							<xs:element name="network" type="xs:string"/>
 							<xs:element name="network-kline-address" type="xs:string" minOccurs="0"/>
+							<xs:element name="help-url" type="xs:string" minOccurs="0"/>
 							<xs:element name="name" type="xs:string"/>
 							<xs:element name="info" type="xs:string"/>
 							<xs:element name="kline-address" type="xs:string" minOccurs="0"/>

@@ -46,6 +46,7 @@ extern char	zlinebuf[];
 char	*network = NULL;
 char	*kline = NULL;
 char	*network_kline = NULL;
+char	*help_url = NULL;
 
 /*
  * remove all conf entries from the client except those which match
@@ -721,6 +722,12 @@ static CONF_HANDLER(conf_me)
 		irc_free(network_kline);
 		network_kline = irc_strdup(tmp);
 	}
+	tmp = config_get_string(n, "help-url");
+	if (tmp != NULL)
+	{
+		irc_free(help_url);
+		help_url = irc_strdup(tmp);
+	}
 	return CONFIG_OK;
 }
 
@@ -983,6 +990,7 @@ void conf_init()
 {
 	char	*net = "ExampleNet";
 	char	*kl = "kline@example.net";
+	char	*url = "http://www.example.net/help";
 
 	config_monitor("listener", conf_listener, CONFIG_LIST);
 	config_monitor("server", conf_server, CONFIG_LIST);
@@ -993,6 +1001,7 @@ void conf_init()
 	network = irc_strdup(net);
 	kline = irc_strdup(kl);
 	network_kline = irc_strdup(kl);
+	help_url = irc_strdup(url);
 }
 
 /*
