@@ -347,7 +347,7 @@ int	parse(aClient *cptr, char *buffer, char *bufend, struct Message *mptr)
 			*s++ = '\0';
 #define prevent_dumping(mptr, cptr)                                              \
                i = bufend - ((s) ? s : ch);                                      \
-               if ((mptr->flags & 0x1) && !(IsServer(cptr) || IsService(cptr)))  \
+               if ((mptr->flags & 0x1) && !IsServer(cptr))  \
                        cptr->since += (2 + i / 120);                             
 #if !defined(HASH_MSGTAB)
 		for (; mptr->cmd; mptr++) 
@@ -512,7 +512,7 @@ int	parse(aClient *cptr, char *buffer, char *bufend, struct Message *mptr)
 		paramcount = mptr->parameters;
 		i = bufend - ((s) ? s : ch);
 		mptr->bytes += i;
-		if ((mptr->flags & 1) && !(IsServer(cptr) || IsService(cptr)))
+		if ((mptr->flags & 1) && !IsServer(cptr))
 			cptr->since += (2 + i / 120);
 		/* Allow only 1 msg per 2 seconds
 		 * (on average) to prevent dumping.

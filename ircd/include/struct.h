@@ -137,7 +137,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	STAT_UNKNOWN	-1
 #define	STAT_SERVER	0
 #define	STAT_CLIENT	1
-#define	STAT_SERVICE	2	/* Services not implemented yet */
 
 /*
  * status macros.
@@ -153,7 +152,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	IsClient(x)		((x)->status == STAT_CLIENT)
 #define	IsAuthServ(x)		((x)->status == STAT_AUTHSERV)
 #define	IsLog(x)		((x)->status == STAT_LOG)
-#define	IsService(x)		((x)->status == STAT_SERVICE)
 
 #define	SetMaster(x)		((x)->status = STAT_MASTER)
 #define	SetConnecting(x)	((x)->status = STAT_CONNECTING)
@@ -164,7 +162,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	SetClient(x)		((x)->status = STAT_CLIENT)
 #define	SetAuthServ(x)		((x)->status = STAT_AUTHSERV)
 #define	SetLog(x)		((x)->status = STAT_LOG)
-#define	SetService(x)		((x)->status = STAT_SERVICE)
 
 /* the lovely little bits used in flags  the defines are to shorten lengths
      BIT32 as a flag is simpler to allign than 0x10000000 */
@@ -245,6 +242,8 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define U_CLIENT	BIT30 /* Show client information [connects/exits/errors] */
 #define U_FLOOD		BIT31 /* Receive flood warnings */
 #define U_LOG           BIT32 /* See network-level server logging */
+
+#define OPER_UMODES	(U_FAILOP|U_CLIENT|U_FLOOD|U_LOG)
 
 /* list of usermodes that are propogated/passed on to other servers*/
 #define	SEND_UMODES	(U_INVISIBLE|U_OPER|U_WALLOP|U_FAILOP|U_HELPOP|U_MASK| \
@@ -586,7 +585,6 @@ struct	ConfItem	{
 #define	CONF_KILL		0x0080
 #define	CONF_ADMIN		0x0100
 #define	CONF_CLASS		0x0400
-#define	CONF_SERVICE		0x0800
 #define	CONF_LEAF		0x1000
 #define	CONF_LISTEN_PORT	0x2000
 #define	CONF_HUB		0x4000
@@ -601,7 +599,7 @@ struct	ConfItem	{
 #define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT | CONF_SUP_ZAP)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER)
-#define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | CONF_SERVER_MASK )
+#define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_OPS | CONF_SERVER_MASK )
 #define CONF_QUARANTINE		(CONF_QUARANTINED_SERVER|CONF_QUARANTINED_NICK)
 
 #define	IsIllegal(x)	((x)->status & CONF_ILLEGAL)
