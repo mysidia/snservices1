@@ -1014,7 +1014,7 @@ OCMD(os_clonerule)
 		rule->kill_msg = NULL;
 		strncpyzt(rule->mask, args[2], sizeof(rule->mask));
 		rule->trigger = 0;
-		if (c == 2)
+		if (c == CLONEARG_ADD)
 			if (numargs > 3 && *args[3] && isdigit(*args[3]))
 				rule->trigger = rule->utrigger = atoi(args[3]);
 		if (!rule->trigger) {	/* keep defaults by default */
@@ -1022,7 +1022,7 @@ OCMD(os_clonerule)
 			rule->trigger = 0;
 		}
 		rule->flags = DEFCLONEFLAGS;
-		if (c == 2 || numargs < 4)
+		if (c == CLONEARG_ADD || numargs < 4)
 			AddCrule(rule, -1);
 		else {
 			AddCrule(rule, atoi(args[3]));
