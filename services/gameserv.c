@@ -214,7 +214,7 @@ GCMD(gs_ww)
 
 	if (base < numargs) {
 		num_difficulty = atoi(args[base]);
-		if (num_difficulty <= 1 || num_difficulty >= die_size) {
+		if (num_difficulty <= 1 || num_difficulty >= MAX_ALLOWED_DIE_SIZE) {
 			sSend(":%s NOTICE %s :Invalid difficulty level, should range from 1 to %d.",
 					GameServ, from, die_size);
 			return RET_INVALID;
@@ -230,6 +230,12 @@ GCMD(gs_ww)
 					GameServ, from, MAX_ALLOWED_DIE_SIZE);
 			return RET_INVALID;
 		}
+	}
+
+	if (num_difficulty <= 1 || num_difficulty >= die_size) {
+		sSend(":%s NOTICE %s :Invalid difficulty level, should range from 1 to %d.",
+			GameServ, from, die_size);
+		return RET_INVALID;
 	}
 
 	flood_modifier = flood_multiplier * ((num_rolls / 10) + 1);
