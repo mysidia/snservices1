@@ -255,9 +255,17 @@ GCMD(gs_ww)
 			break;
 		}
 	}	
-	sSend(":%s NOTICE %s :WW: %d dice, size %d, difficulty %d, success=%d/botches=%d [%d/%d]",
-		GameServ, to, num_rolls, die_size, num_difficulty, successes, botches,
-		successes, botches);
+
+	if (chan_name != NULL) {
+		sSend(":%s PRIVMSG %s :Result (%s) WW: %d dice, size %d, difficulty %d, success=%d/botches=%d [%d/%d]",
+			GameServ, to, from, num_rolls, die_size, num_difficulty, successes, botches,
+			successes, botches);
+	}
+	else {
+		sSend(":%s NOTICE %s :WW: %d dice, size %d, difficulty %d, success=%d/botches=%d [%d/%d]",
+			GameServ, to, num_rolls, die_size, num_difficulty, successes, botches,
+			successes, botches);
+	}
 	return RET_OK;
 }
 
