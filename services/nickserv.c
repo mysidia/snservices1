@@ -5289,52 +5289,79 @@ NCMD(ns_save)
  */
 NCMD(ns_list)
 {
-	char *from = nick->nick;
+	char *from = nick->nick, *param = NULL;
 	RegNickList *reg;
-	MaskData *umask;
-	int i = 0, x = 0, bucket = 0;
+	MaskData *umask = NULL;
+	int i = 0, x = 0, bucket = 0, f_doesMatch = 0;
+	enum {
+		LIST_mask, LIST_email
+	} list_mode = LIST_mask;
 
 	if (opFlagged(nick, OLIST) == 0) {
 		PutReply(NickServ, nick, ERR_NOACCESS, 0, 0, 0);
 		return RET_NOPERM;
 	}
 
-	if (numargs != 2) {
+	if (numargs < 2) {
 		sSend(":%s NOTICE %s :You must specify ONE address to search by",
 			  NickServ, from);
 		return RET_SYNTAX;
 	}
 
-	umask = make_mask();
+	if (numargs == 2) {
+		/* Standard mask mode */
+		umask = make_mask();
+		param = args[1];
 
-	if (split_userhost(args[1], umask) < 0) {
-		free_mask(umask);
+		if (split_userhost(args[1], umask) < 0) {
+			free_mask(umask);
 
-		sSend(":%s NOTICE %s :Unable to read mask.", NickServ, from);
+			sSend(":%s NOTICE %s :Unable to read mask.", NickServ, from);
+			return RET_SYNTAX;
+		}
+
+		if (!strcmp(umask->nick, "*") && !strcmp(umask->user, "*")
+			&& !strcmp(umask->host, "*")) {
+			sSend(":%s NOTICE %s :Invalid mask *!*@*.", NickServ, from);
+			free_mask(umask);
+			return RET_EFAULT;
+		}
+	} else if (numargs == 3 && !strcmp(args[1], "-a")) {
+		list_mode = LIST_email;
+		param = args[2];
+
+	} else {
+		sSend(":%s NOTICE %s :Usage: /ns LIST <n!u@h mask>",
+				NickServ, from);
+		sSend(":%s NOTICE %s :   OR: /ns LIST -a <email>",
+				NickServ, from);
 		return RET_SYNTAX;
-	}
-
-	if (!strcmp(umask->nick, "*") && !strcmp(umask->user, "*")
-		&& !strcmp(umask->host, "*")) {
-		sSend(":%s NOTICE %s :Invalid mask *!*@*.", NickServ, from);
-		free_mask(umask);
-		return RET_EFAULT;
+		
 	}
 
 	for (bucket = 0; bucket < NICKHASHSIZE; bucket++) {
 		reg = LIST_FIRST(&RegNickHash[bucket]);
 
 		while (reg != NULL) {
-			if (!match(umask->nick, reg->nick)
+			if (list_mode == LIST_mask
+				&& !match(umask->nick, reg->nick)
 				&& !match(umask->user, reg->user)
-				&& !match(umask->host, reg->host)) {
+				&& !match(umask->host, reg->host))
+				f_doesMatch = 1;
+
+			if (list_mode == LIST_email
+				&& param != NULL
+				&& !match(param, reg->email))
+				f_doesMatch = 1;
+
+			if (f_doesMatch) {
 				i++;
 				if (i <= 200)
 					sSend(":%s NOTICE %s :%4i: %s!%s@%s",
 						  NickServ, from, i, reg->nick,
 						  reg->user, reg->host);
+				f_doesMatch = 0;
 			}
-
 			reg = LIST_NEXT(reg, rn_lst);
 			x++;
 		}
