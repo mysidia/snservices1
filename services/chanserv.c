@@ -5376,7 +5376,7 @@ CCMD(cs_set)
 		{NULL}
 	};
 
-	if (numargs < 2) {
+	if (numargs < 3) {
 		sSend
 			(":%s NOTICE %s :You must specify arguments after the SET command",
 			 ChanServ, from);
