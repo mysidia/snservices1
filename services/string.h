@@ -259,7 +259,7 @@ struct reply_string reply_table[] =
 	{"%s is not registered."},
 	{"Invalid trigger variable."},
 /**/
-	{"You nick must be registered to use %s."},
+	{"Your nick must be registered to use %s."},
 	{"Next database synch(save) in %ld minutes."},
 	{"You must specify a memo to %s."},
 	{"Memo (%3i) from: %s to: %s"},
