@@ -18,5 +18,5 @@ print "Information for " . $x->{NICK} . " : \n";
 
 
 for (keys %$x) {
-print $x->{$_} . "\n";
+printf "%25s  %s\n", $_, $x->{$_};
 }

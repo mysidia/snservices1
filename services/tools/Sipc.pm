@@ -107,7 +107,7 @@ sub getPublicNickInfo
 	
 	(($n->{NICK} = $self->queryNick($target, "")) ne undef) or return undef;
 	(($n->{TIMEREG} = $self->queryNick($target, "TIMEREG")) ne undef) or return undef;
-	(($n->{URL} = $self->queryNick($target, "URL")) ne undef) or return undef;
+	(($n->{URL} = $self->queryNick($target, "URL")));
 	(($n->{FLAGS} = $self->queryNick($target, "FLAGS")) ne undef) or return undef;
 	(($n->{BADPWS} = $self->queryNick($target, "BADPWS")) ne undef) or return undef;
 	(($n->{'LAST-TIME'} = $self->queryNick($target, "LAST-TIME")) ne undef) or return undef;
