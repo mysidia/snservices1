@@ -731,7 +731,7 @@ static CONF_HANDLER(conf_listener)
 	aClient	*cptr;
 	char	*tmp;
 
-	if (n->status == CONFIG_NEW)
+	if (n->status != CONFIG_OK)
 	{
 		tmp = config_get_string(n, "address");
 		if (tmp == NULL)
@@ -773,7 +773,7 @@ static CONF_HANDLER(conf_client)
 {
 	aConfItem	*aconf;
 	char	*amask, *dmask, *password, *class;
-	if (n->status == CONFIG_NEW)
+	if (n->status != CONFIG_OK)
 	{
 		amask = config_get_string(n, "address-mask");
 		dmask = config_get_string(n, "domain-mask");
@@ -813,7 +813,7 @@ static CONF_HANDLER(conf_server)
 	char	*ssl;
 	int	i;
 
-	if (n->status == CONFIG_NEW)
+	if (n->status != CONFIG_OK)
 	{
 		name = config_get_string(n, "name");
 		address = config_get_string(n, "address");
@@ -904,7 +904,7 @@ static CONF_HANDLER(conf_class)
 	aClass	*class;
 	char	*name, *pingfreq, *connfreq, *maxconn, *sendqueue;
 
-	if (n->status == CONFIG_NEW)
+	if (n->status != CONFIG_OK)
 	{
 		name = config_get_string(n, "name");
 		if (name == NULL)
@@ -936,7 +936,7 @@ static CONF_HANDLER(conf_operator)
 	int	*i, flag;
 	char	*m = "*";
 
-	if (n->status == CONFIG_NEW)
+	if (n->status != CONFIG_OK)
 	{
 		nick = config_get_string(n, "nick");
 		mask = config_get_string(n, "mask");
