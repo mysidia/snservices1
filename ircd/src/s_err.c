@@ -306,8 +306,8 @@ char	*rpl_str(int numeric)
 			numeric, num);
 	else
 	    {
-		Debug((DEBUG_NUM, "rpl_str: numeric %d num %d nptr %x %d %x",
-			numeric, num, nptr, num, replies[num]));
+		Debug((DEBUG_NUM, "rpl_str: numeric %d num %d nptr - %d %x",
+			numeric, num, num, replies[num]));
 		if (!replies[num])
 			(void)sprintf(numbuff,
 				":%%s %d %%s :NO REPLY FOR NUMERIC ERROR %d",

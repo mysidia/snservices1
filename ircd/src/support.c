@@ -210,15 +210,19 @@ int inet_netof(struct in_addr in)
 
 
 #if defined(DEBUGMODE)
-void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char *p6, char *p7, char *p8, char *p9)
+void	dumpcore(const char *fmt, ...)
 {
+	char *msg;
+	va_list ap;
 	static	time_t	lastd = 0;
 	static	int	dumps = 0;
 	char	corename[12];
-	time_t	now;
+	time_t	now = NOW;
 	int	p;
 
-	now = NOW;
+	va_start(ap, fmt);
+	vasprintf(&msg, fmt, ap);
+	va_end(ap);
 
 	if (!lastd)
 		lastd = now;
@@ -243,9 +247,9 @@ void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char 
 	Debug((DEBUG_FATAL, "Dumped core : core.%d", p));
 	sendto_ops("Dumped core : core.%d", p);
 #endif
-	Debug((DEBUG_FATAL, msg, p1, p2, p3, p4, p5, p6, p7, p8, p9));
-	sendto_ops(msg, p1, p2, p3, p4, p5, p6, p7, p8, p9);
-		(void)s_die();
+	Debug((DEBUG_FATAL, "%s", msg));
+	sendto_ops("%s", msg);
+	(void)s_die();
 }
 
 static	char	*marray[20000];
@@ -301,7 +305,8 @@ char    *MyRealloc(char *x, size_t y)
 	bcopy(x + SZ_CH, (char *)&i, SZ_ST);
 	bcopy(x + (int)i + SZ_CHST, (char *)&k, 4);
 	if (bcmp((char *)&k, "VAVA", 4) || (x != cp))
-		dumpcore("MyRealloc %#x %d %d %#x %#x", x, y, i, cp, k,
+		dumpcore("MyRealloc %#x %d %d %#x %#x", (char *)x, (char *)y, 
+			 (char *)i, cp, (char *)k,
 			 NULL, NULL, NULL, NULL);
 #ifndef _WIN32
 	ret = (char *)realloc(x, y + (size_t)SZ_EX);
@@ -334,8 +339,9 @@ char    *MyRealloc(char *x, size_t y)
 	return ret + SZ_CHST;
     }
 
-void	MyFree(char *x)
+void	MyFree(void *yloc)
 {
+	char    *x = (char *)yloc;
 	size_t	i;
 	char	*j;
 	u_char	k[4];
@@ -351,8 +357,9 @@ void	MyFree(char *x)
 	bcopy(x + SZ_CHST + (int)i, (char *)k, 4);
 
 	if (bcmp((char *)k, "VAVA", 4) || (j != x))
-		dumpcore("MyFree %#x %ld %#x %#x", x, i, j,
-			 (k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0],
+		dumpcore("MyFree %#x %ld %#x %#x", (char *)x, (char *)i, 
+			 (char *)j,
+			 (char *)((k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0]),
 			 NULL, NULL, NULL, NULL, NULL);
 
 #undef	free
