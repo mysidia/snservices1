@@ -615,9 +615,17 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  (void)m_lusers(sptr, sptr, 1, parv);
 	  update_load();
 	  (void)m_motd(sptr, sptr, 1, parv);
-#ifndef NO_VERSION_CHECK
-          if (!IsUserVersionKnown(sptr))
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	  
+	  
+          if (!IsUserVersionKnown(sptr)) {
+	      if (!IsHurt(sptr)) {
+		      sptr->hurt = 4;
+		      SetHurt(sptr);
+		      sendto_serv_butone(sptr, ":%s HURTSET %s 4", me.name, sptr->name);
+	      }
+			
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
+	 }
 #endif
 	}
       else 
@@ -1617,14 +1625,15 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 #if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
-	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0]) && !IsUserVersionKnown(cptr) && cptr->nospoof)
+	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0])
+	   && cptr->nospoof && (parc > 1) && !myncmp(parv[1], "Auth-", 5))
 	{
 		char version_buf[BUFSIZE];
 		int l;
 		
 		if (parc < 3 || BadPtr(parv[1]) || BadPtr(parv[2]))
 			return 0;
-		if (strlen(parv[1]) < 6 || myncmp(parv[1], "Auth-", 5) || parv[2][0] != '\001')
+		if (strlen(parv[1]) < 6 || parv[2][0] != '\001')
 			return 0;
 		if (strtoul((parv[1])+5, NULL, 16) != (cptr->nospoof ^ 0xbeefdead))
 			return 0;
@@ -1635,6 +1644,12 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			SetSentNoSpoof(cptr);
 		}
 		SetUserVersionKnown(cptr);
+#ifdef REQ_VERSION_RESPONSE
+		if (IsRegisteredUser(cptr) && IsHurt(cptr) 
+		    && cptr->hurt == 4) {
+			sendto_serv_butone(sptr, ":%s HURTSET %s 0", me.name, sptr->name);
+		}
+#endif
 
 		l = strlen(parv[2]) - 9;
 
