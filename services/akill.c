@@ -326,12 +326,12 @@ char* applyAkill(char* nick, char* user, char* host, struct akill* ak)
 
 		if (ak->type == A_AKILL)
 			sprintf(buf,
-				"[#%.6x] Autokill %s!%s@%s triggered by user %s!%s@%s at %s\n",
+				"[#%.6x] Autokill %s!%s@%s enforced on user %s!%s@%s at %s\n",
 				ak->id, ak->nick, ak->user, ak->host, nick, user,
 				host, ctime(&CTime));
 		else if (ak->type == A_AHURT)
 			sprintf(buf,
-				"[#%.6x] Autohurt %s!%s@%s triggered by user %s!%s@%s at %s\n",
+				"[#%.6x] Autohurt %s!%s@%s enforced on user %s!%s@%s at %s\n",
 				ak->id, ak->nick, ak->user, ak->host, nick, user,
 				host, ctime(&CTime));
 #ifdef AKILLMAILTO
@@ -458,7 +458,8 @@ void checkAkillAllUsers(struct akill *ak)
 					  ak->reason);
 
 				sprintf(buf,
-						"Autokill %s!%s@%s triggered by %s!%s@%s at %s\n",
+						"[#%.6x] Autokill %s!%s@%s enforced on existing user %s!%s@%s at %s\n",
+						ak->id,
 						ak->nick, ak->user, ak->host, tmpnick->nick,
 						tmpnick->user, tmpnick->host, ctime(&CTime));
 #ifdef AKILLMAILTO
