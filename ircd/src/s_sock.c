@@ -259,21 +259,6 @@ void init_socks(aClient *cptr)
 	if ((cptr->socks->status & SOCK_NEW) && !(cptr->socks->status & SOCK_DONE))
 	{
 	    cptr->socks->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-#if 0
-		/* we can't use all the fds! */
-		if (cptr->socks->fd >= (MAXCLIENTS + 3))
-		{
-			sendto_realops("Warning: out of client fds on socks check %s",
-				       get_client_name(cptr, TRUE));
-			close(cptr->socks->fd);
-			cptr->socks->fd = -1;
-			cptr->socks->status |= (SOCK_GO | SOCK_DESTROY);
-			if (!DoingDNS(cptr))
-				SetAccess(cptr);
-			return;
-		}
-#endif
-
 		if (cptr->socks->fd < 0)
 		{
 		    cptr->socks->status = (SOCK_DONE | SOCK_DESTROY);
@@ -331,11 +316,6 @@ void init_socks(aClient *cptr)
 				 * Assume all errors at this point are good, and let
 				 * them in.
 				 */
-#if 0
-				sendto_ops("error during socks check of %s connect(): %s",
-					   get_client_name(cptr, TRUE),
-					   strerror(errno));
-#endif
 				if (cptr->socks->fd >= 0)
 				    closesocket(cptr->socks->fd);
 				cptr->socks->fd = -1;

@@ -42,10 +42,6 @@
 #define QUERY		0x0		/* standard query */
 #define IQUERY		0x1		/* inverse query */
 #define STATUS		0x2		/* nameserver status query */
-#if 0
-#define xxx		0x3		/* 0x3 reserved */
-	/* non standard */
-#endif
 
 #define UPDATEA		0x9		/* add resource record */
 #define UPDATED		0xa		/* delete a specific resource record */

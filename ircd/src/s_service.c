@@ -157,21 +157,8 @@ const	char *sService;
        {
                if (fOper && !IsAnOper(sptr) && MyClient(sptr))
                   return -2;
-#if 0
-               if (!MyClient(sptr) || myncmp(parv[1], "help ", 5) || BadPtr(parv[1]+5))
-#endif
                    sendto_one(acptr,":%s PRIVMSG %s@%s :%s", parv[0],
                            sService, SERVICES_NAME, parv[1]);
-#if 0
-               else if (MyClient(sptr))
-               {
-                   char buf[2048] = "";
-                   sprintf(buf, "%s %s", sService, parv[1]+5);
-                   if (parse_help(sptr, parv[0], buf) < 1)
-                       sendto_one(acptr,":%s PRIVMSG %s@%s :%s", parv[0],
-                                  sService, SERVICES_NAME, parv[1]);
-               }
-#endif
        }
        else
                sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name,

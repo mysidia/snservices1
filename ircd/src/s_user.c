@@ -2347,13 +2347,6 @@ int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    sendto_one(sptr,"NOTICE %s :HURTTIME must be a _numeric_ value",sptr->name);
 	    return 0;
 	}
-#if 0 /*  enable -true- permanent hurting.
-       *  if a remote host sends 30000 everything's fine so no risk of desync.
-       *  if we send 0, they'll interpret it as 30000 though.
-       */
-             if (addht==0) {addht=30000;}
-#endif
-                
 
 #ifdef DEBUGMODE
 		Debug((11, "HURT: %s %s %s (%s)", parv[0],parv[1], parv[2], parv[3] ));
@@ -3295,80 +3288,32 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
 
 
-
-#if 0
 /*
- * Build umode string for BURST command
- * --Run
- *
- * Taken from ircu, adapted for SorceryNet
- * -Mysid
- */
-char *umode_str(struct Client *cptr)
-{
-  static char umodeBuf[256];
-  char* m = umodeBuf;                /* Maximum string size: "owidg\0" */
-  int   i;
-  int   c_flags;
-
-  c_flags = (ClientUmode(cptr) & SEND_UMODES);        /* cleaning up the original code */
-
-  for (i = 0; user_modes[i]; i += 2) {
-    if ( (c_flags & user_modes[i]))
-      *m++ = user_modes[i+1];
-  }
-  *m = '\0';
-
-  return umodeBuf;                /* Note: static buffer, gets
-                                   overwritten by send_umode() */
-}
-
-
-unsigned long parse_umode(char *string)
-{
-  unsigned long c_flags = 0;
-  int i = 0;
-
-  for(; string && *string; string++) {
-      for (i = 0; user_modes[i]; i += 2) {
-         if (*string == user_modes[i+1]) {
-             c_flags |= user_modes[i];
-             break;
-         }
-      }
-  }
-
-  return c_flags;
-}
-#endif
-
-
-/***************************************************************************
  * m_pass() - Added Sat, 4 March 1989
- ***************************************************************************/
+ */
 
 /*
-** m_pass
-**	parv[0] = sender prefix
-**	parv[1] = password
-*/
-int	m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[])
+ * m_pass
+ *	parv[0] = sender prefix
+ *	parv[1] = password
+ */
+int
+m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	char *password = parc > 1 ? parv[1] : NULL;
 
-	if (BadPtr(password))
-	    {
+	if (BadPtr(password)) {
 		sendto_one(cptr, err_str(ERR_NEEDMOREPARAMS),
 			   me.name, parv[0], "PASS");
 		return 0;
-	    }
-	if (!MyConnect(sptr) || (!IsUnknown(cptr) && !IsHandshake(cptr)))
-	    {
+	}
+	if (!MyConnect(sptr) || (!IsUnknown(cptr) && !IsHandshake(cptr))) {
 		sendto_one(cptr, err_str(ERR_ALREADYREGISTRED),
 			   me.name, parv[0]);
 		return 0;
-	    }
+	}
 	strncpyzt(cptr->passwd, password, sizeof(cptr->passwd));
+
 	return 0;
 }
 
