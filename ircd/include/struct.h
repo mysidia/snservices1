@@ -545,13 +545,6 @@ typedef struct help_struct {
 #define	DEBUG_LIST  10	/* debug list use */
 
 /*
- * defines for curses in client
- */
-#define	DUMMY_TERM	0
-#define	CURSES_TERM	1
-#define	TERMCAP_TERM	2
-
-/*
  * Don't use sockaddr_storage: it's too big. --Onno
  */
 union Address

@@ -630,18 +630,6 @@ error You stuffed up config.h signals #defines use only one.
  */
 #define	MAXCLIENTS	(MAXCONNECTIONS-4)
 
-#ifdef HAVECURSES
-# define DOCURSES
-#else
-# undef DOCURSES
-#endif
-
-#ifdef HAVETERMCAP
-# define DOTERMCAP
-#else
-# undef DOTERMCAP
-#endif
-
 #if defined(CLIENT_FLOOD)
 #  if	(CLIENT_FLOOD > 8000)
 #    define CLIENT_FLOOD 8000

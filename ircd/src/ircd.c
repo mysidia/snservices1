@@ -46,36 +46,38 @@ aClient *client = &me;		/* Pointer to beginning of Client list */
 
 void NospoofText(aClient* acptr);
 
-time_t    NOW, tm_offset = 0;
-void	server_reboot(char *);
-void	restart(char *);
-static	void	setup_signals();
+time_t NOW, tm_offset = 0;
 
-char	**myargv;
-int	portnum = -1;		    /* Server port number, listening this */
-char	*configfile = CONFIGFILE;	/* Server configuration file */
-int	debuglevel = -1;		/* Server debug level */
-int	bootopt = BOOT_FORK;		/* Server boot option flags */
-char	*debugmode = "";		/*  -"-    -"-   */
-char	*sbrk0;				/* initial sbrk(0) */
-static	int	dorehash = 0;
-static	char	*dpath = DPATH;
+void server_reboot(char *);
+void restart(char *);
+static void setup_signals(void);
 
-time_t	nextconnect = 1;	/* time for next try_connections call */
-time_t	nextping = 1;		/* same as above for check_pings() */
-time_t	nextdnscheck = 0;	/* next time to poll dns to force timeouts */
-time_t	nextexpire = 1;		/* next expire run on the dns cache */
-time_t  nextsockflush = 1;
-void	boot_replies(void);
+char **myargv;
+int portnum = -1;		/* Server port number, listening this */
+char *configfile = CONFIGFILE;	/* Server configuration file */
+int debuglevel = -1;		/* Server debug level */
+int bootopt = BOOT_FORK;	/* Server boot option flags */
+char *debugmode = "";		/*  -"-    -"-   */
+char *sbrk0;			/* initial sbrk(0) */
+static int dorehash = 0;
+static char *dpath = DPATH;
+
+time_t nextconnect = 1;		/* time for next try_connections call */
+time_t nextping = 1;		/* same as above for check_pings() */
+time_t nextdnscheck = 0;	/* next time to poll dns to force timeouts */
+time_t nextexpire = 1;		/* next expire run on the dns cache */
+time_t nextsockflush = 1;
+void boot_replies(void);
 
 #if	defined(PROFIL)
 extern	etext();
 
-VOIDSIG	s_monitor()
+VOIDSIG
+s_monitor(void)
 {
-	static	int	mon = 0;
+	static int mon = 0;
 #ifdef	POSIX_SIGNALS
-	struct	sigaction act;
+	struct sigaction act;
 #endif
 
 	(void)moncontrol(mon);
@@ -830,7 +832,8 @@ main(int argc, char **argv)
 	    }
     }
 
-static	void	setup_signals()
+static void
+setup_signals(void)
 {
 #ifdef	POSIX_SIGNALS
 	struct	sigaction act;
