@@ -2229,6 +2229,8 @@ void expireNicks(char *dummy)
 	time_t timestart, timeend;
 	RegNickList *tmp;
 	RegNickList *next;
+	UserList* current_user;
+
 	char backup[30];
 	char cmd[500];         ///< \bug FIX ME
 	int i = 0, bucket = 0;
@@ -2261,8 +2263,10 @@ void expireNicks(char *dummy)
 		while (tmp != NULL) {
 			next = LIST_NEXT(tmp, rn_lst);
 
-			if (getNickData(tmp->nick) != NULL)
-				tmp->timestamp = CTime;
+			if ((current_user = getNickData(tmp->nick)) != NULL) {
+				if (current_user->caccess >= ACC_RECOGNIZED)
+					tmp->timestamp = CTime;
+			}
 
 			if (!isIdentified(getNickData(tmp->nick), tmp)) {
 
@@ -2590,7 +2594,7 @@ NCMD(ns_identify)
 
 		if (nick->reg == tonick) 
 		{
-			nick->caccess = 3;
+			nick->caccess = ACC_IDENTIFIED;
 
 			assert(!strcasecmp(nick->reg->nick, nick->nick));
 			strcpy(nick->reg->nick, nick->nick); /* Case update */
@@ -3520,6 +3524,7 @@ NCMD(ns_register)
 	ADD_MEMO_BOX(nick->reg);
 	mostnicks++;
 
+	nick->reg->flags |= NKILL;
 	nick->reg->amasks = 0;
 	nick->reg->url = NULL;
 	nick->reg->chans = 0;
