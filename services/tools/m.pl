@@ -14,6 +14,7 @@ sub error {
 sub makeforum {
     my $forum       = shift;
     my $description = shift;
+    my $skipc = 1;
 
     my $dbh =
       DBI->connect( 'dbi:Pg:dbname=forums', 'phorum', '-', { AutoCommit => 0 } )
@@ -39,7 +40,7 @@ sub makeforum {
 	    error( 30, 'Error accessing database' ); 
     }
 
-    print( "Forum_Id is: " . $forum_id . "\n" );
+    print( "Next free Forum_Id in the SQL table is: " . $forum_id . "\n" );
 
     my $insertfh = $dbh->prepare(
         q|
@@ -55,7 +56,7 @@ sub makeforum {
       )
       || error( 40, 'Error accessing database' );	      
       
-    if (!$insertfh->execute( $forum_id, $forum, $description )) {
+    if (!$skipc && !$insertfh->execute( $forum_id, $forum, $description )) {
 	      $dbh->rollback();
 	      error( 50, 'Error adding forum' );
     }
@@ -66,7 +67,7 @@ sub makeforum {
 	|
     );
 
-    if (!$insertph->execute($forum_id))
+    if (!$skipc && !$insertph->execute($forum_id))
     { 
 	    $dbh->rollback();
 	    error( 60, 'Error adding forum' );
@@ -74,8 +75,12 @@ sub makeforum {
     $dbh->commit                  || error( 80, 'Error adding forum' );
     $dbh->disconnect;
 
-    print "Created forum: " . $forum . "\n";
-    print "Description: " . $description . "\n";
+    if ($skipc) {
+	    print p, "SKIPPED executing the two SQL insert statements, but ".
+	            "the forum would have just been created.\n";
+    }
+    print p, "Forum name: " . $forum . "\n";
+    print p, "Description: " . $description . "\n";
 }
 
 if (!param()) {
@@ -86,7 +91,7 @@ if (!param()) {
      	start_TR, td(p,"Founder password:", textfield('password')), end_TR,
      	start_TR, td(p, submit), end_TR,
    	end_table,
-   	submit, end_form, hr, end_html;
+   	end_form, hr, end_html;
 }
 elsif (param('channel'))
 {
@@ -131,7 +136,8 @@ elsif (param('channel'))
 		   die $h->Errmsg;
 	}           
 
-	print header, start_html("Ok, preparing to make forum");
+	print header, start_html("Create Forum");
+	makeforum($chName, "Channel " . $chName . " forum.");
 
 	print end_html;
 }
