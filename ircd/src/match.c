@@ -30,6 +30,43 @@ Computing Center and Jarkko Oikarinen";
 int casetable = 0;
 #endif
 
+
+#include <regex.h>
+
+/* 
+ * Uses 'Regular Expression' matching
+ * compile buffer at the spot - buffer should probably be supplied
+ * instead.
+ */
+
+int expr_match(const char *mask, const char *text)
+{
+regex_t *preg;
+
+preg = calloc(1, sizeof(regex_t));
+if (!preg) return 0;
+
+   if (regcomp(preg, mask, REG_ICASE|REG_EXTENDED|REG_NOSUB) == 0) ; else { regfree(preg); MyFree(preg); return(0);}
+
+    if ( (regexec(preg, text, 0 , 0, 0) == 0)    )
+    {
+       regfree(preg);
+       MyFree(preg); 
+      return(1);
+    }
+    else
+    {
+         regfree(preg);
+         MyFree(preg);
+     return(0);
+    }
+
+return(1);
+
+}
+
+
+
 /*
  *  Compare if a given string (name) matches the given
  *  mask (which can contain wild cards: '*' - match any
@@ -166,6 +203,8 @@ int r_match(char *mask, char *name)
   }
 }
 
+
+
 /*
  * collapse a pattern string into minimal components.
  * This particular version is "in place", so that it changes the pattern
@@ -212,7 +251,7 @@ char *collapse(char *pattern)
  *		<0, if s1 lexicographically less than s2
  *		>0, if s1 lexicographically greater than s2
  */
-int smycmp(char *s1, char *s2)
+int smycmp(const char *s1, const char *s2)
 {
   u_char        *str1;
   u_char        *str2;
@@ -231,7 +270,7 @@ int smycmp(char *s1, char *s2)
 }
 
 
-int myncmp(char *str1, char *str2, int n)
+int myncmp(const char *str1, const char *str2, int n)
 {
   u_char  *s1, *s2;
   int      res;

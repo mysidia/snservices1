@@ -337,6 +337,9 @@ void	count_memory(aClient *cptr, char *nick)
 		cl = 0,		/* classes */
 		co = 0;		/* conf lines */
 
+	int	wlh=0, wle=0; /* watch headers/entries */
+	u_long	wlhm = 0; /* memory used by watch */
+
 	int	usi = 0,	/* users invited */
 		usc = 0,	/* users in channels */
 		aw = 0,		/* aways set */
@@ -360,11 +363,14 @@ void	count_memory(aClient *cptr, char *nick)
 	count_whowas_memory(&wwu, &wwa, &wwam);
 	wwm = sizeof(aName) * NICKNAMEHISTORYLENGTH;
 
+	count_watch_memory(&wlh, &wlhm);
+
 	for (acptr = client; acptr; acptr = acptr->next)
 	    {
 		if (MyConnect(acptr))
 		    {
 			lc++;
+                        wle += acptr->watches;
 			for (link = acptr->confs; link; link = link->next)
 				lcc++;
 		    }
@@ -386,6 +392,7 @@ void	count_memory(aClient *cptr, char *nick)
 			    }
 		   }
 	    }
+
 	lcm = lc * CLIENT_LOCAL_SIZE;
 	rcm = rc * CLIENT_REMOTE_SIZE;
 
@@ -426,9 +433,15 @@ void	count_memory(aClient *cptr, char *nick)
 		   aw, awm);
 	sendto_one(cptr, ":%s %d %s :Attached confs %d(%d)",
 		   me.name, RPL_STATSDEBUG, nick, lcc, lcc*sizeof(Link));
+	sendto_one(cptr, ":%s %d %s :   WATCH entries %d(%d)",
+		   me.name, RPL_STATSDEBUG, nick, wle, wle*sizeof(Link));
+
 
 	totcl = lcm + rcm + us*sizeof(anUser) + usc*sizeof(Link) + awm;
 	totcl += lcc*sizeof(Link) + usi*sizeof(Link);
+
+	sendto_one(cptr, ":%s %d %s :WATCH headers %d(%d)",
+		   me.name, RPL_STATSDEBUG, nick, wlh, wlhm);
 
 	sendto_one(cptr, ":%s %d %s :Conflines %d(%d)",
 		   me.name, RPL_STATSDEBUG, nick, co, com);

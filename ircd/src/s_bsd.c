@@ -1558,17 +1558,11 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 							FD_CLR(cptr->socks->fd, &excpt_set);
 #endif
 						}
-						Debug((DEBUG_ERROR, "freeing socks"));
 						cptr->socks = NULL;
-						MyFree(old_ds);
 					}
                                         if (found_socks && (cptr->socks))
 					{
-						sendto_one(cptr, ":%s NOTICE %s :*** Open socks/proxy server detected, IRC session aborted.", me.name, "AUTH");
-						sendto_one(cptr, ":%s NOTICE AUTH :*** %s contains an open socks/proxy server, you may not IRC from this host until the server is secured", me.name, get_client_name3(cptr, 0));
-						sendto_one(cptr, ":%s NOTICE AUTH :*** See %s for information about why you are not allowed to connect", me.name, SOCKSFOUND_URL);
-						/* norep prevents repeating of the leading string */
-						sendto_umode_norep(FLAGSET_SOCKS, 3, "*** Notice -- Open socks server from %s", get_client_name(cptr, FALSE));
+						void ApplySocksFound(aClient *cptr);
 
 						found_socks = 0;
 						if (cptr->socks->fd >= 0)
@@ -1583,36 +1577,16 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 								while(!local[highest_fd])
 									highest_fd--;
 						}
-						cptr->socks->fd = -1;
-						SetHurt(cptr);
-						cptr->hurt = 2;
-						cptr->lasttime = 0;
-						ClientFlags(cptr) |= FLAGS_PINGSENT;
-						cptr->socks->status = SOCK_DESTROY;
-						free_socks(cptr->socks);
-						cptr->socks = NULL;
-
-#if 0
-						exit_client(cptr, cptr, &me, "connection rejected: open socks/proxy server");
-#endif
 						FD_CLR(cptr->fd, &read_set);
 						FD_CLR(cptr->fd, &write_set);
 #ifdef _WIN32
 						FD_CLR(cptr->fd, &excpt_set);
 #endif
+						ApplySocksFound(cptr);
+						continue;
 					}
 				}
 			}
-                          if (cptr->socks  && cptr->socks->fd >= 0)
-                        {
-                                  FD_SET(cptr->socks->fd, &read_set);
-                                  FD_SET(cptr->socks->fd, &write_set);
-#ifdef _WIN32
-                                  FD_SET(cptr->socks->fd, &excpt_set);
-#endif
-                                  socks++;
-                        }
-
 			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
 			  continue;
 
@@ -1651,6 +1625,23 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 
 /*               if (me.socks && me.socks->fd >= 0)
                        FD_SET(me.socks->fd, &read_set);*/
+/*&&&*/
+                do 
+                {
+                   extern aSocks *socks_list;
+                   aSocks *sItem;
+
+                   for(sItem = socks_list; sItem; sItem = sItem->next) { 
+                       if(sItem->fd < 0)
+                          continue;
+                       FD_SET(sItem->fd, &read_set);
+                       FD_SET(sItem->fd, &write_set);
+                       FD_SET(sItem->fd, &read_set);
+#ifdef _WIN32
+                       FD_SET(sItem->fd, &excpt_set);
+#endif
+                   }
+                } while(0);
 
 		if (schecksfd >= 0)
 			FD_SET(schecksfd, &read_set);
@@ -1739,85 +1730,94 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 	    }
 #endif
 
-       for (i = highest_fd;  i >= 0; i--)
+/*       for (i = highest_fd;  i >= 0; i--)
            {
                if (!(cptr = local[i]))
                        continue;
                if (!(cptr->socks) || cptr->socks->fd < 0)
                        continue;
+           }*/
+        do {
+           extern aSocks *socks_list;
+           aSocks *sItem;
+
+           for(sItem = socks_list;sItem;sItem = sItem->next)
+           {
+               if (sItem->fd < 0)
+                   continue;
 #ifdef _WIN32
-               if (FD_ISSET(cptr->socks->fd, &excpt_set))
+               if (FD_ISSET(sItem->fd, &excpt_set))
                    {
                        int     err, len = sizeof(err);
 
-                       if (getsockopt(cptr->socks->fd, SOL_SOCKET, SO_ERROR,
+                       if (getsockopt(sItem->fd, SOL_SOCKET, SO_ERROR,
                                   (OPT_TYPE *)&err, &len) || err)
                            {
                                ircstp->is_abad++;
-                               closesocket(cptr->socks->fd);
-							FD_CLR(cptr->socks->fd, &read_set);
-							FD_CLR(cptr->socks->fd, &write_set);
+                               closesocket(sItem->fd);
+				FD_CLR(sItem->fd, &read_set);
+				FD_CLR(sItem->fd, &write_set);
 #ifdef _WIN32
-							FD_CLR(cptr->socks->fd, &excpt_set);
+				FD_CLR(sItem->fd, &excpt_set);
 #endif
-                               if (cptr->socks->fd == highest_fd)
+                               if (sItem->fd == highest_fd)
                                        while (!local[highest_fd])
                                                highest_fd--;
-                               cptr->socks->fd = -1;
-                               ClientFlags(cptr) &= ~FLAGS_SOCKS;
-                               cptr->socks->status = SOCK_DESTROY|SOCK_DONE;
+                               sItem->fd = -1;
+                               sItem->status = SOCK_DONE | SOCK_DESTROY;
                                if (nfds > 0)
                                        nfds--;
                                continue;
                            }
                    }
 #endif
-
-
                socks--;
-	if (!(cptr->socks->status & SOCK_SENT)  && (cptr->socks->fd >= 0)
-                  /*&& (cptr->socks->status & SOCK_CONNECTED)*/
-                  && (nfds > 0) && FD_ISSET(cptr->socks->fd, &write_set))
+	if (!(sItem->status & SOCK_SENT)  && (sItem->fd >= 0)
+                  /*&& (sItem->status & SOCK_CONNECTED)*/
+                  && (nfds > 0) && FD_ISSET(sItem->fd, &write_set))
                    {
 #ifdef ENABLE_SOCKSCHECK
                        nfds--;
-                       cptr->socks->status |= SOCK_CONNECTED;
-                       send_socksquery(cptr);
+                       sItem->status |= SOCK_CONNECTED;
+		       FD_CLR(sItem->fd, &write_set);
+                       send_socksquery(sItem); /* cptr->socks may now be null */
 #else
                        nfds--;
-                       cptr->socks->status = SOCK_GO|SOCK_DESTROY;
+                       sItem->status = SOCK_GO|SOCK_DESTROY;
 #endif
                    }
-                  else if ((nfds > 0) && FD_ISSET(cptr->socks->fd, &read_set))
+                  else if ((nfds > 0) && FD_ISSET(sItem->fd, &read_set))
                    {
 #ifdef ENABLE_SOCKSCHECK
                        nfds--;
-                       cptr->socks->status |= SOCK_CONNECTED;
-                       read_socks(cptr);
+                       sItem->status |= SOCK_CONNECTED;
+		       FD_CLR(sItem->fd, &read_set);
+                       read_socks(sItem); /* cptr->socks may now be null */
 #else
                        nfds--;
-                       cptr->socks->status = SOCK_GO|SOCK_DESTROY;
+                       sItem->status = SOCK_GO|SOCK_DESTROY;
 #endif
                    }
-                else if (cptr->socks && ( (NOW - cptr->socks->start) > SOCKS_TIMEOUT) )
+                else if (sItem && !(sItem->status & SOCK_DONE) && ( (NOW - sItem->start) > SOCKS_TIMEOUT) )
                   {
-                      sendto_one(cptr, ":%s NOTICE AUTH "
-		      		 ":Socks check timed out.  "
+                      sendto_socks(sItem, "Socks check timed out.  "
 		      		 "This is probably a good thing.", me.name);
-                      sendto_realops("Socks server timeout for %s",
-			get_client_name(cptr, TRUE));
-                      cptr->socks->status = SOCK_DESTROY|SOCK_DONE;
-                      if (cptr->socks->fd >=0)
+                      sendto_umode(FLAGSET_CLIENT, "Socks server timeout for [%s]",
+			inetntoa((char *)&sItem->in_addr));
+                      sItem->status = SOCK_DESTROY|SOCK_DONE;
+                      if (sItem->fd >=0)
 			{
-				if (cptr->socks->fd == highest_fd)
+				if (sItem->fd == highest_fd)
 					while(!local[highest_fd])
 						highest_fd--;
-				 closesocket(cptr->socks->fd);
+				 closesocket(sItem->fd);
 			}
-                      cptr->socks->fd = -1;
+                      sItem->fd = -1;
                   }
-
            }
+        } while(0);
+//%%%%
+
 
 
 	for (i = highest_fd; i >= 0; i--)

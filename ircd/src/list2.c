@@ -151,6 +151,7 @@ aClient	*make_client(aClient *from)
 	cptr->serv = NULL;
 	cptr->status = STAT_UNKNOWN;
 	cptr->fd = -1;
+	cptr->socks = (void *)0;
 	(void)strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
@@ -228,6 +229,7 @@ anUser	*make_user(aClient *cptr)
 	cptr->user = user;
 	user->nextu = NULL;
 	user->away = NULL;
+	user->mask = NULL;
 	user->refcnt = 1;
 	user->joined = 0;
 	user->channel = NULL;
@@ -291,6 +293,8 @@ void	free_user(anUser *user, aClient *cptr)
 	    {
 		if (user->away)
 			(void)MyFree((char *)user->away);
+		if (user->mask)
+			(void)MyFree((char *)user->mask);
 		bzero((char *)user, sizeof(*user));
 		user->nextu = ufree;
 		ufree = user;

@@ -146,8 +146,9 @@ struct Message VMptrEnt;
 
 struct Message *hash_findcommand(char *cmd, aClient *cptr)
 {
-   char hval = cmd ? MHASH(cmd) : 0;
+   unsigned char hval = cmd ? MHASH(cmd) : 0;
    int iOper = (!MyClient(cptr) || IsAnOper(cptr)) ? 1 : 0;
+
    if (!msghash[hval]) return NULL;
    else
    {
@@ -174,7 +175,7 @@ int msgtab_buildhash()
         static int run = 0;
         struct Message *mptr;
         struct HMessage *ipt;
-        char hval;
+        unsigned char hval;
         BlankMptrEnt.cmd = NULL;
         BlankMptrEnt.func= NULL;
 
@@ -183,21 +184,25 @@ int msgtab_buildhash()
                struct HMessage *h_next, *h_ptr;
                trun = 1;
 
-               for (i = 0; i < 255; i++)
+               for (i = 0; i <= MSG_HASH_SIZE; i++)
                {
                    if (msghash[i])
                    {
                            for (h_ptr = msghash[i]; h_ptr; h_ptr = h_next)
                            {
                                h_next = h_ptr->next;
-                               h_ptr->next = NULL;
                                MyFree(h_ptr);
-                               h_ptr = NULL;
                            }
                            msghash[i] = NULL;
+                           continue;
                    }
+                   msghash[i] = NULL;
                }
-        } else run = 1;
+        } else {
+            for (i = 0; i <= MSG_HASH_SIZE; i++)
+                 msghash[i] = NULL;
+            run = 1;
+        }
 
 #ifdef BOOT_MSGS
         if (trun < 1)
@@ -206,7 +211,7 @@ int msgtab_buildhash()
 
         for ( i = 0 ; msgtab[i].cmd ; i++)
         {
-            hval = MHASH(msgtab[i].cmd);
+            hval = (unsigned char)MHASH(msgtab[i].cmd);
             if (!msghash[hval])
             {
 #ifdef BOOT_MSGS
@@ -315,7 +320,7 @@ struct	Message *mptr;
     {
 	aClient *from = cptr;
 	char *ch, *s;
-	int	len, i, numeric, paramcount, noprefix = 0;
+	int	len, i, numeric = 0, paramcount, noprefix = 0;
         time_t parsetime = NOW;
 
 
@@ -496,7 +501,8 @@ struct	Message *mptr;
 					   from->hurt = 0;
 					if (IsHurt(from) && from->hurt)
 					{
-						if (NOW < from->hurt || (from->hurt>0 && from->hurt<5))
+						if ((NOW < from->hurt || (from->hurt>0 && from->hurt<5)) &&
+                                                    (from->hurt != 3 || !IsOper(from)))
 						{
 						     if (from->hurt>5 && from->hurt > NOW)
 						     {
@@ -521,7 +527,7 @@ struct	Message *mptr;
 								 sendto_one(from, err_str(ERR_YOURHURT), me.name, "AUTH");
 							         break;
 							        case 3: 
-								  sendto_one(from, ":%s %d %s :You must identify to a registered nick before you can use this command from a banned site.", me.name, ERR_YOURHURT, from->name);
+								  sendto_one(from, ":%s %d %s :You must identify to a registered nick before you can use this command from a partially-banned site.", me.name, ERR_YOURHURT, from->name);
                                                                   break;
 							        case 4: 
                                                                     break;
