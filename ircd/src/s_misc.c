@@ -21,25 +21,18 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include <sys/time.h>
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "numeric.h"
 #include "userload.h"
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdarg.h>
 #include <sys/param.h>
-#include "h.h"
 #include "msg.h"
 
 #ifdef SYSLOGH
 #include <syslog.h>
 #endif
-
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)s_misc.c	2.42 3/1/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

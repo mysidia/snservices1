@@ -8,9 +8,7 @@
 
 #include "ircd.h"
 
-#include "sys.h"
 #include "res.h"
-#include "numeric.h"
 
 #include <sys/time.h>
 #include <sys/socket.h>

@@ -20,7 +20,6 @@
 
 #include "ircd.h"
 
-#include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -31,8 +30,6 @@
 #include <pwd.h>
 #include <errno.h>
 
-#include "sys.h"
-#include "numeric.h"
 #include "userload.h"
 
 IRCD_SCCSID("@(#)ircd.c	2.48 3/9/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");

@@ -17,11 +17,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "struct.h"
-#include "numeric.h"
-#include "h.h"
-
-#include "ircd/cdefs.h"
+#include "ircd.h"
 
 IRCD_SCCSID("@(#)s_err.c	1.12 11/1/93 (C) 1992 Darren Reed");
 IRCD_RCSID("$Id$");

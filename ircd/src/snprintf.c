@@ -11,12 +11,8 @@
 
 #ifdef NEED_SNPRINTF
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
+#include "ircd.h"
 #include <string.h>
-
-#include "ircd/memory.h"
 
 int snprintf(char *str, size_t size, const char *format, ...);
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);

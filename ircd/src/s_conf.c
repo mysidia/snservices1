@@ -25,8 +25,6 @@
 #define KLINE_RET_DELOK 1
 #define KLINE_DEL_ERR 0
 
-#include "sys.h"
-#include "numeric.h"
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/stat.h>

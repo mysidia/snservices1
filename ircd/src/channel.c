@@ -20,8 +20,6 @@
 
 #include "ircd.h"
 
-#include "sys.h"
-#include "numeric.h"
 #include "channel.h"
 #include "hash.h"
 #include "msg.h"
