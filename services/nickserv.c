@@ -4055,24 +4055,58 @@ NCMD(ns_ghost)
 	}
 #endif
 
-	if (getGhost(args[1])) {
-		tmp = getRegNickData(args[1]);
-		if (tmp == NULL) {
-			sSend(":%s NOTICE %s :%s is not registered", NickServ, from,
-				  args[1]);
-			return RET_EFAULT;
-		}
+	tmp = getRegNickData(args[1]);
 
-		if ((numargs > 2 && Valid_pw(args[2], tmp->password, NickGetEnc(tmp))) ||
-			( !(tmp->flags & NIDENT) &&
-			  checkAccess(tmp->user, tmp->host, nick->reg) )
-		)
+	if (tmp == NULL) {
+		sSend(":%s NOTICE %s :%s is not registered", NickServ, from,
+			  args[1]);
+		return RET_EFAULT;
+	}
+
+	/* Abort if no access */
+	if (numargs > 2)
+	{
+		if (isMD5Key(args[2]) != 0)
 		{
-			sSend(":%s NOTICE %s :%s has been ghosted", NickServ,
-				  nick->nick, args[1]);
-			if (isGhost(args[1])) {
-				delGhost(args[1]);
+			struct auth_data auth_info[] = {{
+				nick->auth_cookie,
+				nick->idnum.getHashKey(),
+				2
+			}};
+
+			if (Valid_md5key(args[2], auth_info, tmp->nick, tmp->password, NickGetEnc(tmp)) == 0)
+			{
+				sSend(":%s NOTICE %s :Invalid MD5 key.", NickServ, nick->nick);
+				nick->auth_cookie = 0;
+				if (BadPwNick(nick, tmp))
+					return RET_KILLED;
+				return RET_BADPW;
 			}
+			nick->auth_cookie = 0;
+		}
+		else if (Valid_pw(args[2], tmp->password, NickGetEnc(tmp)) == 0)
+		{
+			PutReply(NickServ, nick, ERR_BADPW_NICK_1ARG, args[1], 0, 0);
+			return RET_BADPW;
+		}
+	}
+	else
+	{
+		if ((tmp->flags & NIDENT) || 
+				checkAccess(tmp->user, tmp->host, nick->reg) == 0)
+		{
+			PutReply(NickServ, nick, ERR_NOACCESS, 0, 0, 0);
+			return RET_NOPERM;
+		}			
+	}
+
+	/* From now on, access assumed */
+
+	if (getGhost(args[1])) {
+		sSend(":%s NOTICE %s :%s has been ghosted", NickServ,
+			  nick->nick, args[1]);
+		if (isGhost(args[1])) {
+			delGhost(args[1]);
 		}
 		return RET_OK;
 	}
@@ -4082,27 +4116,24 @@ NCMD(ns_ghost)
 	taruser = getNickData(args[1]);
 
 	if (tmp != NULL)
-		if (checkAccess(nick->user, nick->host, tmp)
-			|| ((numargs > 2) && Valid_pw(args[2], tmp->password, NickGetEnc(tmp)))) 
 	{
-			taruser = getNickData(args[1]);
+		taruser = getNickData(args[1]);
 
-			if (!taruser && (getGhost(args[1]) == NULL)) {
-				sSend(":%s NOTICE %s :%s is not online.", NickServ,
-					  nick->nick, args[1]);
-			}
+		if (!taruser && (getGhost(args[1]) == NULL)) {
+			sSend(":%s NOTICE %s :%s is not online.", NickServ,
+				  nick->nick, args[1]);
+		}
 
-			if (!taruser)
-				sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s)", NickServ,
-					  args[1], services[1].host, NickServ, nick->nick, nick->user, nick->host);
-			else {
-				if (strcmp(nick->host, taruser->host))
-					sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s))",
-						  NickServ, args[1], services[1].host, NickServ,
-						  nick->nick, nick->user,
-						  (nick->oflags & NOISMASK) ? genHostMask(nick->
-																  host) :
-						  nick->host);
+		if (!taruser)
+			sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s)", NickServ,
+				  args[1], services[1].host, NickServ, nick->nick, nick->user, nick->host);
+		else {
+			if (strcmp(nick->host, taruser->host))
+				sSend(":%s KILL %s :%s!%s (Ghosted. By: %s (%s@%s))",
+					  NickServ, args[1], services[1].host, NickServ,
+					  nick->nick, nick->user,
+					  (nick->oflags & NOISMASK) ?
+					   genHostMask(nick->host) : nick->host);
 				else
 					sSend(":%s KILL %s :%s!%s (Ghosted. By: %s)", NickServ,
 						  args[1], services[1].host, NickServ, nick->nick);
