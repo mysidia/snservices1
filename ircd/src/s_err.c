@@ -194,7 +194,7 @@ static  Numeric local_replies[] = {
 /* 436 */	{ ERR_NICKCOLLISION, "%s :Nickname collision KILL" },
 /* 437 */	{ ERR_BANNICKCHANGE,
 		"%s :Cannot change nickname when moderated/banned on a channel." },
-/* 440 */	{ ERR_SERVICESDOWN, "Services is currently down. Please wait a few moments and then try again." },
+/* 440 */	{ ERR_SERVICESDOWN, ":Services is currently down. Please wait a few moments and then try again." },
 /* 441 */	{ ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel" },
 /* 442 */	{ ERR_NOTONCHANNEL, "%s :You're not on that channel" },
 /* 443 */	{ ERR_USERONCHANNEL, "%s %s :is already on channel" },
