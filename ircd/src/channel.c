@@ -376,30 +376,6 @@ char	*banid;
 }
 
 /*
- * index_left_part( text, substring, int *pointer ) :
- *    Tries to find 'substring' at the beginning of text.
- *       if successful returns the index 1 after the end, else 0
- */
-int index_left_part(const char* text, const char* substring)
-{
-	int i = 0;
-
-	for(; *substring != '\0'; substring++) {
-		if (*text == '\0') {
-			return 0;
-		}
-
-		if (irc_tolower(*text) != irc_tolower(*substring))  {
-			return 0;
-		}
-		text++;
-		i++;
-	}
-
-	return i;
-}
-
-/*
  * IsMember - returns 1 if a person is joined and not a zombie
  */
 int	IsMember(cptr, chptr)
@@ -416,80 +392,113 @@ int BanRuleMatch(const char *text, aClient *cptr, int *result,
                  const char *nuh, const char *nuhmask,
                  const char *sip)
 {
-	int pattern_start = 0, negate_rule = 0;
+	int negate_rule = 0;
 	int ban_flags = (result ? *result : BAN_STD);
 
 	if (!text || !cptr || *text != '$')
-	    return 0;
+	{
+		return 0;
+	}
+
         text++;
 
-	if (irc_tolower(*text) == '!' && text[1] != '\0') {
+	if (*text == '!')
+	{
 		negate_rule = 1;
 		text++;
 	}
 
-	if (irc_tolower(*text) == 'q' && text[1] == ':') {
-	    ban_flags = BAN_BQUIET;
-	    pattern_start = 2;
-	}
-	else if (irc_tolower(*text) == 'm')
-	    ban_flags = BAN_MASK;
-	else if (irc_tolower(*text) == 'r' && text[1] == ':') {
-	    ban_flags = BAN_REQUIRE;
-	    pattern_start = 2;
-	}
-        else if (irc_tolower(*text) == 'g' && text[1] == ':') {
-            ban_flags = BAN_GECOS;
-            pattern_start = 2;
-        }
-        else if (((pattern_start = index_left_part(text, "RR:")) > 0)
-	          && !IsRegNick(cptr)) {
-            ban_flags = BAN_REGONLY;
-        }
-        else if (((pattern_start = index_left_part(text, "RV:")) > 0)
-	          && !IsVerNick(cptr)) {
-	    ban_flags = BAN_VERONLY;
-        }	
-        else return 0;
-
-
-	/* Ban flags +q,  NV, and NR  match nick!user@host  like any other ban */
-	if ((ban_flags == BAN_BQUIET || ban_flags == BAN_VERONLY || ban_flags == BAN_REGONLY)
-	      && pattern_start) {
-	    if (  text[pattern_start] != '\0' &&
-                  (match(text+pattern_start, nuh)) &&
-                  (!nuhmask || match(text+pattern_start, nuhmask)) &&
-                  (!sip || match(text+pattern_start, sip))
-               )
-               return 0;
-	}
-
-	if (ban_flags == BAN_REQUIRE && pattern_start) {
-	    aChannel *ctmp = find_channel((char *)(text+pattern_start), (aChannel *)0);
-	    Link *lp;
-
-	    lp = ctmp ? find_user_link(ctmp->members, cptr) : (Link *)0;
-
-	    //if ((lp && !negate_rule) || (!lp && negate_rule))
-	    // <--> (lp XOR negate_rule)
-	    if ((lp == 0) != (negate_rule == 0))
+	if (*text == 0 || text[1] != ':')
+	{
 		return 0;
 	}
 
-	if (ban_flags == BAN_GECOS && pattern_start) {
-		if (match(text+pattern_start, cptr->info))
+	switch(*text)
+	{
+		case 'q':
+			ban_flags = BAN_BQUIET;
+			break;
+		case 'm':
+			ban_flags = BAN_MASK;
+			break;
+		case 'r':
+			ban_flags = BAN_REQUIRE;
+			break;
+		case 'g':
+			ban_flags = BAN_GECOS;
+			break;
+		case 'R':
+			if (IsRegNick(cptr))
+			{
+				return 0;
+			}
+			ban_flags = BAN_REGONLY;
+			break;
+		case 'V':
+			if (IsVerNick(cptr))
+			{
+				return 0;
+			}
+			ban_flags = BAN_VERONLY;
+			break;
+		default:
 			return 0;
 	}
 
-	if (ban_flags == BAN_MASK) {
-	    if (IsMasked(cptr))
-	        ban_flags |= BAN_STD;
-	    else
-	        return 0;
+	text += 2;
+
+	/* Ban flags +q, V, and R  match nick!user@host  like any other ban */
+	if ((ban_flags == BAN_BQUIET || ban_flags == BAN_VERONLY ||
+		ban_flags == BAN_REGONLY))
+	{
+		if (*text != '\0' && (match(text, nuh)) &&
+			(!nuhmask || match(text, nuhmask)) &&
+			(!sip || match(text, sip)))
+		{
+			return 0;
+		}
+	}
+
+	if (ban_flags == BAN_REQUIRE)
+	{
+		aChannel *ctmp = find_channel(text, NULL);
+		Link *lp;
+
+		lp = ctmp ? find_user_link(ctmp->members, cptr) : NULL;
+
+		//if ((lp && !negate_rule) || (!lp && negate_rule))
+		// <--> (lp XOR negate_rule)
+		if ((lp == 0) != (negate_rule == 0))
+		{
+			return 0;
+		}
+	}
+
+	if (ban_flags == BAN_GECOS)
+	{
+		if (match(text, cptr->info))
+		{
+			return 0;
+		}
+	}
+
+	if (ban_flags == BAN_MASK)
+	{
+		if (IsMasked(cptr))
+		{
+			ban_flags |= BAN_STD;
+		}
+		else
+		{
+			return 0;
+		}
 	}
 
 	if (result)
-	    *result = ban_flags;
+	{
+		*result = ban_flags;
+	}
+
 	return 1;
 }
 
@@ -1077,46 +1086,57 @@ char *modebuf;
   return 0;
 }
 
-char *pretty_mask(mask, limit_rules)
-char *mask;
-int limit_rules;
+char *pretty_mask(char *mask, int limit_rules)
 {
-  char *cp, *lead;
-  char *user;
-  char *host;
+	char *cp, *lead;
+	char *user;
+	char *host;
 
-  if (mask && *mask == '$' && mask[1] != '\0') {
-      if (!limit_rules)
-          return mask;
-      lead = mask+1;
+	if (mask && *mask == '$' && mask[1] != '\0')
+	{
+		lead = mask+1;
 
-      if (*lead == '!' && lead[1] != '\0')
-	  lead++;
+		if (*lead == '!')
+			lead++;
 
-      switch(*lead) {
-	      case 'R': case 'r': case 'g':
-	      case 'q': case 'm':
-		      return mask;
-	      default:;
-      }
-      
-      mask[1] = '?';
-      return mask;
-  }
+		switch(*lead)
+		{
+			case 'R':
+			case 'V':
+			case 'r':
+			case 'g':
+			case 'q':
+			case 'm':
+				if (*++lead == ':')
+				{
+					return mask;
+				}
+				break;
+			default:
+				if (!limit_rules)
+				{
+					return mask;
+				}
+				break;
+		}
+	}
 
-  if ((user = index((cp = mask), '!')))
-    *user++ = '\0';
-  if ((host = rindex(user ? user : cp, '@')))
-    {
-      *host++ = '\0';
-      if (!user)
-	return make_nick_user_host(NULL, cp, host);
-    }
-  else
-    if (!user && index(cp, '.'))
-      return make_nick_user_host(NULL, NULL, cp);
+	if ((user = index((cp = mask), '!')))
+		*user++ = '\0';
 
-  return make_nick_user_host(cp, user, host);
+	if ((host = rindex(user ? user : cp, '@')))
+	{
+		*host++ = '\0';
+		if (!user)
+			return make_nick_user_host(NULL, cp, host);
+	}
+	else
+	{
+		if (!user && index(cp, '.'))
+			return make_nick_user_host(NULL, NULL, cp);
+	}
+
+	return make_nick_user_host(cp, user, host);
 }
 
 int get_mode_chfl(char p)
@@ -1632,8 +1652,7 @@ int	modehack;
 			  * host.name = *!*@host.name    --Run
 			  */
 				c = 'b';
-				cp = pretty_mask(lp->value.cp, (MyClient(sptr)
-						 && !MyOper(sptr)) ? 1 : 0);
+				cp = pretty_mask(lp->value.cp, MyClient(sptr));
 				break;
 			case MODE_KEY :
 				c = 'k';
