@@ -63,6 +63,51 @@ sub getPrivateNickInfo
 
 }
 
+sub loginChannel
+{
+	my $self = shift;
+	my $chan = shift;
+	my $passw = shift;
+	my $sel = $self->{sel};
+	my $sock = $self->{sock};
+
+	$passw = md5_hex($passw);
+	$sock->print("AUTH OBJECT LOGIN RCHAN " . $chan. "\n");
+
+	for(;;) {
+		for ($sel->can_read(5)) {
+			if ($_ ne $self->{sock}) {
+				$self->{ERRORTEXT} = "Wrong socket";
+				return undef;
+			}
+			while ($line = $sock->getline) {
+print $line . "\n";
+				if ($line =~ /^OK AUTH OBJECT RCHAN LOGIN/) {
+				}
+				elsif ($line =~ /^AUTH COOKIE (\S+)/) {
+					$hashcode = md5_hex($1 . ":" . $passw);
+					$sock->print("AUTH OBJECT PASS " . $hashcode . "\n");
+				}
+				elsif ($line =~ /^ERR-BADLOGIN /) {
+					$self->{ERRORTEXT} = "Invalid login details";
+					return undef;
+				}
+				elsif ($line =~ /^OK AUTH OBJECT RCHAN PASS/) {
+					return 1;
+				}
+				elsif ($line =~ /^ERR-(\S+\s)+- (.*)/) {
+					$self->{ERRORTEXT} = "Error: $2";
+					return undef;
+				}
+				else {
+					$self->{ERRORTEXT} = "Invalid login reply";
+					return undef;
+				}
+			}
+		}
+	}
+}
+
 sub queryNick
 {
 	my $self = shift;
