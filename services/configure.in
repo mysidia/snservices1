@@ -346,6 +346,8 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS(stdarg.h fcntl.h memory.h unistd.h stdlib.h sys/time.h sys/resource.h sys/types.h netinet/in.h)
 AC_CHECK_HEADERS(libpq-fe.h getopt.h)
 
+AC_CHECK_LIB(dl, dlopen, [])
+
 #AC_CHECK_LIB(pq, PQexec, AC_MSG_ERROR([Services depends on libpq: the PostgreSQL API.]))
 #AC_DEFINE(USE_SQL)
 
