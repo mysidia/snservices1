@@ -348,15 +348,12 @@ aConfItem *aconf;
 void	close_listeners()
 {
 	aClient	*cptr;
-	int	i;
 	aConfItem *aconf;
 
 	/*
 	 * close all 'extra' listening ports we have
 	 */
-	for (i = highest_fd ; i >= 0 ; i--) {
-		if (!(cptr = local[i]))
-			continue;
+	for (cptr = &me; cptr; cptr = cptr->lnext) {
 		if (!IsMe(cptr) || cptr == &me || !IsListening(cptr))
 			continue;
 		aconf = cptr->confs->value.aconf;
@@ -918,7 +915,7 @@ aClient *cptr;
 
 	if (cptr->fd >= 0)
 	    {
-		flush_connections(cptr->fd);
+		flush_connections(cptr);
 		local[cptr->fd] = NULL;
 		(void)closesocket(cptr->fd);
 		cptr->fd = -2;
@@ -1429,7 +1426,7 @@ deadsocket:
 		if (!NoNewLine(cptr) || FD_ISSET(i, &read_set))
 			length = read_packet(cptr, &read_set);
 		if (length > 0)
-			flush_connections(i);
+			flush_connections(cptr);
 		if ((length != FLUSH_BUFFER) && IsDead(cptr))
 			goto deadsocket;
 		if (!FD_ISSET(i, &read_set) && length > 0)

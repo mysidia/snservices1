@@ -700,15 +700,15 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	aConfItem **tmp = &conf, *tmp2;
 	aClass	*cltmp;
 	aClient	*acptr;
-	int	i, ret = 0;
+	int	ret = 0;
 
 	if (sig == 1)
 	    {
 		sendto_ops("Got signal SIGHUP, reloading ircd conf. file");
 	    }
 
-	for (i = 0; i <= highest_fd; i++)
-		if ((acptr = local[i]) && !IsMe(acptr))
+	for (acptr = &me; acptr; acptr = acptr->lnext)
+		if (!IsMe(acptr))
 		    {
 			/*
 			 * Nullify any references from client structures to
@@ -776,8 +776,8 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	check_pings(NOW, 1, NULL);
 
 	/* Recheck all U-lines -- Barubary */
-	for (i = 0; i < highest_fd; i++)
-		if ((acptr = local[i]) && !IsMe(acptr))
+	for (acptr = &me; acptr; acptr = acptr->lnext)
+		if (!IsMe(acptr))
 		{
 			if (find_conf_host(acptr->from->confs, acptr->name,
 				CONF_UWORLD) || (acptr->user && find_conf_host(
@@ -1980,7 +1980,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	char userhost[512+2]="", *in;
-	int uline=0, i=0, propo=0;
+	int uline=0, propo=0;
 	char *reason, *mask, *server, *person;
 	aClient *acptr;
 	
@@ -2100,14 +2100,14 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
        {
              sendto_failops_whoare_opers("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
              sendto_serv_butone(NULL,":%s GLOBOPS :z:line error: mask=%s parsed=%s I tried to zap cptr", me.name, mask, userhost);
-             flush_connections(me.fd);
+             flush_connections(&me);
              (void)rehash(&me, &me, 0);
              return 0;
        }
 
-	for (i=highest_fd;i>0;i--)
+	for (acptr = &me; acptr; acptr = acptr->lnext)
 	{
-	  if (!(acptr = local[i]) || IsLog(acptr) || IsMe(acptr));
+	  if (IsLog(acptr) || IsMe(acptr));
 	     continue;
 	  if (  find_zap(acptr, 1) )
           {

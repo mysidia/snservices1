@@ -103,6 +103,13 @@ aClient	*make_client(aClient *from)
 	(void)strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
+		cptr->lnext = me.lnext;
+		cptr->lprev = &me;
+		me.lnext = cptr;
+		if (cptr->lnext)
+		{
+			cptr->lnext->lprev = cptr;
+		}
 	        cptr->lopt = (LOpts *)0;
 		cptr->since = cptr->lasttime =
 		  cptr->lastnick = cptr->firsttime = NOW;
@@ -115,10 +122,19 @@ aClient	*make_client(aClient *from)
 
 void	free_client(aClient *cptr)
 {
-	if (cptr->from == cptr && cptr->lopt) {
-		free_str_list(cptr->lopt->yeslist);
-		free_str_list(cptr->lopt->nolist);
-		irc_free(cptr->lopt);
+	if (cptr->from == cptr)
+	{
+		cptr->lprev->lnext = cptr->lnext;
+		if (cptr->lnext)
+		{
+			cptr->lnext->lprev = cptr->lprev;
+		}
+		if (cptr->lopt)
+		{
+			free_str_list(cptr->lopt->yeslist);
+			free_str_list(cptr->lopt->nolist);
+			irc_free(cptr->lopt);
+		}
 	}
 
 	irc_free(cptr);

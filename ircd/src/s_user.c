@@ -2283,7 +2283,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
-	int show_unknowns = 0, show_users = 0, need_start = 1, extended = 0, show_all = 0, i,
+	int show_unknowns = 0, show_users = 0, need_start = 1, extended = 0, show_all = 0,
 	     show_servers = 0, show_ports = 0;
 	
 	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
@@ -2340,10 +2340,8 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		sendto_one(cptr, ":%s NOTICE %s :Client List", me.name, sptr->name);
 	}
 
-	for(i = 0; i <= highest_fd; i++) {
-		if (!(ptr = local[i]))
-			continue;
-
+	for(ptr = &me; ptr; ptr = ptr->lnext)
+	{
 		if (IsLog(ptr) || IsMe(ptr))
 			continue;
 
@@ -2361,7 +2359,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 		if (extended == 0) {
 			sendto_one(cptr, ":%s NOTICE %s :%d. [%s!%s@%s] [%s,%d,%d,%d] [h:%s] [s:%s]",
-					me.name, sptr->name, i,
+					me.name, sptr->name, ptr->fd,
 					BadPtr(ptr->name) ? "-" : ptr->name,
 					BadPtr(ptr->username) ? "-" : ptr->username,
 					ptr->sockhost,
@@ -2378,7 +2376,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		/* Extended mode */
 
 		sendto_one(cptr, ":%s NOTICE %s :%s<client id=\"%d\">", me.name, sptr->name,
-				need_start ? "<clients>" : "", i);
+				need_start ? "<clients>" : "", ptr->fd);
 		need_start = 0;
 
 		quoteShowConData(BadPtr(ptr->name) ? "" : ptr->name, buf1, BUFSIZE);
@@ -4295,7 +4293,6 @@ send_umode(aClient *cptr, aClient *sptr, aClient *acptr, int old,
  */
 void send_umode_out(aClient *cptr, aClient *sptr, aClient *actptr, int old)
 {
-	int     i;
 	aClient *acptr;
 
         if (sptr == actptr)
@@ -4312,8 +4309,8 @@ void send_umode_out(aClient *cptr, aClient *sptr, aClient *actptr, int old)
 				   sptr->name, actptr->name, buf);
             }
 
-	for (i = highest_fd; i >= 0; i--)
-		if ((acptr = local[i]) && IsServer(acptr) &&
+	for (acptr = &me; acptr; acptr = acptr->lnext)
+		if (IsServer(acptr) &&
 		    (acptr != cptr) && (acptr != sptr) && *buf)
 			sendto_one(acptr, ":%s MODE %s :%s",
 				   sptr->name, actptr->name, buf);

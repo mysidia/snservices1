@@ -22,7 +22,7 @@
 VOIDSIG s_die(int);
 
 extern	time_t	nextconnect, nextdnscheck, nextping;
-extern	aClient	*client, me, *local[];
+extern	aClient	*client, me;
 extern	aChannel *channel;
 extern	struct	stats	*ircstp;
 extern	int	bootopt;
@@ -92,7 +92,7 @@ int	addr_cmp(const anAddress *, const anAddress *);
 void boot_replies(void);
 
 extern	int	dbufalloc, dbufblocks, debuglevel;
-extern	int	highest_fd, debuglevel, portnum, debugtty, maxusersperchannel;
+extern	int	debuglevel, portnum, debugtty, maxusersperchannel;
 extern	int	readcalls, resfd;
 aClient	*add_connection(aClient *, int);
 int	add_listener(aConfItem *);
@@ -104,6 +104,7 @@ int	check_server_init(aClient *);
 void	close_connection(aClient *);
 void	close_listeners(void);
 int connect_server(aConfItem *, aClient *, struct HostEnt *);
+void flush_connections(aClient*);
 void	get_my_name(aClient *, char *, int);
 int	get_sockerr(aClient *);
 int	inetport(aClient *, char *, int);

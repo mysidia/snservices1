@@ -72,7 +72,6 @@ char *strtoken(char **, char *, char *);
 #define KLINE_AKILL 2
 #endif
 
-void flush_connections(int);
 struct SLink *find_user_link(/* struct SLink *, struct Client * */);
 
 extern time_t NOW, tm_offset;
