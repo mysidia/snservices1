@@ -237,7 +237,7 @@ vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 	bzero(sentalong, sizeof(sentalong));
 	for (lp = chptr->members ; lp ; lp = lp->next) {
 		acptr = lp->value.cptr;
-		if (acptr->from == one || (lp->flags & CHFL_ZOMBIE))
+		if (acptr->from == one)
 			continue;	/* ...was the one I should skip */
 		i = acptr->from->sock->fd;
 		va_copy(ap2, ap);
@@ -292,8 +292,7 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 	bzero(sentalong, sizeof(sentalong));
 	for (lp = chptr->members; lp; lp = lp->next) {
 		acptr = lp->value.cptr;
-		if (acptr->from == one || (lp->flags & CHFL_ZOMBIE) ||
-		    !(lp->flags & CHFL_CHANOP))
+		if (acptr->from == one || !(lp->flags & CHFL_CHANOP))
 			continue;       /* ...was the one I should skip
                                            or user not not a channel op */
 		i = acptr->from->sock->fd;
@@ -341,7 +340,6 @@ sendto_channelvoices_butone(aClient *one, aClient *from, aChannel *chptr,
 	for (lp = chptr->members; lp; lp = lp->next) {
 		acptr = lp->value.cptr;
 		if (acptr->from == one
-		    || (lp->flags & CHFL_ZOMBIE)
 		    || (!(lp->flags & CHFL_VOICE)
 			&& !(lp->flags & CHFL_CHANOP) ))
 			continue;       /* ...was the one I should skip
@@ -441,8 +439,7 @@ sendto_channel_butserv(aChannel *chptr, aClient *from, char *fmt, ...)
 	va_start(ap, fmt);
 
 	for (lp = chptr->members; lp; lp = lp->next)
-		if (MyConnect(acptr = lp->value.cptr) &&
-		    !(lp->flags & CHFL_ZOMBIE)) {
+		if (MyConnect(acptr = lp->value.cptr)) {
 			va_copy(ap2, ap);
 			vsendto_prefix_one(acptr, from, fmt, ap2);
 			va_end(ap2);
@@ -469,8 +466,7 @@ sendto_channel_butserv_unmask(aChannel *chptr, aClient *from, char *fmt, ...)
 	va_start(ap, fmt);
 
         for (lp = chptr->members; lp; lp = lp->next) {
-                if (MyConnect(acptr = lp->value.cptr) &&
-                    !(lp->flags & CHFL_ZOMBIE)) {
+                if (MyConnect(acptr = lp->value.cptr)) {
                         if (IsSet(chptr->mode.mode, MODE_SHOWHOST) &&
                             (lp->flags & CHFL_CHANOP) &&
                             !IsSet(ClientUmode(from), U_FULLMASK) && from->user) {

@@ -860,9 +860,8 @@ struct Channel	{
 #define	CHFL_VOICE      0x0002 /* The power to speak */
 #define	CHFL_DEOPPED	0x0004 /* Is de-opped by a server */
 #define	CHFL_SERVOPOK   0x0008 /* Server op allowed */
-#define	CHFL_ZOMBIE     0x0010 /* Kicked from channel */
+#define	CHFL_BQUIET     0x0010 /* Is banned on the channel? */
 #define	CHFL_BAN	0x0020 /* Ban channel flag */
-#define CHFL_BQUIET	0x0040 /* Is banned on the channel? */
 #define	CHFL_OVERLAP    (CHFL_CHANOP|CHFL_VOICE)
 
 #define BAN_BLOCK      0x0001

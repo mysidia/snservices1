@@ -1835,8 +1835,6 @@ static void do_who(aClient *sptr, aClient *acptr, aChannel *repchan)
 		status[i++] = '@';
 	else if (repchan && has_voice(acptr, repchan))
 		status[i++] = '+';
-	else if (repchan && is_zombie(acptr, repchan))
-		status[i++] = '!';
 	status[i] = '\0';
 	sendto_one(sptr, rpl_str(RPL_WHOREPLY), me.name, sptr->name,
 		   (repchan) ? (repchan->chname) : "*", acptr->user->username,
@@ -1940,9 +1938,6 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			    {
 				if (oper && !IsAnOper(lp->value.cptr))
 					continue;
-				if (lp->value.cptr!=sptr &&
-				    (lp->flags & CHFL_ZOMBIE))
-					continue;
 				if (lp->value.cptr!=sptr && IsInvisible(lp->value.cptr) && !member)
 					continue;
 				do_who(sptr, lp->value.cptr, chptr);
@@ -1972,8 +1967,6 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			chptr = lp->value.chptr;
 			member = IsMember(sptr, chptr);
 			if (isinvis && !member)
-				continue;
-			if (is_zombie(acptr, chptr))
 				continue;
 			if (IsAnOper(sptr)) showperson = 1;
 			if (member || (!isinvis && 
@@ -2102,8 +2095,6 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				member = IsMember(sptr, chptr);
 				if (invis && !member)
 					continue;
-				if (is_zombie(acptr, chptr))
-					continue;
 				if (member || (!invis && PubChannel(chptr)))
 				    {
 					showperson = 1;
@@ -2126,8 +2117,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			     lp = lp->next)
 			    {
 				chptr = lp->value.chptr;
-				if (ShowChannel(sptr, chptr) &&
-				    (acptr==sptr || !is_zombie(acptr, chptr)))
+				if (ShowChannel(sptr, chptr))
 				    {
 					if (len + strlen(chptr->chname)
                                             > (size_t) BUFSIZE - 4 - mlen)
@@ -2144,8 +2134,6 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 						*(buf + len++) = '@';
 					else if (has_voice(acptr, chptr))
 						*(buf + len++) = '+';
- 					else if (is_zombie(acptr, chptr))
-						*(buf + len++) = '!';
 					if (len)
 						*(buf + len) = '\0';
 					(void)strcpy(buf + len, chptr->chname);

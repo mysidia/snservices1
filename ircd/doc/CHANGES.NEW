@@ -14,6 +14,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 CHANGES SINCE sorircd1.3.4
 *********************************************************************
 
+Thu Oct 14 01:38:40 CEST 2004 sor1.5.0devel - Onno
+ * New configuration parser, using an XML configuration file.
+
 Wed Oct  6 12:56:11 CEST 2004 sor1.5.0devel - Echostar
  * Changed colour blocking by ircd into colour stripping.
 

@@ -40,7 +40,6 @@ static	int	del_banid(aChannel *, char *);
 static	int	find_banid(aChannel *, char *);
 /*static	Link	*is_banned(aClient *, aChannel *);*/
 static  int     have_ops(aChannel *);
-static	int	number_of_zombies(aChannel *);
 static	int	set_mode(aClient *, aClient *, aChannel *, int,\
 			 char **, char *,char *, int *, int *, int);
 static	void	sub1_from_channel(aChannel *);
@@ -395,7 +394,7 @@ int index_left_part(const char* text, const char* substring)
 }
 
 /*
- * IsMember - returns 1 if a person is joined and not a zombie
+ * IsMember - returns 1 if a person has joined the given channel
  */
 int	IsMember(cptr, chptr)
 aClient *cptr;
@@ -403,8 +402,7 @@ aChannel *chptr;
 {
         Link *lp;
 
-	return (((lp=find_user_link(chptr->members, cptr)) &&
-			!(lp->flags & CHFL_ZOMBIE))?1:0);
+	return (((lp=find_user_link(chptr->members, cptr)))?1:0);
 }
 
 int BanRuleMatch(const char *text, aClient *cptr, int *result,
@@ -580,34 +578,31 @@ void	remove_user_from_channel(sptr, chptr)
 aClient *sptr;
 aChannel *chptr;
 {
-	Link	**curr;
-	Link	*tmp, *lp = chptr->members;
+	Link	**curr, *tmp;
 
-	for (; lp && (lp->flags & CHFL_ZOMBIE || lp->value.cptr==sptr);
-	    lp=lp->next);
-	for (;;)
-	{
-	  for (curr = &chptr->members; (tmp = *curr); curr = &tmp->next)
-		  if (tmp->value.cptr == sptr)
-		      {
-			  *curr = tmp->next;
-			  free_link(tmp);
-			  break;
-		      }
-	  for (curr = &sptr->user->channel; (tmp = *curr); curr = &tmp->next)
-		  if (tmp->value.chptr == chptr)
-		      {
-			  *curr = tmp->next;
-			  free_link(tmp);
-			  break;
-		      }
-	  sptr->user->joined--;
-	  if (lp) break;
-	  if (chptr->members) sptr = chptr->members->value.cptr;
-	  else break;
-	  sub1_from_channel(chptr);
-	}
-	sub1_from_channel(chptr);
+	/* Remove the user from the channel */
+	for (curr = &chptr->members; (tmp = *curr); curr = &tmp->next)
+	  {
+		if (tmp->value.cptr == sptr)
+		  {
+			*curr = tmp->next;
+			free_link(tmp);
+			sub1_from_channel(chptr);
+			break;
+		  }
+	  }
+
+	/* Remove the channel from the user's channel list */
+	for (curr = &sptr->user->channel; (tmp = *curr); curr = &tmp->next)
+	  {
+		if (tmp->value.chptr == chptr)
+		  {
+			*curr = tmp->next;
+			free_link(tmp);
+			sptr->user->joined--;
+			break;
+		  }
+	  }
 }
 
 
@@ -642,19 +637,6 @@ aChannel *chptr;
 	return 0;
 }
 
-int	is_zombie(cptr, chptr)
-aClient *cptr;
-aChannel *chptr;
-{
-	Link	*lp;
-
-	if (chptr)
-		if ((lp = find_user_link(chptr->members, cptr)))
-			return (lp->flags & CHFL_ZOMBIE);
-
-	return 0;
-}
-
 int	has_voice(cptr, chptr)
 aClient *cptr;
 aChannel *chptr;
@@ -662,8 +644,7 @@ aChannel *chptr;
 	Link	*lp;
 
 	if (chptr)
-		if ((lp = find_user_link(chptr->members, cptr)) &&
-		    !(lp->flags & CHFL_ZOMBIE))
+		if ((lp = find_user_link(chptr->members, cptr)))
 			return (lp->flags & CHFL_VOICE);
 
 	return 0;
@@ -680,8 +661,7 @@ aChannel *chptr;
 	member = lp ? 1 : 0;
 
 	if (chptr->mode.mode & MODE_MODERATED &&
-	    (!lp || !(lp->flags & (CHFL_CHANOP|CHFL_VOICE)) ||
-	    (lp->flags & CHFL_ZOMBIE)))
+	    (!lp || !(lp->flags & (CHFL_CHANOP|CHFL_VOICE))))
 			return (MODE_MODERATED);
 
 	if (chptr->mode.mode & MODE_NOPRIVMSGS && !member)
@@ -699,7 +679,7 @@ aChannel *chptr;
 	{
 		if (lp->flags & (CHFL_CHANOP|CHFL_VOICE))
 			return 0;
-		if ((lp->flags & (CHFL_ZOMBIE|CHFL_BQUIET)))
+		if ((lp->flags & CHFL_BQUIET))
 			return (MODE_BAN);
 	}
 
@@ -2074,7 +2054,7 @@ char	*parv[];
 	Link	*lp;
 	aChannel *chptr;
 	char	*name, *key = NULL;
-	int	i, flags = 0, zombie = 0;
+	int	i, flags = 0;
 	char	*p = NULL, *p2 = NULL;
 
 	if (check_registered_user(sptr))
@@ -2162,9 +2142,8 @@ char	*parv[];
 			while ((lp = sptr->user->channel))
 			    {
 				chptr = lp->value.chptr;
-				if (!is_zombie(sptr, chptr))
-				  sendto_channel_butserv(chptr, sptr, PartFmt,
-				      parv[0], chptr->chname);
+				sendto_channel_butserv(chptr, sptr, PartFmt,
+						       parv[0], chptr->chname);
 				remove_user_from_channel(sptr, chptr);
 			    }
 			sendto_serv_butone(cptr, ":%s JOIN 0", parv[0]);
@@ -2204,15 +2183,14 @@ char	*parv[];
 		    }
 		chptr = get_channel(sptr, name, CREATE);
                 if (chptr && (lp=find_user_link(chptr->members, sptr)))
-		{ if (lp->flags & CHFL_ZOMBIE)
-		  { zombie = 1;
-		    flags = lp->flags & (CHFL_DEOPPED|CHFL_SERVOPOK);
-		    remove_user_from_channel(sptr, chptr);
-		    chptr = get_channel(sptr, name, CREATE); }
-		  else continue; }
-		if (!zombie)
-		{ if (!MyConnect(sptr)) flags = CHFL_DEOPPED;
-		  if (ClientFlags(sptr) & FLAGS_TS8) flags|=CHFL_SERVOPOK; }
+			continue;
+
+		if (!MyConnect(sptr))
+			flags = CHFL_DEOPPED;
+
+		if (ClientFlags(sptr) & FLAGS_TS8)
+			flags|=CHFL_SERVOPOK;
+
 		if (!chptr ||
 		    (MyConnect(sptr) && (i = can_join(sptr, chptr, key))))
 		    {
@@ -2305,7 +2283,6 @@ int	parc;
 char	*parv[];
 {
 	aChannel *chptr;
-	Link	*lp;
 	char	*p = NULL, *stripped = NULL, *name;
 	char *comment = (parc > 2 && parv[2]) ? parv[2] : NULL;
 
@@ -2332,8 +2309,8 @@ char	*parv[];
 		    }
 		if (check_channelmask(sptr, cptr, name))
 			continue;
-		/* Do not use IsMember here: zombies must be able to part too */
-		if (!(lp=find_user_link(chptr->members, sptr)))
+
+		if (!IsMember(sptr, chptr))
 		    {
 			/* Normal to get get when our client did a kick
 			** for a remote client (who sends back a PART),
@@ -2344,18 +2321,26 @@ char	*parv[];
 		    	      me.name, parv[0], name);
 			continue;
 		    }
+
 		/*
-		**  Remove user from the old channel (if any)
-		*/
+		 *  Remove user from the old channel (if any)
+		 */
+
+		/* ...without a parting comment */
                 if (parc < 3)
-		  sendto_match_servs(chptr, cptr, PartFmt, parv[0], name);
-		else
-		  sendto_match_servs(chptr, cptr, PartFmt2, parv[0], name, comment);
-		if (!(lp->flags & CHFL_ZOMBIE)) {
-                if (parc < 3)
-		  sendto_channel_butserv(chptr, sptr, PartFmt, parv[0], name);
+		  {
+			sendto_match_servs(chptr, cptr, PartFmt, parv[0],
+					   name);
+			sendto_channel_butserv(chptr, sptr, PartFmt, parv[0],
+					       name);
+		  }
+
+		/* ...with a parting comment */
 		else
 		  {
+			sendto_match_servs(chptr, cptr, PartFmt2, parv[0],
+					   name, comment);
+
 			if (!stripped && chptr->mode.mode & MODE_NOCOLORS &&
 			    msg_has_colors(comment))
 				stripped = strip_colors(comment);
@@ -2364,12 +2349,7 @@ char	*parv[];
 					       name, (stripped) ? stripped :
 					       comment);
 		  }
-                } else if (MyClient(sptr)) {
-		  if (parc < 3)
-		    sendto_one(sptr, PartFmt, parv[0], name);
-		  else
-		    sendto_one(sptr, PartFmt2, parv[0], name, comment);
-                }
+
 		remove_user_from_channel(sptr, chptr);
 	    }
 
@@ -2439,8 +2419,8 @@ char	*parv[];
 		for (; (user = strtok_r(parv[2], ",", &p2)); parv[2] = NULL)
 		    {   if (!(who = find_chasing(sptr, user, &chasing)))
 				continue; /* No such user left! */
-			if (((lp = find_user_link(chptr->members, who)) &&
-			    !(lp->flags & CHFL_ZOMBIE)) || IsServer(sptr))
+			if (((lp = find_user_link(chptr->members, who))) ||
+			    IsServer(sptr))
 	                {
 			  /* Bounce all KICKs from a non-chanop unless it
 			     would cause a fake direction -- Barubary */
@@ -2764,19 +2744,6 @@ char	*parv[];
 	return 0;
     }
 
-static int number_of_zombies(chptr)
-aChannel *chptr;
-{
-  Link *lp;
-  int count = 0;
-
-  for (lp=chptr->members; lp; lp=lp->next)
-    if (lp->flags & CHFL_ZOMBIE)
-      count++;
-
-  return count;	
-}
-
 /*
 ** m_list
 **      parv[0] = sender prefix
@@ -3005,7 +2972,7 @@ char	*parv[];
                             sendto_one(sptr, rpl_str(RPL_LIST),
                                        me.name, cptr->name,
                                        ShowChannel(sptr,chptr) ? name : "*",
-                                       chptr->users - number_of_zombies(chptr),
+                                       chptr->users,
                                        chptr->topic);
                     }
           } /* switch (*name) */
@@ -3143,7 +3110,7 @@ int     numsend;
 
 	    sendto_one(cptr, rpl_str(RPL_LIST), me.name, cptr->name,
 		       cis_member ? chptr->chname : "*",
-		       chptr->users - number_of_zombies(chptr),
+		       chptr->users,
 		       cis_member ? ((stripped) ? stripped : chptr->topic) :
 		       "");
 
@@ -3264,12 +3231,7 @@ char	*parv[];
 			if (sptr!=c2ptr && IsInvisible(c2ptr) &&
 			  !IsMember(sptr,chptr))
 				continue;
-			if (lp->flags & CHFL_ZOMBIE)
-			{ if (lp->value.cptr!=sptr)
-				continue;
-			  else
-				(void)strcat(buf, "!"); }
-		        else if (lp->flags & CHFL_CHANOP)
+		        if (lp->flags & CHFL_CHANOP)
 				(void)strcat(buf, "@");
 			else if (lp->flags & CHFL_VOICE)
 				(void)strcat(buf, "+");
@@ -3374,8 +3336,6 @@ aClient	*cptr, *user;
 			if (match(++mask, cptr->name))
 				continue;
 		if (*chptr->chname == '&')
-			continue;
-		if (is_zombie(user, chptr))
 			continue;
 		clen = strlen(chptr->chname);
 		if (clen + 1 + len > BUFSIZE - 3)
