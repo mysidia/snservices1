@@ -2264,11 +2264,11 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
         if (hunt_server(cptr,sptr,":%s SHOWCON %s :%s", 1,parc,parv) != HUNTED_ISME)
             return 0;
 
-	if (!mycmp(parv[2], "unknowns") == 0)
+	if (mycmp(parv[2], "unknowns") == 0)
 		show_unknowns = 1;
-	else if (!mycmp(parv[2], "users") == 0)
+	else if (mycmp(parv[2], "users") == 0)
 		show_users = 1;
-	else if (!mycmp(parv[2], "all") == 0) {
+	else if (mycmp(parv[2], "all") == 0) {
 		 ;
 	}
 	else {
