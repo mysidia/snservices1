@@ -195,25 +195,23 @@ void	init_sys()
 
 void	write_pidfile()
 {
-#ifdef IRCD_PIDFILE
 	int fd;
 	char buff[20];
-	if ((fd = open(IRCD_PIDFILE, O_CREAT|O_WRONLY, 0600))>=0)
-	    {
+	if ((fd = open(FNAME_PID, O_CREAT|O_WRONLY, 0600))>=0)
+	{
 		bzero(buff, sizeof(buff));
 		sprintf(buff,"%5d\n", (int)getpid());
 		if (write(fd, buff, strlen(buff)) == -1)
 			Debug((DEBUG_NOTICE,"Error writing to pid file %s",
-			      IRCD_PIDFILE));
+			      FNAME_PID));
 		close(fd);
 		return;
-	    }
-#ifdef	DEBUGMODE
+	}
 	else
+	{
 		Debug((DEBUG_NOTICE,"Error opening pid file %s",
-			IRCD_PIDFILE));
-#endif
-#endif
+			FNAME_PID));
+	}
 }
 
 /*
