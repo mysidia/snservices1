@@ -1,0 +1,23 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === AKICKREASONS ===
+ 
+     SYNTAX:
+     /ChanServ Set #<channel> Akickreasons <on | off>
+ 
+     DESCRIPTION:
+     Normally akick reasons are visible to channel operators only.
+
+     However, if you enable this op reason, then every time ChanServ
+     kicks a user due to an akick, it will display the full reason.
+
+     Note that a current side effect of this is that the nickname
+     the channel operator who set the akick will appear in the kick reason.
+
+ 
+     EXAMPLES:
+     /ChanServ set #services akickreasons on
+ 
+     Limited to Founder Access 
+
+--- End of Services Help ---
