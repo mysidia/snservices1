@@ -5982,7 +5982,7 @@ cmd_return cs_set_founder(cs_settbl_t * cmd, UserList * nick,
 	sSend(":%s NOTICE %s :Incorrect password", ChanServ, from);
 	if (BadPwChan(nick, regchan))
 		return RET_KILLED;
-	chanlog->log(nick, CS_SET_FOUNDER, chan->name, LOGF_BADPW);
+	chanlog->logw(nick, CS_SET_FOUNDER, chan->name, LOGF_BADPW);
 
 	return RET_BADPW;
 }
