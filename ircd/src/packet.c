@@ -108,7 +108,7 @@ Reg4	int	length;
 			** Socket is dead so exit (which always returns with
 			** FLUSH_BUFFER here).  - avalon
 			*/
-			if (cptr->flags & FLAGS_DEADSOCKET)
+			if (ClientFlags(cptr) & FLAGS_DEADSOCKET)
 				return exit_client(cptr, cptr, &me,
 						   "Dead Socket");
 #endif

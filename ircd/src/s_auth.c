@@ -73,14 +73,14 @@ Reg1	aClient	*cptr;
                 Debug((DEBUG_ERROR, "Unable to create auth socket for %s:%s",
                         get_client_name(cptr, TRUE),
                         strerror(get_sockerr(cptr))));
-		if (!DoingDNS(cptr))
+		if (!DoingDNS(cptr) && !DoingSocks(cptr))
 			SetAccess(cptr);
 		ircstp->is_abad++;
 		return;
 	    }
         (void)alarm(0);
 #ifndef _WIN32
-	if (cptr->authfd >= (MAXCONNECTIONS - 2))
+	if (cptr->authfd >= (MAXCONNECTIONS - 3))
 	    {
 		sendto_ops("Can't allocate fd for auth on %s",
 			   get_client_name(cptr, TRUE));
@@ -111,6 +111,7 @@ Reg1	aClient	*cptr;
 #endif
 	    {
 		ircstp->is_abad++;
+                connotice(cptr, REPORT_ERR_AUTH);
 		/*
 		 * No error report from this...
 		 */
@@ -121,14 +122,15 @@ Reg1	aClient	*cptr;
 		(void)closesocket(cptr->authfd);
 #endif
 		cptr->authfd = -1;
-		if (!DoingDNS(cptr))
+		if (!DoingDNS(cptr) && !DoingSocks(cptr))
 			SetAccess(cptr);
 		return;
 	    }
 	(void)alarm((unsigned)0);
-	cptr->flags |= (FLAGS_WRAUTH|FLAGS_AUTH);
+	ClientFlags(cptr) |= (FLAGS_WRAUTH|FLAGS_AUTH);
 	if (cptr->authfd > highest_fd)
 		highest_fd = cptr->authfd;
+        connotice(cptr, REPORT_START_AUTH);
 	return;
 }
 
@@ -183,12 +185,13 @@ authsenderr:
 		if (cptr->authfd == highest_fd)
 			while (!local[highest_fd])
 				highest_fd--;
+                connotice(cptr, REPORT_ERR_AUTH);
 		cptr->authfd = -1;
-		cptr->flags &= ~FLAGS_AUTH;
-		if (!DoingDNS(cptr))
+		ClientFlags(cptr) &= ~FLAGS_AUTH;
+		if (!DoingDNS(cptr) && !DoingSocks(cptr))
 			SetAccess(cptr);
 	    }
-	cptr->flags &= ~FLAGS_WRAUTH;
+	ClientFlags(cptr) &= ~FLAGS_WRAUTH;
 	return;
 }
 
@@ -234,6 +237,7 @@ Reg1	aClient	*cptr;
 	    (sscanf(cptr->buffer, "%hd , %hd : USERID : %*[^:]: %10s",
 		    &remp, &locp, ruser) == 3))
 	    {
+                connotice(cptr, REPORT_FIN_AUTH);
 		s = rindex(cptr->buffer, ':');
 		*s++ = '\0';
 		for (t = (rindex(cptr->buffer, ':') + 1); *t; t++)
@@ -248,6 +252,7 @@ Reg1	aClient	*cptr;
 	    }
 	else if (len != 0)
 	    {
+                sendto_one(cptr, ":%s NOTICE AUTH :*** received invalid ident response", me.name);
 		if (!index(cptr->buffer, '\n') && !index(cptr->buffer, '\r'))
 			return;
 		Debug((DEBUG_ERROR,"local %d remote %d", locp, remp));
@@ -265,11 +270,10 @@ Reg1	aClient	*cptr;
 	cptr->count = 0;
 	cptr->authfd = -1;
 	ClearAuth(cptr);
-	if (!DoingDNS(cptr))
+	if (!DoingDNS(cptr) && !DoingSocks(cptr))
 		SetAccess(cptr);
 	if (len > 0)
 		Debug((DEBUG_INFO,"ident reply: [%s]", cptr->buffer));
-
 	if (!locp || !remp || !*ruser)
 	    {
 		ircstp->is_abad++;
@@ -278,7 +282,7 @@ Reg1	aClient	*cptr;
 	ircstp->is_asuc++;
 	strncpyzt(cptr->username, ruser, USERLEN+1);
 	if (strncmp(system, "OTHER", 5))
-		cptr->flags |= FLAGS_GOTID;
+		ClientFlags(cptr) |= FLAGS_GOTID;
 	Debug((DEBUG_INFO, "got username [%s]", ruser));
 	return;
 }

@@ -79,7 +79,11 @@ char *str, *fs;
 }
 #endif /* NEED_STRTOKEN */
 
-#ifdef	NEED_STRTOK
+#if defined(REDHAT5) && defined(NEED_STRTOK)
+#undef NEED_STRTOK
+#endif
+
+#ifdef NEED_STRTOK
 /*
 ** NOT encouraged to use!
 */

@@ -123,10 +123,11 @@ time_t	clock;
 char	*myctime(value)
 time_t	value;
 {
-	static	char	buf[28];
+	static	char	buf[30];
 	Reg1	char	*p;
 
-	(void)strcpy(buf, ctime(&value));
+	(void)strncpy(buf, ctime(&value), 28);
+        buf[27] = 0;
 	if ((p = (char *)index(buf, '\n')) != NULL)
 		*p = '\0';
 
@@ -204,37 +205,25 @@ int	showip;
 {
 	static char nbuf[HOSTLEN * 2 + USERLEN + 5];
 
-	if (MyConnect(sptr))
-	    {
-		if (IsUnixSocket(sptr))
-		    {
-			if (showip)
-				(void) sprintf(nbuf, "%s[%s]",
-					sptr->name, sptr->sockhost);
+	if (MyConnect(sptr)) {
+		if (showip) {
+			sprintf(nbuf, "%s[%s@%s.%u]",
+				sptr->name,
+				(!(ClientFlags(sptr) & FLAGS_GOTID)) ? "" :
+				sptr->username,
+				inetntoa((char *)&sptr->ip),
+				(unsigned int)sptr->port);
+		} else {
+			if (mycmp(sptr->name, sptr->sockhost))
+				(void)sprintf(nbuf, "%s[%s]",
+					      sptr->name, sptr->sockhost);
 			else
-				(void) sprintf(nbuf, "%s[%s]",
-					sptr->name, me.sockhost);
-		    }
-		else
-		    {
-			if (showip)
-				(void)sprintf(nbuf, "%s[%s@%s.%u]",
-					sptr->name,
-					(!(sptr->flags & FLAGS_GOTID)) ? "" :
-					sptr->username,
-					inetntoa((char *)&sptr->ip),
-					(unsigned int)sptr->port);
-			else
-			    {
-				if (mycmp(sptr->name, sptr->sockhost))
-					(void)sprintf(nbuf, "%s[%s]",
-						sptr->name, sptr->sockhost);
-				else
-					return sptr->name;
-			    }
-		    }
+				return sptr->name;
+		}
+
 		return nbuf;
-	    }
+	}
+
 	return sptr->name;
 }
 
@@ -247,13 +236,11 @@ aClient	*cptr;
 		return cptr->name;
 	if (!cptr->hostp)
 		return get_client_name(cptr, FALSE);
-	if (IsUnixSocket(cptr))
-		(void) sprintf(nbuf, "%s[%s]", cptr->name, me.name);
-	else
-		(void)sprintf(nbuf, "%s[%-.*s@%-.*s]",
-			cptr->name, USERLEN,
-			(!(cptr->flags & FLAGS_GOTID)) ? "" : cptr->username,
-			HOSTLEN, cptr->hostp->h_name);
+	(void)sprintf(nbuf, "%s[%-.*s@%-.*s]",
+		      cptr->name, USERLEN,
+		      (!(ClientFlags(cptr) & FLAGS_GOTID)) ? "" : cptr->username,
+		      HOSTLEN, cptr->hostp->h_name);
+
 	return nbuf;
 }
 
@@ -339,13 +326,13 @@ char	*comment;	/* Reason for the exit */
 #ifdef	FNAME_USERLOG
 	time_t	on_for;
 #endif
-	char	comment1[HOSTLEN + HOSTLEN + 2];
+	char	comment1[HOSTLEN + HOSTLEN + 2 + 255];
 
 	if (MyConnect(sptr))
 	    {
-		sptr->flags |= FLAGS_CLOSING;
+		ClientFlags(sptr) |= FLAGS_CLOSING;
                 if (IsPerson(sptr))
-                 sendto_flag(FLAGS_OPER|FLAGS_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
+                 sendto_umode(U_OPER|U_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
                   sptr->name, sptr->user->username, sptr->user->host, comment);
 		current_load_data.conn_count--;
 		if (IsPerson(sptr)) {
@@ -394,7 +381,7 @@ char	*comment;	/* Reason for the exit */
 			(void)alarm(3);
 			(void)write(logfile, linebuf, strlen(linebuf));
 			(void)alarm(0);
-			(void)close(logfile);
+			(void)closefile(logfile);
 		    }
 		(void)alarm(0);
 		/* Modification by stealth@caen.engin.umich.edu */
@@ -534,7 +521,7 @@ char	*comment;
 		** is no sense in sending the QUIT--KILL's have been
 		** sent instead.
 		*/
-		if ((sptr->flags & FLAGS_KILLED) == 0)
+		if ((ClientFlags(sptr) & FLAGS_KILLED) == 0)
 		    {
 			sendto_serv_butone(cptr,":%s QUIT :%s",
 					   sptr->name, comment);
@@ -690,5 +677,43 @@ char	*name;
 		   sp->is_ckr, sp->is_cbr, sp->is_skr, sp->is_sbr);
 	sendto_one(cptr, ":%s %d %s :time connected %u %u",
 		   me.name, RPL_STATSDEBUG, name, sp->is_cti, sp->is_sti);
+}
+
+
+int set_hurt(aClient *acptr, const char *from, int ht)
+{
+       if (!acptr || !from) return -1;
+#ifdef  KEEP_HURTBY
+       if (acptr->user && acptr->user->hurtby)
+        {
+              MyFree(acptr->user->hurtby);
+              acptr->user->hurtby = NULL;
+        }
+        if (acptr->user) DupString(acptr->user->hurtby, from);
+#endif
+        SetHurt(acptr);
+        if (ht) acptr->hurt = ht;
+        return 0;
+}
+
+int
+remove_hurt(aClient *acptr)
+{
+       if (acptr == NULL)
+	       return -1;
+
+#ifdef  KEEP_HURTBY
+       if (acptr->user && acptr->user->hurtby) {
+	       MyFree(acptr->user->hurtby);
+	       acptr->user->hurtby = NULL;
+       }
+#endif
+
+        if (IsHurt(acptr))
+		sendto_one(acptr, ":%s NOTICE %s :You can talk again, as you are no longer silenced.",
+			   me.name, acptr->name);
+        ClearHurt(acptr);
+        acptr->hurt = 0;
+	return 0;
 }
 
