@@ -2295,7 +2295,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 				 BadPtr(ptr->username) ? "-" : ptr->username,
 				BadPtr( ptr->sockhost) ? "-" : ptr->sockhost,
 				DoingDNS(ptr) ? "DNS" : "",
-				IsNotSpoof( ptr )  ? "" : "Spoof?"
+				IsNotSpoof( ptr )  ? "" : "Spoof?",
 				ptr->status,
 				BadPtr(ptr->sup_server) ? "-" : ptr->sup_server,
 				BadPtr(ptr->sup_host) ? "-" : ptr->sup_host,
