@@ -389,10 +389,10 @@ int index_left_part(const char* text, const char* substring)
 			return 0;
 		}
 
-		if (irc_tolower(*text) != irc_tolower(*substring)) 
+		if (irc_tolower(*text) != irc_tolower(*substring))  {
 			return 0;
+		}
 		text++;
-		substring++;
 		i++;
 	}
 
