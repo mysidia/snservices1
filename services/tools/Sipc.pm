@@ -136,11 +136,31 @@ sub loginChannel
 	my $self = shift;
 	my $chan = shift;
 	my $passw = shift;
+
+	return $self->loginObject('RCHAN', 'PASS', $chan, $passw);
+}
+
+sub loginNick
+{
+	my $self = shift;
+	my $nick = shift;
+	my $passw = shift;
+
+	return $self->loginObject('RNICK', 'PASS', $nick, $passw);
+}
+
+sub loginObject
+{
+	my $self = shift;
+	my $objtype = shift;
+	my $logintype = shift;
+	my $objname = shift;
+	my $passw = shift;
 	my $sel = $self->{sel};
 	my $sock = $self->{sock};
 
 	# $passw = md5_hex($passw);
-	$sock->print("AUTH OBJECT LOGIN RCHAN " . $chan. "\n");
+	$sock->print("AUTH OBJECT LOGIN " . $objtype . " " . $objname. "\n");
 
 	for(;;) {
 		for ($sel->can_read(5)) {
@@ -150,17 +170,19 @@ sub loginChannel
 			}
 			while ($line = $sock->getline) {
 #print $line . "\n";
-				if ($line =~ /^OK AUTH OBJECT RCHAN LOGIN/) {
+				if ($line =~ /^OK AUTH OBJECT (\S+) LOGIN/) {
 				}
 				elsif ($line =~ /^AUTH COOKIE (\S+)/) {
 					$hashcode = md5_hex($1 . ":" . $passw);
-					$sock->print("AUTH OBJECT PASS " . $hashcode . "\n");
+					$sock->print("AUTH OBJECT " . $logintype . " " . $hashcode . "\n");
 				}
 				elsif ($line =~ /^ERR-BADLOGIN /) {
 					$self->{ERRORTEXT} = "Invalid login details";
 					return undef;
 				}
-				elsif ($line =~ /^OK AUTH OBJECT RCHAN PASS/) {
+				      # OK AUTH OBJECT _ PASS
+				elsif (($line =~ /^OK AUTH OBJECT (\S+) (\S+)/ && ($2 eq  $logintype)) ||
+			                $line =~ /OK AUTH OBJECT (\S+) SETPASS/) {
 					return 1;
 				}
 				elsif ($line =~ /^ERR-(\S+\s)+- (.*)/) {
@@ -174,6 +196,7 @@ sub loginChannel
 			}
 		}
 	}
+	return undef;
 }
 
 sub queryNick
