@@ -67,6 +67,17 @@ debug(int level, char *form, ...)
 	va_end(ap);
 }
 
+int tolog(int logtype, char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stdout, fmt, ap);
+	printf("\n");
+	va_end(ap);
+	return 0;
+}
+
 void
 dumpcore(char *fmt, ...)
 {
