@@ -1,4 +1,4 @@
-/************************************************************************
+/*
  *   IRC - Internet Relay Chat, ircd/chkconf.c
  *   Copyright (C) 1993 Darren Reed
  *
@@ -17,10 +17,6 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "struct.h"
-#include "common.h"
-#include "sys.h"
-#include "numeric.h"
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -28,14 +24,21 @@
 #include <signal.h>
 #endif
 
+#include "struct.h"
+#include "common.h"
+#include "sys.h"
+#include "numeric.h"
+
 #include "ircd/memory.h"
 #include "ircd/string.h"
 
 IRCD_SCCSID("@(#)chkconf.c	1.9 1/30/94 (C) 1993 Darren Reed");
 IRCD_RCSID("$Id$");
 
-/* for the connect rule patch..  these really should be in a header,
-** but i see h.h isn't included for some reason..  so they're here */
+/*
+ * for the connect rule patch..  these really should be in a header,
+ * but i see h.h isn't included for some reason..  so they're here
+ */
 char *crule_parse(char *rule);
 void crule_free(char **elem);
 
@@ -76,26 +79,23 @@ main(int argc, char *argv[])
 {
 	new_class(0);
 
-	if (chdir(DPATH))
-	    {
+	if (chdir(DPATH)) {
 		perror("chdir to " DPATH);
 		exit(-1);
-	    }
-	if (argc > 1 && !strncmp(argv[1], "-d", 2))
-   	    {
+	}
+	if (argc > 1 && !strncmp(argv[1], "-d", 2)) {
 		debugflag = 1;
 		if (argv[1][2])
 			debugflag = atoi(argv[1]+2);
-		argc--, argv++;
-	    }
+		argc--;
+		argv++;
+	}
 	if (argc > 1)
 		configfile = argv[1];
 	return validate(chkconf_initconf(0));
 }
 
 /*
- * openconf
- *
  * returns -1 on any error or else the fd opened from which to read the
  * configuration file from.  This may either be th4 file direct or one end
  * of a pipe from m4.
@@ -103,38 +103,7 @@ main(int argc, char *argv[])
 static int
 openconf(void)
 {
-#ifdef	M4_PREPROC
-	int	pi[2];
-
-	if (pipe(pi) == -1)
-		return -1;
-	switch(fork())
-	{
-	case -1 :
-		return -1;
-	case 0 :
-		(void)close(pi[0]);
-		if (pi[1] != 1)
-		    {
-			(void)dup2(pi[1], 1);
-			(void)close(pi[1]);
-		    }
-		(void)dup2(1,2);
-		/*
-		 * m4 maybe anywhere, use execvp to find it.  Any error
-		 * goes out with report_error.  Could be dangerous,
-		 * two servers running with the same fd's >:-) -avalon
-		 */
-		(void)execlp("m4", "m4", "ircd.m4", configfile, 0);
-		perror("m4");
-		exit(-1);
-	default :
-		(void)close(pi[1]);
-		return pi[0];
-	}
-#else
 	return open(configfile, O_RDONLY);
-#endif
 }
 
 static int oper_access[] = {
@@ -162,13 +131,11 @@ static int oper_access[] = {
 	0, 0 };
 
 /*
-** initconf() 
-**    Read configuration file.
-**
-**    returns -1, if file cannot be opened
-**             0, if file opened
-*/
-
+ * Read configuration file.
+ *
+ * returns -1, if file cannot be opened
+ *          0, if file opened
+ */
 static aConfItem *
 chkconf_initconf(int opt)
 {
@@ -179,200 +146,189 @@ chkconf_initconf(int opt)
 	aConfItem *aconf = NULL, *ctop = NULL;
 
 	(void)fprintf(stderr, "initconf(): ircd.conf = %s\n", configfile);
-	if ((fd = openconf()) == -1)
-	    {
-#ifdef	M4_PREPROC
-		(void)wait(0);
-#endif
+	if ((fd = openconf()) == -1) {
 		return NULL;
-	    }
+	}
 
         lineno = 1;
 	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
-	while ((dh = dgets(fd, line, sizeof(line) - 1)) > 0)
-	    {
+	while ((dh = dgets(fd, line, sizeof(line) - 1)) > 0) {
                 printf("%u:    End of file\r",lineno++);
-		if (aconf)
-		    {
+		if (aconf) {
 			if (aconf->host)
 				(void)free(aconf->host);
 			if (aconf->passwd)
 				(void)free(aconf->passwd);
 			if (aconf->name)
 				(void)free(aconf->name);
-		    }
-		else
+		} else
 			aconf = (aConfItem *)malloc(sizeof(*aconf));
+
 		aconf->host = (char *)NULL;
 		aconf->passwd = (char *)NULL;
 		aconf->name = (char *)NULL;
 		aconf->class = (aClass *)NULL;
 		if ((tmp = index(line, '\n')))
 			*tmp = 0;
-		else while(dgets(fd, c, sizeof(c) - 1))
-			if ((tmp = (char *)index(c, '\n')))
-			    {
-				*tmp = 0;
-				break;
-			    }
+		else {
+			while(dgets(fd, c, sizeof(c) - 1))
+				if ((tmp = (char *)index(c, '\n'))) {
+					*tmp = 0;
+					break;
+				}
+		}
+
 		/*
 		 * Do quoting of characters and # detection.
 		 */
-		for (tmp = line; *tmp; tmp++)
-		    {
-			if (*tmp == '\\')
-			    {
-				switch (*(tmp+1))
-				{
-				case 'n' :
+		for (tmp = line; *tmp; tmp++) {
+			if (*tmp == '\\') {
+				switch (*(tmp+1)) {
+				case 'n':
 					*tmp = '\n';
 					break;
-				case 'r' :
+				case 'r':
 					*tmp = '\r';
 					break;
-				case 't' :
+				case 't':
 					*tmp = '\t';
 					break;
-				case '0' :
+				case '0':
 					*tmp = '\0';
 					break;
-				default :
+				default:
 					*tmp = *(tmp+1);
 					break;
 				}
+
 				if (!*(tmp+1))
 					break;
 				else
 					for (s = tmp ; (*s = *++s) ; )
 						;
 				tmp++;
-			    }
-			else if (*tmp == '#')
+			} else if (*tmp == '#')
 				*tmp = '\0';
-		    }
+		}
 		if (!*line || *line == '#' || *line == '\n' ||
 		    *line == ' ' || *line == '\t')
 			continue;
 
-		if (line[1] != ':')
-		    {
+		if (line[1] != ':') {
                         (void)fprintf(stderr, "ERROR: Bad config line (%s)\n",
-				line);
+				      line);
                         continue;
-                    }
+		}
 
 		if (debugflag)
 			(void)printf("\n%s\n",line);
 		(void)fflush(stdout);
 
 		tmp = chkconf_getfield(line);
-		if (!tmp)
-		    {
+		if (!tmp) {
                         (void)fprintf(stderr, "\tERROR: no fields found\n");
 			continue;
-		    }
+		}
 
 		aconf->status = CONF_ILLEGAL;
 
-		switch (*tmp)
-		{
-			case 'A': /* Name, e-mail address of administrator */
-			case 'a': /* of this server. */
-				aconf->status = CONF_ADMIN;
-				break;
-			case 'C': /* Server where I should try to connect */
-			case 'c': /* in case of lp failures             */
-				ccount++;
-				aconf->status = CONF_CONNECT_SERVER;
-				break;
+		switch (*tmp) {
+		case 'A': /* Name, e-mail address of administrator */
+		case 'a': /* of this server. */
+			aconf->status = CONF_ADMIN;
+			break;
+		case 'C': /* Server where I should try to connect */
+		case 'c': /* in case of lp failures             */
+			ccount++;
+			aconf->status = CONF_CONNECT_SERVER;
+			break;
 			/* Connect rule */
-			case 'D':
-				aconf->status = CONF_CRULEALL;
-				break;
+		case 'D':
+			aconf->status = CONF_CRULEALL;
+			break;
 			/* Connect rule - autos only */
-			case 'd':
-				aconf->status = CONF_CRULEAUTO;
-				break;
-			case 'H': /* Hub server line */
-			case 'h':
-				aconf->status = CONF_HUB;
-				break;
-			case 'I': /* Just plain normal irc client trying  */
-			case 'i': /* to connect me */
-				aconf->status = CONF_CLIENT;
-				break;
-			case 'K': /* Kill user line on irc.conf           */
-			case 'k':
-				aconf->status = CONF_KILL;
-				break;
+		case 'd':
+			aconf->status = CONF_CRULEAUTO;
+			break;
+		case 'H': /* Hub server line */
+		case 'h':
+			aconf->status = CONF_HUB;
+			break;
+		case 'I': /* Just plain normal irc client trying  */
+		case 'i': /* to connect me */
+			aconf->status = CONF_CLIENT;
+			break;
+		case 'K': /* Kill user line on irc.conf           */
+		case 'k':
+			aconf->status = CONF_KILL;
+			break;
 			/* Operator. Line should contain at least */
 			/* password and host where connection is  */
-			case 'L': /* guaranteed leaf server */
-			case 'l':
-				aconf->status = CONF_LEAF;
-				break;
+		case 'L': /* guaranteed leaf server */
+		case 'l':
+			aconf->status = CONF_LEAF;
+			break;
 			/* Me. Host field is name used for this host */
 			/* and port number is the number of the port */
-			case 'M':
-			case 'm':
-				aconf->status = CONF_ME;
-				break;
-			case 'N': /* Server where I should NOT try to     */
-			case 'n': /* connect in case of lp failures     */
-				  /* but which tries to connect ME        */
-				++ncount;
-				aconf->status = CONF_NOCONNECT_SERVER;
-				break;
-			case 'O':
-				aconf->status = CONF_OPERATOR;
-				break;
+		case 'M':
+		case 'm':
+			aconf->status = CONF_ME;
+			break;
+		case 'N': /* Server where I should NOT try to     */
+		case 'n': /* connect in case of lp failures     */
+			/* but which tries to connect ME        */
+			++ncount;
+			aconf->status = CONF_NOCONNECT_SERVER;
+			break;
+		case 'O':
+			aconf->status = CONF_OPERATOR;
+			break;
 			/* Local Operator, (limited privs --SRB)
 			 * Not anymore, OperFlag access levels. -Cabal95 */
-			case 'o':
-				aconf->status = CONF_OPERATOR;
-				break;
-			case 'P': /* listen port line */
-			case 'p':
-				aconf->status = CONF_LISTEN_PORT;
-				break;
-			case 'Q': /* a server that you don't want in your */
-			case 'q': /* network. USE WITH CAUTION! */
-				aconf->status = CONF_QUARANTINED_SERVER;
-				break;
-#ifdef R_LINES
-			case 'R': /* extended K line */
-			case 'r': /* Offers more options of how to restrict */
-				aconf->status = CONF_RESTRICT;
-				break;
-#endif
-			case 'S': /* Service. Same semantics as   */
-			case 's': /* CONF_OPERATOR                */
-				aconf->status = CONF_SERVICE;
-				break;
-			case 'U':
-			case 'u':
-				aconf->status = CONF_UWORLD;
-				break;
-			case 'Y':
-			case 'y':
-			        aconf->status = CONF_CLASS;
-		        	break;
-			case 'Z':
-			case 'z':
-				aconf->status = CONF_ZAP;
-				break;
-		    default:
-			(void)fprintf(stderr,
-				"\tERROR: unknown conf line letter (%c)\n",
-				*tmp);
+		case 'o':
+			aconf->status = CONF_OPERATOR;
 			break;
-		    }
+		case 'P': /* listen port line */
+		case 'p':
+			aconf->status = CONF_LISTEN_PORT;
+			break;
+		case 'Q': /* a server that you don't want in your */
+		case 'q': /* network. USE WITH CAUTION! */
+			aconf->status = CONF_QUARANTINED_SERVER;
+			break;
+#ifdef R_LINES
+		case 'R': /* extended K line */
+		case 'r': /* Offers more options of how to restrict */
+			aconf->status = CONF_RESTRICT;
+			break;
+#endif
+		case 'S': /* Service. Same semantics as   */
+		case 's': /* CONF_OPERATOR                */
+			aconf->status = CONF_SERVICE;
+			break;
+		case 'U':
+		case 'u':
+			aconf->status = CONF_UWORLD;
+			break;
+		case 'Y':
+		case 'y':
+			aconf->status = CONF_CLASS;
+			break;
+		case 'Z':
+		case 'z':
+			aconf->status = CONF_ZAP;
+			break;
+		default:
+			(void)fprintf(stderr,
+				      "\tERROR: unknown conf line letter (%c)\n",
+				      *tmp);
+			break;
+		}
 
 		if (IsIllegal(aconf))
 			continue;
 
-		for (;;) /* Fake loop, that I can use break here --msa */
-		    {
+		for (;;) { 
 			if ((tmp = chkconf_getfield(NULL)) == NULL)
 				break;
 			aconf->host = irc_strdup(tmp);
@@ -385,49 +341,47 @@ chkconf_initconf(int opt)
 			if ((tmp = chkconf_getfield(NULL)) == NULL)
 				break;
 			if (aconf->status & CONF_OPERATOR) {
-			  int   *i, flag;
-			  char  *m = "*";
-			  /*
-			   * Now we use access flags to define  
-			   * what an operator can do with their O.   
-			   */
-			  for (m = (*tmp) ? tmp : m; *m; m++) {
-			    for (i = oper_access; (flag = *i); i += 2)
-			      if (*m == (char)(*(i+1))) {
-				aconf->port |= flag;
-				break;
-			      }
-			    if (flag == 0)
-			      fprintf(stderr,
-				"\tWARNING: Unknown oper access level '%c'\n",
-				*m);  
-			  }
-			  if (!(aconf->port&OFLAG_ISGLOBAL))
-				aconf->status = CONF_LOCOP;
-			}
-			else
+				int   *i, flag;
+				char  *m = "*";
+				/*
+				 * Now we use access flags to define  
+				 * what an operator can do with their O.   
+				 */
+				for (m = (*tmp) ? tmp : m; *m; m++) {
+					for (i = oper_access; (flag = *i); i += 2)
+						if (*m == (char)(*(i+1))) {
+							aconf->port |= flag;
+							break;
+						}
+					if (flag == 0)
+						fprintf(stderr,
+							"\tWARNING: Unknown oper access level '%c'\n",
+							*m);  
+				}
+				if (!(aconf->port&OFLAG_ISGLOBAL))
+					aconf->status = CONF_LOCOP;
+			} else
 				aconf->port = atoi(tmp);
 			if ((tmp = chkconf_getfield(NULL)) == NULL)
 				break;
 			if (!(aconf->status & CONF_CLASS))
 				aconf->class = get_class(atoi(tmp));
 			break;
-		    }
-		if (!aconf->class && (aconf->status & (CONF_CONNECT_SERVER|
-		     CONF_NOCONNECT_SERVER|CONF_OPS|CONF_CLIENT)))
-		    {
+		}
+		if (!aconf->class
+		    && (aconf->status & (CONF_CONNECT_SERVER
+					 | CONF_NOCONNECT_SERVER
+					 | CONF_OPS
+					 | CONF_CLIENT))) {
 			(void)fprintf(stderr,
-				"\tWARNING: No class.  Default 0\n");
+				      "\tWARNING: No class.  Default 0\n");
 			aconf->class = get_class(0);
-		    }
+		}
 		/* Check for bad Z-lines */
-		if (aconf->status == CONF_ZAP)
-		{
+		if (aconf->status == CONF_ZAP) {
 			char *tempc = aconf->host;
 			if (!tempc)
-			{
 				fprintf(stderr, "\tERROR: Bad Z-line\n");
-			}
 			for (; *tempc; tempc++)
 				if ((*tempc >= '0') && (*tempc <= '9'))
 					goto zap_safe;
@@ -435,68 +389,60 @@ chkconf_initconf(int opt)
 			zap_safe:;
 		}
 		/*
-                ** If conf line is a class definition, create a class entry
-                ** for it and make the conf_line illegal and delete it.
-                */
-		if (aconf->status & CONF_CLASS)
-		    {
-			if (!aconf->host)
-			    {
+                 * If conf line is a class definition, create a class entry
+                 * for it and make the conf_line illegal and delete it.
+		 */
+		if (aconf->status & CONF_CLASS) {
+			if (!aconf->host) {
 				(void)fprintf(stderr,"\tERROR: no class #\n");
 				continue;
-			    }
-			if (!tmp)
-			    {
+			}
+			if (!tmp) {
 				(void)fprintf(stderr,
-					"\tWARNING: missing sendq field\n");
+					      "\tWARNING: missing sendq field\n");
 				(void)fprintf(stderr, "\t\t default: %d\n",
-					MAXSENDQLENGTH);
+					      MAXSENDQLENGTH);
 				(void)sprintf(maxsendq, "%d", MAXSENDQLENGTH);
-			    }
-			else
+			} else
 				(void)sprintf(maxsendq, "%d", atoi(tmp));
 			new_class(atoi(aconf->host));
 			aconf->class = get_class(atoi(aconf->host));
 			goto print_confline;
-		    }
+		}
 
-		if (aconf->status & CONF_LISTEN_PORT)
-		    {
+		if (aconf->status & CONF_LISTEN_PORT) {
 			if (!aconf->host)
 				(void)fprintf(stderr, "\tERROR: %s\n",
-					"null host field in P-line");
+					      "null host field in P-line");
 			else if (index(aconf->host, '/'))
 				(void)fprintf(stderr, "\t%s %s\n",
-					"WARNING: / present in P-line", 
-					"for non-UNIXPORT configuration");
+					      "WARNING: / present in P-line", 
+					      "for non-UNIXPORT configuration");
 			aconf->class = get_class(0);
 			goto print_confline;
-		    }
+		}
 
-		if (aconf->status & CONF_SERVER_MASK &&
-		    (!aconf->host || index(aconf->host, '*') ||
-		     index(aconf->host, '?')))
-		    {
+		if (aconf->status & CONF_SERVER_MASK
+		    && (!aconf->host || index(aconf->host, '*')
+			|| index(aconf->host, '?'))) {
 			(void)fprintf(stderr, "\tERROR: bad host field\n");
 			continue;
-		    }
+		}
 
-		if (aconf->status & CONF_SERVER_MASK && BadPtr(aconf->passwd))
-		    {
+		if (aconf->status & CONF_SERVER_MASK
+		    && BadPtr(aconf->passwd)) {
 			(void)fprintf(stderr,
-					"\tERROR: empty/no password field\n");
+				      "\tERROR: empty/no password field\n");
 			continue;
-		    }
+		}
 
-		if (aconf->status & CONF_SERVER_MASK && !aconf->name)
-		    {
+		if (aconf->status & CONF_SERVER_MASK && !aconf->name) {
 			(void)fprintf(stderr, "\tERROR: bad name field\n");
 			continue;
-		    }
+		}
 
 		if (aconf->status & (CONF_SERVER_MASK|CONF_OPS))
-			if (!index(aconf->host, '@'))
-			    {
+			if (!index(aconf->host, '@')) {
 				char	*newhost;
 				int	len = 3;	/* *@\0 = 3 */
 
@@ -505,15 +451,17 @@ chkconf_initconf(int opt)
 				(void)sprintf(newhost, "*@%s", aconf->host);
 				irc_free(aconf->host);
 				aconf->host = newhost;
-			    }
+			}
 
-		/* parse the connect rules to detect errors, but free
-		** any allocated storage immediately -- we're just looking
-		** for errors..  */
+		/*
+		 * parse the connect rules to detect errors, but free
+		 * any allocated storage immediately -- we're just looking
+		 * for errors..
+		 */
 		if (aconf->status & CONF_CRULE)
-                  if ((crule =
-                       (char *) crule_parse (aconf->name)) != NULL)
-		    crule_free (&crule);
+			if ((crule =
+			     (char *) crule_parse (aconf->name)) != NULL)
+		    crule_free(&crule);
 
 		if (!aconf->class)
 			aconf->class = get_class(0);
@@ -525,56 +473,51 @@ chkconf_initconf(int opt)
 			aconf->passwd = nullfield;
 		if (!aconf->host)
 			aconf->host = nullfield;
-		if (aconf->status & (CONF_ME|CONF_ADMIN))
-		    {
+		if (aconf->status & (CONF_ME | CONF_ADMIN)) {
 			if (flags & aconf->status)
 				(void)fprintf(stderr,
-					"ERROR: multiple %c-lines\n",
-					irc_toupper(confchar(aconf->status)));
+					      "ERROR: multiple %c-lines\n",
+					      irc_toupper(confchar(aconf->status)));
 			else
 				flags |= aconf->status;
-		    }
+		}
 print_confline:
 		if (debugflag > 8)
 			(void)printf("(%d) (%s) (%s) (%s) (%d) (%s)\n",
-			      aconf->status, aconf->host, aconf->passwd,
-			      aconf->name, aconf->port, maxsendq);
+				     aconf->status, aconf->host, aconf->passwd,
+				     aconf->name, aconf->port, maxsendq);
 		(void)fflush(stdout);
-		if (aconf->status & (CONF_SERVER_MASK|CONF_HUB|CONF_LEAF))
-		    {
+		if (aconf->status & (CONF_SERVER_MASK | CONF_HUB | CONF_LEAF)) {
 			aconf->next = ctop;
 			ctop = aconf;
 			aconf = NULL;
-		    }
-	    }
+		}
+	}
         printf("\n");
 	(void)close(fd);
-#ifdef	M4_PREPROC
-	(void)wait(0);
-#endif
 	return ctop;
 }
 
-static	aClass	*get_class(cn)
-int	cn;
+static aClass *
+get_class(int cn)
 {
 	static	aClass	cls;
 	int	i = numclasses - 1;
 
 	cls.class = -1;
 	for (; i >= 0; i--)
-		if (classarr[i] == cn)
-		    {
+		if (classarr[i] == cn) {
 			cls.class = cn;
 			break;
-		    }
+		}
 	if (i == -1)
 		(void)fprintf(stderr,"\tWARNING: class %d not found\n", cn);
+
 	return &cls;
 }
 
-static	void	new_class(cn)
-int	cn;
+static void
+new_class(int cn)
 {
 	numclasses++;
 	if (classarr)
@@ -613,17 +556,16 @@ chkconf_getfield(char *newline)
 
 
 /*
-** read a string terminated by \r or \n in from a fd
-**
-** Created: Sat Dec 12 06:29:58 EST 1992 by avalon
-** Returns:
-**	0 - EOF
-**	-1 - error on read
-**     >0 - number of bytes returned (<=num)
-** After opening a fd, it is necessary to init dgets() by calling it as
-**	dgets(x,y,0);
-** to mark the buffer as being empty.
-*/
+ * read a string terminated by \r or \n in from a fd
+ *
+ * Returns:
+ *	0 - EOF
+ *	-1 - error on read
+ *     >0 - number of bytes returned (<=num)
+ * After opening a fd, it is necessary to init dgets() by calling it as
+ *	dgets(x,y,0);
+ * to mark the buffer as being empty.
+ */
 int
 dgets(int fd, char *buf, int num)
 {
@@ -633,32 +575,29 @@ dgets(int fd, char *buf, int num)
 	int	n, nr;
 
 	/*
-	** Sanity checks.
-	*/
+	 * Sanity checks.
+	 */
 	if (head == tail)
 		*head = '\0';
-	if (!num)
-	    {
+	if (!num) {
 		head = tail = dgbuf;
 		*head = '\0';
 		return 0;
-	    }
+	}
 	if (num > sizeof(dgbuf) - 1)
 		num = sizeof(dgbuf) - 1;
 dgetsagain:
-	if (head > dgbuf)
-	    {
+	if (head > dgbuf) {
 		for (nr = tail - head, s = head, t = dgbuf; nr > 0; nr--)
 			*t++ = *s++;
 		tail = t;
 		head = dgbuf;
-	    }
+	}
 	/*
-	** check input buffer for EOL and if present return string.
-	*/
+	 * check input buffer for EOL and if present return string.
+	 */
 	if (head < tail &&
-	    ((s = index(head, '\n')) || (s = index(head, '\r'))) && s < tail)
-	    {
+	    ((s = index(head, '\n')) || (s = index(head, '\r'))) && s < tail) {
 		n = MIN(s - head + 1, num);	/* at least 1 byte */
 dgetsreturnbuf:
 		bcopy(head, buf, n);
@@ -666,42 +605,35 @@ dgetsreturnbuf:
 		if (head == tail)
 			head = tail = dgbuf;
 		return n;
-	    }
+	}
 
-	if (tail - head >= num)		/* dgets buf is big enough */
-	    {
+	if (tail - head >= num) {	/* dgets buf is big enough */
 		n = num;
 		goto dgetsreturnbuf;
-	    }
+	}
 
 	n = sizeof(dgbuf) - (tail - dgbuf) - 1;
 	nr = read(fd, tail, n);
-	if (nr == -1)
-	    {
+	if (nr == -1) {
 		head = tail = dgbuf;
 		return -1;
-	    }
-	if (!nr)
-	    {
-		if (head < tail)
-		    {
+	}
+	if (!nr) {
+		if (head < tail) {
 			n = MIN(head - tail, num);
 			goto dgetsreturnbuf;
-		    }
+		}
 		head = tail = dgbuf;
 		return 0;
-	    }
+	}
 	tail += nr;
 	*tail = '\0';
-	for (t = head; (s = index(t, '\n')); )
-	    {
-		if ((s > head) && (s > dgbuf))
-		    {
+	for (t = head; (s = index(t, '\n')); ) {
+		if ((s > head) && (s > dgbuf)) {
 			t = s-1;
 			for (nr = 0; *t == '\\'; nr++)
 				t--;
-			if (nr & 1)
-			    {
+			if (nr & 1) {
 				t = s+1;
 				s--;
 				nr = tail - t;
@@ -709,15 +641,14 @@ dgetsreturnbuf:
 					*s++ = *t++;
 				tail -= 2;
 				*tail = '\0';
-			    }
-			else
+			} else
 				s++;
-		    }
-		else
+		} else
 			s++;
 		t = s;
-	    }
+	}
 	*tail = '\0';
+
 	goto dgetsagain;
 }
 
@@ -731,45 +662,38 @@ validate(aConfItem *top)
 	if (!top)
 		return 0;
 
-	for (aconf = top; aconf; aconf = aconf->next)
-	    {
+	for (aconf = top; aconf; aconf = aconf->next) {
 		if (aconf->status & CONF_MATCH)
 			continue;
 
-		if (aconf->status & CONF_SERVER_MASK)
-		    {
+		if (aconf->status & CONF_SERVER_MASK) {
 			if (aconf->status & CONF_CONNECT_SERVER)
 				otype = CONF_NOCONNECT_SERVER;
 			else if (aconf->status & CONF_NOCONNECT_SERVER)
 				otype = CONF_CONNECT_SERVER;
 
-			for (bconf = top; bconf; bconf = bconf->next)
-			    {
+			for (bconf = top; bconf; bconf = bconf->next) {
 				if (bconf == aconf || !(bconf->status & otype))
 					continue;
-				if (bconf->class == aconf->class &&
-				    !mycmp(bconf->name, aconf->name) &&
-				    !mycmp(bconf->host, aconf->host))
-				    {
+				if (bconf->class == aconf->class
+				    && !mycmp(bconf->name, aconf->name)
+				    && !mycmp(bconf->host, aconf->host)) {
 					aconf->status |= CONF_MATCH;
 					bconf->status |= CONF_MATCH;
-						break;
-				    }
-			    }
-		    }
-		else
-			for (bconf = top; bconf; bconf = bconf->next)
-			    {
+					break;
+				}
+			}
+		} else
+			for (bconf = top; bconf; bconf = bconf->next) {
 				if ((bconf == aconf) ||
 				    !(bconf->status & CONF_SERVER_MASK))
 					continue;
-				if (!mycmp(bconf->name, aconf->name))
-				    {
+				if (!mycmp(bconf->name, aconf->name)) {
 					aconf->status |= CONF_MATCH;
 					break;
-				    }
-			    }
-	    }
+				}
+			}
+	}
 
 	(void) fprintf(stderr, "\n");
 	for (aconf = top; aconf; aconf = aconf->next)
@@ -777,8 +701,8 @@ validate(aConfItem *top)
 			valid++;
 		else
 			(void)fprintf(stderr, "Unmatched %c:%s:%s:%s\n",
-				confchar(aconf->status), aconf->host,
-				aconf->passwd, aconf->name);
+				      confchar(aconf->status), aconf->host,
+				      aconf->passwd, aconf->name);
 	return valid ? 0 : -1;
 }
 
