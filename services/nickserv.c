@@ -288,6 +288,22 @@ void grantIdentifiedUmode(UserList* nick, int grantVerify)
 #endif
 }
 
+void revokeIdentifiedUmode(UserList* nick)
+{
+	const char* name = nick->nick;
+
+#ifdef IRCD_REGMODE
+#   ifdef IRCD_SVSMODE
+        sSend(":%s SVSMODE %s :-r", NickServ, name);
+#   else
+
+        sSend(":%s MODE %s :-rv", NickServ, name);
+#   endif
+#endif
+	
+}
+	
+
 
 /*
  * ===DOC===
@@ -932,8 +948,13 @@ int hasValidModeR(UserList* user)
 	if (!user->reg || !(user->oflags & NOISREG))
 		return 0;
 	if (user->timestamp >= user->reg->timereg
-	     || user->timestamp >= CTime)
+	     || user->timestamp > CTime)
+	{
+		user->oflags &= ~NOISREG;
+		revokeIdentifiedUmode(user);
+		
 		return 0;
+	}
 	return 1;
 }
 
@@ -3815,6 +3836,7 @@ NCMD(ns_drop)
 	mostnicks--;
 	sSend(":%s NOTICE %s :Your nick %s has been dropped.",
 		  NickServ, from, from);
+	revokeIdentifiedUmode(nick);
 	nicklog->log(nick, NS_DROP, nick->nick);
 	delRegNick(nick->reg);
 	nick->reg = NULL;
