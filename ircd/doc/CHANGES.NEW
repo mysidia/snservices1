@@ -14,6 +14,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 CHANGES SINCE sorircd1.3.4
 *********************************************************************
 
+Wed Oct  6 12:56:11 CEST 2004 sor1.5.0devel - Echostar
+ * Changed colour blocking by ircd into colour stripping.
+
 Mon Sep 20 20:13:44 CEST 2004 sor1.5.0devel - Onno
  * New networking code with support for select(), poll(), epoll(), /dev/poll,
    kqueue(), IPv4 and IPv6 and SSL.

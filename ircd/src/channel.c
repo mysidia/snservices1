@@ -46,6 +46,7 @@ static	int	number_of_zombies(aChannel *);
 static	int	set_mode(aClient *, aClient *, aChannel *, int,\
 			 char **, char *,char *, int *, int *, int);
 static	void	sub1_from_channel(aChannel *);
+static	void	set_topic(aChannel *, const char *, const int);
 char *genHostMask(char *host);
 
 
@@ -2307,7 +2308,7 @@ char	*parv[];
 {
 	aChannel *chptr;
 	Link	*lp;
-	char	*p = NULL, *name;
+	char	*p = NULL, *stripped = NULL, *name;
 	char *comment = (parc > 2 && parv[2]) ? parv[2] : NULL;
 
 	if (check_registered_user(sptr))
@@ -2356,7 +2357,15 @@ char	*parv[];
                 if (parc < 3)
 		  sendto_channel_butserv(chptr, sptr, PartFmt, parv[0], name);
 		else
-		  sendto_channel_butserv(chptr, sptr, PartFmt2, parv[0], name, comment);
+		  {
+			if (!stripped && chptr->mode.mode & MODE_NOCOLORS &&
+			    msg_has_colors(comment))
+				stripped = strip_colors(comment);
+
+			sendto_channel_butserv(chptr, sptr, PartFmt2, parv[0],
+					       name, (stripped) ? stripped :
+					       comment);
+		  }
                 } else if (MyClient(sptr)) {
 		  if (parc < 3)
 		    sendto_one(sptr, PartFmt, parv[0], name);
@@ -2365,6 +2374,8 @@ char	*parv[];
                 }
 		remove_user_from_channel(sptr, chptr);
 	    }
+
+	irc_free(stripped);
 	return 0;
     }
 
@@ -2607,7 +2618,7 @@ char	*parv[];
 			if (!chptr->topic_time || ttime < chptr->topic_time)
 			   {
 				/* setting a topic */
-				strncpyzt(chptr->topic, topic, sizeof(chptr->topic));
+				set_topic(chptr, topic, 0);
 				strcpy(chptr->topic_nick, tnick);
 				chptr->topic_time = ttime;
 				sendto_match_servs(chptr, cptr,":%s TOPIC %s %s %lu :%s",
@@ -2623,7 +2634,7 @@ char	*parv[];
 			  || is_chan_op(sptr, chptr))
 			 || (IsULine(cptr,sptr) && topic)) {
 			/* setting a topic */
-			strncpyzt(chptr->topic, topic, sizeof(chptr->topic));
+			set_topic(chptr, topic, 1);
 			strcpy(chptr->topic_nick, sptr->name);
                         if (ttime && IsServer(cptr))
 			  chptr->topic_time = ttime;
@@ -2642,6 +2653,27 @@ char	*parv[];
 	    }
 	return 0;
     }
+
+/*
+** set_topic
+**	chptr - ptr. to target channel
+**	topic - topic to set
+**	check - check for colors? (0 - no, anything else - yes)
+*/
+static void
+set_topic(aChannel *chptr, const char *topic, const int check)
+{
+	char *stripped = NULL;
+
+	if ((chptr->mode.mode & MODE_NOCOLORS) && msg_has_colors(topic) &&
+	    check)
+		topic = stripped = strip_colors(topic);
+		
+	strncpyzt(chptr->topic, topic, sizeof(chptr->topic));
+
+	if (check)
+	  irc_free(stripped);
+}
 
 /*
 ** m_invite
@@ -3064,6 +3096,7 @@ int     numsend;
 	int hashptr;
 	aChannel    *chptr;
 	int cis_member = 0;
+	char *stripped = NULL;
 
 #define l cptr->lopt /* lazy shortcut */
 
@@ -3107,10 +3140,17 @@ int     numsend;
             if (!cis_member && ((l->flag & 0x1) || ShowChannel(cptr, chptr)))
                 cis_member = 1;
 
-            sendto_one(cptr, rpl_str(RPL_LIST), me.name, cptr->name,
-                       cis_member ? chptr->chname : "*",
-                       chptr->users - number_of_zombies(chptr),
-                       cis_member ? chptr->topic : "");
+	    if (msg_has_colors(chptr->topic))
+		stripped = strip_colors(chptr->topic);
+
+	    sendto_one(cptr, rpl_str(RPL_LIST), me.name, cptr->name,
+		       cis_member ? chptr->chname : "*",
+		       chptr->users - number_of_zombies(chptr),
+		       cis_member ? ((stripped) ? stripped : chptr->topic) :
+		       "");
+
+	    irc_free(stripped);
+	    stripped = NULL;
         }
 
         if ((numsend < 1) && (++hashptr < CHANNELHASHSIZE)) {

@@ -440,6 +440,8 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 {
 	aClient *acptr;
 	Link	*lp;
+	char	*stripped = NULL;
+	int	found = 0;
 
 	/*
 	**  For a server or user quitting, propagage the information to
@@ -510,9 +512,45 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 		** (Note: The notice is to the local clients *only*)
 		*/
 		if (sptr->user)
-		    {
-			sendto_common_channels(sptr, ":%s QUIT :%s",
-						sptr->name, comment);
+		  {
+			if (msg_has_colors(comment)) {
+				for (acptr = &me; acptr; acptr = acptr->lnext) {
+					if (IsServer(acptr) || sptr == acptr)
+						continue;
+
+					/*
+					 * Try to find channels that are common
+					 * to both the quitting client and the
+					 * currently examined local client
+					 * and that have color stripping set.
+					 * Failing that, send as before.
+					 */
+					found = 0;
+					for (lp = sptr->user->channel; lp; lp = lp->next) {
+						if (IsMember(sptr, lp->value.chptr) &&
+						    IsMember(acptr, lp->value.chptr)) {
+							if (lp->value.chptr->mode.mode == MODE_NOCOLORS) {
+								if (!stripped)
+									stripped = strip_colors(comment);
+								sendto_prefix_one(acptr, sptr, ":%s QUIT :%s", sptr->name, stripped);
+								found = 1;
+								break;
+							}
+						}
+					}
+				}
+
+				irc_free(stripped);
+
+				if (found == 0) {
+				  sendto_common_channels(sptr, ":%s QUIT :%s",
+							 sptr->name, comment);
+				}
+			}
+
+			else
+				sendto_common_channels(sptr, ":%s QUIT :%s",
+						       sptr->name, comment);
 
 			while ((lp = sptr->user->channel))
 				remove_user_from_channel(sptr,lp->value.chptr);
