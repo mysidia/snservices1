@@ -1646,8 +1646,8 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (!aconf)
 	    {
 	      sendto_one(sptr,
-			 "NOTICE %s :Connect: Host %s not listed in %s",
-			 parv[0], parv[1], CPATH);
+			 ":%s NOTICE %s :Connect: Host %s not listed in %s",
+			 me.name, parv[0], parv[1], CPATH);
 	      return 0;
 	    }
 	/*
@@ -1661,8 +1661,8 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if ((port = atoi(parv[2])) <= 0)
 		    {
 			sendto_one(sptr,
-				   "NOTICE %s :Connect: Illegal port number",
-				   parv[0]);
+				   ":%s NOTICE %s :Connect: Illegal port number",
+				   me.name, parv[0]);
 			return 0;
 		    }
 	    }
@@ -1685,8 +1685,8 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    if (crule_eval (cconf->passwd))
 	      {
 		sendto_one(sptr,
-			   "NOTICE %s :Connect: Disallowed by rule: %s",
-			   parv[0], cconf->name);
+			   ":%s NOTICE %s :Connect: Disallowed by rule: %s",
+			   me.name, parv[0], cconf->name);
 		return 0;
 	      }
 

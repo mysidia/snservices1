@@ -631,8 +631,8 @@ char	*parv[];
 		l = tab->links;
 		if (showlist)
 		    sendto_one(sptr,
-			   "NOTICE %s :Hash Entry:%6d Hits:%7d Links:%6d",
-			   parv[0], i, tab->hits, l);
+			   ":%s NOTICE %s :Hash Entry:%6d Hits:%7d Links:%6d",
+			   me.name, parv[0], i, tab->hits, l);
 		if (l > 0) {
 			if (l < 10)
 				link_pop[l]++;
@@ -667,25 +667,25 @@ char	*parv[];
 		for (acptr = client; acptr; acptr = acptr->next) {
 			if (hash_find_client(acptr->name,acptr) != acptr) {
 				if (ch == 'V')
-				sendto_one(sptr, "NOTICE %s :Bad hash for %s",
-					   parv[0], acptr->name);
+				sendto_one(sptr, ":%s NOTICE %s :Bad hash for %s",
+					   me.name, parv[0], acptr->name);
 				bad++;
 			}
 			listlength++;
 		}
-		sendto_one(sptr,"NOTICE %s :List Length: %d Bad Hashes: %d",
-			   parv[0], listlength, bad);
+		sendto_one(sptr,":%s NOTICE %s :List Length: %d Bad Hashes: %d",
+			   me.name, parv[0], listlength, bad);
 	    }
 	case 'P' : case 'p' :
 		for (i = 0; i < 10; i++)
-			sendto_one(sptr,"NOTICE %s :Entires with %d links : %d",
-			parv[0], i, link_pop[i]);
+			sendto_one(sptr,":%s NOTICE %s :Entires with %d links : %d",
+			me.name, parv[0], i, link_pop[i]);
 		return (0);
 	case 'r' :
 	    {
 		aClient	*acptr;
 
-		sendto_one(sptr,"NOTICE %s :Rehashing Client List.", parv[0]);
+		sendto_one(sptr,":%s NOTICE %s :Rehashing Client List.", me.name, parv[0]);
 		clear_client_hash_table();
 		for (acptr = client; acptr; acptr = acptr->next)
 			(void)add_to_client_hash_table(acptr->name, acptr);
@@ -695,7 +695,7 @@ char	*parv[];
 	    {
 		aChannel	*acptr;
 
-		sendto_one(sptr,"NOTICE %s :Rehashing Channel List.", parv[0]);
+		sendto_one(sptr,":%s NOTICE %s :Rehashing Channel List.", me.name, parv[0]);
 		clear_channel_hash_table();
 		for (acptr = channel; acptr; acptr = acptr->nextch)
 			(void)add_to_channel_hash_table(acptr->chname, acptr);
@@ -703,14 +703,14 @@ char	*parv[];
 	    }
 	case 'H' :
 		if (parc > 2)
-			sendto_one(sptr,"NOTICE %s :%s hash to entry %d",
-				   parv[0], parv[2],
+			sendto_one(sptr,":%s NOTICE %s :%s hash to entry %d",
+				   me.name, parv[0], parv[2],
                        hash_nn_name(parv[2])%CHANNELHASHSIZE);
 		return (0);
 	case 'h' :
 		if (parc > 2)
-			sendto_one(sptr,"NOTICE %s :%s hash to entry %d",
-				   parv[0], parv[2],
+			sendto_one(sptr,":%s NOTICE %s :%s hash to entry %d",
+				   me.name, parv[0], parv[2],
                        hash_nn_name(parv[2])%HASHSIZE);
 		return (0);
 /* Quick hack for getting memory statistics from list.c -Donwulff */
@@ -735,8 +735,8 @@ char	*parv[];
 			    {
 				if (parv[1][2] == '1' && tmp != tmp->from)
 					continue;
-				sendto_one(sptr,"NOTICE %s :Node: %d #%d %s",
-					   parv[0], l, i, tmp->name);
+				sendto_one(sptr,":%s NOTICE %s :Node: %d #%d %s",
+					   me.name, parv[0], l, i, tmp->name);
 			    }
 		return (0);
 	    }
@@ -755,8 +755,8 @@ char	*parv[];
 		for (;l <= max; l++)
 			for (i = 0, tmp = (aChannel *)channelTable[l].list; tmp;
 			     i++, tmp = tmp->hnextch)
-				sendto_one(sptr,"NOTICE %s :Node: %d #%d %s",
-					   parv[0], l, i, tmp->chname);
+				sendto_one(sptr,":%s NOTICE %s :Node: %d #%d %s",
+					   me.name, parv[0], l, i, tmp->chname);
 		return (0);
 	    }
 	case 'z' :
@@ -777,7 +777,7 @@ char	*parv[];
 			acptr->hnext = NULL;
 			(void)add_to_client_hash_table(acptr->name, acptr);
 		    }
-		sendto_one(sptr, "NOTICE %s :HASHSIZE now %d", parv[0], l);
+		sendto_one(sptr, ":%s NOTICE %s :HASHSIZE now %d", me.name, parv[0], l);
 		break;
 	    }
 	case 'Z' :
@@ -798,33 +798,33 @@ char	*parv[];
 			acptr->hnextch = NULL;
 			(void)add_to_channel_hash_table(acptr->chname, acptr);
 		    }
-		sendto_one(sptr, "NOTICE %s :CHANNELHASHSIZE now %d",
-			   parv[0], l);
+		sendto_one(sptr, ":%s NOTICE %s :CHANNELHASHSIZE now %d",
+			   me.name, parv[0], l);
 		break;
 	    }
 	default :
 		break;
 	}
-	sendto_one(sptr,"NOTICE %s :Entries Hashed: %d NonEmpty: %d of %d",
-		   parv[0], totlink, used_now, size);
+	sendto_one(sptr,":%s NOTICE %s :Entries Hashed: %d NonEmpty: %d of %d",
+		   me.name, parv[0], totlink, used_now, size);
 	if (!used_now)
 		used_now = 1;
-    sendto_one(sptr,"NOTICE %s :Hash Ratio (av. depth): %f %%Full: %f",
-		  parv[0], (float)((1.0 * totlink) / (1.0 * used_now)),
+    sendto_one(sptr,":%s NOTICE %s :Hash Ratio (av. depth): %f %%Full: %f",
+		  me.name, parv[0], (float)((1.0 * totlink) / (1.0 * used_now)),
 		  (float)((1.0 * used_now) / (1.0 * size)));
-	sendto_one(sptr,"NOTICE %s :Deepest Link: %d Links: %d",
-		   parv[0], deeplink, deepest);
+	sendto_one(sptr,":%s NOTICE %s :Deepest Link: %d Links: %d",
+		   me.name, parv[0], deeplink, deepest);
 	if (!used)
 		used = 1;
-	sendto_one(sptr,"NOTICE %s :Total Hits: %d Unhit: %d Av Hits: %f",
-		   parv[0], tothits, size-used,
+	sendto_one(sptr,":%s NOTICE %s :Total Hits: %d Unhit: %d Av Hits: %f",
+		   me.name, parv[0], tothits, size-used,
 		   (float)((1.0 * tothits) / (1.0 * used)));
-	sendto_one(sptr,"NOTICE %s :Entry Most Hit: %d Hits: %d",
-		   parv[0], mosthit, mosthits);
-	sendto_one(sptr,"NOTICE %s :Client hits %d miss %d",
-		   parv[0], clhits, clmiss);
-	sendto_one(sptr,"NOTICE %s :Channel hits %d miss %d",
-		   parv[0], chhits, chmiss);
+	sendto_one(sptr,":%s NOTICE %s :Entry Most Hit: %d Hits: %d",
+		   me.name, parv[0], mosthit, mosthits);
+	sendto_one(sptr,":%s NOTICE %s :Client hits %d miss %d",
+		   me.name, parv[0], clhits, clmiss);
+	sendto_one(sptr,":%s NOTICE %s :Channel hits %d miss %d",
+		   me.name, parv[0], chhits, chmiss);
 	return 0;
 #endif /* DEBUGMODE */
 }

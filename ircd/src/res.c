@@ -1426,30 +1426,30 @@ char	*parv[];
 	if (parv[1] && *parv[1] == 'l') {
 		for(cp = cachetop; cp; cp = cp->list_next)
 		    {
-			sendto_one(sptr, "NOTICE %s :Ex %d ttl %d host %s(%s)",
-				   parv[0], cp->expireat - NOW, cp->ttl,
+			sendto_one(sptr, ":%s NOTICE %s :Ex %d ttl %d host %s(%s)",
+				   me.name, parv[0], cp->expireat - NOW, cp->ttl,
 				   cp->he.h_name, inetntoa(cp->he.h_addr));
 			for (i = 0; cp->he.h_aliases[i]; i++)
-				sendto_one(sptr,"NOTICE %s : %s = %s (CN)",
-					   parv[0], cp->he.h_name,
+				sendto_one(sptr,":%s NOTICE %s : %s = %s (CN)",
+					   me.name, parv[0], cp->he.h_name,
 					   cp->he.h_aliases[i]);
 			for (i = 1; cp->he.h_addr_list[i]; i++)
-				sendto_one(sptr,"NOTICE %s : %s = %s (IP)",
-					   parv[0], cp->he.h_name,
+				sendto_one(sptr,":%s NOTICE %s : %s = %s (IP)",
+					   me.name, parv[0], cp->he.h_name,
 					   inetntoa(cp->he.h_addr_list[i]));
 		    }
 		return 0;
 	}
-	sendto_one(sptr,"NOTICE %s :Ca %d Cd %d Ce %d Cl %d Ch %d:%d Cu %d",
-		   sptr->name,
+	sendto_one(sptr,":%s NOTICE %s :Ca %d Cd %d Ce %d Cl %d Ch %d:%d Cu %d",
+		   me.name, sptr->name,
 		   cainfo.ca_adds, cainfo.ca_dels, cainfo.ca_expires,
 		   cainfo.ca_lookups,
 		   cainfo.ca_na_hits, cainfo.ca_nu_hits, cainfo.ca_updates);
 
-	sendto_one(sptr,"NOTICE %s :Re %d Rl %d/%d Rp %d Rq %d",
-		   sptr->name, reinfo.re_errors, reinfo.re_nu_look,
+	sendto_one(sptr,":%s NOTICE %s :Re %d Rl %d/%d Rp %d Rq %d",
+		   me.name, sptr->name, reinfo.re_errors, reinfo.re_nu_look,
 		   reinfo.re_na_look, reinfo.re_replies, reinfo.re_requests);
-	sendto_one(sptr,"NOTICE %s :Ru %d Rsh %d Rs %d(%d) Rt %d", sptr->name,
+	sendto_one(sptr,":%s NOTICE %s :Ru %d Rsh %d Rs %d(%d) Rt %d", me.name, sptr->name,
 		   reinfo.re_unkrep, reinfo.re_shortttl, reinfo.re_sent,
 		   reinfo.re_resends, reinfo.re_timeouts);
 	return 0;

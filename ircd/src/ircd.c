@@ -348,6 +348,23 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 				cptr->user->username);
 		}
 #endif
+		else if (!IsRegistered)
+		{
+			if (IsConnecting(cptr) || IsHandshake(cptr))
+			{
+				sendto_ops("Connecting to %s failed, closing link",
+					get_client_name(cptr, FALSE));
+			}
+			else if (cptr->user)
+			{
+				sendto_one(cptr, ":%s NOTICE AUTH :*** Your IRC software has failed to respond properly to the client check.", me.name);
+				sendto_one(sptr, ":%s NOTICE AUTH :*** Try turning off or uninstalling any software addons or scripts you may be running and try again.", me.name);
+				sendto_one(cptr, ":%s NOTICE AUTH :*** If you still have trouble connecting, then please see: " NS_URL "", me.name);
+			}
+			exit_client(cptr, cptr, &me, "Connection setup failed");
+			i--;  /* catch remapped descriptors */
+			continue;
+		}
 		/*
 		 * If the server hasnt talked to us in 2*ping seconds
 		 * and it has a ping time, then close its connection.
@@ -355,10 +372,9 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		 * to be active, close this connection too.
 		 */
 		else if (
-		    ((currenttime - cptr->lasttime) >= (2 * ping) &&
-		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
-		    !IsRegistered(cptr)) {
-			if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr))
+		    (currenttime - cptr->lasttime) >= (2 * ping) &&
+		     (ClientFlags(cptr) & FLAGS_PINGSENT)) {
+			if (IsServer(cptr))
 			{
 				sendto_ops("No response from %s, closing link",
 					   get_client_name(cptr, FALSE));

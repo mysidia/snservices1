@@ -634,18 +634,13 @@ static void
 NospoofText(aClient* acptr)
 {
 #ifdef NOSPOOF
-	  char* auth_name = "AUTH";
-
-	  if (!BadPtr(acptr->name))
-		  auth_name = acptr->name;
-	  
-	  sendto_one(acptr, "NOTICE %s :*** If you are having problems"
+	  sendto_one(acptr, ":%s NOTICE AUTH :*** If you are having problems"
 		     " connecting due to ping timeouts, please"
                      " type /notice %X nospoof now.",
-		     auth_name, acptr->nospoof);
-	  sendto_one(acptr, "NOTICE %s :*** If you still have trouble"
+		     me.name, acptr->nospoof);
+	  sendto_one(acptr, ":%s NOTICE AUTH :*** If you still have trouble"
 		     " connecting, then please see: " NS_URL "",
-		     auth_name, me.name);
+		     me.name);
          sendto_one(acptr, "PING :%X", acptr->nospoof);
 #endif	 
 }
@@ -2562,7 +2557,7 @@ int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 	else
 	{
-	    sendto_one(sptr,"NOTICE %s :HURTTIME must be a _numeric_ value",sptr->name);
+	    sendto_one(sptr,":%s NOTICE %s :HURTTIME must be a _numeric_ value",me.name, sptr->name);
 	    return 0;
 	}
 
@@ -2595,7 +2590,7 @@ int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	        host = nick + (ufield[0] ? 2 : 1 )  + strlen(ufield);
 	       if ((MyConnect(sptr) && !IsServer(sptr) && addht > 30000) || addht < 0)
 	      { /* > 30000 will be possible if all servers are ok with it */
-	          sendto_one(sptr,"NOTICE %s :Hurt times may not exceed 30000 and must be at least 0",sptr->name);
+	          sendto_one(sptr,":%s NOTICE %s :Hurt times may not exceed 30000 and must be at least 0", me.name, sptr->name);
 	          return 0;
 	      }
 
@@ -2719,7 +2714,7 @@ int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if ((addht > 30000 && MyClient(sptr) && IsPerson(sptr))  || addht < 0 )
    {
-      sendto_one(cptr,"NOTICE %s :Too Much Hurt Time: Cannot Raise hurt time to more than 30000 seconds or less than 0",cptr->name);
+      sendto_one(cptr,":%s NOTICE %s :Too Much Hurt Time: Cannot Raise hurt time to more than 30000 seconds or less than 0", me.name, cptr->name);
       continue;
    }
 
@@ -2727,8 +2722,8 @@ int m_hurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (chasing) /* do chasing for hurts */
     {
-        sendto_one(sptr,"NOTICE %s :Hurt for %s changed to %s",
-                   sptr->name,nick,acptr->name);
+        sendto_one(sptr,":%s NOTICE %s :Hurt for %s changed to %s",
+                   me.name, sptr->name,nick,acptr->name);
     }     
 
      if (IsHurt(acptr)) /* make sure it hasn't -already- expired */
@@ -2856,8 +2851,8 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 			if (IsClient(sptr))
 			{
-				sendto_one(sptr,"NOTICE %s :%s is not hurt!",
-					sptr->name,acptr->name);
+				sendto_one(sptr,":%s NOTICE %s :%s is not hurt!",
+					me.name, sptr->name,acptr->name);
 			}
 			return(0);
 		}
@@ -3406,8 +3401,8 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
                 sendto_realops("Failed OPER attempt by %s (%s@%s)",
                   parv[0], sptr->user->username, sptr->sockhost);
-                sendto_serv_butone(&me,"GLOBOPS :Failed OPER attempt by %s (%s@%s)",
-                  parv[0], sptr->user->username, sptr->sockhost);
+                sendto_serv_butone(&me,":%s GLOBOPS :Failed OPER attempt by %s (%s@%s)",
+                  me.name, parv[0], sptr->user->username, sptr->sockhost);
 		sptr->since += 7;
 		return 0;
 	    }
@@ -3841,12 +3836,12 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
       if (hackwarn == 1) 
       {
 	  sendto_ops("HACK! %s[%s] Just tried to change usermode of %s to %s",sptr->name, sptr->user ? sptr->user->server : "" ,acptr->name,parv[2]);
-	  sendto_serv_butone(cptr, "GLOBOPS :HACK! %s[%s] Just tried to change usermode of %s to %s",sptr->name,sptr->user ? sptr->user->server : "", acptr->name, parv[2]);
+	  sendto_serv_butone(cptr, ":%s GLOBOPS :HACK! %s[%s] Just tried to change usermode of %s to %s",me.name,sptr->name,sptr->user ? sptr->user->server : "", acptr->name, parv[2]);
       }
       else if (hackwarn == 2)
       {
 	  sendto_ops("HACK! %s[%s] set usermode of %s to %s",sptr->name,sptr->user ? sptr->user->server : "",acptr->name,parv[2]);
-	  sendto_serv_butone(cptr, "GLOBOPS :HACK! %s[%s] set usermode of %s to %s",sptr->name,sptr->user ? sptr->user->server : "",acptr->name,parv[2]);
+	  sendto_serv_butone(cptr, ":%s GLOBOPS :HACK! %s[%s] set usermode of %s to %s",me.name,sptr->name,sptr->user ? sptr->user->server : "",acptr->name,parv[2]);
       }
 
   }

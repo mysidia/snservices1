@@ -1865,12 +1865,12 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (name[0] == '\0' || uhost[0] == '\0')
 		{
 			Debug((DEBUG_INFO, "KLINE: Bad field!"));
-			sendto_one (sptr, "NOTICE %s :If you're going to add a userhost, at LEAST specify both fields", parv[0]);	
+			sendto_one (sptr, ":%s NOTICE %s :If you're going to add a userhost, at LEAST specify both fields", me.name, parv[0]);	
 			return 0;
 		}
 		if (!strcmp(uhost, "*") || !strchr(uhost, '.'))
 		{
-			sendto_one (sptr, "NOTICE %s :What a sweeping K:Line.  If only your admin knew you tried that..", parv[0]);
+			sendto_one (sptr, ":%s NOTICE %s :What a sweeping K:Line.  If only your admin knew you tried that..", me.name, parv[0]);
 			return 0;
 		}
 	}	
@@ -1880,8 +1880,8 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	{
 		if (!(acptr = find_client(parv[1], NULL))) {
 			if (!(acptr = get_history(parv[1], (long)KILLCHASETIMELIMIT))) {
-				sendto_one(sptr, "NOTICE %s :Can't find user %s to add KLINE",
-					   parv[0], parv[1]);
+				sendto_one(sptr, ":%s NOTICE %s :Can't find user %s to add KLINE",
+					   me.name, parv[0], parv[1]);
 				return 0;
 			}
 		}
@@ -1902,7 +1902,7 @@ int	m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (name == '\0' || host == '\0')
 		{
 			Debug((DEBUG_INFO, "KLINE: Bad field"));
-			sendto_one(sptr, "NOTICE %s :Bad field!", parv[0]);
+			sendto_one(sptr, ":%s NOTICE %s :Bad field!", me.name, parv[0]);
 			return 0;
 		}
 
@@ -1946,7 +1946,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	}
 	if (parc<2)
 	{
-		sendto_one(sptr,"NOTICE %s :Not enough parameters", parv[0]);
+		sendto_one(sptr,":%s NOTICE %s :Not enough parameters", me.name, parv[0]);
 		return 0;
 	}
         if ((hosttemp = (char *)strchr(parv[1], '@')))
@@ -1961,26 +1961,26 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 if (name[0] == '\0' || host[0] == '\0')
                 {
                         Debug((DEBUG_INFO, "UNKLINE: Bad field"));
-			sendto_one(sptr, "NOTICE %s : Both user and host fields must be non-null", parv[0]);
+			sendto_one(sptr, ":%s NOTICE %s :Both user and host fields must be non-null", me.name, parv[0]);
 			return 0;
 		}
 		result = del_temp_conf(CONF_KILL, host, NULL, name, 
 			NULL, NULL, 0);
 		if (result == KLINE_RET_AKILL) {	/* akill - result = 3 */
-			sendto_one(sptr, "NOTICE %s :You may not remove autokills.  Only U:lined clients may.", parv[0]);
+			sendto_one(sptr, ":%s NOTICE %s :You may not remove autokills.  Only U:lined clients may.", me.name, parv[0]);
 			return 0;
 		}
 		if (result ==  KLINE_RET_PERM) {	/* Not a temporary line - result =2 */
-			sendto_one(sptr,"NOTICE %s :You may not remove permanent K:Lines - talk to the admin", parv[0]);
+			sendto_one(sptr,":%s NOTICE %s :You may not remove permanent K:Lines - talk to the admin", me.name, parv[0]);
 			return 0;
 		}
 		if (result ==  KLINE_RET_DELOK)  {	/* Successful result = 1*/
-			sendto_one(sptr,"NOTICE %s :Temp K:Line %s@%s is now removed.", parv[0],name,host);
+			sendto_one(sptr,":%s NOTICE %s :Temp K:Line %s@%s is now removed.", me.name, parv[0],name,host);
 			sendto_ops("%s removed temp k:line %s@%s", parv[0], name, host);
 			return 0;
 		}
 		if (result == KLINE_DEL_ERR) {	/* Unsuccessful result = 0*/
-			sendto_one(sptr,"NOTICE %s :Temporary K:Line %s@%s not found", parv[0],name,host);
+			sendto_one(sptr,":%s NOTICE %s :Temporary K:Line %s@%s not found", me.name, parv[0],name,host);
 			return 0;
 		}
 	}
@@ -2149,8 +2149,8 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	      sendto_one(sptr, ":%s NOTICE %s :*** exiting %s",
 	                 me.name, sptr->name, acptr->name);
 	      sendto_ops("dropping server %s (z-lined)", acptr->name);
-	      sendto_serv_butone(cptr, "GNOTICE :dropping server %s (z-lined)",
-	                         acptr->name);
+	      sendto_serv_butone(cptr, ":%s GNOTICE :dropping server %s (z-lined)",
+	                         me.name, acptr->name);
 	      exit_client(acptr, acptr, acptr, "z-lined");
 
 	    }
@@ -2288,7 +2288,7 @@ retry_unzline:
               del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, 0) == KLINE_RET_DELOK)
           {
               if (MyClient(sptr))
-   	      sendto_one(sptr,"NOTICE %s :temp z:line *@%s removed", parv[0], userhost);
+   	      sendto_one(sptr,":%s NOTICE %s :temp z:line *@%s removed", me.name, parv[0], userhost);
    	      sendto_ops("%s removed temp z:line *@%s", parv[0], userhost);
           }
           else
