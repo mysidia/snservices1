@@ -154,7 +154,7 @@ int	m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				sendto_one(sptr, rpl_str(RPL_WHOWASUSER),
 					   me.name, parv[0], wp->ww_nick,
 					   up->username,
-					   up->host, wp->ww_info);
+					   UGETHOST(sptr, up), wp->ww_info);
 				sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
 					   me.name, parv[0], wp->ww_nick,
 					   up->server, myctime(wp->ww_logout));

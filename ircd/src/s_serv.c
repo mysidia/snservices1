@@ -777,6 +777,7 @@ int	m_server_estab(aClient *cptr)
 		    }
 	    }
 
+	update_time();
 	for (acptr = &me; acptr; acptr = acptr->prev)
 	    {
 		/* acptr->from == acptr for acptr == cptr */
@@ -798,6 +799,10 @@ int	m_server_estab(aClient *cptr)
 			if (acptr->user->away)
 				sendto_one(cptr,":%s AWAY :%s", acptr->name,
 				   acptr->user->away);
+			if (IsHurt(acptr))
+				sendto_one(cptr,":%s HURTSET %s %ld", me.name,
+				   acptr->name, acptr->hurt);
+
 			send_user_joins(cptr, acptr);
 		    }
 		else if (IsService(acptr))
@@ -822,6 +827,11 @@ int	m_server_estab(aClient *cptr)
 					   chptr->topic_time, chptr->topic);
 		   }
 	}
+
+        /* HelpOp ignores */
+        if (h_nignores && h_ignores)
+            for (i = 0 ; i < h_nignores; i++)
+                 sendto_one(cptr, ":%s HELP :+ignore %s", me.name, h_ignores[i]);
 	return 0;
 }
 
@@ -1110,7 +1120,7 @@ char *get_client_name2(aClient *acptr, int showports)
 	if (!pointer) return NULL;
 	if (showports) return pointer;
 	if (!strrchr(pointer, '.')) return NULL;
-	strcpy(strrchr(pointer, '.'), ".0]");
+	strcpy((char *)strrchr(pointer, '.'), ".0]");
 
 	return pointer;
 }
@@ -1118,15 +1128,23 @@ char *get_client_name2(aClient *acptr, int showports)
 
 char *get_client_name3(aClient *acptr, int showports)
 {
-	char *pointer = get_client_name(acptr, TRUE);
+	char *pointer = get_client_name(acptr, TRUE), *p2;
 
 	if (!pointer) return NULL;
 	if (showports) return pointer;
-	if (!strrchr(pointer, '.')) return NULL;
-	strcpy(strrchr(pointer, '.'), "]");
+	if (!(p2 = (char *)strrchr(pointer, '.'))) return NULL;
+	strcpy(p2, "]");
 
 	return pointer;
 }
+
+char *get_client_namp(char *buf, aClient *acptr, int showports, int mask)
+{
+	char *pointer = get_client_name_mask(acptr, TRUE, showports, mask);
+
+	return buf ? strcpy(buf, pointer) : pointer;
+}
+
 
 int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
@@ -1138,6 +1156,7 @@ int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	int	i;
 	int	doall = 0, wilds = 0, showports	= IsAnOper(sptr);
 	char	*name;
+	char	buf[HOSTLEN + NICKLEN + 255];
 
 	if (check_registered(sptr))
 		return 0;
@@ -1186,11 +1205,12 @@ int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			if (!(doall || wilds) && parc > 2 && IsServer(acptr) &&
 			    !IsServer(cptr))
 				continue;
+			#define CanSeeReal(sptr, acptr) \
+				((sptr==acptr) || IsOper(sptr) || (!IsServer(acptr) && !IsMasked(acptr)))
+			get_client_namp(buf, acptr, isupper(stat) ? showports : FALSE, !CanSeeReal(sptr, acptr));
 			sendto_one(sptr, Lformat, me.name,
 				   RPL_STATSLINKINFO, parv[0],
-				   (isupper(stat)) ?
-				   get_client_name2(acptr, showports) :
-				   get_client_name(acptr, FALSE),
+				   buf,
 				   (int)DBufLength(&acptr->sendQ),
 				   (int)acptr->sendM, (int)acptr->sendK,
 				   (int)acptr->receiveM, (int)acptr->receiveK,
@@ -1331,14 +1351,103 @@ int	m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
   
 	message = parc > 1 ? parv[1] : NULL;
 
-	if (BadPtr(message))
+#if 0
+	if (BadPtr(message) && MyClient(cptr))
 	{
-	for (i = 0; msgtab[i].cmd; i++)
-            if ((!IsHurt(sptr)||(msgtab[i].while_hurt>0))&&!(msgtab[i].flags & MF_H))
-		sendto_one(sptr,":%s NOTICE %s :%s",
-			   me.name, parv[0], msgtab[i].cmd);
-	return 0;
+	      if (parse_help(sptr, parv[0], "INDEX") < 0)
+	           sendto_one(sptr, ":%s NOTICE %s :!ERROR! Help Database is Missing!", me.name, parv[0]);
+	      return 0;
+	}
+#endif
+
+	if (BadPtr(message) || !mycmp(message, "msgtab"))
+	{
+ 	   for (i = 0; msgtab[i].cmd; i++)
+               if ((!IsHurt(sptr)||(msgtab[i].while_hurt>0))&&!(msgtab[i].flags & MF_H))
+		   sendto_one(sptr,":%s NOTICE %s :%s",
+			      me.name, parv[0], msgtab[i].cmd);
+	   return 0;
+	}
+        if (!mycmp(message, "ignore") && (IsHelpOp(sptr) || IsOper(sptr) || IsServer(sptr)))
+        {
+            if (!h_nignores)
+                  sendto_one(sptr, ":%s NOTICE %s :There are no help ignores.", me.name, parv[0]);
+            for ( i = 0 ; i < h_nignores; i++ )
+                  sendto_one(sptr, ":%s NOTICE %s :\2%2d\2. %s", me.name, parv[0], i+1, h_ignores[i]);
+            return(0);
         }
+        if (!myncmp(message, "+ignore ", 7) && (IsHelpOp(sptr) || IsOper(sptr) || IsServer(sptr)))
+        {
+            if (BadPtr(message+7) || BadPtr(message+8))
+            {
+                sendto_one(sptr, ":%s NOTICE %s :Ignore WHAT?", me.name, parv[0]);
+                return(0);
+            }
+            if (!match(message+8, ".!......@...")     || 
+                !match(message+8, ".!......@.....")   || 
+                !match(message+8, ".!......@...net")  ||
+                !match(message+8, ".!......@...com")  ||
+                !match(message+8, ".!......@...org"))
+            {
+                sendto_one(sptr, ":%s NOTICE %s :That is not a legal ignore HelpOp mask.", me.name, parv[0]);
+                if (IsServer(cptr))
+                    sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message);
+                return (0);
+            }
+            helpop_ignore(message + 8);
+            if (!IsServer(cptr))
+                sendto_one(sptr, ":%s NOTICE %s :Ignore for \2%s\2 set.", me.name, parv[0], message+8);
+            else if (IsServer(sptr))
+            {
+                sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message);
+                return (0); /* Don't send helpops for Net.burst */
+            }
+        }
+        if (!myncmp(message, "-ignore ", 7) && (IsHelpOp(sptr) || IsOper(sptr) || IsServer(sptr)))
+        {
+            for ( i = 0 ; i < h_nignores; i++ )
+                  if (!mycmp(message+8, h_ignores[i]))
+                      break;
+            if ( i >= h_nignores )
+            {
+                  if (MyClient(sptr))
+                      sendto_one(sptr, ":%s NOTICE %s :No such ignore.", me.name, parv[0]);
+                  return (0);
+            }
+            if (!IsServer(cptr))
+                sendto_one(sptr, ":%s NOTICE %s :Ignore for \2%s\2 removed.", me.name, parv[0], h_ignores[i]);
+            helpop_unignore(i);
+        }
+        if ((!myncmp(message, "-ignore ", 7) || !myncmp(message, "+ignore ", 7)
+            || !mycmp(message, "ignore")) && !(IsOper(sptr) || IsHelpOp(sptr) || IsServer(sptr) ))
+        {
+            sendto_one(sptr, ":%s NOTICE %s :Permission denied -- You must be a helpop to edit help system ignores.", me.name, parv[0]);
+            return (0);
+        }
+
+#if 0
+	if (!mycmp(message, "topics"))
+	{
+                 int shown = 0;
+		 char tstr[8192] = ""; 
+		 sendto_one(sptr, ":%s NOTICE %s :--- Help Topics ---", me.name, sptr->name);
+		 #define FLUSH_TSTR { \
+			if (tstr[0]) \
+				sendto_one(sptr, ":%s NOTICE %s :%s", me.name, sptr->name, tstr); \
+				tstr[0] = '\0'; \
+				    }
+		for (i = 0; i<nhtopics; i++)
+		{
+			if ((++shown)%2 == 0)
+			    FLUSH_TSTR;
+			sprintf(tstr, "%s          %-20s", tstr, htopics[i]->command);
+		}
+		FLUSH_TSTR;
+		sendto_one(sptr, ":%s NOTICE %s :--- End of List ---", me.name, sptr->name);
+		#undef FLUSH_TSTR
+		return 0;
+	}
+#endif        
 
 /* Drags along from wallops code... I'm not sure what it's supposed to do, 
    at least it won't do that gracefully, whatever it is it does - but
@@ -1357,22 +1466,48 @@ int	m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
  *	}
  */
 
-        if (IsServer(sptr) || IsHelpOp(sptr)) {
+        if (IsServer(cptr) /*|| IsHelpOp(sptr)*/ ) {
                 sendto_serv_butone(IsServer(cptr) ? cptr : NULL,
                                    ":%s HELP %s", parv[0], message);
-                sendto_helpops("from %s (HelpOp): %s", parv[0], message);
-        } else if (MyConnect(sptr) && !parse_help(sptr, parv[0], message)) {
+                sendto_helpops("from %s%s: %s", parv[0], IsHelpOp(sptr) ? " (HelpOp)" : "", message);
+        } else if (message && *message == '!') {
+               if (BadPtr(message+1))
+                   message = "!index";
+               parse_help(sptr, parv[0], message);
+               return 0;
+        } else if ((!BadPtr(message) && *message == '?') || IsHelpOp(sptr)) {
+                int adj = (message && *message == '?' ? 1 : 0);
+
+                if (!IsHelpOp(sptr) && helpop_ignored(sptr))
+                {
+                    sendto_one(sptr, ":%s NOTICE %s :You can't do that.", me.name, parv[0]);
+                    return(0);
+                }
+                else if (BadPtr(message+adj))
+                {
+                    sendto_one(sptr, ":%s NOTICE %s :Nothing to send.", me.name, parv[0]);
+                    return(0);
+                }
+                else if (!IsHelpOp(sptr))
+                    sendto_one(sptr, ":%s NOTICE %s :Your message has been forwarded to the HelpOps.", me.name, parv[0]);
+                sendto_helpops("from %s%s: %s", parv[0], IsHelpOp(sptr) ? " (HelpOp)" : MyClient(sptr) ? " (Local)" : "", message+adj);
+                sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message+adj);
+        } else if (MyClient(sptr) && parse_help(sptr, parv[0], message) > 0) {
+        /*} else if (MyClient(sptr) && index(message, '?') && parse_help(sptr, parv[0], (char *)interpret_question(message)) > 0) {*/
+        } else if (!nohelp_message(sptr)) {
+        } else if (MyConnect(sptr)) {
                 sendto_serv_butone(IsServer(cptr) ? cptr : NULL,
                                    ":%s HELP %s", parv[0], message);
                 sendto_helpops("from %s (Local): %s", parv[0], message);
         } else
         {
-                sendto_helpops("from %s: %s", parv[0], message);
-                sendto_serv_butone(cptr,
-                                   ":%s HELP %s", parv[0], message);
+                if (!IsHelpOp(sptr))
+                    sendto_helpops("from %s: %s", parv[0], message);
+                else
+                    sendto_helpops("from %s (HelpOp): %s", parv[0], message);
+                sendto_serv_butone(cptr, ":%s HELP %s", parv[0], message);
         }
 
-	
 	return 0;
 }
 
@@ -1864,6 +1999,7 @@ int	m_restart(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		get_client_name(sptr,FALSE), (parc > 1 ? parv[1] :
 							 "No reason"));
 #endif
+
 	server_reboot((parc > 1 ? parv[1] : ""));
 	return 0;
 }
@@ -2146,16 +2282,43 @@ int	m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int	m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	aClient	*acptr;
-	int	i;
+	int	i, nomatch = 0;
 
 	if (check_registered(sptr))
                  return 0;
  
-	if (!MyClient(sptr) || !OPCanDie(sptr))
-	    {
+	if (!MyClient(sptr) || !IsAnOper(sptr) || !OPCanDie(sptr))
+	{
 		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
 		return 0;
-	    }
+	}
+
+	if (parc < 2)
+	{
+		sendto_one(sptr, ":%s NOTICE %s :Syntax is: /die <server> [<reason>]", me.name, parv[0]);
+		sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+			   me.name, parv[0], "DIE");
+		return (0);
+	}
+
+        nomatch = match(parv[1], me.name) ? 1 : 0;
+
+        if ((!nomatch) && ((!strchr(parv[1], '.') && strchr(me.name, '.')) || (strchr(parv[1], '*') && (strchr(parv[1], '*') < strchr(parv[1], '.')))))
+            nomatch = 1;
+
+        if (nomatch)
+	{
+		sendto_one(sptr, ":%s NOTICE %s :Syntax is: /die <server> [<reason>]", me.name, parv[0]);
+		sendto_one(sptr, ":%s NOTICE %s :No no, I am %s!", me.name, parv[0], me.name);
+		return(0);
+	}
+
+	tolog(LOG_NET, "Terminating by command of %s [%s]",
+				   get_client_name(sptr, TRUE),
+                                   parc > 2 ? parv[2] : "No reason specified");
+	sendto_serv_butone(&me, ":%s LOG :terminating by command of %s [%s]",
+				   me.name, get_client_name(sptr, TRUE),
+                                   parc > 2 ? parv[2] : "No reason specified");
 
 	for (i = 0; i <= highest_fd; i++)
 	    {
@@ -2163,12 +2326,14 @@ int	m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			continue;
 		if (IsClient(acptr))
 			sendto_one(acptr,
-				   ":%s NOTICE %s :Server Terminating. %s",
+				   ":%s NOTICE %s :Server Terminating. %s (%s)",
 				   me.name, acptr->name,
-				   get_client_name(sptr, TRUE));
+				   get_client_name(sptr, TRUE), 
+                                   parc > 2 ? parv[2] : "No reason specified");
 		else if (IsServer(acptr))
-			sendto_one(acptr, ":%s ERROR :Terminated by %s",
-				   me.name, get_client_name(sptr, TRUE));
+			sendto_one(acptr, ":%s ERROR :Terminated by %s (%s)",
+				   me.name, get_client_name(sptr, TRUE),
+                                   parc > 2 ? parv[2] : "No reason specified");
 	    }
 	(void)s_die();
 	return 0;
@@ -2200,3 +2365,197 @@ int	localdie(void)
 	return 0;
 }
 #endif
+
+/*
+** m_showmask                  Show what a hostname would be, masked
+**      parv[0] = sender prefix
+**      parv[1] = mask
+*/
+int     m_showmask(aClient *cptr, aClient *sptr, int parc, char *parv[])
+{
+  char mask[NICKLEN+USERLEN+HOSTLEN+255];
+
+  if (!IsOper(sptr))
+  {
+	sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+	return 0;
+  }
+  if (parc < 2) {
+	sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+	   me.name, parv[0], MSG_SHOWMASK);
+	return 0;
+  }
+  strncpyzt(mask, parv[1], sizeof(mask));
+  sendto_one(sptr, ":%s NOTICE %s :%25s -> %25s", me.name, parv[0],
+             parv[1], genHostMask(mask));
+}
+
+
+/*
+ * RPL_NOWON   - Online at the moment (Succesfully added to WATCH-list)
+ * RPL_NOWOFF  - Offline at the moement (Succesfully added to WATCH-list)
+ * RPL_WATCHOFF   - Succesfully removed from WATCH-list.
+ * ERR_TOOMANYWATCH - Take a guess :>  Too many WATCH entries.
+ */
+static void
+show_watch(aClient *cptr, char *name, int rpl1, int rpl2)
+{
+        aClient *acptr;
+
+        if ((acptr = find_person(name, NULL)))
+          sendto_one(cptr, rpl_str(rpl1), me.name, cptr->name,
+                                         acptr->name, acptr->user->username,
+                                         acptr->user->host, acptr->lasttime);
+        else
+          sendto_one(cptr, rpl_str(rpl2), me.name, cptr->name,
+                                         name, "*", "*", 0);
+}
+
+/*
+ * m_watch
+ */
+int   m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
+{
+        aClient  *acptr;
+        char  *s, *p, *user;
+        char def[2] = "l";
+
+        if (parc < 2)
+        {
+                /* Default to 'l' - list who's currently online */
+                parc = 2;
+                parv[1] = def;
+        }
+
+        for (p = NULL, s = strtoken(&p, parv[1], ", "); s; s = strtoken(&p, NULL, ", "))
+        {
+                if ((user = (char *)strchr(s, '!')))
+                  *user++ = '\0'; /* Not used */
+
+                /*
+                 * Prefix of "+", they want to add a name to their WATCH
+                 * list.
+                 */
+                if (*s == '+')
+                {
+                        if (*(s+1))
+                        {
+                                if (sptr->watches >= MAXWATCH)
+                                {
+                                        sendto_one(sptr, err_str(ERR_TOOMANYWATCH),
+                                                                  me.name, cptr->name, s+1);
+                                        continue;
+                                }
+                                add_to_watch_hash_table(s+1, sptr);
+                        }
+                        show_watch(sptr, s+1, RPL_NOWON, RPL_NOWOFF);
+                        continue;
+                }
+
+                /*
+                 * Prefix of "-", coward wants to remove somebody from their
+                 * WATCH list.  So do it. :-)
+                 */
+                if (*s == '-')
+                {
+                        del_from_watch_hash_table(s+1, sptr);
+                        show_watch(sptr, s+1, RPL_WATCHOFF, RPL_WATCHOFF);
+                        continue;
+                }
+
+                /*
+                 * Fancy "C" or "c", they want to nuke their WATCH list and start
+                 * over, so be it.
+                 */
+                if (*s == 'C' || *s == 'c')
+                {
+                        hash_del_watch_list(sptr);
+                        continue;
+                }
+
+                /*
+                 * Now comes the fun stuff, "S" or "s" returns a status report of
+                 * their WATCH list.  I imagine this could be CPU intensive if its
+                 * done alot, perhaps an auto-lag on this?
+                 */
+                if (*s == 'S' || *s == 's')
+                {
+                        Link *lp;
+                        aWatch *anptr;
+                        int  count = 0;
+
+                        /*
+                         * Send a list of how many users they have on their WATCH list
+                         * and how many WATCH lists they are on.
+                         */
+                        anptr = hash_get_watch(sptr->name);
+                        if (anptr)
+                          for (lp = anptr->watch, count = 1; (lp = lp->next); count++);
+                        sendto_one(sptr, rpl_str(RPL_WATCHSTAT), me.name, parv[0],
+                                                  sptr->watches, count);
+                        /*
+                         * Send a list of everybody in their WATCH list. Be careful
+                         * not to buffer overflow.
+                         */
+                        if ((lp = sptr->watch) == NULL)
+                        {
+                                sendto_one(sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
+                                                          *s);
+                                continue;
+                        }
+                        *buf = '\0';
+                        strcpy(buf, lp->value.wptr->nick);
+                        count = strlen(parv[0])+strlen(me.name)+10+strlen(buf);
+                        while ((lp = lp->next))
+                        {
+                                if (count+strlen(lp->value.wptr->nick)+1 > BUFSIZE - 2)
+                                {
+                                        sendto_one(sptr, rpl_str(RPL_WATCHLIST), me.name,
+                                                                  parv[0], buf);
+                                        *buf = '\0';
+                                        count = strlen(parv[0])+strlen(me.name)+10;
+                                }
+                                strcat(buf, " ");
+                                strcat(buf, lp->value.wptr->nick);
+                                count += (strlen(lp->value.wptr->nick)+1);
+                        }
+                        sendto_one(sptr, rpl_str(RPL_WATCHLIST), me.name, parv[0], buf);
+                        sendto_one(sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0], *s);
+                        continue;
+                }
+
+                /*
+                 * Well that was fun, NOT.  Now they want a list of everybody in
+                 * their WATCH list AND if they are online or offline? Sheesh,
+                 * greedy arn't we?
+                 */
+                if (*s == 'L' || *s == 'l')
+                {
+                        Link *lp = sptr->watch;
+
+                        while (lp)
+                        {
+                                if ((acptr = find_person(lp->value.wptr->nick, NULL)))
+                                  sendto_one(sptr, rpl_str(RPL_NOWON), me.name, parv[0],
+                                                                 acptr->name, acptr->user->username,
+                                                                 acptr->user->host, acptr->lastnick);
+                                /*
+                                 * But actually, only show them offline if its a capital
+                                 * 'L' (full list wanted).
+                                 */
+                                else if (isupper(*s))
+                                  sendto_one(sptr, rpl_str(RPL_NOWOFF), me.name, parv[0],
+                                                                 lp->value.wptr->nick, "*", "*",
+                                                                 lp->value.wptr->lasttime);
+                                lp = lp->next;
+                        }
+
+                        sendto_one(sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],  *s);
+                        continue;
+                }
+                /* Hmm.. unknown prefix character.. Ignore it. :-) */
+        }
+
+        return 0;
+}
+

@@ -185,6 +185,7 @@ dn_comp(u_char *exp_dn, u_char *comp_dn, int length, u_char **dnptrs, u_char **l
 	return (cp - comp_dn);
 }
 
+#ifndef GLIBC_LINUX
 /*
  * Skip over a compressed domain name. Return the size or -1.
  */
@@ -211,6 +212,7 @@ dn_skipname(u_char *comp_dn, u_char *eom)
 	}
 	return (cp - comp_dn);
 }
+#endif
 
 /*
  * Search for expanded name from a list of previously compressed names.
