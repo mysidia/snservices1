@@ -268,6 +268,27 @@ void GoodPwChan(UserList *nick, RegChanList *target)
 
 /*------------------------------------------------------------------------*/
 
+void kick_for_akick(const char* kicker, const char* nick, 
+	            RegChanList* chan, cAkickList* record)
+{
+	if (!(chan->flags & CAKICKREASONS) || record == NULL
+	    || record->reason[0] == '\0')
+	{
+		sSend
+			(":%s KICK %s %s :You have been permanently banned "
+			 "from this channel.", ChanServ, chan->name, nick);
+	}
+	else
+	{
+		sSend
+			(":%s KICK %s %s :You are effected by an autokick "
+			 "set by the channel staff: (%s)", ChanServ, 
+			 chan->name, nick, record->reason);
+	}
+}
+
+/*------------------------------------------------------------------------*/
+
 /* The following bunch of functions all deal with channels and registered
  * ones, ignore them unless you need to fiddle with the linked lists for
  * channels. 
@@ -1704,20 +1725,12 @@ void addUserToChan(UserList * nick, char *channel)
 						createGhostChannel(tmp->name);
 						timer(10, deleteTimedGhostChannel,
 							  strdup(tmp->name));
-						if (!(tmp->reg->flags &
-                                                       CAKICKREASONS)
-                                                    || akickRecord == NULL
-						    || akickRecord->reason[0] == '\0')
-						sSend
-							(":%s KICK %s %s :You have been permanently banned from this channel.",
-							 ChanServ, tmp->reg->name, nick->nick);
-						else
-						{
-						sSend
-							(":%s KICK %s %s :You are effected by an autokick set by the channel staff: (%s)",
-							ChanServ, tmp->reg->name,
-							nick->nick, akickRecord->reason);
-						}
+
+
+						kick_for_akick(ChanServ,
+								nick->nick,
+								tmp->reg,
+								akickRecord);
 						delChanUser(tmp, person, 1);
 						return;
 					}
@@ -1850,8 +1863,12 @@ void addUserToChan(UserList * nick, char *channel)
 				}
 				if (tmp->reg) {
 					char themask[NICKLEN + USERLEN + HOSTLEN + 3];
+					cAkickList* akickRecord = NULL;
 
-					a = getChanOp(tmp->reg, nick->nick);
+					a = getMiscChanOp(tmp->reg, nick->nick,
+					         (tmp->reg->flags & CIDENT) == CIDENT,
+						NULL, &akickRecord);
+
 					if (a == -1) {
 						cAkickList *blah;
 						char userhost[NICKLEN + USERLEN + HOSTLEN + 3];
@@ -1879,9 +1896,11 @@ void addUserToChan(UserList * nick, char *channel)
 								break;
 							}
 						}
-						sSend
-							(":%s KICK %s %s :You have been permanently banned from this channel.",
-							 ChanServ, chan, nick->nick);
+
+						kick_for_akick(ChanServ,
+								nick->nick,
+								tmp->reg,
+								akickRecord);
 						delChanUser(tmp, person, 1);
 						return;
 					}
