@@ -43,6 +43,10 @@ static int banmask_check(char *userhost, int ipstat);
 aConfItem	*conf = NULL;
 extern char	zlinebuf[];
 
+char	*network = NULL;
+char	*kline = NULL;
+char	*network_kline = NULL;
+
 /*
  * remove all conf entries from the client except those which match
  * the status field mask.
@@ -647,8 +651,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	return ret;
 }
 
-extern char *getfield();
-
 int oper_access[] = {
 	~(OFLAG_ADMIN),	'*',
 	OFLAG_LOCAL,    	'o',
@@ -682,21 +684,39 @@ int oper_access[] = {
 
 static CONF_HANDLER(conf_me)
 {
-	char	*name = config_get_string(n, "name");
-	char	*info = config_get_string(n, "info");
-	char	*port = config_get_string(n, "port");
+	char	*tmp = config_get_string(n, "name");
 
-	if (name != NULL && me.name[0] == '\0' && name[0])
+	if (tmp != NULL && me.name[0] == '\0')
 	{
-		strncpyzt(me.name, name, sizeof(me.name));
+		strncpyzt(me.name, tmp, sizeof(me.name));
 	}
-	if (info != NULL)
+	tmp = config_get_string(n, "info");
+	if (tmp != NULL)
 	{
-		strncpyzt(me.info, info, sizeof(me.info));
+		strncpyzt(me.info, tmp, sizeof(me.info));
 	}
-	if (port != NULL)
+	tmp = config_get_string(n, "port");
+	if (tmp != NULL)
 	{
-		portnum = atoi(port);
+		portnum = atoi(tmp);
+	}
+	tmp = config_get_string(n, "network");
+	if (tmp != NULL)
+	{
+		irc_free(network);
+		network = irc_strdup(tmp);
+	}
+	tmp = config_get_string(n, "kline-address");
+	if (tmp != NULL)
+	{
+		irc_free(kline);
+		kline = irc_strdup(tmp);
+	}
+	tmp = config_get_string(n, "network-kline-address");
+	if (tmp != NULL)
+	{
+		irc_free(network_kline);
+		network_kline = irc_strdup(tmp);
 	}
 	return CONFIG_OK;
 }
@@ -984,12 +1004,19 @@ static CONF_HANDLER(conf_operator)
 
 void conf_init()
 {
+	char	*net = "ExampleNet";
+	char	*kl = "kline@example.net";
+
 	config_monitor("listener", conf_listener, CONFIG_LIST);
 	config_monitor("server", conf_server, CONFIG_LIST);
 	config_monitor("client", conf_client, CONFIG_LIST);
 	config_monitor("operator", conf_operator, CONFIG_LIST);
 	config_monitor("class", conf_class, CONFIG_LIST);
 	config_monitor("config", conf_me, CONFIG_SINGLE);
+
+	network = irc_strdup(net);
+	kline = irc_strdup(kl);
+	network_kline = irc_strdup(kl);
 }
 
 /*
@@ -1096,8 +1123,8 @@ int	find_kill(aClient *cptr, aConfItem *conf_target)
             if (BadPtr(tmp->passwd))
 		sendto_one(cptr,
 			   ":%s %d %s :*** You are not welcome on this server."
-			   "  Email " KLINE_ADDRESS " for more information.",
-			   me.name, ERR_YOUREBANNEDCREEP, cptr->name);
+			   "  Email %s for more information.",
+			   me.name, ERR_YOUREBANNEDCREEP, cptr->name, kline);
 	    else {
 #ifdef COMMENT_IS_FILE
                    m_killcomment(cptr,cptr->name, tmp->passwd);
@@ -1110,9 +1137,9 @@ int	find_kill(aClient *cptr, aConfItem *conf_target)
 		   else
 			   sendto_one(cptr,
                          ":%s %d %s :*** You are not welcome on this server: "
-			 "%s.  Email " KLINE_ADDRESS " for more information.",
+			 "%s.  Email %s for more information.",
                          me.name, ERR_YOUREBANNEDCREEP, cptr->name,
-                         tmp->passwd);
+                         tmp->passwd, kline);
 #endif  /* COMMENT_IS_FILE */
 	    }
 	}
@@ -1211,16 +1238,16 @@ char    *find_sup_zap(aClient *cptr, int dokillmsg)
 	if ( dokillmsg ) {
                 sendto_one(cptr,
                         ":%s %d %s :*** You are not welcome on this server: "
-                        "%s.  Email " KLINE_ADDRESS " for more information.",
+                        "%s.  Email %s for more information.",
                         me.name, ERR_YOUREBANNEDCREEP, cptr->name,
-                        retval);
+                        retval, kline);
         }
         else {
                 sprintf(supbuf,
                         "ERROR :Closing Link: [%s] (You are not welcome on "
-                        "this server: %s.  Email " KLINE_ADDRESS " for more"
+                        "this server: %s.  Email %s for more"
                         " information.)\r\n", address_tostring(cptr->sock->raddr, 0),
-                        retval);
+                        retval, kline);
                 retval = supbuf;
         }
 	return retval;
@@ -1242,16 +1269,16 @@ char *find_zap(aClient *cptr, int dokillmsg)
 	if (dokillmsg && retval)
 		sendto_one(cptr,
 			":%s %d %s :*** You are not welcome on this server: "
-			"%s.  Email " KLINE_ADDRESS " for more information.",
+			"%s.  Email %s for more information.",
 			me.name, ERR_YOUREBANNEDCREEP, cptr->name,
-			retval);
+			retval, kline);
 	if (!dokillmsg && retval)
 	{
 		sprintf(zlinebuf,
 			"ERROR :Closing Link: [%s] (You are not welcome on "
-			"this server: %s.  Email " KLINE_ADDRESS " for more"
+			"this server: %s.  Email %s for more"
 			" information.)\r\n", address_tostring(cptr->sock->raddr, 0),
-			retval);
+			retval, kline);
 		retval = zlinebuf;
 	}
 	return retval;
@@ -1850,9 +1877,9 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	else
 	 {
 	 if (person)
-	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:NETWORK , reason?reason:"");
+	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:network , reason?reason:"");
 	 else
-	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:NETWORK , reason?reason:"");
+	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:network , reason?reason:"");
 	 add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
         }
 

@@ -33,11 +33,11 @@ char *prepbuf(int, char *);
 
 static  Numeric local_replies[] = {
 /* 000 */	{ 0, NULL },
-/* 001 RPL_WELCOME */	{ 1,	":Welcome to the "NETWORK" IRC Network %s" },
+/* 001 RPL_WELCOME */	{ 1,	":Welcome to the %s IRC Network %s" },
 /* 002 RPL_YOURHOST*/	{ 2,	":Your host is %s, running version %s" },
 /* 003 RPL_CREATED */	{ 3,	":This server was created %s" },
 /* 004 RPL_MYINFO */	{ 4,	"%s %s oilmwsghOkcf Hbciklmnopstv" },
-/* 005 RPL_PROTOCTL*/	{ 5,	"NETWORK=" NETWORK " "
+/* 005 RPL_PROTOCTL*/	{ 5,	"NETWORK=%s "
 /* 005 ------------------*/	"WTCH_BROKEN=128 "
 /* 005 ------------------*/	"MODES=3 "
 /* 005 ------------------*/	"CHANMODES=b,k,l,Hcimnpst "
@@ -210,7 +210,7 @@ static  Numeric local_replies[] = {
 /* 462 */	{ ERR_ALREADYREGISTRED, ":You may not reregister" },
 /* 463 */	{ ERR_NOPERMFORHOST, ":Your host isn't among the privileged" },
 /* 464 */	{ ERR_PASSWDMISMATCH, ":Password Incorrect" },
-/* 465 */	{ ERR_YOUREBANNEDCREEP, ":You are banned from this server.  Mail " KLINE_ADDRESS " for more information" }, 
+/* 465 */	{ ERR_YOUREBANNEDCREEP, ":You are banned from this server. Mail %s for more information" }, 
 /* 466 */	{ ERR_YOUWILLBEBANNED, NULL },
 /* 467 */	{ ERR_KEYSET, "%s :Channel key already set" },
 /* 471 */	{ ERR_CHANNELISFULL, "%s :Cannot join channel (+l)" },
