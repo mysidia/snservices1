@@ -2731,6 +2731,7 @@ NCMD(ns_cidentify)
 
 			assert(!strcasecmp(nick->reg->nick, nick->nick));
 			strcpy(nick->reg->nick, nick->nick);	/* Case update */
+			grantIdentifiedUmode(nick);			
 			PutReply(NickServ, nick, RPL_AUTH_OK_0ARG, 0, 0, 0);
 			GoodPwNick(nick, tonick);
 		} else { /* Remote */
