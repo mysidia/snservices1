@@ -609,8 +609,10 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  
           if (!IsUserVersionKnown(sptr)) {
 	      if (!IsHurt(sptr)) {
+#if defined(REQ_VERSION_RESPONSE)		      
 		      sptr->hurt = 4;
 		      SetHurt(sptr);
+#endif		      
 	      }
 			
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);

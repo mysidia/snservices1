@@ -3203,7 +3203,7 @@ char	*parv[];
 			else if (lp->flags & CHFL_VOICE)
 				(void)strcat(buf, "+");
 			(void)strncat(buf, c2ptr->name, NICKLEN);
-			idx += strlen(c2ptr->name) + 1;
+			idx += strlen(c2ptr->name) + 2;
 			flag = 1;
 			(void)strcat(buf," ");
 			if (mlen + idx + NICKLEN > BUFSIZE - 2)
@@ -3264,7 +3264,7 @@ char	*parv[];
 		if (secret) /* on any secret channels ? */
 			continue;
 		(void)strncat(buf, c2ptr->name, NICKLEN);
-		idx += strlen(c2ptr->name) + 1;
+		idx += strlen(c2ptr->name) + 2;
 		(void)strcat(buf," ");
 		flag = 1;
 		if (mlen + idx + NICKLEN > BUFSIZE - 2)
