@@ -1,8 +1,7 @@
 #!/bin/sh
 #
-# Copyright 1996, 1997 Michael Graff <explorer@flame.org>
-# You may distribute this file without changes freely providing this notice
-# remains intact.
+# Copyright 1996-2003 Michael Graff <explorer@flame.org>
+# You may distribute this file freely providing this notice remains intact.
 #
 IRCD_VERSION="sor1.3.5 (pre-release 2)"
 CONF_DATE=`date`
