@@ -4204,7 +4204,7 @@ NCMD(ns_recover)
 #else
 	if ((numargs < 3) && !isFullyRecognized(nick, tmp))
 #endif
-		sSend(":%s NOTICE %s :Permission denied: you will need to specify a password.", NickServ, nick->nick, args[1]);
+		sSend(":%s NOTICE %s :Permission denied: you will need to specify a password.", NickServ, nick->nick);
 		PutHelpInfo(NickServ, nick, "HELP RECOVER");
 		return RET_NOPERM;
 	}
@@ -5292,13 +5292,35 @@ NCMD(ns_bypass)
 		return RET_SYNTAX;
 	}
 
-	if (isRoot(nick) && !strcasecmp("allon", args[1])) {
+	if (isServop(nick) && !strcasecmp("allon", args[1])) {
 		char mask[IRCBUF + 2] = "";
 
-		if (!opFlagged(nick, OVERRIDE)) {
-		// VERY DANGEROUS COMMAND <-->
-		return RET_EFAULT;
+		if ((numargs <= 2) && !opFlagged(nick, OROOT | OVERRIDE) ) {
+			sSend(":%s NOTICE %s :Syntax error, mask required.",
+				OperServ, from);
+			sSend(":%s NOTICE %s :Must use /os override "
+			      "to set bypass for all nicks in db.",
+			      OperServ, from);
+			return RET_NOPERM;
 		}
+
+		if (numargs > 2)
+		{
+			if (!match(args[2], "...!..@...com")
+			    || !match(args[2], "...!..@...net")
+			    || !match(args[2], "...!..@...edu")
+			    || !match(args[2], "...!..@...org")
+			    || !match(args[2], "...!..@...my")
+			    || !match(args[2], "...!..@...uk")) 
+			{
+		            sSend(":%s NOTICE %s :That %s is too broad.", OperServ,
+					from, "bypass mask");
+			    sSend(":%s GLOBOPS :%s attempts to set %s for %s", OperServ,
+				        from, "bypass_allon", args[2]);
+			    return RET_NOPERM;
+			}
+		}
+
 
 		nicklog->log(nick, NS_BYPASS, args[2], LOGF_ON | LOGF_PATTERN);
 
@@ -5308,7 +5330,8 @@ NCMD(ns_bypass)
 				if (numargs >= 3) {
 					snprintf(mask, IRCBUF, "%s!%s@%s", targetnick->nick,
 							 targetnick->user, targetnick->host);
-					if (match(args[2], mask))
+					if ((numargs > 2) 
+						&& match(args[2], mask))
 						continue;
 				}
 				targetnick->flags |= NBYPASS;
@@ -5323,10 +5346,32 @@ NCMD(ns_bypass)
 	if (isRoot(nick) && !strcasecmp("alloff", args[1])) {
 		char mask[IRCBUF + 2] = "";
 
-                if (!opFlagged(nick, OVERRIDE)) {
-                // VERY DANGEROUS COMMAND <-->
-                return RET_EFAULT;
+                if ((numargs <= 2) && !opFlagged(nick, OROOT | OVERRIDE) ) {
+                        sSend(":%s NOTICE %s :Syntax error, mask required.",
+                                OperServ, from);
+                        sSend(":%s NOTICE %s :Must use /os override "
+                              "to clear bypass for all nicks in db.",
+                              OperServ, from);
+                        return RET_NOPERM;
                 }
+
+                if (numargs > 2)
+                {
+                        if (!match(args[2], "...!..@...com")
+                            || !match(args[2], "...!..@...net")
+                            || !match(args[2], "...!..@...edu")
+                            || !match(args[2], "...!..@...org")
+                            || !match(args[2], "...!..@...my")
+                            || !match(args[2], "...!..@...uk"))
+                        {
+                            sSend(":%s NOTICE %s :That %s is too broad.", OperServ,
+                                        from, "bypass mask");
+                            sSend(":%s GLOBOPS :%s attempts to set %s for %s", OperServ,
+                                        from, "bypass_allon", args[2]);
+                            return RET_NOPERM;
+                        }
+                }
+
 
 		nicklog->log(nick, NS_BYPASS, args[2], LOGF_ON | LOGF_PATTERN);
 
@@ -5577,7 +5622,7 @@ void delNReg(char *email) {
 NCMD(ns_setpass)
 {
 	const char *from = nick->nick;
-	const char *pwAuthChKey;
+	const char *pwAuthChKey = NULL;
 	RegNickList *rnl;
 
 	if (numargs < 4)
