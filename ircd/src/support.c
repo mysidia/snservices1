@@ -123,7 +123,7 @@ dumpcore(char *fmt, ...)
 {
 	va_list ap;
 	va_list ap2;
-	char * msg;
+	char    msg[2048];
 	static	time_t	lastd = 0;
 	static	int	dumps = 0;
 	char	corename[12];
@@ -131,7 +131,7 @@ dumpcore(char *fmt, ...)
 	int	p;
 
 	va_start(ap, fmt);
-	vasprintf(&msg, fmt, ap);
+	vsprintf(msg, fmt, ap);
 	va_end(ap);
 
 	if (!lastd)
