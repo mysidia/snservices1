@@ -2153,7 +2153,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 			sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
 				   me.name, parv[0], name, user->server,
-				   a2cptr?safe_info(IsOper(sptr), a2cptr):"*Not On This Net*");
+				   a2cptr->info);
 
 			if(IsRegNick(acptr) || IsVerNick(acptr))
 			{
