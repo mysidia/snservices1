@@ -2852,13 +2852,15 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                acptr->name,sptr->name);
             if (MyClient(acptr))
             {
-              if (MyClient(sptr) && (!IsHurt(acptr) || !(acptr->hurt))
-		  && (!IsRegisteredUser(acptr) || !IsUserVersionKnown(acptr)))
-              {
-                  sendto_one(sptr,"NOTICE %s :%s is not hurt!",
-                  sptr->name,acptr->name);
-                  return(0);
-              } 
+		if (!IsHurt(acptr) || !(acptr->hurt))
+		{
+			if (IsClient(sptr))
+			{
+				sendto_one(sptr,"NOTICE %s :%s is not hurt!",
+					sptr->name,acptr->name);
+			}
+			return(0);
+		}
               /*
                * they are hurt and mine, so now to heal them.
                */
@@ -2870,8 +2872,6 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	       if (IsHurt(acptr))
 	               remove_hurt(acptr);
                acptr->hurt = 0;  	       
-	       if (IsRegisteredUser(acptr) && !IsUserVersionKnown(acptr))
-		       SetUserVersionKnown(acptr);
             }   
             else
             if (!MyClient(acptr) && IsPrivileged(cptr))

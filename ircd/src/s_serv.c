@@ -1234,11 +1234,10 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		report_configured_links(sptr, CONF_CLIENT);
 		break;
 	case 'K' : case 'k' :
-		if (!IsAnOper(sptr))
-			report_configured_links(sptr, CONF_KILL|CONF_ZAP);
-		else
+		if (IsAnOper(sptr))
+		{
 			report_configured_links(sptr, CONF_KILL|CONF_ZAP|CONF_AHURT|CONF_SUP_ZAP);
-
+		}
 		break;
 	case 'M' : case 'm' :
 		for (mptr = msgtab; mptr->cmd; mptr++)
@@ -1251,7 +1250,10 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		report_configured_links(sptr, CONF_OPS);
 		break;
 	case 'Q' : case 'q' :
-		report_configured_links(sptr, CONF_QUARANTINE);
+		if (IsAnOper(sptr))
+		{
+			report_configured_links(sptr, CONF_QUARANTINE);
+		}
 		break;
 	case 'R' : case 'r' :
 #ifdef DEBUGMODE
