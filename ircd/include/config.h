@@ -25,10 +25,6 @@
 #include "setup.h"
 #include "options.h"
 
-#ifndef NS_URL
-#error No value for NS_URL given
-#endif
-
 /*
  *
  *   NOTICE
@@ -110,15 +106,6 @@
  *		 it will strip characters that are not 0-9,a-z,A-Z,_,- or .
  */
 #define HOSTILENAME	/* */
-
-/*
- * NOTE: It is important to set this to the correct "domain" for your server.
- * Define this for the correct "domain" that your server is in.  This
- * is important for certain stats.  -mlv
- */
-#ifndef DOMAINNAME
-#define DOMAINNAME "sorcery.net"
-#endif
 
 /*
  * Define this if you wish to output a *file* to a K lined client rather
