@@ -396,12 +396,12 @@ ping_timeout:
 **	This is called when the commandline is not acceptable.
 **	Give error message and exit without starting anything.
 */
-static int
+static void
 bad_command(void)
 {
 	(void)printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
 	(void)printf("Server not started\n\n");
-	return (-1);
+	exit(-1);
 }
 
 int
@@ -533,7 +533,7 @@ main(int argc, char **argv)
 	}
 
 	if (argc > 0)
-		return bad_command(); /* This should exit out */
+		bad_command();
 
 	fprintf(stderr, "Cleaning hash tables...");
 	clear_client_hash_table();
