@@ -1124,6 +1124,7 @@ int	modehack;
 	int	limitset = 0, chasing = 0, bounce;
 	int	nusers = 0, new, len, blen, keychange = 0, opcnt = 0, banlsent = 0;
 	int     doesdeop = 0, doesop = 0, hacknotice = 0, change, gotts = 0;
+	int     member = 0, chop = 0; 
 	int	orig_parc = parc;
 	aClient *who;
 	Mode	*mode, oldm;
@@ -1155,35 +1156,44 @@ int	modehack;
  * then it'll display the banlist. Else, it just returns "You're not chanop."
  * Enjoy. --dalvenjah, dalvenja@rahul.net
  */
+#if 1
+	member = IsMember(sptr, chptr);
+	chop = (member == 0) ? 0 : is_chan_op(sptr, chptr);
 
-	if (!(IsServer(cptr) || IsULine(cptr,sptr) || is_chan_op(sptr, chptr) || modehack))
+	if ((IsServer(cptr) == 0 && IsULine(cptr,sptr) == 0 
+	     && parc == 1 
+	     && modehack == 0
+	     && curr == parv[0]
+	     && (  
+		(*curr == 'b' && curr[1] == '\0') || 
+		((*curr == '+' || *curr == '-') && curr[1] == 'b' 
+		    && curr[2] == '\0')
+	     ) 
+	     && member != 0 && chop == 0))
 		{
-			if ( ((*curr=='b' && (strlen(parv[0])==1 && parc==1))
-			      || ((*curr=='+') && (*(curr+1)=='b') && (strlen(parv[0])==2 && parc==1))
-			      || ((*curr=='-') && (*(curr+1)=='b') && (strlen(parv[0])==2 && parc==1)))
-			    && (!is_chan_op(sptr, chptr)))
-			    {
-				    if (--parv == 0) /* XXX MLG Was <= */
-					{
-					for (lp=chptr->banlist;lp;lp=lp->next)
-						sendto_one(cptr,
-							   rpl_str(RPL_BANLIST),
-							   me.name, cptr->name,
-							   chptr->chname,
-							   lp->value.ban.banstr,
-							   lp->value.ban.who,
-							   lp->value.ban.when);
-						sendto_one(cptr,
-							   rpl_str(RPL_ENDOFBANLIST),
-							   me.name, cptr->name,
-							   chptr->chname);
-					}
-			    }
-			else
+#if 0
+		/* XXX: This was and is dead code, --parv is not == 0*/
+		    if (--parv == 0) /* XXX MLG Was <= */
 			{
-				return 0;
+			/* NOTREACHED */
+			for (lp=chptr->banlist;lp;lp=lp->next)
+				sendto_one(cptr,
+					   rpl_str(RPL_BANLIST),
+					   me.name, cptr->name,
+					   chptr->chname,
+					   lp->value.ban.banstr,
+					   lp->value.ban.who,
+					   lp->value.ban.when);
+				sendto_one(cptr,
+					   rpl_str(RPL_ENDOFBANLIST),
+					   me.name, cptr->name,
+					   chptr->chname);
 			}
+#endif
 		}
+	else if (chop == 0)
+		return 0;
+#endif
 
 	new = mode->mode;
 
