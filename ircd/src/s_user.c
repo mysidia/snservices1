@@ -2250,8 +2250,8 @@ static int quoteShowConData(const char* text, char* buf, int length)
 	while(*text) {
 		if (length-- <= 0)    {  return -1; }
 		
-		if (isalnum(*buf) || (ispunct(*buf) && *buf != '<' && *buf != '\"' &&
-				        *buf != '&' && *buf != '%')) {
+		if (isalnum(*text) || (ispunct(*text) && *text != '<' && *text != '\"' &&
+				        *text != '&' && *text != '%')) {
 			*buf++ = *text;
 			text++;
 			continue;
