@@ -75,7 +75,6 @@ IMODE="700"
 DPATH="/usr/local/lib/ircd"
 SPATH="/usr/local/bin/ircd"
 HUB=""
-CHECKPORT='19000'
 CRYPT_OPER_PASSWORD="1"
 CRYPT_LINK_PASSWORD=""
 LISTEN_SIZE="5"
@@ -83,7 +82,6 @@ MAXSENDQLENGTH="3000000"
 BUFFERPOOL="(9 * MAXSENDQLENGTH)"
 NICKNAMEHISTORYLENGTH="750"
 MAXCONNECTIONS="1024"
-ENABLE_SOCKSCHECK=''
 
 #
 # load $OPTIONS if present
@@ -1145,67 +1143,6 @@ done
 fi
 
 ############################################################
-FOO=''
-runonce=''
-
-while [ -z "$FOO" ] ; do
-   FOO="$ENABLE_SOCKSCHECK"
-       if [ -n "$ENABLE_SOCKSCHECK" ] ; then
-             FOO="Yes"
-       else
-             FOO="No"
-      fi
-cat<<EOF
-ENABLE_SOCKSCHECK (DEPRECATED)
-
-Ircd-sor1.3.4 includes a built-in BASIC socks checking facility which
-can be used to help keep users of open SOCKS servers off of your server.
-
-You can enable BASIC socks detection capability here if you like, however,
-this capability is no longer enabled by default as many server admins are
-using external tools such as the Blitzed Open Proxy Monitor for this purpose
-
-See: http://www.blitzed.org/bopm/
-
-A server with socks checking enabled will prevent users from connecting
-until it has attempted to connect back to the user on the SOCKS port (1080)
-to request a connection to itself using SOCKS4 protocol.  The end-user could
-mistake this for an intrusion or an attempt to compromise their security if
-they are running utilities such as nuke nabber.
-
-See the software disclaimer: NO WARRANTY whatsoever; Enable this option at
-your own risk.
-
-EOF
-
-   echo $n "[$FOO] -> $c"
-       if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-               read cc
-               runonce=Yes
-    else
-               cc=""
-    fi
-    if [ -z "$cc" ] ; then
-       cc=$FOO
-    fi
-    case "$cc" in
-	            [Yy]*)
-	                ENABLE_SOCKSCHECK="1"
-	            ;;
-	            [Nn]*)
-	                ENABLE_SOCKSCHECK=""
-	            ;;
-	            *)
-			echo ""
-		        echo "You need to enter either Yes or No here..."
-			echo ""
-			FOO=""
-	            ;;
-		    esac
-
-done
-
-
 
 FOO=""
 runonce=""
@@ -1634,36 +1571,6 @@ while [ -z "$FOO" ] ; do
 done
 
 
-#    echo "#define CHECKPORT $CHECKPORT" >> $OPTIONS_H
-FOO=""
-runonce=""
-while [ -z "$FOO" ] ; do
-    FOO="$CHECKPORT"
-    echo ""
-    echo "What local port should socks requests be checked with ? [must be >1024]"
-    echo $n "[$FOO] -> $c"
-    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-	read cc
-	runonce=Yes
-    else
-	cc=""
-    fi
-    if [ -z "$cc" ] ; then
-	cc=$FOO
-    fi
-    case "$cc" in
-	[1-9]*)
-	    CHECKPORT="$cc"
-	    ;;
-	*)
-	    echo ""
-	    echo "You need to enter a number here."
-	    echo ""
-	    FOO=""
-	    ;;
-    esac
-done
-
 FOO=""
 runonce=""
 while [ -z "$FOO" ] ; do
@@ -2002,7 +1909,6 @@ cat > $OPTIONS_H << __EOF__
 #define BUFFERPOOL $BUFFERPOOL
 #define MAXCONNECTIONS $MAXCONNECTIONS
 #define NICKNAMEHISTORYLENGTH $NICKNAMEHISTORYLENGTH
-#define CHECKPORT $CHECKPORT
 __EOF__
 if [ -n "$HUB" ] ; then
     echo "#define HUB 1" >> $OPTIONS_H
@@ -2022,12 +1928,6 @@ if [ -n "$CRYPT_OPER_PASSWORD" ] ; then
     echo "#define CRYPT_OPER_PASSWORD 1" >> $OPTIONS_H
 else
     echo "#undef CRYPT_OPER_PASSWORD" >> $OPTIONS_H
-fi
-
-if [ -n "$ENABLE_SOCKSCHECK" ] ; then
-    echo "#define ENABLE_SOCKSCHECK 1"  >> $OPTIONS_H
-else
-    echo "#undef ENABLE_SOCKSCHECK" >> $OPTIONS_H
 fi
 
 if [ -n "$REQ_VERSION_RESPONSE" ] ; then
@@ -2087,7 +1987,6 @@ NOSPOOF="$NOSPOOF"
 NOSPOOF_SEED01="$NOSPOOF_SEED01"
 NOSPOOF_SEED02="$NOSPOOF_SEED02"
 IMODE="$IMODE"
-ENABLE_SOCKSCHECK="$ENABLE_SOCKSCHECK"
 REQ_VERSION_RESPONSE="$REQ_VERSION_RESPONSE"
 NS_ADDRESS="$NS_ADDRESS"
 KLINE_ADDRESS="$KLINE_ADDRESS"
@@ -2104,7 +2003,6 @@ MAXCONNECTIONS="$MAXCONNECTIONS"
 DOMAINNAME="$DOMAINNAME"
 NICKNAMEHISTORYLENGTH="$NICKNAMEHISTORYLENGTH"
 NICK_DELAY="$NICK_DELAY"
-CHECKPORT="$CHECKPORT"
 __EOF__
 
 cat <<__EOF__

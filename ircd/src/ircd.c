@@ -332,42 +332,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
 		    (!IsRegistered(cptr) &&
 		     (currenttime - cptr->firsttime) >= ping)) {
-#ifdef ENABLE_SOCKSCHECK
-                        if (cptr->socks && cptr->socks->fd >= 0) {
-                              int q;
-                              for(q = highest_fd; q >= 0; q--) {
-                                  if (!local[q] || !local[q]->socks || local[q]==cptr)
-					  continue;
-                                  if (local[q]->socks == cptr->socks)
-					  break;
-                              }
-                              if (q < 0) {
-				      aSocks *flushlist = NULL, *socks, *snext;
-				      remFromSocks(cptr->socks, &flushlist);
-				      for (socks = flushlist; socks; socks = snext) {
-					      snext = socks->next;
-					      if (socks->fd >= 0)
-						      closesocket(socks->fd);
-					      socks->fd = -1;
-					      irc_free(socks);
-				      }
-                              }			      
-                              cptr->socks = NULL;
-                              ClientFlags(cptr) &= ~FLAGS_SOCKS;
-                        }
-#endif
-
 			if (!IsRegistered(cptr) && (DoingDNS(cptr) || DoingSocks(cptr)))
 			    {
-			      /*
-				if (cptr->authfd >= 0)
-				    {
-					(void)close(cptr->authfd);
-					cptr->authfd = -1;
-					cptr->count = 0;
-					*cptr->buffer = '\0';
-				    }
-			      */
 				Debug((DEBUG_NOTICE,
 					"DNS timeout %s",
 					get_client_name(cptr,TRUE)));
@@ -670,8 +636,6 @@ main(int argc, char **argv)
 	check_class();
 	write_pidfile();
 
-       open_checkport();
-
        Debug((DEBUG_NOTICE,"Server ready..."));
 #ifdef USE_SYSLOG
        syslog(LOG_NOTICE, "Server Ready");
@@ -738,14 +702,6 @@ main(int argc, char **argv)
 		if (now >= nextping) {
 			nextping = check_pings(now, 0, NULL);
                 }
-
-#ifdef ENABLE_SOCKSCHECK
-		if (now >= nextsockflush)
-		{
-			(void)flush_socks(now, 0);
-			nextsockflush = (now+3);
-		}
-#endif		
 
 		if (dorehash)
 		    {

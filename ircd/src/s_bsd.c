@@ -314,69 +314,6 @@ int	port;
 	return 0;
 }
 
-int schecksfd = -1;
-
-void
-open_checkport(void)
-{
-	anAddress server;
-	int err, len = 0;
-
-	/*
-	 * If the socket is already open, ignore this call.
-	 */
-	if (schecksfd > -1)
-		return;
-
-	/*
-	 * Open the socket
-	 */
-	schecksfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	assert(schecksfd > -1);
-
-	set_non_blocking(schecksfd, &me);
-	set_sock_opts(schecksfd, &me);
-
-	/*
-	 * Bind the socket to a local address.  In this case, to our
-	 * local address.
-	 */
-	bcopy(&me.addr, &server, sizeof(anAddress));
-	switch (server.addr_family)
-	{
-		case AF_INET:
-			len = sizeof(struct sockaddr_in);
-			server.in.sin_port = htons(CHECKPORT);
-			break;
-		case AF_INET6:
-			len = sizeof(struct sockaddr_in6);
-			server.in6.sin6_port = htons(CHECKPORT);
-			break;
-	}
-	err = bind(schecksfd, (struct sockaddr *)&server, len);
-	if (err < 0) {
-		Debug((DEBUG_ERROR,
-		       "bind() port %d, address %s: %s\n",
-		       CHECKPORT, inetntoa(&me.addr), strerror(errno)));
-		(void)closesocket(schecksfd);
-		flush_connections(me.fd);
-		schecksfd = -1; /* try again later */
-		return;
-	}
-
-	err = listen(schecksfd, LISTEN_SIZE);
-	if (err < 0) {
-		Debug((DEBUG_ERROR,
-		       "listen(%d): %s\n", CHECKPORT, strerror(errno)));
-
-		(void)closesocket(schecksfd);
-		flush_connections(me.fd);
-		schecksfd = -1; /* try again later */
-        }
-
-	return;
-}
-
 /*
  * add_listener
  *
@@ -658,7 +595,6 @@ aClient	*cptr;
  *	same as the server name is also acceptable in the host field of a
  *	C/N line.
  *  0 = Success
- *  1 = SOCKS check in progress
  * -1 = Access denied
  * -2 = Bad socket.
  */
@@ -1410,16 +1346,7 @@ read_message(time_t delay)
 			    && !DoingSocks(cptr)) {
 				ClientFlags(cptr) &= ~FLAGS_SOCK;
 				if (cptr->socks) {
-#ifdef ENABLE_SOCKSCHECK
-					if (cptr->socks->status & SOCK_FOUND)
-						found_socks++;
-                                        if (cptr->socks->status & SOCK_ERROR)
-						if (cptr != &me)
-							sendto_one (cptr, ":%s NOTICE AUTH :" REPORT_ERR_SOCKS "", me.name);
-					if (cptr->socks->status & SOCK_DESTROY)
-#else
                                         if (1)
-#endif
 					{
 						aSocks *old_ds;
 						old_ds = cptr->socks;
@@ -1434,27 +1361,6 @@ read_message(time_t delay)
 						}
 						cptr->socks = NULL;
 					}
-
-#ifdef ENABLE_SOCKSCHECK
-                                        if (found_socks && (cptr->socks)) {
-						void ApplySocksFound(aClient *cptr);
-
-						found_socks = 0;
-						if (cptr->socks->fd >= 0) {
-							FD_CLR(cptr->socks->fd, &read_set);
-							FD_CLR(cptr->socks->fd, &write_set);
-							closesocket(cptr->socks->fd);
-							if (cptr->socks->fd == highest_fd)
-								while(!local[highest_fd])
-									highest_fd--;
-							cptr->socks->fd = -1;
-						}
-						FD_CLR(cptr->fd, &read_set);
-						FD_CLR(cptr->fd, &write_set);
-						ApplySocksFound(cptr);
-						continue;
-					}
-#endif
 				}
 			}
 			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
@@ -1472,32 +1378,6 @@ read_message(time_t delay)
 			if (DBufLength(&cptr->sendQ) || IsConnecting(cptr))
 				FD_SET(i, &write_set);
 		}
-
-                do {
-#ifdef ENABLE_SOCKSCHECK			
-			extern aSocks *socks_list;
-			aSocks *sItem;
-
-			for (sItem = socks_list ; sItem ; sItem = sItem->next) { 
-				if (sItem->fd < 0)
-					continue;
-				if ((sItem->status & SOCK_DONE)) {
-					sendto_realops("select() -- socks check fd#%d was not closed properly.", sItem->fd);
-					closesocket(sItem->fd);
-					sItem->fd = -1;
-					continue;
-				}
-				FD_SET(sItem->fd, &read_set);
-				if (!IS_SET(sItem->status, SOCK_W))
-					FD_SET(sItem->fd, &write_set);
-				FD_SET(sItem->fd, &read_set);
-			}
-#endif		   
-                } while (0);
-
-		if (schecksfd >= 0)
-			FD_SET(schecksfd, &read_set);
-
 
 		if (udpfd >= 0)
 			FD_SET(udpfd, &read_set);
@@ -1531,17 +1411,6 @@ read_message(time_t delay)
                FD_CLR(me.socks->fd, &read_set);
        }
 
-	if (schecksfd > 0)
-		if (FD_ISSET(schecksfd, &read_set)) {
-			int c_res = 0;
-			struct sockaddr c_add;
-			int c_len = sizeof(struct sockaddr);
-
-			c_res = accept(schecksfd, &c_add,  &c_len);
-			if (c_res > 0)
-				close(c_res);
-		}
-
 	if (udpfd >= 0 && FD_ISSET(udpfd, &read_set))
 	    {
 			polludp();
@@ -1555,72 +1424,6 @@ read_message(time_t delay)
 			nfds--;
 			FD_CLR(resfd, &read_set);
 	    }
-
-/*       for (i = highest_fd;  i >= 0; i--)
-           {
-               if (!(cptr = local[i]))
-                       continue;
-               if (!(cptr->socks) || cptr->socks->fd < 0)
-                       continue;
-           }*/
-        do {
-#ifdef ENABLE_SOCKSCHECK		
-           extern aSocks *socks_list;
-           aSocks *sItem;
-
-           for(sItem = socks_list;sItem;sItem = sItem->next)
-           {
-               if (sItem->fd < 0)
-                   continue;
-               socks--;
-	if (!(sItem->status & SOCK_SENT)  && (sItem->fd >= 0)
-                  /*&& (sItem->status & SOCK_CONNECTED)*/
-                  && (nfds > 0) && FD_ISSET(sItem->fd, &write_set))
-                   {
-#ifdef ENABLE_SOCKSCHECK
-                       nfds--;
-                       sItem->status |= (SOCK_CONNECTED|SOCK_W);
-		       FD_CLR(sItem->fd, &write_set);
-                       send_socksquery(sItem); /* cptr->socks may now be null */
-#else
-                       nfds--;
-                       sItem->status = SOCK_GO|SOCK_DESTROY;
-#endif
-                   }
-                  else if ((nfds > 0) && FD_ISSET(sItem->fd, &read_set))
-                   {
-#ifdef ENABLE_SOCKSCHECK
-                       nfds--;
-                       sItem->status |= SOCK_CONNECTED;
-		       FD_CLR(sItem->fd, &read_set);
-                       read_socks(sItem); /* cptr->socks may now be null */
-#else
-                       nfds--;
-                       sItem->status = SOCK_GO|SOCK_DESTROY;
-#endif
-                   }
-                else if (sItem && !(sItem->status & SOCK_DONE) && ( (NOW - sItem->start) > SOCKS_TIMEOUT) )
-                  {
-                      sendto_socks(sItem, "*** Socks check timed out.  "
-		      		 "This is probably a good thing.", me.name);
-                      sendto_umode(FLAGSET_CLIENT, "Socks server timeout for [%s]",
-			inetntoa(&sItem->addr));
-                      sItem->status = SOCK_DESTROY|SOCK_DONE;
-                      if (sItem->fd >=0)
-			{
-				if (sItem->fd == highest_fd)
-					while(!local[highest_fd])
-						highest_fd--;
-				 closesocket(sItem->fd);
-			}
-                      sItem->fd = -1;
-                  }
-           }
-#endif	   
-        } while(0);
-//%%%%
-
-
 
 	for (i = highest_fd; i >= 0; i--)
 		if ((cptr = local[i]) && FD_ISSET(i, &read_set) &&

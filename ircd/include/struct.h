@@ -83,7 +83,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
-/*#define ENABLE_SOCKSCHECK*/	/* enable socks check */
 
 #define SOCKSPORT		1080
 
@@ -586,9 +585,6 @@ struct	ConfItem	{
 #endif
 	struct	ConfItem *next;
 };
-
-#define	CFLAG_NOSOCKS		0x00000001
-#define	CFLAG_NOIDENT		0x00000002
 
 #define	CONF_ILLEGAL		0x80000000
 #define	CONF_MATCH		0x40000000

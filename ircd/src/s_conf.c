@@ -749,10 +749,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	for (cltmp = NextClass(FirstClass()); cltmp; cltmp = NextClass(cltmp))
 		MaxLinks(cltmp) = -1;
 
-#ifdef ENABLE_SOCKSCHECK
-	flush_socks(time(NULL), 1);
-#endif
-
 	if (sig != 2)
 		flush_cache();
 	(void) initconf(0);
@@ -793,39 +789,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 		}
 
 	return ret;
-}
-
-int conf_xbits(aConfItem *aconf, char *field)
-{
-     int add = 1, bitp = 0, bit = 0;
-     char *p = NULL, *s;
-
-     for (  s = strtoken( &p, field, ","); s; s = strtoken( &p, NULL , ","))
-     {
-          while (isspace(*s)) s++;
-          /* if (index(ss, ' ')) *ss = 0; */
-          if ((*s == '+')) add = 1;
-          else if ((*s == '-')) add = 0;
-          switch( aconf->status )
-          {
-            case CONF_CLIENT:
-             if (!strncmp(s, "!i", 2) || !strcasecmp( s, "!identcheck" ))
-                 { bitp = 1; bit = CFLAG_NOIDENT; }
-             else if (!strncmp(s, "!s", 2) || !strcasecmp( s, "!sockscheck" ))
-                 { bitp = 1; bit = CFLAG_NOSOCKS; }
-             break;
-          }
-
-          if (bit)
-          {
-             if ((!add && bitp) || (add && !bitp))
-                       aconf->bits &= ~(bit);
-             else if ((add && bitp) || (!add && !bitp))
-                       aconf->bits |= (bit);
-             bit = 0;
-          }
-     }
-return 0;
 }
 
 /*
@@ -1100,13 +1063,6 @@ int 	initconf(int opt)
 				break;
 			Class(aconf) = find_class(atoi(tmp));
                         sendq = atoi(tmp);
-			if (!(aconf->status & CONF_CLASS))
-			{
-				if ((tmp = getfield(NULL)) == NULL)
-					break;
-				else
-				 conf_xbits(aconf, tmp);
-			}
 		        break;
 		    }
 		       
