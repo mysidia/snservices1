@@ -44,8 +44,7 @@ void update_load()
   /* This seems to get polluted on startup by an exit_client()
    * before any connections have been recorded.
    */
-  if (current_load_data.local_count > MAXCONNECTIONS ||
-      current_load_data.client_count > MAXCONNECTIONS ||
+  if (current_load_data.client_count > MAXCONNECTIONS ||
       current_load_data.conn_count > MAXCONNECTIONS)
     bzero(&current_load_data, sizeof(struct current_load_struct));
   
@@ -67,7 +66,6 @@ void update_load()
   if (load_list_tail != NULL) {
     cur_load_entry->time_incr = ((now.tv_sec * 1000 + now.tv_usec / 1000 + 5)
 	   - (last.tv_sec * 1000 + last.tv_usec / 1000)) / 10;
-    cur_load_entry->local_count = current_load_data.local_count;
     cur_load_entry->client_count = current_load_data.client_count;
     cur_load_entry->conn_count = current_load_data.conn_count;
   } else {
@@ -84,11 +82,11 @@ void calc_load(aClient *sptr, char *parv) /* we only get passed the original par
 {
   struct load_entry *cur_load_entry;
   struct load_entry *last = NULL;
-  u_long secs = 0, adj_secs, total[3], adj[3];/*[local,client,conn]*/
-  int i, times[5][3]; /* [min,hour,day,Yest,YYest][local,client,conn] */
-  char what[3][HOSTLEN + 1 + 10];
+  u_long secs = 0, adj_secs, total[2], adj[2];/*[client,conn]*/
+  int i, times[5][2]; /* [min,hour,day,Yest,YYest][client,conn] */
+  char what[2][HOSTLEN + 1 + 10];
 
-  bzero(total, 3 * sizeof(u_long));
+  bzero(total, 2 * sizeof(u_long));
   current_load_data.entries = 0;
 
   update_load();  /* we want stats accurate as of *now* */
@@ -96,113 +94,103 @@ void calc_load(aClient *sptr, char *parv) /* we only get passed the original par
   for (cur_load_entry = load_list_tail; (secs < 6000) &&
        (cur_load_entry != NULL); cur_load_entry = cur_load_entry->prev) {
     u_long time_incr = cur_load_entry->time_incr;
-    total[0] += time_incr * cur_load_entry->local_count;
-    total[1] += time_incr * cur_load_entry->client_count;
-    total[2] += time_incr * cur_load_entry->conn_count;
+    total[0] += time_incr * cur_load_entry->client_count;
+    total[1] += time_incr * cur_load_entry->conn_count;
     last = cur_load_entry;
     secs += cur_load_entry->time_incr;
     current_load_data.entries++;
   }
   if ((secs > 6000) && (last != NULL)) {
     adj_secs = secs - 6000;
-    adj[0] = adj_secs * last->local_count;
-    adj[1] = adj_secs * last->client_count;
-    adj[2] = adj_secs * last->conn_count;
+    adj[0] = adj_secs * last->client_count;
+    adj[1] = adj_secs * last->conn_count;
   } else
-    adj_secs = adj[0] = adj[1] = adj[2] = 0;
-  for (i = 0; i < 3; i++) {
+    adj_secs = adj[0] = adj[1] = 0;
+  for (i = 0; i < 2; i++) {
     times[0][i] = ((total[i] - adj[i]) * 1000 / (secs - adj_secs) + 5) / 10;
   }
 
   secs = (secs + 5) / 10;
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 2; i++)
     total[i] = (total[i] + 5) / 10;
 
   for ( ; (secs < 36000) && (cur_load_entry != NULL); secs +=
        (cur_load_entry->time_incr + 5) / 10, cur_load_entry =
        cur_load_entry->prev, current_load_data.entries++) {
     u_long time_incr = (cur_load_entry->time_incr + 5) / 10;
-    total[0] += time_incr * cur_load_entry->local_count;
-    total[1] += time_incr * cur_load_entry->client_count;
-    total[2] += time_incr * cur_load_entry->conn_count;
+    total[0] += time_incr * cur_load_entry->client_count;
+    total[1] += time_incr * cur_load_entry->conn_count;
     last = cur_load_entry;
   }
   if ((secs > 36000) && (last != NULL)) {
     adj_secs = secs - 36000;
-    adj[0] = adj_secs * last->local_count;
-    adj[1] = adj_secs * last->client_count;
-    adj[2] = adj_secs * last->conn_count;
+    adj[0] = adj_secs * last->client_count;
+    adj[1] = adj_secs * last->conn_count;
   } else
-    adj_secs = adj[0] = adj[1] = adj[2] = 0;
-  for (i = 0; i < 3; i++) {
+    adj_secs = adj[0] = adj[1] = 0;
+  for (i = 0; i < 2; i++) {
     times[1][i] = ((total[i] - adj[i]) * 100 / (secs - adj_secs) + 5) / 10;
   }
 
   secs = (secs + 5) / 10;
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 2; i++)
     total[i] = (total[i] + 5) / 10;
 
   for ( ; (secs < 86400) && (cur_load_entry != NULL); secs +=
        (cur_load_entry->time_incr + 50) / 100, cur_load_entry =
        cur_load_entry->prev, current_load_data.entries++) {
     u_long time_incr = (cur_load_entry->time_incr + 50) / 100;
-    total[0] += time_incr * cur_load_entry->local_count;
-    total[1] += time_incr * cur_load_entry->client_count;
-    total[2] += time_incr * cur_load_entry->conn_count;
+    total[0] += time_incr * cur_load_entry->client_count;
+    total[1] += time_incr * cur_load_entry->conn_count;
     last = cur_load_entry;
   }
   if ((secs > 86400) && (last != NULL)) {
     adj_secs = secs - 86400;
-    adj[0] = adj_secs * last->local_count;
-    adj[1] = adj_secs * last->client_count;
-    adj[2] = adj_secs * last->conn_count;
+    adj[0] = adj_secs * last->client_count;
+    adj[1] = adj_secs * last->conn_count;
   } else
-    adj_secs = adj[0] = adj[1] = adj[2] = 0;
-  for (i = 0; i < 3; i++) {
+    adj_secs = adj[0] = adj[1] = 0;
+  for (i = 0; i < 2; i++) {
     times[2][i] = ((total[i] - adj[i]) * 10 / (secs - adj_secs) + 5) / 10;
   }
 
-  bzero(total, 3 * sizeof(u_long));
+  bzero(total, 2 * sizeof(u_long));
 
   for (secs = 1 ; (secs < 86400) && (cur_load_entry != NULL); secs +=
        (cur_load_entry->time_incr + 50) / 100, cur_load_entry =
        cur_load_entry->prev, current_load_data.entries++) {
     u_long time_incr = (cur_load_entry->time_incr + 50) / 100;
-    total[0] += time_incr * cur_load_entry->local_count;
-    total[1] += time_incr * cur_load_entry->client_count;
-    total[2] += time_incr * cur_load_entry->conn_count;
+    total[0] += time_incr * cur_load_entry->client_count;
+    total[1] += time_incr * cur_load_entry->conn_count;
     last = cur_load_entry;
   }
   if ((secs > 86400) && (last != NULL)) {
     adj_secs = secs - 86400;
-    adj[0] = adj_secs * last->local_count;
-    adj[1] = adj_secs * last->client_count;
-    adj[2] = adj_secs * last->conn_count;
+    adj[0] = adj_secs * last->client_count;
+    adj[1] = adj_secs * last->conn_count;
   } else
-    adj_secs = adj[0] = adj[1] = adj[2] = 0;
-  for (i = 0; i < 3; i++) {
+    adj_secs = adj[0] = adj[1] = 0;
+  for (i = 0; i < 2; i++) {
     times[3][i] = ((total[i] - adj[i]) * 10 / (secs - adj_secs) + 5) / 10;
   }
 
-  bzero(total, 3 * sizeof(u_long));
+  bzero(total, 2 * sizeof(u_long));
 
   for (secs = 1 ; (secs < 86400) && (cur_load_entry != NULL); secs +=
        (cur_load_entry->time_incr + 50) / 100, cur_load_entry =
        cur_load_entry->prev, current_load_data.entries++) {
     u_long time_incr = (cur_load_entry->time_incr + 50) / 100;
-    total[0] += time_incr * cur_load_entry->local_count;
-    total[1] += time_incr * cur_load_entry->client_count;
-    total[2] += time_incr * cur_load_entry->conn_count;
+    total[0] += time_incr * cur_load_entry->client_count;
+    total[1] += time_incr * cur_load_entry->conn_count;
     last = cur_load_entry;
   }
   if ((secs > 86400) && (last != NULL)) {
     adj_secs = secs - 86400;
-    adj[0] = adj_secs * last->local_count;
-    adj[1] = adj_secs * last->client_count;
-    adj[2] = adj_secs * last->conn_count;
+    adj[0] = adj_secs * last->client_count;
+    adj[1] = adj_secs * last->conn_count;
   } else
-    adj_secs = adj[0] = adj[1] = adj[2] = 0;
-  for (i = 0; i < 3; i++) {
+    adj_secs = adj[0] = adj[1] = 0;
+  for (i = 0; i < 2; i++) {
     times[4][i] = ((total[i] - adj[i]) * 10 / (secs - adj_secs) + 5) / 10;
   }
 
@@ -223,14 +211,12 @@ void calc_load(aClient *sptr, char *parv) /* we only get passed the original par
     cur_load_entry->prev = NULL;
   }
 
-  strcpy(what[0], DOMAINNAME);
-  strcat(what[0], " clients");
-  strcpy(what[1], "total clients");
-  strcpy(what[2], "total connections");
+  strcpy(what[0], "total clients");
+  strcpy(what[1], "total connections");
   sendto_one(sptr,
     ":%s NOTICE %s :Minute   Hour  Day  Yest.  YYest.  Userload for:",
     me.name, parv);
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 2 i++)
     sendto_one(sptr,
       ":%s NOTICE %s :%3d.%02d  %3d.%01d  %3d   %3d     %3d   %s",
       me.name, parv, times[0][i] / 100, times[0][i] % 100, times[1][i] / 10,

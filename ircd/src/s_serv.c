@@ -1292,8 +1292,7 @@ m_error(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int	 m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	int	s_count = 0, c_count = 0, u_count = 0, i_count = 0;
-	int	o_count = 0, m_client = 0, m_client_local = 0, m_server = 0;
-        char mydom_mask[HOSTLEN + 1];
+	int	o_count = 0, m_client = 0, m_server = 0;
 	aClient *acptr;
 
 	if (check_registered_user(sptr))
@@ -1303,9 +1302,6 @@ int	 m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if(hunt_server(cptr, sptr, ":%s LUSERS %s :%s", 2, parc, parv)
 				!= HUNTED_ISME)
 			return 0;
-
-        mydom_mask[0] = '*';
-        strncpy(&mydom_mask[1], DOMAINNAME, HOSTLEN - 1);
 
 	collapse(parv[1]);
 	for (acptr = client; acptr; acptr = acptr->next)
@@ -1334,8 +1330,6 @@ int	 m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	        		o_count++;
 			if (MyConnect(acptr)) {
 		  		m_client++;
-				if (match(mydom_mask, acptr->sockhost) == 0)
-				  m_client_local++;
 			      }
 			if (!IsInvisible(acptr))
 				c_count++;
@@ -1371,7 +1365,6 @@ int	 m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
             sendto_ops("Maximum connections: %d (%d clients)",
                      max_connection_count, max_client_count);
         }
-        current_load_data.local_count = m_client_local;
         current_load_data.client_count = m_client;
         current_load_data.conn_count = m_client + m_server;
 	return 0;

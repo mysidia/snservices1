@@ -21,7 +21,7 @@
  ****************************************************************************/
 
 struct current_load_struct {
-  u_short client_count, local_count, conn_count;
+  u_short client_count, conn_count;
   u_long  entries;
 };  
 
@@ -29,7 +29,7 @@ extern struct current_load_struct current_load_data;
 
 struct load_entry {
   struct  load_entry *prev;
-  u_short client_count, local_count, conn_count;
+  u_short client_count, conn_count;
   long    time_incr;
 };
 
