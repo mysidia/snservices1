@@ -538,8 +538,8 @@ static	void	exit_one_client(aClient *cptr, aClient *sptr, aClient *from, char *c
 				sendto_common_channels(sptr, ":%s QUIT :%s",
 						       sptr->name, comment);
 
-			add_history(cptr);
-			off_history(cptr);
+			add_history(sptr);
+			off_history(sptr);
 
 			while ((lp = sptr->user->channel))
 				remove_user_from_channel(sptr,lp->value.chptr);
