@@ -77,6 +77,8 @@ struct akill* getAhurt(char *nick, char *user, char *host);
 long getAkillId(struct akill* ak);
 void enforce_nickname (char* nick);
 int isPasswordAcceptable(const char* password, char* reason);
+int hasValidModeR(UserList* user);
+	
 
 // *INDENT-OFF*
 
@@ -531,7 +533,7 @@ void addNewUser(char **args, int numargs)
 			sSend(":%s MODE %s :+m", NickServ, newnick->nick);
 		}
 
-		if ((newnick->oflags & NOISREG)) {
+		if (hasValidModeR(newnick)) {
 			newnick->caccess = 2;
 			newnick->reg->timestamp = (time_t) atol(args[3]);
 
@@ -919,6 +921,20 @@ int isRecognized(UserList * user, RegNickList * nick)
 	if (!(user && nick) || user->reg != nick)
 		return isIdentified(user, nick);
 	return (user->reg && user->reg == nick && (user->caccess > 1));
+}
+
+
+/*
+ * Check that a mode (+r) is present and seems to be legitimate on the nickname
+ */
+int hasValidModeR(UserList* user)
+{
+	if (!user->reg || !(user->oflags & NOISREG))
+		return 0;
+	if (user->timestamp >= user->reg->timereg
+	     || user->timestamp >= CTime)
+		return 0;
+	return 1;
 }
 
 /**
@@ -1797,7 +1813,7 @@ void killide(char *info)
 	if (check == NULL) {
 		FREE(info);
 		return;
-	} else if ((check->oflags & NOISREG) || isIdentified(check, regnick)) {
+	} else if (hasValidModeR(check) || isIdentified(check, regnick)) {
 		FREE(info);
 		return;
 	} else if (host != NULL) {
