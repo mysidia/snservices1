@@ -352,7 +352,9 @@ int	m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  aconf = find_conf_servern(host);
 	  if (!aconf) {
 	    sendto_one(cptr, "ERROR :No Access (No N line) %s", inpath);
-	    sendto_ops("Access denied (No N line) %s", inpath);
+	    sendto_realops("Access denied (No N line) %s", inpath);
+            sendto_umode_except(U_SERVNOTICE, U_OPER, "*** Notice -- Access denied (No N line) %s", cptr->name);
+
 	    return exit_client(cptr, cptr, cptr, "No N line");
 	  }
 #ifdef CRYPT_LINK_PASSWORD
@@ -380,7 +382,9 @@ int	m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    {
 	      sendto_one(cptr, "ERROR :No Access (passwd mismatch) %s",
 			 inpath);
-	      sendto_ops("Access denied (passwd mismatch) %s", inpath);
+              sendto_realops("Access denied (passwd mismatch) %s", inpath);
+              sendto_umode_except(U_SERVNOTICE, U_OPER, "*** Notice -- Access denied (passwd mismatch) %s", cptr->name);
+
 	      return exit_client(cptr, cptr, cptr, "Bad Password");
 	    }
 	/*	bzero(cptr->passwd, sizeof(cptr->passwd));*/
@@ -420,7 +424,7 @@ int	m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		** for a while and servers to send stuff to the wrong place.
 		*/
 		sendto_one(cptr,"ERROR :Nickname %s already exists!", host);
-                sendto_ops("Link %s cancelled: Server/nick collision on %s",
+                sendto_realops("Link %s cancelled: Server/nick collision on %s",
                            inpath, host);
 		sendto_serv_butone(&me, ":%s GNOTICE : Link %s cancelled: Server/nick collision on %s",
 			   parv[0], inpath, host);
@@ -592,7 +596,8 @@ int	m_server_estab(aClient *cptr)
 	    {
 		ircstp->is_ref++;
 		sendto_one(cptr, "ERROR :Access denied. No N line for server %s", inpath);
-		sendto_ops("Access denied. No N line for server %s", inpath);
+		sendto_realops("Access denied. No N line for server %s", inpath);
+		sendto_umode_except(U_SERVNOTICE, U_OPER, "*** Notice -- Access denied. No N line for server %s", cptr->name);
 		return exit_client(cptr, cptr, cptr, "No N line for server");
 	    }
 	/*
@@ -603,7 +608,8 @@ int	m_server_estab(aClient *cptr)
 	    {
 		ircstp->is_ref++;
 		sendto_one(cptr, "ERROR :Only N (no C) field for server %s", inpath);
-		sendto_ops("Only N (no C) field for server %s", inpath);
+		sendto_realops("Only N (no C) field for server %s", inpath);
+		sendto_umode_except(U_SERVNOTICE, U_OPER, "*** Notice -- Only N (no C) field for server %s", cptr->name);
 		return exit_client(cptr, cptr, cptr, "No C line for server");
 	    }
 
@@ -632,7 +638,8 @@ int	m_server_estab(aClient *cptr)
 	    {
 		ircstp->is_ref++;
 		sendto_one(cptr, "ERROR :No Access (passwd mismatch) %s", inpath);
-		sendto_ops("Access denied (passwd mismatch) %s", inpath);
+		sendto_realops("Access denied (passwd mismatch) %s", inpath);
+		sendto_umode_except(U_SERVNOTICE, U_OPER, "*** Notice -- Access denied (passwd mismatch) %s", cptr->name);
 		return exit_client(cptr, cptr, cptr, "Bad Password");
 	    }
 	bzero(cptr->passwd, sizeof(cptr->passwd));
@@ -698,10 +705,12 @@ int	m_server_estab(aClient *cptr)
 	ClientFlags(cptr) |= FLAGS_TS8;
 	nextping = NOW;
 #ifdef HUB
-	sendto_serv_butone(&me, ":%s GNOTICE :Link with %s established.",
+	sendto_serv_butone(&me, ":%s GLOBOPS :Link with %s established.",
 		me.name, inpath);
 #endif
-	sendto_ops("Link with %s established.", inpath);
+	sendto_umode_except(U_SERVNOTICE, U_OPER, "*** Notice -- Link with %s established.", cptr->name);
+	sendto_realops("Link with %s established.", inpath);
+
 	/* Insert here */
 	(void)add_to_client_hash_table(cptr->name, cptr);
 	/* doesnt duplicate cptr->serv if allocted this struct already */
@@ -724,10 +733,11 @@ int	m_server_estab(aClient *cptr)
 		if ((aconf = acptr->serv->nline) &&
 		    !match(my_name_for_link(me.name, aconf), cptr->name))
 			continue;
-		if (split)
+		if (split) {
 			sendto_one(acptr,":%s SERVER %s 2 :[%s] %s",
 				   me.name, cptr->name,
-				   cptr->sockhost, cptr->info);
+				   /*cptr->sockhost*/ inetntoa((char *)&cptr->ip), cptr->info);
+		}
 		else
 			sendto_one(acptr,":%s SERVER %s 2 :%s",
 				   me.name, cptr->name, cptr->info);
@@ -866,6 +876,51 @@ int	m_info(aClient *cptr, aClient *sptr, int parc, char *parv[])
     return 0;
 }
 
+
+/* Safe_info 
+ *
+ * Return a "safe" version of the server info reply
+ * given a valid `acptr' pointing to a server
+ *
+ * Safe means: 1. Not null
+ *             2. If showIp is 0 then the server's ip address won't
+ *                be shown with the info.
+ */
+const char* safe_info(int showIp, aClient* acptr)
+{
+	int i, ippfx;
+
+	if (!acptr) {
+		return "*Not On This Net*";
+	}
+	
+	if (!IsServer(acptr) && acptr->info && acptr->info[0])
+		return acptr->info;
+	
+	if (!acptr->info || !acptr->info[0]) {
+		return "(Unknown Location)";
+	}
+
+	if (!showIp && acptr->info[0] == '[') 
+	{
+		for(i = 1, ippfx = 0; acptr->info[i] && (i < 17); i++) {
+			if (acptr->info[i] == ']' && (i >= 7)) {
+				ippfx = 1;
+				break;
+			}
+			
+			if (acptr->info[i] != '.' && !isdigit(acptr->info[i]))
+				break;
+		}
+
+		if (ippfx) {
+			return acptr->info + i + 1;
+		}
+	}
+	
+	return acptr->info;
+}
+
 /*
 ** m_links
 **	parv[0] = sender prefix
@@ -899,10 +954,10 @@ int	m_links(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			continue;
 		if (!BadPtr(mask) && match(mask, acptr->name))
 			continue;
+               
 		sendto_one(sptr, rpl_str(RPL_LINKS),
 			   me.name, parv[0], acptr->name, acptr->serv->up,
-			   acptr->hopcount, (acptr->info[0] ? acptr->info :
-			   "(Unknown Location)"));
+			   acptr->hopcount, safe_info(IsOper(sptr), acptr));
 	    }
 
 	sendto_one(sptr, rpl_str(RPL_ENDOFLINKS), me.name, parv[0],
@@ -980,6 +1035,10 @@ static	void	report_configured_links(aClient *sptr, int mask)
 			name = BadPtr(tmp->name) ? null : tmp->name;
 			port = (int)tmp->port;
 
+			if (tmp->status == CONF_KILL &&
+			    tmp->tmpconf == KLINE_AKILL && !IsAnOper(sptr))
+			    continue;
+
 
                         if (tmp->status == CONF_OPERATOR ||
                             tmp->status == CONF_LOCOP    ||
@@ -1032,12 +1091,19 @@ static	void	report_configured_links(aClient *sptr, int mask)
                                   *pt++ = '\0';
                                      
                               /*  RPL_STATSOLINE, "%c %s * %s %s %d", */
-                                sendto_one(sptr, rpl_str(p[1]), me.name,
-                                           sptr->name, c,  host,
-                                           name, oflag_list,
-                                           get_conf_class(tmp) );
-                                 continue;   
-                        }
+			      if (IsAnOper(sptr))
+					sendto_one(sptr, rpl_str(p[1]), me.name,
+						sptr->name, c,  host,
+						name, oflag_list,
+						get_conf_class(tmp) );
+			       else
+					sendto_one(sptr, rpl_str(p[1]), me.name,
+						sptr->name, c,  "*",
+						name, oflag_list,
+						get_conf_class(tmp) );
+
+				continue;
+			}
                                                                 
 
 
@@ -1104,10 +1170,18 @@ static	void	report_configured_links(aClient *sptr, int mask)
 				sendto_one(sptr, rpl_str(RPL_STATSXLINE), me.name,
 					   sptr->name, name, port);
 			}
-			else
+			else {
+				if ((IsAnOper(sptr) ||
+				     (tmp->status != CONF_NOCONNECT_SERVER && tmp->status != CONF_CONNECT_SERVER
+				      && tmp->status != CONF_CLIENT)))
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c, host, name, port,
 					   get_conf_class(tmp));
+				else
+				sendto_one(sptr, rpl_str(p[1]), me.name,
+					   sptr->name, c, "*", name, port,
+					   get_conf_class(tmp));
+                               }
 		    }
 	return;
 }
@@ -1206,7 +1280,7 @@ int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			    !IsServer(cptr))
 				continue;
 			#define CanSeeReal(sptr, acptr) \
-				((sptr==acptr) || IsOper(sptr) || (!IsServer(acptr) && !IsMasked(acptr)))
+				((sptr==acptr) || IsOper(sptr) || (!IsListening(acptr) && !IsMe(acptr) && !IsServer(acptr) && !IsMasked(acptr)))
 			get_client_namp(buf, acptr, isupper(stat) ? showports : FALSE, !CanSeeReal(sptr, acptr));
 			sendto_one(sptr, Lformat, me.name,
 				   RPL_STATSLINKINFO, parv[0],
@@ -1230,7 +1304,11 @@ int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		report_configured_links(sptr, CONF_CLIENT);
 		break;
 	case 'K' : case 'k' :
-		report_configured_links(sptr, CONF_KILL|CONF_ZAP|CONF_AHURT);
+		if (!IsAnOper(sptr))
+			report_configured_links(sptr, CONF_KILL|CONF_ZAP);
+		else
+			report_configured_links(sptr, CONF_KILL|CONF_ZAP|CONF_AHURT);
+
 		break;
 	case 'M' : case 'm' :
 		for (mptr = msgtab; mptr->cmd; mptr++)
@@ -1286,7 +1364,9 @@ int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		report_classes(sptr);
 		break;
 	case 'Z' : case 'z' :
-		count_memory(sptr, parv[0]);
+		if (IsAnOper(sptr)) { 
+			count_memory(sptr, parv[0]); 
+		}
 		break;
 	default :
 		stat = '*';
@@ -1322,15 +1402,15 @@ int	m_error(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (IsPerson(cptr) || IsUnknown(cptr) || IsService(cptr))
 		return 0;
 	if (cptr == sptr) {
-		sendto_serv_butone(&me, ":%s GNOTICE :ERROR from %s -- %s",
+		sendto_serv_butone(&me, ":%s GLOBOPS :ERROR from %s -- %s",
 			   me.name, get_client_name(cptr, FALSE), para);
-		sendto_ops("ERROR :from %s -- %s",
+		sendto_realops("ERROR :from %s -- %s",
 			   get_client_name(cptr, FALSE), para);
 	}
 	else {
-                sendto_serv_butone(&me, ":%s GNOTICE :ERROR from %s via %s -- %s",
+                sendto_serv_butone(&me, ":%s GLOBOPS :ERROR from %s via %s -- %s",
                            me.name, sptr->name, get_client_name(cptr, FALSE), para);
-		sendto_ops("ERROR :from %s via %s -- %s", sptr->name,
+		sendto_realops("ERROR :from %s via %s -- %s", sptr->name,
 			   get_client_name(cptr,FALSE), para);
 	}
 	return 0;
@@ -1947,11 +2027,12 @@ int	m_admin(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		sendto_one(sptr, rpl_str(RPL_ADMINME),
 			   me.name, parv[0], me.name);
 		sendto_one(sptr, rpl_str(RPL_ADMINLOC1),
-			   me.name, parv[0], aconf->host);
-		sendto_one(sptr, rpl_str(RPL_ADMINLOC2),
-			   me.name, parv[0], aconf->passwd);
+			   me.name, parv[0], aconf->host ? aconf->host : "<Admin location line 1 not specified>");
+		if (aconf->passwd)
+			sendto_one(sptr, rpl_str(RPL_ADMINLOC2),
+				   me.name, parv[0], aconf->passwd);
 		sendto_one(sptr, rpl_str(RPL_ADMINEMAIL),
-			   me.name, parv[0], aconf->name);
+			   me.name, parv[0], aconf->name ? aconf->name : "<E-mail unspecified>");
 	    }
 	else
 		sendto_one(sptr, err_str(ERR_NOADMININFO),
@@ -2089,7 +2170,10 @@ int	m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			continue;
 		if (!dow && mycmp(tname, acptr->name))
 			continue;
-		name = get_client_name(acptr,FALSE);
+		if (IsAnOper(sptr))
+			name = get_client_name(acptr,FALSE);
+		else
+			name = get_client_name_mask(acptr,FALSE,FALSE,TRUE);
 		class = get_client_class(acptr);
 
 		switch(acptr->status)
@@ -2405,7 +2489,7 @@ show_watch(aClient *cptr, char *name, int rpl1, int rpl2)
         if ((acptr = find_person(name, NULL)))
           sendto_one(cptr, rpl_str(rpl1), me.name, cptr->name,
                                          acptr->name, acptr->user->username,
-                                         acptr->user->host, acptr->lasttime);
+                                         UGETHOST(cptr, acptr->user), acptr->lasttime);
         else
           sendto_one(cptr, rpl_str(rpl2), me.name, cptr->name,
                                          name, "*", "*", 0);
@@ -2538,7 +2622,7 @@ int   m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                 if ((acptr = find_person(lp->value.wptr->nick, NULL)))
                                   sendto_one(sptr, rpl_str(RPL_NOWON), me.name, parv[0],
                                                                  acptr->name, acptr->user->username,
-                                                                 acptr->user->host, acptr->lastnick);
+                                                                 UGETHOST(sptr, acptr->user), acptr->lastnick);
                                 /*
                                  * But actually, only show them offline if its a capital
                                  * 'L' (full list wanted).

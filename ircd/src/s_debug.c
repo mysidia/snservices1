@@ -484,7 +484,7 @@ void	count_memory(aClient *cptr, char *nick)
 #ifndef _WIN32
 	sendto_one(cptr, ":%s %d %s :TOTAL: %d sbrk(0)-etext: %u",
 		   me.name, RPL_STATSDEBUG, nick, tot,
-		   (u_int)sbrk((size_t)0)-(u_int)sbrk0);
+		   (u_int)((char *)sbrk((size_t)0)-(char *)sbrk0));
 #else
 	sendto_one(cptr, ":%s %d %s :TOTAL: %d",
 		   me.name, RPL_STATSDEBUG, nick, tot);

@@ -56,6 +56,8 @@ static	char rcsid[] = "$Id$";
 aClient me;			/* That's me */
 aClient *client = &me;		/* Pointer to beginning of Client list */
 
+void NospoofText(aClient* acptr);
+
 time_t    NOW, tm_offset = 0;
 void	server_reboot(char *);
 void	restart PROTO((char *));
@@ -319,7 +321,7 @@ time_t	currenttime;
    AKILL/RAKILL/KLINE/UNKLINE/REHASH.  Very significant CPU usage decrease.
    I made changes to every check_pings call to add new parameter.
    -- Barubary */
-extern	time_t	check_pings(time_t currenttime, int check_kills)
+extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 {		
 	aClient	*cptr;
 	int	killflag;
@@ -345,7 +347,7 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		    }
 
 		if (check_kills)
-			killflag = IsPerson(cptr) ? find_kill(cptr) : 0;
+			killflag = IsPerson(cptr) ? find_kill(cptr, conf_target) : 0;
 		else
 			killflag = 0;
 		if (check_kills && !killflag && IsPerson(cptr))
@@ -378,6 +380,7 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 		    (!IsRegistered(cptr) &&
 		     (currenttime - cptr->firsttime) >= ping))
 		    {
+#ifdef ENABLE_SOCKSCHECK
                         if (cptr->socks && cptr->socks->fd >= 0)
                         {
                               int q;
@@ -398,10 +401,11 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
                                         socks->fd = -1;
                                         MyFree(socks);
                                   }
-                              }
+                              }			      
                               cptr->socks = NULL;
                               ClientFlags(cptr) &= ~FLAGS_SOCKS;
                         }
+#endif
 
 			if (!IsRegistered(cptr) && (DoingDNS(cptr) || DoingSocks(cptr)))
 			    {
@@ -487,8 +491,25 @@ extern	time_t	check_pings(time_t currenttime, int check_kills)
 			cptr->lasttime = currenttime - ping;
 			sendto_one(cptr, "PING :%s", me.name);
 		    }
+#ifdef NOSPOOF		
+/*		else if (!IsRegistered(cptr) && cptr->nospoof &&
+			!DoingDNS(cptr) && !DoingSocks(cptr) &&
+			!IsNotSpoof(cptr) && !SentNoSpoof(cptr) &&
+			(currenttime - cptr->firsttime) >= 5)
+		{
+			NospoofText(cptr);
+			SetSentNoSpoof(cptr);
+		}*/
+#endif			
 ping_timeout:
 		timeout = cptr->lasttime + ping;
+		/*if (ping > 20 && !IsRegistered(cptr) &&
+			!DoingDNS(cptr) && !DoingSocks(cptr) &&
+			!IsNotSpoof(cptr) && !SentNoSpoof(cptr)
+                    ) {
+                    timeout = cptr->lasttime + (ping = 20);
+                }*/
+
 		while (timeout <= currenttime)
 			timeout += ping;
 		if (timeout < oldest || !oldest)
@@ -944,13 +965,16 @@ void    SocketLoop(void *dummy)
 		** ping times) --msa
 		*/
 		if (now >= nextping) {
-			nextping = check_pings(now, 0);
+			nextping = check_pings(now, 0, NULL);
                 }
+
+#ifdef ENABLE_SOCKSCHECK
 		if (now >= nextsockflush)
 		{
 			(void)flush_socks(now, 0);
 			nextsockflush = (now+3);
 		}
+#endif		
 
 		if (dorehash)
 		    {

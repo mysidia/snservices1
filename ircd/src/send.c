@@ -655,6 +655,86 @@ va_dcl
 	return;
 }
 
+
+/*
+ * sendto_channel_butserv_unmask
+ *
+ * Send a message to all members of a channel that are connected to this
+ * server; show real address to ops.
+ */
+#ifndef USE_VARARGS
+/*VARARGS*/
+void    sendto_channel_butserv_unmask(chptr, from, pattern, p1, p2, p3,
+                               p4, p5, p6, p7, p8)
+aChannel *chptr;
+aClient *from;
+char    *pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+#else
+void    sendto_channel_butserv_unmask(chptr, from, pattern, va_alist)
+aChannel *chptr;
+aClient *from;
+char    *pattern;
+va_dcl
+{
+        va_list vl;
+#endif
+        Link    *lp;
+        aClient *acptr;
+        int x = IsMasked(from);
+	char *origMask = NULL;
+
+
+#ifdef  USE_VARARGS
+        for (va_start(vl), lp = chptr->members; lp; lp = lp->next) {
+                if (MyConnect(acptr = lp->value.cptr) &&
+                    !(lp->flags & CHFL_ZOMBIE)) {
+                        if (IS_SET(chptr->mode.mode, MODE_SHOWHOST) &&
+                            (lp->flags & CHFL_CHANOP) &&
+                            !IS_SET(ClientUmode(from), U_FULLMASK) && from->user) {
+                            ClearMasked(from);
+			    origMask = from->user->mask;
+			    from->user->mask = NULL;
+			} else origMask = NULL;
+
+                        sendto_prefix_one(acptr, from, pattern, vl);
+                        if (x && from->user) {
+                            SetMask(from);
+			    if (origMask)
+				    from->user->mask = origMask;
+			}
+                    }
+        va_end(vl);
+        }
+#else
+        for (lp = chptr->members; lp; lp = lp->next) {
+                if (MyConnect(acptr = lp->value.cptr) &&
+                    !(lp->flags & CHFL_ZOMBIE)) {
+                        if (IS_SET(chptr->mode.mode, MODE_SHOWHOST) &&
+                            (lp->flags & CHFL_CHANOP) &&
+                            !IS_SET(ClientUmode(from), U_FULLMASK) && from->user) {
+                            ClearMasked(from);
+			    origMask = from->user->mask;
+			    from->user->mask = NULL;
+			} else origMask = NULL;
+			
+                        sendto_prefix_one(acptr, from, pattern,
+                                          p1, p2, p3, p4,
+                                          p5, p6, p7, p8);
+                        if (x && from->user) {
+                            SetMasked(from);
+			    if (origMask) {
+				    from->user->mask = origMask;
+			    }
+			}
+                }
+        }
+#endif
+
+        return;
+}
+
+
 /*
 ** send a msg to all ppl on servers/hosts that match a specified mask
 ** (used for enhanced PRIVMSGs)
@@ -1188,6 +1268,30 @@ char	*pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
 	for (i = 0; i <= highest_fd; i++)
 		if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
 		    (ClientUmode(cptr) & flags)==flags)
+                   {
+                       (void)sprintf(nbuf, ":%s NOTICE %s :",
+                               me.name, cptr->name);
+                       (void)strncat(nbuf, pattern,
+                                     sizeof(nbuf) - strlen(nbuf));
+                       sendto_one(cptr, nbuf, p1, p2, p3, p4, p5, p6,
+                               p7, p8);
+                   }
+       return;
+}
+
+
+void   sendto_umode_except(flags, notflags, pattern, p1, p2, p3, p4, p5, p6, p7, p8)
+int    flags, notflags;
+char   *pattern, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8;
+{
+       aClient *cptr;
+       int     i;
+       char    nbuf[1024];
+
+       for (i = 0; i <= highest_fd; i++)
+               if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
+                   ((ClientUmode(cptr) & flags)==flags) &&
+                    !((ClientUmode(cptr) & notflags) == notflags))
 		    {
 			(void)sprintf(nbuf, ":%s NOTICE %s :",
 				me.name, cptr->name);

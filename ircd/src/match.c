@@ -91,9 +91,9 @@ u_char touppertab[], tolowertab[];
 #define tolowertab2 tolowertab
 #endif
 
-int match(char *mask, char *string)
+int match(const char *mask, const char *string)
 {
- char *rmask = mask, *rstring = string;
+ const char *rmask = mask, *rstring = string;
  int l, p;
 
 #ifdef USE_CASETABLES
@@ -145,14 +145,14 @@ int match(char *mask, char *string)
  * Written by Douglas A Lewis (dalewis@acsu.buffalo.edu)
  */
 
-int r_match(char *mask, char *name)
+int r_match(const char *mask, const char *name)
 {
-  u_char *m, *n;
-  char	 *ma, *na;
+  const u_char *m, *n;
+  const char *ma, *na;
   int	  wild, q;
 
-  m = (u_char *)mask;
-  n = (u_char *)name;
+  m = (const u_char *)mask;
+  n = (const u_char *)name;
   ma = mask;
   na = name;
   wild = 0;
@@ -170,15 +170,15 @@ int r_match(char *mask, char *name)
     if (!*m) {
       if (!*n)
 	return 0;
-      for (m--; (m > (u_char *)mask) && (*m == '?'); m--)
+      for (m--; (m > (const u_char *)mask) && (*m == '?'); m--)
 	;
-      if ((*m == '*') && (m > (u_char *)mask) &&
+      if ((*m == '*') && (m > (const u_char *)mask) &&
 	  (m[-1] != '\\'))
 	return 0;
       if (!wild) 
 	return 1;
-      m = (u_char *)ma;
-      n = (u_char *)++na;
+      m = (const u_char *)ma;
+      n = (const u_char *)++na;
     } else if (!*n) {
       while(*m == '*')
 	m++;
@@ -193,8 +193,8 @@ int r_match(char *mask, char *name)
     if ((tolower(*m) != tolower(*n)) && ((*m != '?') || q)) {
       if (!wild)
 	return 1;
-      m = (u_char *)ma;
-      n = (u_char *)++na;
+      m = (const u_char *)ma;
+      n = (const u_char *)++na;
     } else {
       if (*m)
 	m++;

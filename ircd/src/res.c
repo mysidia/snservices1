@@ -821,6 +821,9 @@ char	*lp;
 	    {
 		struct	hostent	*hp2 = NULL;
 
+                if (rptr->he.h_name == NULL)
+                    goto getres_err;
+
 		Debug((DEBUG_DNS, "relookup %s <-> %s",
 			rptr->he.h_name, inetntoa((char *)&rptr->he.h_addr)));
 		/*
@@ -1554,7 +1557,10 @@ char	*parv[];
 	aCache	*cp;
 	int	i;
 
-	if (!IsAnOper(sptr)) return;
+	if (!IsAnOper(sptr)) {
+	    sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+	    return;
+	}
 
 	if (parv[1] && *parv[1] == 'l') {
 		for(cp = cachetop; cp; cp = cp->list_next)
