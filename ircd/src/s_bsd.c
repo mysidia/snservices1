@@ -235,9 +235,11 @@ int	port;
 		case AF_INET:
 			len = sizeof(struct sockaddr_in);
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			len = sizeof(struct sockaddr_in6);
 			break;
+#endif
 	}
 	/*
 	 * Bind a port to listen for new connections if port is non-null,
@@ -251,9 +253,11 @@ int	port;
 			case AF_INET:
 				server.in.sin_port = htons(port);
 				break;
+#ifdef AF_INET6
 			case AF_INET6:
 				server.in6.sin6_port = htons(port);
 				break;
+#endif
 		}
 		/*
 		 * Try 10 times to bind the socket with an interval of 20
@@ -288,10 +292,12 @@ int	port;
 				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
 		    			ntohs(server.in.sin_port));
 				break;
+#ifdef AF_INET6
 			case AF_INET6:
 				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
 		    			ntohs(server.in6.sin6_port));
 				break;
+#endif
 		}
 		(void)write(0, buf, strlen(buf));
 	    }
@@ -303,9 +309,11 @@ int	port;
 		case AF_INET:
 			cptr->port = (int)ntohs(server.in.sin_port);
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			cptr->port = (int)ntohs(server.in6.sin6_port);
 			break;
+#endif
 	}
 	(void)listen(cptr->fd, LISTEN_SIZE);
 	local[cptr->fd] = cptr;
@@ -470,6 +478,7 @@ char	*sockn;
 		report_error("connect failure: %s %s", cptr);
 		return -1;
 	    }
+#ifdef AF_INET6
 	/* check for ipv4 in ipv6 mapped addresses */
 	if ((sk.addr_family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&sk.in6.sin6_addr))
 	{
@@ -477,6 +486,7 @@ char	*sockn;
 		sk.in.sin_port = sk.in6.sin6_port;
 		bcopy(&sk.in6.sin6_addr.s6_addr[12],&sk.in.sin_addr,sizeof(struct in_addr));
 	}
+#endif
 	(void)strcpy(sockn, (char *)inetntoa(&sk));
 	switch (sk.addr_family)
 	{
@@ -487,6 +497,7 @@ char	*sockn;
 				strncpyzt(sockn, me.sockhost, HOSTLEN);
 			}
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			if (IN6_IS_ADDR_LOOPBACK(&sk.in6.sin6_addr))
 			{
@@ -494,6 +505,7 @@ char	*sockn;
 				strncpyzt(sockn, me.sockhost, HOSTLEN);
 			}
 			break;
+#endif
 	}
 	bcopy((char *)&sk, (char *)&cptr->addr, sizeof(anAddress));
 	switch (sk.addr_family)
@@ -501,9 +513,11 @@ char	*sockn;
 		case AF_INET:
 			cptr->port = (int)ntohs(sk.in.sin_port);
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			cptr->port = (int)ntohs(sk.in6.sin6_port);
 			break;
+#endif
 	}
 
 	return 0;
@@ -571,6 +585,7 @@ aClient	*cptr;
 				ClientFlags(cptr) |= FLAGS_LOCAL;
 			}
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			if (IN6_IS_ADDR_LOOPBACK(&cptr->addr.in6.sin6_addr)
 				|| IN6_IS_ADDR_LINKLOCAL(&cptr->addr.in6.sin6_addr)
@@ -579,6 +594,7 @@ aClient	*cptr;
 				ircstp->is_loc++;
 				ClientFlags(cptr) |= FLAGS_LOCAL;
 			}
+#endif
 
 	    }
 	return 0;
@@ -1127,6 +1143,7 @@ int	fd;
 		(void)closesocket(fd);
 		return NULL;
 	}
+#ifdef AF_INET6
 	/* check for ipv4 in ipv6 mapped addresses */
 	if ((addr.addr_family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&addr.in6.sin6_addr))
 	{
@@ -1134,6 +1151,7 @@ int	fd;
 		addr.in.sin_port = addr.in6.sin6_port;
 		bcopy(&addr.in6.sin6_addr.s6_addr[12],&addr.in.sin_addr,sizeof(struct in_addr));
 	}
+#endif
 	/* don't want to add "Failed in connecting to" here.. */
 	if (aconf && IsIllegal(aconf) && !iscons)
 		goto add_con_refuse;
@@ -1157,9 +1175,11 @@ int	fd;
 			case AF_INET:
 				acptr->port = ntohs(addr.in.sin_port);
 				break;
+#ifdef AF_INET6
 			case AF_INET6:
 				acptr->port = ntohs(addr.in6.sin6_port);
 				break;
+#endif
 		}
 
                 sendto_one(acptr, ":%s NOTICE AUTH :*** Hello, you are connecting to %s, the progress of your connection follows", me.name, me.name);
@@ -1709,9 +1729,11 @@ int	*lenp;
 		case AF_INET:
 			mysk.in.sin_port = 0;
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			mysk.in6.sin6_port = 0;
 			break;
+#endif
 	}
 	get_sockhost(cptr, aconf->host);
 
@@ -1748,6 +1770,7 @@ int	*lenp;
 					}
 				}
 				break;
+#ifdef AF_INET6
 			case AF_INET6:
 				if (!IN6_IS_ADDR_UNSPECIFIED(&server.in6.sin6_addr))
 				{
@@ -1759,6 +1782,7 @@ int	*lenp;
 					}
 				}
 				break;
+#endif
 		}
 	}
 
@@ -1770,10 +1794,12 @@ int	*lenp;
 			server.in.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum));
 			*lenp = sizeof(struct sockaddr_in);
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			server.in6.sin6_port = htons(((aconf->port > 0) ? aconf->port : portnum));
 			*lenp = sizeof(struct sockaddr_in6);
 			break;
+#endif
 		default:
 			*lenp = sizeof(server);
 			break;

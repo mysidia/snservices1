@@ -83,9 +83,11 @@ void	start_auth(aClient *cptr)
 		case AF_INET:
 			sock.in.sin_port = 0;
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			sock.in6.sin6_port = 0;
 			break;
+#endif
 	}
 	(void)bind(cptr->authfd, (struct sockaddr *)&sock, sizeof(sock));
 
@@ -97,9 +99,11 @@ void	start_auth(aClient *cptr)
 		case AF_INET:
 			sock.in.sin_port = htons(113);
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			sock.in6.sin6_port = htons(113);
 			break;
+#endif
 	}
 
 	(void)alarm((unsigned)4);
@@ -161,11 +165,13 @@ void	send_authports(aClient *cptr)
 				(unsigned int)ntohs(them.in.sin_port),
 				(unsigned int)ntohs(us.in.sin_port));
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			(void)sprintf(authbuf, "%u , %u\r\n",
 				(unsigned int)ntohs(them.in6.sin6_port),
 				(unsigned int)ntohs(us.in6.sin6_port));
 			break;
+#endif
 	}
 
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",

@@ -409,9 +409,11 @@ ResRQ	*rptr;
 			case AF_INET:
 				rptr->type = T_A;
 				break;
+#ifdef AF_INET6
 			case AF_INET6:
 				rptr->type = T_AAAA;
 				break;
+#endif
 		}
 		rptr->name = (char *)irc_malloc(strlen(name) + 1);
 		(void)strcpy(rptr->name, name);
@@ -421,8 +423,10 @@ ResRQ	*rptr;
 		default:
 		case AF_INET:
 			return (query_name(hname, C_IN, T_A, rptr));
+#ifdef AF_INET6
 		case AF_INET6:
 			return (query_name(hname, C_IN, T_AAAA, rptr));
+#endif
 	}
 }
 
@@ -445,6 +449,7 @@ ResRQ	*rptr;
 				(u_int)(cp[3]), (u_int)(cp[2]),
 				(u_int)(cp[1]), (u_int)(cp[0]));
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			cp = (u_char *)&numb->in6.sin6_addr.s6_addr[15];
 			cp2 = (u_char *)ipbuf;
@@ -456,6 +461,7 @@ ResRQ	*rptr;
 			}
 			sprintf(cp2,"ip6.int.");
 			break;
+#endif
 	}
 
 	if (!rptr)
@@ -534,8 +540,10 @@ ResRQ	*rptr;
 	case T_A:
 		(void)do_query_name(NULL, rptr->name, AF_INET, rptr);
 		break;
+#ifdef AF_INET6
 	case T_AAAA:
 		(void)do_query_name(NULL, rptr->name, AF_INET6, rptr);
+#endif
 	default:
 		break;
 	}
@@ -628,6 +636,7 @@ HEADER	*hptr;
 			adr++;
 			cp += dlen;
  			break;
+#ifdef AF_INET6
 		case T_AAAA:
                                  /* from Christophe Kalt <kalt@stealth.net> */
                                  if (dlen != sizeof(struct in6_addr)) {
@@ -651,6 +660,7 @@ HEADER	*hptr;
 			adr++;
 			cp += dlen;
  			break;
+#endif
 		case T_PTR :
 			if((n = dn_expand(buf, eob, cp, hostbuf,
 					  sizeof(hostbuf) )) < 0)
@@ -908,6 +918,7 @@ anAddress *ip;
 			hashv += hashv + (int)*p4++;
 			hashv += hashv + (int)*p4;
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			p6 = (int *)&ip->in6.sin6_addr;
 			hashv = *p6++;
@@ -915,6 +926,7 @@ anAddress *ip;
 			hashv += hashv + *p6++;
 			hashv += hashv + *p6;
 			break;
+#endif
 	}
 	hashv %= ARES_CACSIZE;
 	return (hashv);

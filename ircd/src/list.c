@@ -18,6 +18,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <limits.h>
+
 #include "struct.h"
 #include "common.h"
 #include "sys.h"

@@ -41,8 +41,10 @@ int addr_cmp(const anAddress *a1, const anAddress *a2)
 	{
 		case AF_INET:
 			return bcmp(&a1->in.sin_addr, &a2->in.sin_addr, sizeof(struct in_addr));
+#ifdef AF_INET6
 		case AF_INET6:
 			return bcmp(&a1->in6.sin6_addr, &a2->in6.sin6_addr, sizeof(struct in6_addr));
+#endif
 	}
 	return 1;
 }
@@ -74,6 +76,7 @@ inetntoa(const anAddress *addr)
 			d = (int)*s++;
 			(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
 			break;
+#ifdef AF_INET6
 		case AF_INET6:
 			sprintf(buf, "%x:%x:%x:%x:%x:%x:%x:%x",
 				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[0]),
@@ -85,6 +88,7 @@ inetntoa(const anAddress *addr)
 				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[12]),
 				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[14]));
 			break;
+#endif
 	}
 
 	return buf;

@@ -539,7 +539,9 @@ union Address
 	unsigned short int	addr_family;
 #endif
 	struct sockaddr_in	in;
+#ifdef AF_INET6
 	struct sockaddr_in6	in6;
+#endif
 };
 
 struct HostEnt
