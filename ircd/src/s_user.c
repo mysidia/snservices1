@@ -2381,13 +2381,14 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 				need_start ? "<clients>" : "", i);
 		need_start = 0;
 
-		quoteShowConData(BadPtr(sptr->name) ? "" : sptr->name, buf1, BUFSIZE);
-		quoteShowConData(BadPtr(sptr->username) ? "" : sptr->username, buf2, BUFSIZE);
+		quoteShowConData(BadPtr(ptr->name) ? "" : ptr->name, buf1, BUFSIZE);
+		quoteShowConData(BadPtr(ptr->username) ? "" : ptr->username, buf2, BUFSIZE);
 		quoteShowConData(ptr->sockhost, buf3, BUFSIZE);
 		
 		sendto_one(cptr, ":%s NOTICE %s :<name>%s</name><uid>%s</uid>"
 				 "<sockhost rport=\"%d\" lport=\"%d\">%s</sockhost>", 
-				me.name, sptr->name, buf1, buf2, ptr->port, sptr->acpt->port, buf3);
+				me.name, sptr->name, buf1, buf2, ptr->port,
+			       	ptr->acpt ? ptr->acpt->port : 0, buf3);
 
 		quoteShowConData(BadPtr(ptr->info) ? "" : ptr->info, buf1, BUFSIZE);
 
