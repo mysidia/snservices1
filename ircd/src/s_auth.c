@@ -63,7 +63,7 @@ void	start_auth(aClient *cptr)
                 Debug((DEBUG_ERROR, "Unable to create auth socket for %s:%s",
                         get_client_name(cptr, TRUE),
                         strerror(get_sockerr(cptr))));
-		if (!DoingDNS(cptr) && !DoingSocks(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 		ircstp->is_abad++;
 		return;
@@ -114,7 +114,7 @@ void	start_auth(aClient *cptr)
 		(void)alarm((unsigned)0);
 		(void)close(cptr->authfd);
 		cptr->authfd = -1;
-		if (!DoingDNS(cptr) && !DoingSocks(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 		return;
 	    }
@@ -181,7 +181,7 @@ authsenderr:
                 connotice(cptr, REPORT_ERR_AUTH);
 		cptr->authfd = -1;
 		ClientFlags(cptr) &= ~FLAGS_AUTH;
-		if (!DoingDNS(cptr) && !DoingSocks(cptr))
+		if (!DoingDNS(cptr))
 			SetAccess(cptr);
 	    }
 	ClientFlags(cptr) &= ~FLAGS_WRAUTH;
@@ -253,7 +253,7 @@ void	read_authports(aClient *cptr)
 	cptr->count = 0;
 	cptr->authfd = -1;
 	ClearAuth(cptr);
-	if (!DoingDNS(cptr) && !DoingSocks(cptr))
+	if (!DoingDNS(cptr))
 		SetAccess(cptr);
 	if (len > 0)
 		Debug((DEBUG_INFO,"ident reply: [%s]", cptr->buffer));

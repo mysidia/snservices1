@@ -332,15 +332,13 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
 		    (!IsRegistered(cptr) &&
 		     (currenttime - cptr->firsttime) >= ping)) {
-			if (!IsRegistered(cptr) && (DoingDNS(cptr) || DoingSocks(cptr)))
-			    {
+			if (!IsRegistered(cptr) && DoingDNS(cptr)) {
 				Debug((DEBUG_NOTICE,
 					"DNS timeout %s",
 					get_client_name(cptr,TRUE)));
 				del_queries((char *)cptr);
 				ClearDNS(cptr);
-				if (!DoingSocks(cptr))
-				  SetAccess(cptr);
+				SetAccess(cptr);
 
 				cptr->firsttime = currenttime;
 				cptr->lasttime = currenttime;
@@ -392,26 +390,9 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 			cptr->lasttime = currenttime - ping;
 			sendto_one(cptr, "PING :%s", me.name);
 		    }
-#ifdef NOSPOOF		
-/*		else if (!IsRegistered(cptr) && cptr->nospoof &&
-			!DoingDNS(cptr) && !DoingSocks(cptr) &&
-			!IsNotSpoof(cptr) && !SentNoSpoof(cptr) &&
-			(currenttime - cptr->firsttime) >= 5)
-		{
-			NospoofText(cptr);
-			SetSentNoSpoof(cptr);
-		}*/
-#endif			
 ping_timeout:
 		timeout = LAST_TIME(cptr) + ping;
 		
-		/*if (ping > 20 && !IsRegistered(cptr) &&
-			!DoingDNS(cptr) && !DoingSocks(cptr) &&
-			!IsNotSpoof(cptr) && !SentNoSpoof(cptr)
-                    ) {
-                    timeout = cptr->lasttime + (ping = 20);
-                }*/
-
 		while (timeout <= currenttime)
 			timeout += ping;
 		if (timeout < oldest || !oldest)

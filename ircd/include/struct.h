@@ -236,8 +236,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define FLAGS_ULINE		BIT17 /* User/server is considered U-lined */
 #define FLAGS_SQUIT		BIT18 /* Server has been /squit by an oper */
 #define FLAGS_HURT		BIT19 /* if ->hurt is set, user is silenced */
-#define FLAGS_SOCK		BIT20 /* socks check pending */
-#define FLAGS_SOCKS		FLAGS_SOCK	/* same as flags_sock */
+/* bit20 unused */
 #define FLAGS_GOT_VERSION	BIT21 /* Ctcp version reply received */
 #define FLAGS_GOT_SPOOFCODE	BIT22 /* Is not spoof */
 #define FLAGS_SENT_SPOOFCODE	BIT23
@@ -324,7 +323,6 @@ typedef	enum {
 #define	ClearAuth(x)		((x)->flags &= ~FLAGS_AUTH)
 
 #define	NoNewLine(x)		((x)->flags & FLAGS_NONL)
-#define DoingSocks(x)		(((x)->flags & FLAGS_SOCKS) && (x)->socks && (!((x)->socks->status & SOCK_DONE)) && (!((x)->socks->status & SOCK_DESTROY)) )
 #define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x)) /* Can this client see cool messages? */
 #define IsULine(cptr,sptr)      (ClientFlags(sptr) & FLAGS_ULINE)
 

@@ -1340,30 +1340,11 @@ read_message(time_t delay)
 		for (i = highest_fd ; i >= 0 ; i--) {
 			if (!(cptr = local[i]))
 				continue;
+
 			if (IsLog(cptr))
 				continue;
-			if ((ClientFlags(cptr) & FLAGS_SOCK)
-			    && !DoingSocks(cptr)) {
-				ClientFlags(cptr) &= ~FLAGS_SOCK;
-				if (cptr->socks) {
-                                        if (1)
-					{
-						aSocks *old_ds;
-						old_ds = cptr->socks;
-						if (cptr->socks->fd >= 0) {
-							close(cptr->socks->fd);
-							if (cptr->socks->fd == highest_fd)
-								while(!local[highest_fd])
-									highest_fd--;
-							FD_CLR(cptr->socks->fd, &read_set);
-							FD_CLR(cptr->socks->fd, &write_set);
-							cptr->socks->fd = -1;
-						}
-						cptr->socks = NULL;
-					}
-				}
-			}
-			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
+
+			if (DoingDNS(cptr))
 				continue;
 
 			if (IsMe(cptr) && IsListening(cptr)) {
@@ -2051,8 +2032,7 @@ static	void	do_dns_async()
 		    connotice(cptr, REPORT_DONE_DNS);
 		    del_queries((char *)cptr);
 		    ClearDNS(cptr);
-		    if (!DoingSocks(cptr))
-		      SetAccess(cptr);
+		    SetAccess(cptr);
 		    cptr->hostp = hp;
 		}
 		break;
