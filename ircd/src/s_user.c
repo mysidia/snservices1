@@ -24,9 +24,6 @@
 #include <sys/stat.h>
 
 #include <fcntl.h>
-#ifdef SOL20
-#include <crypt.h>
-#endif
 
 #include "struct.h"
 #include "common.h"
@@ -41,6 +38,10 @@
 #include "ircd/send.h"
 #include "ircd/string.h"
 #include "ircd/md5.h"
+
+#ifdef CRYPTH
+#include <crypt.h>
+#endif
 
 IRCD_SCCSID("@(#)s_user.c	2.74 2/8/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");

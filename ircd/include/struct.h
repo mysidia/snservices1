@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#if !defined(va_copy) && defined(SOL20)
+#if defined(SOL20) || defined(__linux__)
 #define va_copy(dst, src) ((dst) = (src))
 #endif
 

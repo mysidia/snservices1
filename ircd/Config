@@ -16,7 +16,7 @@ OPTIONS=./Options
 AUTO_CONFIG=""
 #
 STDDEFH=undef
-PARAMH=undef
+CRYPTH=undef
 NOINDEX=undef
 NSTRTOKEN=undef
 NSTRTOK=undef
@@ -386,9 +386,25 @@ COMP="$CCPATH $XCFLAGS $TMP -o $EXEC $LIBS"
 #
 
 echo 'Checking out /usr/include'
+
 echo $n "...Looking for stddef.h...$c"
 if [ -r /usr/include/stddef.h ] ; then
         STDDEFH=define
+	echo  'found!'
+else
+	echo 'not found :('
+fi
+
+if [ -z "$cc" ] ; then
+	cc="$LIBS"
+fi
+if [ "$cc" = "none" ] ; then
+	cc=''
+fi
+
+echo $n "...Looking for crypt.h...$c"
+if [ -r /usr/include/crypt.h ] ; then
+        CRYPTH=define
 	echo  'found!'
 else
 	echo 'not found :('
@@ -672,11 +688,11 @@ $RM -f $EXEC $TMP $PLATE
 cat > $SETUP  <<__EOF__
 #ifndef __setup_include__
 #define __setup_include__
-#$PARAMH	PARAMH
 #$REDHAT6	REDHAT6
 #$LINUX_GLIBC	LINUX_GLIBC
 /*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
 #$STDDEFH	STDDEFH
+#$CRYPTH	CRYPTH
 #$NOINDEX	NOINDEX
 #$NSTRTOKEN	NEED_STRTOKEN
 #$NSTRTOK	NEED_STRTOK
