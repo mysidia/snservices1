@@ -2276,10 +2276,6 @@ char	*parv[];
 		return 0;
 	    }
 
-#ifdef	V28PlusOnly
-	*buf = '\0';
-#endif
-
 	for (; (name = strtoken(&p, parv[1], ",")); parv[1] = NULL)
 	    {
 		chptr = get_channel(sptr, name, 0);
@@ -2306,16 +2302,10 @@ char	*parv[];
 		/*
 		**  Remove user from the old channel (if any)
 		*/
-#ifdef	V28PlusOnly
-		if (*buf)
-			(void)strcat(buf, ",");
-		(void)strcat(buf, name);
-#else
                 if (parc < 3)
 		  sendto_match_servs(chptr, cptr, PartFmt, parv[0], name);
 		else
 		  sendto_match_servs(chptr, cptr, PartFmt2, parv[0], name, comment);
-#endif
 		if (!(lp->flags & CHFL_ZOMBIE)) {
                 if (parc < 3)
 		  sendto_channel_butserv(chptr, sptr, PartFmt, parv[0], name);
@@ -2329,10 +2319,6 @@ char	*parv[];
                 }
 		remove_user_from_channel(sptr, chptr);
 	    }
-#ifdef	V28PlusOnly
-	if (*buf)
-		sendto_serv_butone(cptr, PartFmt, parv[0], buf);
-#endif
 	return 0;
     }
 

@@ -518,31 +518,20 @@ ping_timeout:
 **	This is called when the commandline is not acceptable.
 **	Give error message and exit without starting anything.
 */
-static	int	bad_command()
+static int
+bad_command(void)
 {
-  (void)printf(
-	 "Usage: ircd %s[-h servername] [-p portnumber] [-x loglevel] [-t]\n",
-#ifdef CMDLINE_CONFIG
-	 "[-f config] "
-#else
-	 ""
-#endif
-	 );
-  (void)printf("Server not started\n\n");
-  return (-1);
+	(void)printf("Usage: ircd [-s][-f] [-x loglevel] [-v]\n");
+	(void)printf("Server not started\n\n");
+	return (-1);
 }
 
-int	main(argc, argv)
-int	argc;
-char	*argv[];
+int
+main(int argc, char **argv)
 {
 	time_t	delay = 0, now;
 	int	portarg = 0;
 	aConfItem *aconf;
-
-#ifdef  FORCE_CORE
-	struct  rlimit corelim;
-#endif
 
         update_time();
 	sbrk0 = (char *)sbrk((size_t)0);

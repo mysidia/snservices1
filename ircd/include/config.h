@@ -189,13 +189,6 @@
 #undef	COMMENT_IS_FILE
 
 
-/* Do these work? I dunno... */
-
-/*
- * NOTE: On some systems, valloc() causes many problems.
- */
-#undef	VALLOC			/* Define this if you have valloc(3) */
-
 /*
  * read/write are restarted after signals defining this 1, gets
  * siginterrupt call compiled, which attempts to remove this
@@ -217,12 +210,6 @@
  */
 
 #define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
-
-/*
- * defining FORCE_CORE will automatically "unlimit core", forcing the
- * server to dump a core file whenever it has a fatal error.  -mlv
- */
-#undef FORCE_CORE
 
 /*
  * Full pathnames and defaults of irc system's support files. Please note that

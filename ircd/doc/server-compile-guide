@@ -1,3 +1,7 @@
+Note that this file is so very out of date that it is more or less useless.
+
+--Skandranon
+
 From: Carlo Kid - Runaway <carlo@sg.tn.tudelft.nl>
 Subject: GUIDE for compiling your server
 To: wastelanders@rush.cc.edu (New Wastelanders MailingList)
@@ -185,11 +189,6 @@ By removing the 'irc' from this line, you stop 'make' from making the client
 as well.
 
 config.h:
-/*
- * NOTE: On some systems, valloc() causes many problems.
- */
-#undef  VALLOC                  /* Define this if you have valloc(3) */
-I never try it, even if I have it.
 
 #define USE_VARARGS
 For defines like this, you best check the online manual if you have them

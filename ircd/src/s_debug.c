@@ -37,9 +37,6 @@ char	serveropts[] = {
 #ifdef	CHROOTDIR
 'c',
 #endif
-#ifdef	CMDLINE_CONFIG
-'C',
-#endif
 #ifdef	DO_ID
 'd',
 #endif
@@ -74,17 +71,11 @@ char	serveropts[] = {
 #ifdef	NPATH
 'N',
 #endif
-#ifdef	VALLOC
-'V',
-#endif
 #ifdef	UNIXPORT
 'X',
 #endif
 #ifdef	USE_SYSLOG
 'Y',
-#endif
-#ifdef	V28PlusOnly
-'8',
 #endif
 '\0'};
 
