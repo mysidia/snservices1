@@ -43,7 +43,7 @@ AC_ARG_ENABLE(hub,
 	AC_DEFINE(HUB))
 AC_ARG_WITH(expat,
 	AC_HELP_STRING([--with-expat=DIR], [Set directory of Expat library]),
-	CFLAGS="-I$withval/include" LDFLAGS="-L$withval/lib")
+	CFLAGS="-I$withval/include $CFLAGS" LDFLAGS="-L$withval/lib $LDFLAGS")
 AC_ARG_WITH(network,
 	AC_HELP_STRING([--with-network=TYPE], [Specify I/O notification mechanism (default is auto)]),
 	socket="$acfunc")
