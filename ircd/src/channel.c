@@ -2085,15 +2085,6 @@ char	*parv[];
 	if (check_registered_user(sptr))
 		return 0;
 
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-	if (MyClient(sptr) && !IsUserVersionKnown(sptr) && parc >= 2) {
-			sendto_one(sptr,
-				":%s %d %s %s :Sorry, cannot join channel. (Client hasn't responded to version check, try typing /join %s  again in a moment)",
-                                   me.name, ERR_CHANNELISFULL, parv[0], parv[1], parv[1]);
-			return 0;
-	}
-#endif
-
 	if (parc < 2 || *parv[1] == '\0')
 	    {
 		sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
@@ -2921,12 +2912,12 @@ char	*parv[];
                     showall = 1;
                     switch (*++name) {
                         case '>':
-                            chantimemin = currenttime - 60 *
+                            chantimemax = currenttime - 60 *
                                           strtol(++name, (char **) 0, 10);
                             break;
 
                         case '<':
-                            chantimemax = currenttime - 60 *
+                            chantimemin = currenttime - 60 *
                                           strtol(++name, (char **) 0, 10);
                             break;
 
@@ -3082,9 +3073,9 @@ int     numsend;
                 continue;
             if (!l->showall && ((chptr->users <= l->usermin) ||
                 ((l->usermax == -1)?0:(chptr->users >= l->usermax)) ||
-                ((chptr->creationtime||1) <= l->chantimemin) ||
+                (chptr->creationtime < l->chantimemin) ||
                 (chptr->topic_time < l->topictimemin) ||
-                (chptr->creationtime >= l->chantimemax) ||
+                (chptr->creationtime > l->chantimemax) ||
                 (chptr->topic_time > l->topictimemax)))
                 continue;
             /* For now, just extend to topics as well. Use patterns starting

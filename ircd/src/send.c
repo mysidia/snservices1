@@ -238,7 +238,7 @@ vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 		i = acptr->from->fd;
 		va_copy(ap2, ap);
 		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
-			vsendto_prefix_one(acptr, from, fmt, ap);
+			vsendto_prefix_one(acptr, from, fmt, ap2);
 			sentalong[i] = 1;
 		} else {
 			/*
@@ -246,7 +246,7 @@ vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 			 * remote link already
 			 */
 			if (sentalong[i] == 0) {
-	  			vsendto_prefix_one(acptr, from, fmt, ap);
+	  			vsendto_prefix_one(acptr, from, fmt, ap2);
 				sentalong[i] = 1;
 			}
 		}
@@ -386,7 +386,7 @@ sendto_serv_butone(aClient *one, char *fmt, ...)
 			continue;
 		if (IsServer(cptr)) {
 			va_copy(ap2, ap);
-			vsendto_one(cptr, fmt, ap);
+			vsendto_one(cptr, fmt, ap2);
 			va_end(ap2);
 		}
 	}
@@ -903,35 +903,6 @@ sendto_umode_except(int flags, int notflags, char *fmt, ...)
 
 			va_copy(ap2, ap);
 			vsendto_one(cptr, nbuf, ap2);
-			va_end(ap2);
-		}
-
-	va_end(ap);
-}
-
-/*
- * Send to local mode +g ops only who are also +o.
- */
-void
-sendto_failops_whoare_opers(char *fmt, ...)
-{
-        va_list ap;
-        va_list ap2;
-        aClient *cptr;
-        int     i;
-        char    nbuf[1024];
-
-        va_start(ap, fmt);
-
-        for (i = 0; i <= highest_fd; i++)
-                if ((cptr = local[i]) && !IsServer(cptr) && !IsMe(cptr) &&
-                    SendFailops(cptr) && OPCangmode(cptr)) {
-                        (void)sprintf(nbuf, ":%s NOTICE %s :*** Global -- ",
-                                        me.name, cptr->name);
-                        (void)strncat(nbuf, fmt, sizeof(nbuf) - strlen(nbuf));
-
-			va_copy(ap2, ap);
-                        vsendto_one(cptr, nbuf, ap2);
 			va_end(ap2);
 		}
 

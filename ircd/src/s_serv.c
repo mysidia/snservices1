@@ -573,10 +573,9 @@ m_server_estab(aClient *cptr)
 	aClient   *acptr;
 	aConfItem *aconf, *bconf;
 	char      *inpath, *host, *s, *encr;
-	int       split, i;
+	int       i;
 
 	inpath = get_client_name(cptr,TRUE); /* "refresh" inpath with host */
-	split = mycmp(cptr->name, cptr->sockhost);
 	host = cptr->name;
 
 	current_load_data.conn_count++;
@@ -723,14 +722,8 @@ m_server_estab(aClient *cptr)
 		if ((aconf = acptr->serv->nline) &&
 		    !match(my_name_for_link(me.name, aconf), cptr->name))
 			continue;
-		if (split) {
-			sendto_one(acptr,":%s SERVER %s 2 :[%s] %s",
-				   me.name, cptr->name,
-				   /*cptr->sockhost*/ inetntoa(&cptr->addr), cptr->info);
-		}
-		else
-			sendto_one(acptr,":%s SERVER %s 2 :%s",
-				   me.name, cptr->name, cptr->info);
+		sendto_one(acptr,":%s SERVER %s 2 :%s",
+			me.name, cptr->name, cptr->info);
 	    }
 
 	/*
@@ -763,17 +756,9 @@ m_server_estab(aClient *cptr)
 			if (match(my_name_for_link(me.name, aconf),
 				    acptr->name) == 0)
 				continue;
-			split = (MyConnect(acptr) &&
-				 mycmp(acptr->name, acptr->sockhost));
-			if (split)
-				sendto_one(cptr, ":%s SERVER %s %d :[%s] %s",
-		   			   acptr->serv->up, acptr->name,
-					   acptr->hopcount+1,
-		   			   acptr->sockhost, acptr->info);
-			else
-				sendto_one(cptr, ":%s SERVER %s %d :%s",
-		   			   acptr->serv->up, acptr->name,
-					   acptr->hopcount+1, acptr->info);
+			sendto_one(cptr, ":%s SERVER %s %d :%s",
+		   		acptr->serv->up, acptr->name,
+				acptr->hopcount+1, acptr->info);
 		    }
 	    }
 
@@ -804,13 +789,6 @@ m_server_estab(aClient *cptr)
 				   acptr->name, acptr->hurt);
 
 			send_user_joins(cptr, acptr);
-		    }
-		else if (IsService(acptr))
-		    {
-			sendto_one(cptr,"NICK %s :%d",
-				   acptr->name, acptr->hopcount + 1);
-			sendto_one(cptr,":%s SERVICE * * :%s",
-				   acptr->name, acptr->info);
 		    }
 	    }
 	/*
@@ -868,51 +846,6 @@ m_info(aClient *cptr, aClient *sptr, int parc, char *parv[])
 }
 
 
-/* Safe_info 
- *
- * Return a "safe" version of the server info reply
- * given a valid `acptr' pointing to a server
- *
- * Safe means: 1. Not null
- *             2. If showIp is 0 then the server's ip address won't
- *                be shown with the info.
- */
-const char* safe_info(int showIp, aClient* acptr)
-{
-	int i, ippfx;
-
-	if (!acptr) {
-		return "*Not On This Net*";
-	}
-	
-	if (!IsServer(acptr) && acptr->info && acptr->info[0])
-		return acptr->info;
-	
-	if (!acptr->info || !acptr->info[0]) {
-		return "(Unknown Location)";
-	}
-
-	if (!showIp && acptr->info[0] == '[') 
-	{
-		for(i = 1, ippfx = 0; acptr->info[i] && (i < 17); i++) {
-			if (acptr->info[i] == ']' && (i >= 7)) {
-				ippfx = 1;
-				break;
-			}
-			
-			if ((acptr->info[i] != '.') && (acptr->info[i] != ':')
-			    && (!isxdigit(acptr->info[i])))
-				break;
-		}
-
-		if (ippfx) {
-			return acptr->info + i + 1;
-		}
-	}
-	
-	return acptr->info;
-}
-
 /*
 ** m_links
 **	parv[0] = sender prefix
@@ -950,7 +883,7 @@ m_links(aClient *cptr, aClient *sptr, int parc, char *parv[])
                
 		sendto_one(sptr, rpl_str(RPL_LINKS),
 			   me.name, parv[0], acptr->name, acptr->serv->up,
-			   acptr->hopcount, safe_info(IsOper(sptr), acptr));
+			   acptr->hopcount, acptr->info);
 	    }
 
 	sendto_one(sptr, rpl_str(RPL_ENDOFLINKS), me.name, parv[0],
@@ -997,7 +930,6 @@ static int report_array[19][3] = {
 		{ CONF_LOCOP,		  RPL_STATSOLINE, 'o'},
 		{ CONF_CRULEALL,	  RPL_STATSDLINE, 'D'},
 		{ CONF_CRULEAUTO,	  RPL_STATSDLINE, 'd'},
-		{ CONF_SERVICE,		  RPL_STATSSLINE, 'S'},
 		{ CONF_UWORLD,		  RPL_STATSULINE, 'U'},
 		{ CONF_MISSING,		  RPL_STATSXLINE, 'X'},
 		{ 0, 0, 0 }
@@ -1332,9 +1264,6 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	case 'd' :
 		report_configured_links(sptr, CONF_CRULE);
 		break;
-	case 'S' : case 's' :
-		report_configured_links(sptr, CONF_SERVICE);
-		break;
 	case 'T' : case 't' :
 		tstats(sptr, parv[0]);
 		break;
@@ -1398,7 +1327,7 @@ m_error(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	** screen otherwise). Pass ERROR's from other sources to
 	** the local operator...
 	*/
-	if (IsPerson(cptr) || IsUnknown(cptr) || IsService(cptr))
+	if (IsPerson(cptr) || IsUnknown(cptr))
 		return 0;
 	if (cptr == sptr) {
 		sendto_serv_butone(&me, ":%s GLOBOPS :ERROR from %s -- %s",
@@ -1856,7 +1785,7 @@ m_gnotice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
 	sendto_serv_butone(IsServer(cptr) ? cptr : NULL, ":%s GNOTICE :%s",
 		 parv[0], message);
-	sendto_failops_whoare_opers("from %s: %s", parv[0], message);
+	sendto_failops("from %s: %s", parv[0], message);
 	return 0;
 }
 
@@ -1888,7 +1817,7 @@ m_globops(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
         sendto_serv_butone(IsServer(cptr) ? cptr : NULL,
                         ":%s GLOBOPS :%s", parv[0], message);
-        sendto_failops_whoare_opers("from %s: %s", parv[0], message);
+        sendto_failops("from %s: %s", parv[0], message);
         return 0;
 }
 
@@ -2199,11 +2128,6 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 					   now - acptr->lasttime);
 			cnt++;
 			break;
-		case STAT_SERVICE:
-			sendto_one(sptr, rpl_str(RPL_TRACESERVICE),
-				   me.name, parv[0], class, name);
-			cnt++;
-			break;
 		case STAT_LOG:
 			sendto_one(sptr, rpl_str(RPL_TRACELOG), me.name,
 				   parv[0], LOGFILE, acptr->port);
@@ -2456,6 +2380,11 @@ int   m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
         aClient  *acptr;
         char  *s, *p, *user;
         char def[2] = "l";
+
+	if (check_registered_user(sptr))
+	{
+		return 0;
+	}
 
         if (parc < 2)
         {

@@ -61,12 +61,6 @@
 #define	ALLOW_MODEHACK	/* enable Modehack operator flag */
 #define SERVICES_NAME	"services.sorcery.net"
 
-/*
- *  URL people denied access as result of open socks server should be sent to
- *  for help
- */
-#define SOCKSFOUND_URL   "http://www.sorcery.net/help/open_socks.html"
-
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the
    *most* CPU time in ircd.  They take more time than a WHOIS *as?f?s?d*.
@@ -508,11 +502,6 @@ error CLIENT_FLOOD undefined
 #endif
 #if (NICKNAMEHISTORYLENGTH < 100)
 #  define NICKNAMEHISTORYLENGTH 100
-#endif
-
-#ifndef SOCKSFOUND_URL
-#error SOCKSFOUND_URL is not defined: Please define in config.h
-error SOCKSFOUND_URL is not defined: Please define in config.h
 #endif
 
 #endif /* __config_include__ */

@@ -364,7 +364,7 @@ struct	Message *mptr;
 			*s++ = '\0';
 #define prevent_dumping(mptr, cptr)                                              \
                i = bufend - ((s) ? s : ch);                                      \
-               if ((mptr->flags & 0x1) && !(IsServer(cptr) || IsService(cptr)))  \
+               if ((mptr->flags & 0x1) && !IsServer(cptr))  \
                        cptr->since += (2 + i / 120);                             
 #if !defined(HASH_MSGTAB)
 		for (; mptr->cmd; mptr++) 
@@ -434,33 +434,6 @@ struct	Message *mptr;
 				    mptr->func != m_heal && mptr->func != m_userhost)*/
 			if (IsPerson(from) && MyConnect(from))
 			{
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-			        if (MyClient(from) && !IsUserVersionKnown(from)
-					&& IsHurt(from)
-					&& !IsAnOper(from)
-					&& mptr->func != m_notice && mptr->func != m_mode 
-                                        && mptr->func != m_mode  && mptr->func != m_ison
-					&& mptr->func != m_join
-					&& mptr->func != m_private
-					&& mptr->func != m_who
-                                        && (mptr->while_hurt < 1 ||
-					mptr->while_hurt > 2)) {
-
-					{
-					   sendto_one(from, ":%s NOTICE %s :Sorry, but your IRC software "
-                                                      "program has not yet reported its version. "
-                                                      "Your request (%s) was not "
-                                                      "processed.",
-                                                       me.name, from->name, 
-                                                       mptr->cmd);
-					   from->since += 3;
-
-					   return 0;
-						
-					}
-        			}
-#endif
-
 				if (mptr->while_hurt < 1 
 				    || ((mptr->while_hurt > 1 && (from->hurt < mptr->while_hurt)))) {
 					if (!IsHurt(from))
@@ -529,7 +502,7 @@ struct	Message *mptr;
 		paramcount = mptr->parameters;
 		i = bufend - ((s) ? s : ch);
 		mptr->bytes += i;
-		if ((mptr->flags & 1) && !(IsServer(cptr) || IsService(cptr)))
+		if ((mptr->flags & 1) && !IsServer(cptr))
 			cptr->since += (2 + i / 120);
 		/* Allow only 1 msg per 2 seconds
 		 * (on average) to prevent dumping.

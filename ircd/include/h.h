@@ -219,9 +219,6 @@ void	off_history(aClient *);
 int	dopacket(aClient *, char *, int);
 void dumpcore(char *msg, ...);
 
-const char* safe_info(int hideIp, aClient* acptr);
-
-
 void	debug(int level, char *form, ...);
 #if defined(DEBUGMODE)
 void	send_usage(aClient *, char *);

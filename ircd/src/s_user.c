@@ -139,8 +139,6 @@ aClient *next_client(aClient *next, char *ch)
 		return next;
 	for ( ; next; next = next->next)
 	{
-		if (IsService(next))
-			continue;
 		if (!match(ch, next->name) || !match(next->name, ch))
 			break;
 	}
@@ -352,8 +350,7 @@ canonize(char *buffer)
 **	   nick from local user or kill him/her...
 */
 
-static int
-register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
+int register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 {
   aConfItem *aconf;
   char *parv[3], *tmpstr;
@@ -568,17 +565,6 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 	  (void)m_lusers(sptr, sptr, 1, parv);
 	  update_load();
 	  (void)m_motd(sptr, sptr, 1, parv);
-
-          if (!IsUserVersionKnown(sptr)) {
-#if defined(REQ_VERSION_RESPONSE)		      
-		  if (!IsHurt(sptr)) {
-			  sptr->hurt = 4;
-			  SetHurt(sptr);
-		  }
-#endif		      
-			
-		  sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
-	  }
 	} else { 
 		update_load();
 		sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
@@ -1265,23 +1251,23 @@ nickkilldone:
 	  if (sptr->nospoof == 0)
 	    sptr->nospoof = 0xdeadbeef;
 
-          if (!IsUserVersionKnown(sptr))
-          {
- 	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
-	  }
-
           NospoofText(cptr);
           SetSentNoSpoof(cptr);
 
 #else
 	  SetNotSpoof(sptr);
-	  SetUserVersionKnown(sptr);
 #endif /* NOSPOOF */
+
+#ifdef NO_VERSION_CHECK
+	SetUserVersionKnown(sptr);
+#else
+	sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
+#endif
 	  
 	  /* This had to be copied here to avoid problems.. */
 	  (void)strcpy(sptr->name, nick);
 
-	  if (sptr->user && IsNotSpoof(sptr))
+	  if (sptr->user && IsNotSpoof(sptr) && IsUserVersionKnown(sptr))
 	  {
 	    /*
 	    ** USER already received, now we have NICK.
@@ -1418,20 +1404,6 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as a silenced user, you may only message an IRC Operator, type /who 0 o for a list.", me.name, parv[0]);
 				continue;
 			}
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-			if (!IsUserVersionKnown(sptr) && acptr != sptr &&
-			    !IsAnOper(acptr) && !IsULine(acptr, acptr) &&
-			    !IsInvisible(acptr)) {
-				sendto_one(sptr, ":%s NOTICE %s :Sorry, but your client "
-                                                 "software has not yet passed the "
-                                                 "version check, you may only "
-                                                 "message an IRC Operator, "
-                                                 "type /who 0 o for a list.",
-                                            me.name, parv[0]);
-				continue;
-			}
-#endif
-
 		      if (sptr->hurt == 3 && !IsULine(acptr, acptr) && IsInvisible(acptr))
 			{
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as an autohurt user, you may send messages only to services.", me.name, parv[0]);
@@ -1670,96 +1642,60 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int
 m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-#if defined(NOSPOOF)
-	if ((!IsRegistered(cptr) || MyClient(sptr))
-	    && (cptr->name[0])
-	    && cptr->nospoof
-	    && (parc > 1)
-	    && (myncmp(parv[1], "Auth-", 5) == 0))
+#if !defined(NO_VERSION_CHECK) || defined(NOSPOOF)
+	if (!IsRegistered(cptr) && cptr->name[0] && cptr->nospoof && (parc == 3))
 	{
-		char version_buf[BUFSIZE];
-		int version_length;
-		
-		if (parc < 3 || BadPtr(parv[1]) || BadPtr(parv[2]))
+		if (BadPtr(parv[1]) || BadPtr(parv[2]))
 			return 0;
-		if (strlen(parv[1]) < 6 || parv[2][0] != '\001')
-			return 0;
-		if (strtoul((parv[1])+5, NULL, 16) != (cptr->nospoof ^ 0xbeefdead))
-			return 0;
-		if (myncmp(parv[2], "\001VERSION ", 9) || strlen(parv[2]) >= 265)
-			return 0;
-		if (!IsRegistered(cptr) && !IsNotSpoof(cptr) && !SentNoSpoof(cptr)) {
-			NospoofText(cptr);
-			SetSentNoSpoof(cptr);
-		}
-		SetUserVersionKnown(cptr);
-#ifdef REQ_VERSION_RESPONSE
-		if (IsRegisteredUser(cptr) && IsHurt(cptr) 
-		    && cptr->hurt == 4) {
-			sendto_serv_butone(sptr, ":%s HURTSET %s -", me.name, sptr->name);
-			remove_hurt(cptr);
-		}
-#endif
 
-		version_length = strlen(parv[2]) - 9;
-
-		if ((version_length > 0) && (version_length < 256)) 
+#ifndef NO_VERSION_CHECK
+		if (!IsUserVersionKnown(cptr)
+			&& (myncmp(parv[1], "Auth-", 5) == 0)
+			&& (strlen(parv[1]) > 5)
+			&& (strtoul((parv[1])+5, NULL, 16) == (cptr->nospoof ^ 0xbeefdead))
+			&& !myncmp(parv[2], "\001VERSION ", 9)
+			&& (strlen(parv[2]) < 265))
 		{
-			strncpyzt(version_buf, parv[2]+9, version_length);
-
-			if (version_buf[version_length - 1] == '\1')
+			char version_buf[BUFSIZE];
+			int version_length = strlen(parv[2]) - 9;
+		
+			if ((version_length > 0) && (version_length < 256)) 
 			{
-				version_buf[version_length - 1] = '\0';
-			}
+				strncpyzt(version_buf, parv[2]+9, version_length);
 
-			if (sptr->user != NULL && 
-				sptr->user->sup_version == NULL)
-			{
-				dup_sup_version(sptr->user, version_buf);
+				if (version_buf[version_length - 1] == '\1')
+				{
+					version_buf[version_length - 1] = '\0';
+				}
+
+				if (sptr->user != NULL && 
+					sptr->user->sup_version == NULL)
+				{
+					dup_sup_version(sptr->user, version_buf);
+				}
+				Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
 			}
-			Debug((DEBUG_NOTICE, "Got version reply: %s", version_buf));
+			SetUserVersionKnown(cptr);
+			if (sptr->user && sptr->name[0] && IsNotSpoof(cptr))
+				return register_user(cptr, sptr, sptr->name,
+					sptr->user->username);
+				
+			return 0;
 		}
-		return 0;
-	}
-
-#ifdef REQ_VERSION_RESPONSE
-	if (MyClient(sptr) && !IsUserVersionKnown(sptr)) {
-		sendto_one(sptr, ":%s NOTICE %s :Sorry, but your IRC software "
-                           "program has not yet reported its version. "
-                           "Your request (NOTICE) was not processed.",
-                            me.name, sptr->name);
-
-		return 0;
-	}
-#else
-	if ( 0 )
-		;	
-#endif	
-	else if (parc >= 2 && !BadPtr(parv[1]) && 
-                 (irc_toupper(parv[1][0]) == 'A') && 
-                 (irc_toupper(parv[1][1]) == 'U') && 
-                 (irc_toupper(parv[1][2]) == 'T') &&
-                 (irc_toupper(parv[1][3]) == 'H') &&
-                 (parv[1][4] == '-'))
-                return 0;
-#endif  /* NOSPOOF */
-
-	if (!IsRegistered(cptr) && (cptr->name[0]) && !IsNotSpoof(cptr))
-	{
-		if (BadPtr(parv[1])) return 0;
-#ifdef NOSPOOF
-		if (strtoul(parv[1], NULL, 16) != cptr->nospoof)
-			goto temp;
-		SetNotSpoof(sptr);
-/*		sptr->nospoof = 0;*/
 #endif
-		if (sptr->user && sptr->name[0])
-			return register_user(cptr, sptr, sptr->name,
-				sptr->user->username);
-		return 0;
-	}
+
 #ifdef NOSPOOF
-	temp:
+		if (!IsNotSpoof(cptr)
+			&& strtoul(parv[1], NULL, 16) == cptr->nospoof)
+		{
+			SetNotSpoof(cptr);
+			if (sptr->user && sptr->name[0] && IsUserVersionKnown(cptr))
+				return register_user(cptr, sptr, sptr->name,
+					sptr->user->username);
+			return 0;
+		}
+#endif
+	}
 #endif
 	return m_message(cptr, sptr, parc, parv, 1);
 }
@@ -1805,20 +1741,12 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	aChannel *chptr, *mychannel;
 	char	*channame = NULL, *s;
 	int	oper = parc > 2 ? (*parv[2] == 'o' ): 0; /* Show OPERS only */
-	int	member, who_opsonly = 0;
+	int	member;
         char everyone[5] = "0";
 
 	if (check_registered_user(sptr))
 		return 0;
-
-	who_opsonly = (IsHurt(sptr) && sptr->hurt);
-
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-	if (!IsAnOper(sptr) && !IsUserVersionKnown(sptr)) 
-		who_opsonly = 1;
-#endif
-	
-	if ( who_opsonly )
+	if (IsHurt(sptr) && sptr->hurt)
 	{
 /*	      if (sptr->hurt == 3)
 		{
@@ -2111,7 +2039,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 			sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
 				   me.name, parv[0], name, user->server,
-				   a2cptr?safe_info(IsOper(sptr), a2cptr):"*Not On This Net*");
+				   a2cptr->info);
 
 			if(IsRegNick(acptr) || IsVerNick(acptr))
 			{
@@ -2142,7 +2070,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				sendto_one(sptr, rpl_str(RPL_WHOISHURT),
 					   me.name, parv[0], name);
 			}
-#if defined(NOSPOOF)
+#ifndef NO_VERSION_CHECK
 			if (acptr->user && MyConnect(acptr) && IsAnOper(sptr)
 			    && !BadPtr(acptr->user->sup_version))
 				sendto_one(sptr, rpl_str(RPL_WHOISVERSION),
@@ -2232,7 +2160,7 @@ int m_user(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 user_finish:
 	strncpyzt(sptr->info, realname, sizeof(sptr->info));
-	if (sptr->name[0] && (IsServer(cptr) ? 1 : IsNotSpoof(sptr)))
+	if (sptr->name[0] && (IsServer(cptr) ? 1 : IsNotSpoof(sptr) && IsUserVersionKnown(sptr)))
 	/* NICK and no-spoof already received, now we have USER... */
 		return register_user(cptr, sptr, sptr->name, username);
 	else
@@ -3333,10 +3261,6 @@ m_nospoof(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (!*sptr->name) return 0;
 	if (BadPtr(parv[1])) goto temp;
 
-	if (!IsUserVersionKnown(cptr) && 0) {
-          return FLUSH_BUFFER;
-	}
-
 	result = strtoul(parv[1], NULL, 16);
 
 	/* Accept code in second parameter (ircserv) */
@@ -3349,7 +3273,7 @@ m_nospoof(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	SetNotSpoof(sptr);
 /*	sptr->nospoof = 0;*/
 
-	if (sptr->user && sptr->name[0])
+	if (sptr->user && sptr->name[0] && IsUserVersionKnown(sptr))
 		return register_user(cptr, sptr, sptr->name,
 			sptr->user->username);
 	return 0;
@@ -3558,7 +3482,7 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 
 #ifdef  FAILOPER_WARN
-		sendto_one(sptr,":%s NOTICE :Your attempt has been logged.",me.name);
+		sendto_one(sptr,":%s NOTICE %s :Your attempt has been logged.",me.name, parv[0]);
 #endif
 		sendto_realops("Failed OPER attempt by %s (%s@%s) using UID %s [NOPASSWORD]",
 			       parv[0], sptr->user->username,
@@ -3964,12 +3888,7 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
        */
       if (!IsAnOper(sptr) && !IsServer(cptr))
       {
-	  if (IsClientF(sptr))
-	    ClearClientF(sptr);
-	  if (IsFloodF(sptr))
-	    ClearFloodF(sptr);
-          if (IsLogMode(sptr))
-            ClearLogMode(sptr);
+		ClientUmode(sptr) &= ~OPER_UMODES;
       }
       /*
        * New oper access flags - Only let them set certian usermodes on
@@ -3978,10 +3897,18 @@ int	m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
        */
       if (MyClient(sptr) && IsAnOper(sptr))
       {
-	  if (!IS_SET(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
-	    ClearClientF(sptr);
-	  if (!IS_SET(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
-	    ClearFloodF(sptr);  
+		if (!IS_SET(setflags, U_CLIENT) && IsClientF(sptr) && !OPCanUModeC(sptr))
+		{
+			ClearClientF(sptr);
+		}
+		if (!IS_SET(setflags, U_FLOOD) && IsFloodF(sptr) && !OPCanUModeF(sptr))
+		{
+			ClearFloodF(sptr);
+		}
+		if (!IS_SET(setflags, U_FAILOP) && SendFailops(sptr) && !OPCangmode(sptr))
+		{
+			ClearFailops(sptr);
+		}
       }
 
       if (!IS_SET(ClientUmode(sptr), U_MASK))

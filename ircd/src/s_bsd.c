@@ -1194,7 +1194,7 @@ fd_set	*rfd;
 	** For server connections, we process as many as we can without
 	** worrying about the time of day or anything :)
 	*/
-	if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr) || IsService(cptr))
+	if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr) || (IsPerson(cptr) && IsOper(cptr)))
 	    {
 		if (length > 0)
 			if ((done = dopacket(cptr, readbuf, length)))
@@ -1230,7 +1230,7 @@ fd_set	*rfd;
 			** If it has become registered as a Service or Server
 			** then skip the per-message parsing below.
 			*/
-			if (IsService(cptr) || IsServer(cptr))
+			if (IsServer(cptr))
 			    {
 				dolen = dbuf_get(&cptr->recvQ, readbuf,
 						 sizeof(readbuf));
@@ -1827,67 +1827,58 @@ static	void	do_dns_async()
 	aConfItem	*aconf;
 	struct	HostEnt	*hp;
 
-	ln.flags = -1;
+	ln.flags = ASYNC_NONE;
 	hp = get_res((char *)&ln);
-	while (hp != NULL)
+	while (ln.flags != ASYNC_NONE)
 	{
-	    Debug((DEBUG_DNS,"%#x = get_res(%d,%#x)", hp, ln.flags, ln.value.cptr));
+		Debug((DEBUG_DNS,"%#x = get_res(%d,%#x)", hp, ln.flags, ln.value.cptr));
 
-	    switch (ln.flags)
-	    {
-	      case ASYNC_NONE :
-		/*
-		 * no reply was processed that was outstanding or had a client
-		 * still waiting.
-		 */
-		break;
-
-	      case ASYNC_CLIENT :
-		if ((cptr = ln.value.cptr))
+		switch (ln.flags)
 		{
-		    connotice(cptr, REPORT_DONE_DNS);
-		    del_queries((char *)cptr);
-		    ClearDNS(cptr);
-		    SetAccess(cptr);
-		    cptr->hostp = hp;
+			case ASYNC_CLIENT:
+				if ((cptr = ln.value.cptr))
+				{
+					if (hp == NULL)
+					{
+						connotice(cptr, REPORT_FAIL_DNS);
+					}
+					else
+					{
+						connotice(cptr, REPORT_DONE_DNS);
+					}
+
+					del_queries((char *)cptr);
+					ClearDNS(cptr);
+					SetAccess(cptr);
+					cptr->hostp = hp;
+				}
+				break;
+
+			case ASYNC_CONNECT:
+				aconf = ln.value.aconf;
+				if (hp && aconf)
+				{
+					bcopy(hp->h_addr, (char *)&aconf->addr,
+						sizeof(anAddress));
+					connect_server(aconf, NULL, hp);
+				}
+				else
+					sendto_ops("Connect to %s failed: host lookup",
+						(aconf) ? aconf->host : "unknown");
+				break;
+
+			case ASYNC_CONF:
+				aconf = ln.value.aconf;
+				if (hp && aconf)
+					bcopy(hp->h_addr, (char *)&aconf->addr,
+						sizeof(anAddress));
+				break;
+
+			default:
+				break;
 		}
-		break;
 
-	      case ASYNC_CONNECT :
-		aconf = ln.value.aconf;
-		if (hp && aconf)
-		{
-		    bcopy(hp->h_addr, (char *)&aconf->addr,
-			  sizeof(anAddress));
-		    (void)connect_server(aconf, NULL, hp);
-		}
-		else
-		  sendto_ops("Connect to %s failed: host lookup",
-			     (aconf) ? aconf->host : "unknown");
-		break;
-
-	      case ASYNC_CONF :
-		aconf = ln.value.aconf;
-		if (hp && aconf)
-		  bcopy(hp->h_addr, (char *)&aconf->addr,
-			sizeof(anAddress));
-		break;
-
-	      case ASYNC_SERVER :
-		cptr = ln.value.cptr;
-		del_queries((char *)cptr);
-		ClearDNS(cptr);
-
-		if (check_server(cptr, hp, NULL, NULL, 1))
-		  (void)exit_client(cptr, cptr, &me, "No Authorization");
-
-		break;
-
-	      default :
-		break;
-	    }
-
-	    ln.flags = -1;
-	    hp = get_res((char *)&ln);
-	} /* while (hp != NULL) */
+		ln.flags = ASYNC_NONE;
+		hp = get_res((char *)&ln);
+	} /* while (ln.flags != ASYNC_NONE) */
 }

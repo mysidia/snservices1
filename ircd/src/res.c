@@ -234,12 +234,6 @@ time_t	now;
 					ClearDNS(cptr);
 					SetAccess(cptr);
 					break;
-				case ASYNC_SERVER :
-					sendto_ops("Host %s unknown", rptr->name);
-					ClearDNS(cptr);
-					if (check_server(cptr, NULL, NULL, NULL, 1))
-					  (void)exit_client(cptr, cptr, &me, "No Permission");
-					break;
 				case ASYNC_CONNECT :
 					sendto_ops("Host %s unknown", rptr->name);
 					break;
@@ -430,7 +424,7 @@ Link	*lp;
 anAddress	*numb;
 ResRQ	*rptr;
 {
-	char	ipbuf[73];
+	char	ipbuf[74];
 	u_char	*cp;
 #ifdef AF_INET6
 	u_char  *cp2;
@@ -454,7 +448,14 @@ ResRQ	*rptr;
 				cp--;
 				cp2++; cp2++; cp2++; cp2++;
 			}
-			sprintf(cp2,"ip6.int.");
+			if (ntohs(*(short int *) &numb->in6.sin6_addr.s6_addr[0]) == 0x3ffe)
+			{
+				sprintf(cp2,"ip6.int.");
+			}
+			else
+			{
+				sprintf(cp2,"ip6.arpa.");
+			}
 			break;
 #endif
 	}
@@ -766,7 +767,7 @@ char	*lp;
 		switch (hptr->rcode)
 		{
 		case NXDOMAIN:
-			h_errno = TRY_AGAIN;
+			h_errno = NO_DATA;
 			break;
 		case SERVFAIL:
 			h_errno = TRY_AGAIN;
@@ -858,11 +859,11 @@ char	*lp;
 
 getres_err:
 	/*
-	 * Reprocess an error if the nameserver didnt tell us to "TRY_AGAIN".
+	 * Reprocess an error if the nameserver told us to "TRY_AGAIN".
 	 */
 	if (rptr)
 	    {
-		if (h_errno != TRY_AGAIN)
+		if (h_errno == TRY_AGAIN)
 		    {
 			/*
 			 * If we havent tried with the default domain and its
@@ -879,7 +880,10 @@ getres_err:
 				resend_query(rptr);
 		    }
 		else if (lp)
+		{
 			bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
+			rem_request(rptr);
+		}
 	    }
 
 	return (struct HostEnt *)NULL;

@@ -225,8 +225,7 @@ static  Numeric local_replies[] = {
 /* 476 */	{ ERR_BADCHANMASK, "%s :Bad Channel Mask" },
 /* 477 */       { ERR_NEEDREGGEDNICK, "%s :You need to identify to a registered nick to "
                                       "join that channel. For help with registering "
-                                      "your nickname, type /msg nickserv@ help register or see "
-				      "http://www.sorcery.net/help/register" },
+                                      "your nickname, type /msg nickserv@ help register" },
 /* 478 */	{ ERR_BANLISTFULL, "%s %s :Channel ban/ignore list is full" },
 /* 481 */	{ ERR_NOPRIVILEGES,
 		":Permission Denied- You're not an IRC operator" },

@@ -707,6 +707,8 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 		sendto_ops("Got signal SIGHUP, reloading ircd conf. file");
 	    }
 
+	close_logs();
+
 	for (i = 0; i <= highest_fd; i++)
 		if ((acptr = local[i]) && !IsMe(acptr))
 		    {
@@ -792,6 +794,7 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 				ClientFlags(acptr) &= ~FLAGS_ULINE;
 		}
 
+	open_logs();
 	return ret;
 }
 
@@ -992,10 +995,6 @@ int 	initconf(int opt)
 			case 'q': /* a server that you don't want in your */
 				  /* network. USE WITH CAUTION! */
 				aconf->status = CONF_QUARANTINED_SERVER;
-				break;
-			case 'S': /* Service. Same semantics as   */
-			case 's': /* CONF_OPERATOR                */
-				aconf->status = CONF_SERVICE;
 				break;
 			case 'U': /* Underworld server, allowed to hack modes */
 			case 'u': /* *Every* server on the net must define the same !!! */
@@ -2124,7 +2123,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                               zapping the command source... */
        if (find_zap(cptr, 0)||find_zap(sptr, 0))
        {
-             sendto_failops_whoare_opers("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
+             sendto_failops("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
              sendto_serv_butone(NULL,":%s GLOBOPS :z:line error: mask=%s parsed=%s I tried to zap cptr", me.name, mask, userhost);
              flush_connections(me.fd);
              (void)rehash(&me, &me, 0);

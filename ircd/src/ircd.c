@@ -45,6 +45,7 @@ aClient me;			/* That's me */
 aClient *client = &me;		/* Pointer to beginning of Client list */
 
 void NospoofText(aClient* acptr);
+int register_user(aClient *cptr, aClient *sptr, char *nick, char *username);
 
 time_t NOW, tm_offset = 0;
 
@@ -263,26 +264,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 {		
 	aClient	*cptr;
 	int	killflag;
-	int	ping = 0, i, rflag = 0;
+	int	ping = 0, i;
 	time_t	oldest = 0, timeout;
-
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-	#define LAST_TIME(xptr)                                          \
-		(!IsRegisteredUser(xptr) ?                               \
-		     ( (xptr)->lasttime )                                \
-		 :                                                       \
-		     ( IsUserVersionKnown((xptr))                        \
-		       ?                                                 \
-			((xptr)->lasttime)                               \
-		       :                                                 \
-                	MIN( (xptr)->firsttime + MAX_NOVERSION_DELAY,    \
-				(xptr)->lasttime )                       \
-		     )                                                   \
-		)
-#else
-	#define LAST_TIME(xptr) \
-		 ((const int)((xptr)->lasttime))
-#endif
 
 #ifdef TIMED_KLINES
 	check_kills = 1;
@@ -297,53 +280,72 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		*/
 		if (ClientFlags(cptr) & FLAGS_DEADSOCKET) {
 			(void)exit_client(cptr, cptr, &me, "Dead socket");
-			 i--;  /* catch remapped descriptors */
+			i--;  /* catch remapped descriptors */
 			continue;
 		}
 
-		if (check_kills)
-			killflag = IsPerson(cptr) ? find_kill(cptr,
-							      conf_target) : 0;
+		if (check_kills && IsPerson(cptr)
+			&& (find_kill(cptr, conf_target) || find_zap(cptr, 1)))
+		{
+			killflag = 1;
+		}
 		else
+		{
 			killflag = 0;
-		if (check_kills && !killflag && IsPerson(cptr))
-			if (find_zap(cptr, 1))
-				killflag = 1;
+		}
+
 		ping = IsRegistered(cptr) ? get_client_ping(cptr) :
 					    CONNECTTIMEOUT;
-		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d r %d a %d",
-		       cptr->name, cptr->status, ping, killflag, rflag,
+		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d a %d",
+		       cptr->name, cptr->status, ping, killflag,
 		       currenttime - cptr->lasttime));
-		/*
-		 * Ok, so goto's are ugly and can be avoided here but this code
-		 * is already indented enough so I think its justified. -avalon
-		 */
-		if (!killflag && !rflag && IsRegistered(cptr) &&
-		    (ping >= currenttime - LAST_TIME(cptr)))
-			goto ping_timeout;
+
+		if (killflag)
+		{
+			sendto_ops("Kill line active for %s",
+				get_client_name(cptr, FALSE));
+			exit_client(cptr, cptr, &me, "User has been banned");
+			i--;  /* catch remapped descriptors */
+		}
+		else if (ping > currenttime - cptr->lasttime)
+		{
+			/*
+			 * Do nothing but skip other checks.
+			 */
+		}
+		else if (!IsRegistered(cptr) && DoingDNS(cptr))
+		{
+			Debug((DEBUG_NOTICE,
+				"DNS timeout %s",
+				get_client_name(cptr,TRUE)));
+			del_queries((char *)cptr);
+			ClearDNS(cptr);
+			SetAccess(cptr);
+
+			cptr->firsttime = currenttime;
+			cptr->lasttime = currenttime;
+			continue;
+		}
+#if !defined(REQ_VERSION_RESPONSE) && !defined(NO_VERSION_CHECK)
+		else if (!IsRegistered(cptr) && IsNotSpoof(cptr)
+			&& !IsUserVersionKnown(cptr)
+			&& cptr->user && cptr->name[0])
+		{
+			SetUserVersionKnown(cptr);
+			register_user(cptr, cptr, cptr->name,
+				cptr->user->username);
+		}
+#endif
 		/*
 		 * If the server hasnt talked to us in 2*ping seconds
 		 * and it has a ping time, then close its connection.
 		 * If the client is a user and a KILL line was found
 		 * to be active, close this connection too.
 		 */
-		if (killflag || rflag ||
-		    ((currenttime - LAST_TIME(cptr)) >= (2 * ping) &&
+		else if (
+		    ((currenttime - cptr->lasttime) >= (2 * ping) &&
 		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
-		    (!IsRegistered(cptr) &&
-		     (currenttime - cptr->firsttime) >= ping)) {
-			if (!IsRegistered(cptr) && DoingDNS(cptr)) {
-				Debug((DEBUG_NOTICE,
-					"DNS timeout %s",
-					get_client_name(cptr,TRUE)));
-				del_queries((char *)cptr);
-				ClearDNS(cptr);
-				SetAccess(cptr);
-
-				cptr->firsttime = currenttime;
-				cptr->lasttime = currenttime;
-				continue;
-			    }
+		    !IsRegistered(cptr)) {
 			if (IsServer(cptr) || IsConnecting(cptr) || IsHandshake(cptr))
 			{
 				sendto_ops("No response from %s, closing link",
@@ -351,31 +353,8 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 				sendto_serv_butone(&me, ":%s GNOTICE :No response from %s, closing link",
 					me.name, get_client_name(cptr, FALSE));
 			}
-			/*
-			 * this is used for KILL lines with time restrictions
-			 * on them - send a messgae to the user being killed
-			 * first.
-			 */
-			if (killflag && IsPerson(cptr))
-				sendto_ops("Kill line active for %s",
-					   get_client_name(cptr, FALSE));
-
-                         if (killflag)
-                                (void)exit_client(cptr, cptr, &me,
-                                  "User has been banned");
-                         else {
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE) 
-				 if (IsRegisteredUser(cptr) &&
-				     !IsUserVersionKnown(cptr) &&
-				     (NOW - cptr->lasttime) < ping) {
-					return FailClientCheck(cptr);
-				 }
-				 else
-#endif					 
-                                (void)exit_client(cptr, cptr, &me,
-                                  "Ping timeout");
-			 }
-			 i--;  /* catch remapped descriptors */
+                        exit_client(cptr, cptr, &me, "Ping timeout");
+			i--;  /* catch remapped descriptors */
 			continue;
 		    }
 		else if (IsRegistered(cptr) && (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
@@ -390,8 +369,7 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 			cptr->lasttime = currenttime - ping;
 			sendto_one(cptr, "PING :%s", me.name);
 		    }
-ping_timeout:
-		timeout = LAST_TIME(cptr) + ping;
+		timeout = cptr->lasttime + ping;
 		
 		while (timeout <= currenttime)
 			timeout += ping;
@@ -411,12 +389,12 @@ ping_timeout:
 **	This is called when the commandline is not acceptable.
 **	Give error message and exit without starting anything.
 */
-static int
+static void
 bad_command(void)
 {
 	(void)printf("Usage: ircd [-sFv] [-f configfile] [-x loglevel]\n");
 	(void)printf("Server not started\n\n");
-	return (-1);
+	exit(-1);
 }
 
 int
@@ -542,15 +520,13 @@ main(int argc, char **argv)
 		exit(-1);
 	}
 
-	open_logs();
-
 	if ((getuid() == 0) || (geteuid() == 0)) {
 		fprintf(stderr,	"ERROR: do not run ircd setuid root.\n");
 		exit(-1);
 	}
 
 	if (argc > 0)
-		return bad_command(); /* This should exit out */
+		bad_command();
 
 	fprintf(stderr, "Cleaning hash tables...");
 	clear_client_hash_table();
@@ -574,6 +550,8 @@ main(int argc, char **argv)
 	(void)init_sys();
 	me.flags = FLAGS_LISTEN;
 	me.fd = -1;
+
+	open_logs();
 
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);

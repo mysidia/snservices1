@@ -22,7 +22,7 @@ CC=danger will robinson
 LINTFLAGS=-hba
 
 OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
-	class.o hash.o ircd.o list.o res.o s_auth.o s_bsd.o s_conf.o \
+	class.o hash.o ircd.o list.o res.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
 	whowas.o userload.o crule.o md5.o help.o version.o \
 	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO)
@@ -123,9 +123,6 @@ res.o: res.c ../include/res.h $(INCLUDES)
 
 s_bsd.o: s_bsd.c ../include/dbuf.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c s_bsd.c
-
-s_auth.o: s_auth.c ../include/dbuf.h $(INCLUDES)
-	$(CC) $(CFLAGS) -c s_auth.c
 
 s_conf.o: s_conf.c ../include/dbuf.h $(INCLUDES)
 	$(CC) $(CFLAGS) -c s_conf.c
