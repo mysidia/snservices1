@@ -507,7 +507,7 @@ cat >$TMP<<__EOF__
 
 int main()
 {
-	_res.retry; return s==s;
+	_res.retry;
 	res_init();
 }
 __EOF__
