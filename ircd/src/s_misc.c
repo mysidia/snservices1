@@ -673,18 +673,13 @@ int remove_hurt(aClient *acptr)
 
 static int slogfiles[LOG_HI+3];
 static char *logfile_n[] = {
-   FNAME_OPERLOG,
-   FNAME_USERLOG,
-    NULL, NULL, NULL, NULL
+	FNAME_OPERLOG,
+	FNAME_USERLOG,
+	NULL,
+	NULL,
+	NULL,
+	NULL
 };
-
-#ifdef O_NONBLOCK
-#define O_NBVAR O_NONBLOCK
-#elif defined(O_NDELAY)
-#define O_NBVAR O_NDELAY
-#else
-#define O_NBVAR
-#endif
 
 void
 open_logs(void)
@@ -700,7 +695,7 @@ open_logs(void)
 			continue;
 		}
 		slogfiles[i] = open(logfile_n[i],
-				    O_WRONLY|O_APPEND|O_NBVAR);    
+				    O_WRONLY | O_APPEND | O_NONBLOCK);
 	}
 #endif
 }

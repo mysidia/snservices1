@@ -38,7 +38,6 @@ NINETNETOF=undef
 STRTOUL=undef
 TMP=/tmp/.Configtmp$$.c
 CCPATH=''
-BLOCKING=''
 SN_MODE='1'
 NETNAME='SorceryNet'
 URL_CONNECTHELP='none'
@@ -484,76 +483,6 @@ else
 fi
 
 #
-# check for non-blocking fd style available..
-#
-echo " "
-echo 'Checking for POSIX/BSD/SYSV non-blocking stuff'
-if [ -f $TMP -o -d $TMP ] ; then
-	$RM -f $TMP
-fi
-cat > $PLATE <<__EOF__
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/file.h>
-#include <signal.h>
-alarmed()
-{
-	exit(1);
-}
-main()
-{
-	char b[12], x[32];
-	int f, l = sizeof(x);
-	f = socket(AF_INET, SOCK_DGRAM, 0);
-	if (f >= 0 && !(fcntl(f, F_SETFL, BLOCKING))) {
-		signal(SIGALRM, alarmed);
-		alarm(3);
-		recvfrom(f, b, 12, 0, x, &l);
-		alarm(0);
-		exit(0);
-	}
-	exit(1);
-}
-__EOF__
-sed -e 's/BLOCKING/O_NONBLOCK/' $PLATE > $TMP
-$COMP >/dev/null 2>&1
-if [ 0 -eq $? ] ; then
-	$EXEC
-fi
-if [ 0 -eq $? ] ; then
-	BLOCK=O_NONBLOCK
-else
-	echo 'O_NONBLOCK not present/working in fcntl.h or sys/ioctl.h'
-	if [ -f $TMP -o -d $TMP ] ; then
-		$RM -f $TMP $EXEC;
-	fi
-	sed -e 's/BLOCKING/O_NDELAY/' $PLATE > $TMP
-	$COMP >/dev/null 2>&1
-	if [ 0 -eq $? ] ; then
-		$EXEC
-	fi
-	if [ 0 -eq $? ] ; then
-		BLOCK=O_NDELAY
-	else
-		echo 'O_NDELAY not present/working in fcntl.h or sys/ioctl.h'
-		if [ -f $TMP -o -d $TMP ] ; then
-			$RM -f $TMP $EXEC;
-		fi
-		sed -e 's/BLOCKING/FIONBIO/' $PLATE > $TMP
-		$COMP >/dev/null 2>&1
-		if [ 0 -eq $? ] ; then
-			echo 'FIONBIO not found!  No option found!'
-			BLOCK=none
-		else
-			BLOCK=FIONBIO
-		fi
-	fi
-fi
-$RM -f $TMP $PLATE $EXEC
-echo "Blocking selected: $BLOCK";
-#
 echo 'Now those strings libraries...hmm...which one is it...'
 cat > $TMP <<__EOF__
 #$STRINGH STRINGH
@@ -800,21 +729,6 @@ echo " "
 #
 #
 #
-echo " "
-echo "Ok, here's your chance...I think you should use $BLOCK, you want"
-echo "which of these ? O_NONBLOCK (POSIX) O_NDELAY (BSD) FIONBIO (SYSV)"
-echo $n "[$BLOCK] -> $c"
-if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-    read cc
-else
-    cc=""
-fi
-if [ "$cc" = "none" ] ; then
-	cc=''
-elif [ -z "$cc" ] ; then
-	cc=$BLOCK
-fi
-BLOCK=$cc
 
 $RM -f $EXEC $TMP $PLATE
 cat > $SETUP  <<__EOF__
@@ -849,13 +763,6 @@ if [ "$BZERO" = "memset" ] ; then
 #define	bcopy(a,b,c)	memcpy(b,a,c)
 #define	bcmp	memcmp
 __EOF__
-fi
-if [ "$BLOCK" = "O_NONBLOCK" ] ; then
-	echo "#define	NBLOCK_POSIX" >> $SETUP
-elif [ "$BLOCK" = "O_NDELAY" ] ; then
-	echo "#define	NBLOCK_BSD" >> $SETUP
-else
-	echo "#define	NBLOCK_SYSV" >> $SETUP
 fi
 echo "#endif" >> $SETUP
 

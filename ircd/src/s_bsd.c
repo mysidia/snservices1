@@ -1076,30 +1076,17 @@ void	set_non_blocking(fd, cptr)
 int	fd;
 aClient *cptr;
 {
-	int	res, nonb = 0;
+	int	res;
 
 	/*
 	** NOTE: consult ALL your relevant manual pages *BEFORE* changing
 	**	 these ioctl's.  There are quite a few variations on them.
 	**	 They are *NOT* all the same. Heed this well. - Avalon.
 	*/
-#ifdef	NBLOCK_POSIX
-	nonb |= O_NONBLOCK;
-#endif
-#ifdef	NBLOCK_BSD
-	nonb |= O_NDELAY;
-#endif
-#ifdef	NBLOCK_SYSV
-	res = 1;
-
-	if (ioctl (fd, FIONBIO, &res) < 0)
-		report_error("ioctl(fd,FIONBIO) failed for %s:%s", cptr);
-#else
 	if ((res = fcntl(fd, F_GETFL, 0)) == -1)
 		report_error("fcntl(fd, F_GETFL) failed for %s:%s",cptr);
-	else if (fcntl(fd, F_SETFL, res | nonb) == -1)
+	else if (fcntl(fd, F_SETFL, res | O_NONBLOCK) == -1)
 		report_error("fcntl(fd, F_SETL, nonb) failed for %s:%s",cptr);
-#endif
 	return;
 }
 
