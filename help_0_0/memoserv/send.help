@@ -1,0 +1,21 @@
+--- SorceryNet Memo Services Help ---
+ 
+ === SEND ===
+  
+     SYNTAX:
+     /MemoServ SEND <nick> <memo>
+ 
+     DESCRIPTION:
+     The SEND command allows you to send a short memo to a specified
+     registered nick or all of the operators in a specified channel.
+     Memos can be up to 350 characters in length.
+  
+     EXAMPLES:
+     To send a memo to Carlfish saying "How's life in the bowl?", 
+     type:
+       /MemoServ send Carlfish How's life in the bowl?
+     To send a memo to all operators in the channel #Help saying 
+     "Hello.", type:
+       /MemoServ send #Help Hello.
+ 
+--- End Of Services Help ---

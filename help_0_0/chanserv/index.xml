@@ -1,0 +1,35 @@
+<help service="chanserv">
+ <topic name="ChanServ" hide="1" />
+ <topic name="chanserv" hide="1">
+  <command>
+
+  <section>
+    ChanServ provides users with the ability to register 
+    channels.  ChanServ allows you to customize your channel 
+    to suit your needs, eliminating the need for a channel bot.
+  </section>
+
+  <section name="Commands" h="u" fmt="pre">
+        REGISTER  - Register a channel
+        IDENTIFY  - Identify yourself as the founder of a channel
+        INFO      - Get information on a registered channel
+        SET       - Change your channel settings
+        LISTOP    - List current channel operators
+        CHANOP    - Modify the channel operator list
+        AKICK     - Modify the channel autokick list
+  </section>
+ 
+  <section name="Other Commands" h="u" fmt="pre">
+        UNBAN     MDEOP     INVITE     TOPICLOCK
+        MLOCK     RESTRICT  ACCESS     OP
+        DEOP      WIPEAK    MKICK      MAOP
+        AOP       MSOP      SOP        MFOUNDER
+  </section>
+
+  <section>
+    Type <b>/ChanServ help &lt;command&gt;</b> for more help with each
+    command. For further assistance with services, /join #Help.
+  </section>
+ </command>
+ </topic>
+</help>

@@ -1,0 +1,18 @@
+--- SorceryNet NickName Services Help ---
+ 
+ === ADDMASK ===
+      
+     SYNTAX:
+     /NickServ ADDMASK
+  
+     DESCRIPTION:
+     The ADDMASK command adds your current user@host mask to the
+     access list of the nickname you are using.  For more help with
+     access lists, please see the help for ACCESS.
+  
+     EXAMPLES:
+     To add your current user@host to the access list of your 
+     current nickname:
+       /NickServ addmask
+ 
+--- End Of Services Help ---

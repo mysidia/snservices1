@@ -1,0 +1,25 @@
+<help service="chanserv">
+ <topic name="QUIET">
+  <command name="SET QUIET">
+    <syntax>
+     /ChanServ SET #&lt;channel&gt; QUIET &lt;ON | OFF&gt;
+    </syntax>
+   
+    <desc>
+     QUIET prevents services from sending a notice to
+     channel ops when a change is made to the configuration
+     the channel. 
+    </desc>
+ 
+    <examples>
+     <ex pre="To turn quiet on in #Sorcery:">
+       /ChanServ SET #Sorcery quiet on
+     </ex>
+
+     <ex pre="To turn quiet off in #Sorcery:">
+       /ChanServ SET #Sorcery quiet off
+     </ex>
+    </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,19 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === SET TERSE ===
+ 
+     SYNTAX:
+     /NickServ SET TERSE <on/off>
+   
+     DESCRIPTION:
+     The NickServ SET TERSE option allows you to control the
+     length of the replies sent back by ChanServ.  When enabled,
+     replies will be shorter and more to the point.
+ 
+     EXAMPLES:
+     To enable terse mode:
+       /NickServ set terse on
+     To disable:
+       /NickServ set terse off
+ 
+--- End Of Services Help ---

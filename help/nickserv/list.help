@@ -1,0 +1,21 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === LIST ===
+ 
+     SYNTAX:
+     /NickServ LIST <nick!user@host>
+   
+     DESCRIPTION:
+     The NickServ LIST command is an IRCop+ only command that
+     is used to recover a list of registered nicknames that
+     match the nick!user@host specified in the command line.
+     Wildcards are allowed in the nick!user@host that you
+     specify.  
+ 
+     EXAMPLES:
+     To retrieve a list of all nicknames starting with Raist:
+       /NickServ list Raist*!*@*
+     To retrieve a list of all nicknames in the *.au domain:
+       /NickServ list *!*@*.au
+ 
+--- End Of Services Help ---

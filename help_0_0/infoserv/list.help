@@ -1,0 +1,17 @@
+--- SorceryNet Information Services Help ---
+ 
+ === LIST ===
+   
+     SYNTAX:
+     /InfoServ LIST    
+  
+     DESCRIPTION:
+     The InfoServ LIST command returns a list of all
+     currently available articles.
+ 
+     EXAMPLES:
+     To retrieve a list of all currently available 
+     articles, type:
+       /InfoServ list
+ 
+--- End Of Services Help ---

@@ -1,0 +1,27 @@
+--- SorceryNet ChanServ Help ---
+  === AOP ===
+  
+     SYNTAX:
+     /ChanServ aop <#channel> <add> <nick> 
+     /ChanServ aop <#channel> <del> <nick> 
+     /ChanServ aop <#channel> <list> 
+ 
+     DESCRIPTION:
+     This command is used to add, delete, and list users with autoop
+     access to a channel.
+
+     Some level of operator access to the channel is required, and
+     modification of the AOP list requires SOP access, see
+     /ChanServ HELP LEVELS for more information.
+          
+     EXAMPLES:
+     To add Milambar to the channel #here, as a autoop
+     /ChanServ AOP #here add Milambar 
+
+     To delete Milambar from the channel #here, as an autoop
+     /ChanServ AOP #here del Milambar 
+
+     To list the autoops on the channel #here
+     /ChanServ AOP #here list 
+  
+--- End of Services Help ---

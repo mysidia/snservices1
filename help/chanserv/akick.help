@@ -1,0 +1,26 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === ADDAK ===
+ 
+     SYNTAX:
+     /ChanServ AKICK <#channel> <list|add|del|wipe>; [<mask>]
+ 
+     DESCRIPTION:
+     AKICK is a command used to maintain channel autokick lists.
+
+     STATUS:
+     This command is provided for compatibility and ease-of-transition
+     purposes only.  It is recommended that you instead use the LISTAK,
+     ADDAK, and DELAK commands to maintain your autokick lists.
+     (see respectively /chanserv help listak, /chanserv help addak,
+      and /chanserv help delak -- for more information)
+
+     EXAMPLES:
+     To autokick the nick Carlton from #Dark:
+       /ChanServ akick #Dark add Carlton!*@* Bad jokes
+     To re-allow the nick Carlton on #Dark:
+       /chanserv akick #dark del Carlton!*@*
+     To list autokicks on #SorceryNet:
+       /chanserv akick #sorcerynet list
+ 
+--- End Of Services Help ---

@@ -1,0 +1,30 @@
+<help service="chanserv">
+ <topic name="LISTOP">
+  <command name="LISTOP">
+   <syntax>
+     /ChanServ LISTOP #&lt;channel&gt; &lt;-n/-l&gt; &lt;nick/level&gt;
+   </syntax>
+
+   <desc>
+     LISTOP lists users with access to the channel. You can 
+     use either -n or -l, but not both.  If you use -l, it
+     will display all ops in the channel with that level.
+     If you use -n, it will show the entry for the nick you
+     specify. You must be an op on the channel in question
+     to use this command.
+   </desc>
+
+   <examples>
+     <ex pre="To list all of the ops on #Sorcery:">
+       /ChanServ listop #sorcery
+     </ex>
+     <ex pre="To find out the op level of Raistlin on #Sorcery:">
+       /ChanServ listop #sorcery -n Raistlin
+     </ex>
+     <ex pre="To list all ops with level 10 access in #Sorcery:">
+       /ChanServ listop #sorcery -l 10
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

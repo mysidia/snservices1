@@ -1,0 +1,20 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === SET EMAIL ===
+ 
+     SYNTAX:
+     /NickServ SET EMAIL <on/off>
+   
+     DESCRIPTION:
+     The NickServ SET EMAIL option allows you to control whether 
+     your email address is visible to the public in your NickServ 
+     information or not. 
+ 
+     EXAMPLES:
+     To set your email address as being visible to everyone:
+       /NickServ set email on
+     To set your email address as being unavailable to the 
+     public:
+       /NickServ set email off
+ 
+--- End Of Services Help ---

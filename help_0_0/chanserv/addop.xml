@@ -1,0 +1,36 @@
+<help service="chanserv">
+ <topic name="ADDOP">
+  <command name="ADDOP">
+   <syntax>
+     /ChanServ addop #&lt;channel> &lt;nickname> &lt;level>
+   </syntax>
+   <desc>
+     ADDOP adds a user to the channel access list.  The level 
+     determines how much access the user has, and their ability 
+     to change channel settings.  If no level is provided, 
+     ChanServ will add the nickname at level 5.
+   </desc>
+ 
+   <section name="LEVELS" fmt="pre">
+     3 Mini-AOP        Gives user +v status when entering the 
+                       channel.
+     5 AOP             User has automatic ops when entering the 
+                       channel.
+     8 Mini-SOP        AOP abilities, and can add Akicks.
+     10 SOP            All level 8 abilities, and can add AOPs.
+     13 Mini-Founder   All level 8 abilities, and can add SOPs.
+     15 Founder        Channel owner.  Can make any changes to 
+                       channel.
+   </section>
+ 
+   <examples>
+     <ex pre="To add deuces to #Sorcery's op list at the default level:">
+       /ChanServ addop #Sorcery deuces
+     </ex>
+     <ex pre="To add Raistlin to #Voyager's op list with Mini-Founder access:">
+       /ChanServ addop #Voyager Raistlin 13
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,17 @@
+--- SorceryNet Operator Services Help ---
+ 
+=== JUPE ===
+    SYNTAX:
+    1:  jupe server.name.goes.here
+ 
+    DESCRIPTION
+    OperServ JUPE adds a fake server onto services so that no
+    Server with that name can connect to the network.
+ 
+    COMMAND DESCRIPTION
+     1: Add a server to be juped
+  
+    NOTE
+    To "un-jupe" a server, simply /squit it
+ 
+--- End Of Services Help ---

@@ -1,0 +1,23 @@
+<help service="chanserv">
+ <topic name="INFO">
+  <command name="INFO">
+   <syntax>
+     /ChanServ INFO #&lt;channel&gt;
+   </syntax>
+
+   <desc>
+     INFO provides channel information. INFO gives the date 
+     the channel was registered, when it was last used, the 
+     founders nickname.  It provides other information such 
+     as the last description, the last topic, and mode lock 
+     settings. 
+   </desc>
+ 
+   <examples>
+     <ex pre="To retrieve the information for #Sorcery:">
+       /ChanServ info #Sorcery
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,18 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === IDENTIFY ===
+  
+     SYNTAX:
+     /NickServ IDENTIFY-MD5
+     /NickServ IDENTIFY-MD5 [<nick>] <hash>
+ 
+     DESCRIPTION:
+     This command is mostly for use by automated scripts, and is not
+     a very effective or easy command for manual use.
+
+     By itself this command requests a cookie for authentication.
+
+     Otherwise, a md5 hash is expected that is formed from:
+                   <nick>:<cookie>:<md5-hashed version of password>
+ 
+--- End Of Services Help ---

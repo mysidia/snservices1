@@ -1,0 +1,21 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === SET KILL ===
+ 
+     SYNTAX:
+     /NickServ SET KILL <on/off>
+   
+     DESCRIPTION:
+     The NickServ SET KILL option is a way to stop other users
+     from being able to use your nickname on SorceryNet.  If a 
+     user tries to use your nickname on SorceryNet, and is not 
+     in your NickServ access list, they will be removed from the
+     network if they fail to identify within 90 seconds. 
+ 
+     EXAMPLES:
+     To turn NickServ kill on:
+       /NickServ set kill on
+     To turn NickServ kill off:
+       /NickServ set kill off
+ 
+--- End Of Services Help ---

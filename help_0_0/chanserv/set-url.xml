@@ -1,0 +1,20 @@
+<help service="chanserv">
+ <topic name="URL">
+  <command name="SET URL">
+   <syntax>
+     /ChanServ SET #&lt;channel&gt; URL &lt;new url&gt;
+   </syntax>
+
+   <desc>
+     URL is used to define a uniform resource locator for a
+     channel.
+   </desc>
+ 
+   <examples>
+     <ex pre="To change or set a url for the channel #Voyager">
+       /ChanServ set #Voyager url http://www.mysite.tld/voyager
+     </ex>
+   </examples>
+   </command>
+ </topic>
+</help>

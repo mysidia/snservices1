@@ -1,0 +1,13 @@
+--- SorceryNet Channel Services Help ---
+ 
+=== ACCESS LEVELS ===
+ 
+     3 Mini-AOP        Gives user +v status when entering the channel.
+     5 AOP             User has automatic ops when entering the channel.
+     8 Mini-SOP        AOP abilities, and can add Akicks.
+    10 SOP             All level 8 abilities, and can add AOPs.
+    13 Mini-Founder    Access determined by founder.
+    15 Founder         Channel owner.  Can make any changes to channel.
+                       Cannot be reset without channel password.
+
+--- End Of Services Help ---

@@ -1,0 +1,21 @@
+--- SorceryNet ChanServ Help ---
+ 
+  === CLEAN ===
+
+     SYNTAX:
+     /ChanServ clean <#channel> 
+  
+     DESCRIPTION:
+     In order to stop people taking over channels by registering expired
+     nicks, when a nick expires, all the ops list entries for it are marked
+     as deactivated. This command searches through the ops list and removes
+     all nicks that are marked as deactivated. Deactivated nicks must be
+     readded by the founder in order to re-enable them. In the case of the
+     founders nick, then the founder needs to id to the channel with the
+     founders password.
+  
+     EXAMPLES:
+     Clean the ops list for #sorcery.
+     /ChanServ CLEAN #sorcery 
+  
+--- End of Services Help ---

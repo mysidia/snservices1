@@ -1,0 +1,20 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === INFO ===
+ 
+     SYNTAX:
+     /NickServ INFO <nickname>
+   
+     DESCRIPTION:
+     The NickServ INFO command is used to retrieve information 
+     NickServ stores about a specified nickname.  If you do
+     not specify a nickname, NickServ will give you information
+     for your current nick.
+  
+     EXAMPLES:
+     To retrieve the information for the nickname Raistlin:
+       /NickServ info Raistlin
+     To retrieve the information for your current nickname:
+       /NickServ info
+ 
+--- End Of Services Help ---

@@ -1,0 +1,25 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === LIST ===
+ 
+     SYNTAX:
+     /ChanServ list <#channel>
+     /ChanServ list -f <nick>
+ 
+     DESCRIPTION:
+     The list command allows you to search the ChanServ database in
+     three ways.
+       - Specific channel name
+       - Partial channel name (using a wildcard)
+       - Founder 
+ 
+     EXAMPLES:
+     To search for the channel #Help, type:
+       /ChanServ list #Help
+     To search for all channel names that contain the word "help",
+     type:
+       /ChanServ list #*help*
+     To search for all channels with the founder nick of HCC, type:
+       /ChanServ list -f HCC
+ 
+--- End Of Services Help ---

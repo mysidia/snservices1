@@ -1,0 +1,21 @@
+<help service="chanserv">
+ <topic name="OP">
+  <command name="OP">
+   <syntax>
+     /ChanServ OP #&lt;channel&gt; &lt;nick&gt;
+   </syntax>
+    
+   <desc>
+     OP gives channel op status, to the designated nickname,
+     in the specified channel.
+   </desc>
+ 
+   <examples>
+     <ex pre="To give Luthien channel op status in #Sorcery:">
+       /ChanServ op #Sorcery Luthien
+     </ex>
+   </examples>
+
+  </command>
+ </topic>
+</help>

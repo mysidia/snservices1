@@ -1,0 +1,30 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === FOUNDER ===
+ 
+     SYNTAX:
+     /msg chanserv FOUNDER <#channel> ADD <nick>
+     /msg chanserv FOUNDER <#channel> DEL <nick | index#>
+     /msg ChanServ FOUNDER <#channel> LIST
+ 
+     DESCRIPTION:
+      This command is used to add, delete, and list channel access
+      users with FOUNDER (level 15) access, see also:
+      /ChanServ HELP LEVELS
+
+     ACCESS:
+      Operators of level founder have full control of the channel
+      op list, they can additionally set channel modelocks,
+      restrict, topiclock levels, and all channel options
+      except the channel password.
+
+      While this level has access equivalent to that of the
+      founder, operators given this access are not considered
+      to be owners of the channel -- ownership of the channel
+      is established only by knowledge of the password.
+
+     EXAMPLES:
+     To grant Joe level 15 (Founder) op status on #sorcery
+       /msg ChanServ founder #sorcery add Joe
+ 
+--- End Of Services Help ---

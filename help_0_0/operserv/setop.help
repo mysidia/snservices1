@@ -1,0 +1,38 @@
+--- SorceryNet Operator Services Help ---
+ 
+ === IGNORE ===
+ 
+     SYNTAX:
+     /OperServ SETOP <nick> [+|-]<flags>
+     /OperServ SETOP ADD <nick>
+     /OperServ SETOP DEL <nick>
+     /OperServ SETOP LIST
+ 
+     DESCRIPTION:
+     OperServ SETOP can be used to give a list of opers with
+     'special flags' for operators who are either services roots
+     or flagged with the 'setop' flag, it can be used to grant
+     and/or revoke certain flags from operators
+
+     Flags:
+         *s                             Can use Setop command
+         *A                (symbolic)   Admin
+         *O                (deprecated) Services Operator
+          o                (set)        Default Operator flags
+          k                             Restricted AutoKill access
+          a                             Override some user restrictions
+         *K                             Unrestricted AutoKill access
+          p                             InfoServ posting ability
+          S                             NickServ Setflag
+         *N                             Banish/Delete nicks
+         *C                             Banish/Delete chans
+         *I                             Set services ignores
+         *G                             Getrealpass command
+         *j                             Jupe command
+         *L                             List
+         *c                             Clone/rule commands
+   
+         * denotes a flag that can be set/cleared only by
+           a services root
+
+--- End Of Services Help ---

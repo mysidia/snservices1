@@ -1,0 +1,21 @@
+--- SorceryNet Memo Services Help ---
+ 
+ === FORWARD ===
+ 
+     SYNTAX:
+     /MemoServ FORWARD <nick> <password>
+ 
+     DESCRIPTION:
+     The MemoServ FORWARD command allows you to forward memos sent
+     to one of your registered nicks to the memobox of another 
+     registered nick. *NOTE* The password used must be the one used
+     to register the nick you want the memos forwarded to.
+ 
+     EXAMPLES:
+     To forward memos sent to you to the nick Niltsiar using the 
+     password GrUmPy type:
+       /MemoServ forward Niltsiar GrUmPy
+     To turn memo fowarding off type:
+       /MemoServ forward
+ 
+--- End Of Services Help ---

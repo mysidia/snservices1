@@ -1,0 +1,22 @@
+--- SorceryNet Operator Services Help ---
+
+ === GRPOP ===
+ 
+     SYNTAX:
+     /OperServ GRPOP [<add|del> <nick>]
+     /OperServ GRPOP list
+ 
+     DESCRIPTION:
+     OperServ GRPOP is cabable of giving a list of the current users
+     on the network who are capable of using getrealpass on a
+     nickname or channel.  If no argument is given, it will assume
+     you want a list of GRP-Ops.
+ 
+     EXAMPLES:
+     To retrieve a list of GRP-Ops:
+       /OperServ grpop
+     To add GRP-Op Slvrchair to the list:
+       /OperServ grpop add Slvrchair
+ 
+--- End Of Services Help ---
+

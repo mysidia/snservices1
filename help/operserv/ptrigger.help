@@ -1,0 +1,24 @@
+This page documents the creation of permanent triggers:
+
+    Firstly, the 'rule' is created with:
+        /operserv clonerule add <mask>
+
+    The mask is of the form <user|*>@<hostmask>
+
+    Then the trigger levels can be set using:
+        /operserv clonerule set <rule> HTRIGGER <value>
+        /operserv clonerule set <rule> UTRIGGER <value>
+
+    If you set the value for HTRIGGER, then that will be the host-level
+    trigger for all u@hosts matching rule: meaning, only <value> clients may
+    signon from that host before firing the clones action or warning.
+
+    If you set the value for UTRIGGER, then that will be the user-level
+    trigger for all u@hosts matching the rule.
+
+    As a general rule, don't set UTRIGGER unless a username is contained
+    in the mask, and NEVER change the HTRIGGER or flags unless a hostname
+    is contained in the mask.
+
+    Other issues regarding the CLONERULE command will be placed in this 
+    file.

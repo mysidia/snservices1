@@ -1,0 +1,24 @@
+<help service="chanserv">
+ <topic name="DESCRIPTION" hide="1" />
+ <topic name="DESC">
+  <command name="DESC">
+
+   <syntax>
+     /ChanServ SET #&lt;channel&gt; DESC &lt;new description&gt;
+   </syntax>
+ 
+   <desc>
+     DESC is used to change the channel description which is
+     set at the time of registration.  Description information 
+     can be viewed using the INFO command. The DESC command is 
+     restricted to those with founder access to the channel.
+   </desc>
+
+   <examples> 
+     <ex pre="Setting a description for the channel #Voyager">
+       /ChanServ set #Voyager desc Voyager's Admin Channel 
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

@@ -1,0 +1,16 @@
+--- SorceryNet Channel Services Help ---
+ 
+=== MODELOCK ===
+    SYNTAX:
+    1:  MODELOCK <channel> <mode>
+      ex.  /msg ChanServ MODELOCK [=]+tn-spk
+
+    DESCRIPTION
+    MODELOCK locks the modes of a channel. The modes will remain
+    set even after the last person leaves the channel.  These
+    locked modes cannot be changed without the proper access
+    level.  Adding a '=' to the beginning of the modelock will
+    totally ignore the previous modelock, rather than the default
+    behavior, which is to toggle the previous modelock's modes.
+  
+--- End Of Services Help ---

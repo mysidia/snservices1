@@ -1,0 +1,19 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === KEEPTOPIC ===
+ 
+     SYNTAX:
+     /ChanServ SET #<channel> KEEPTOPIC <ON/OFF>
+ 
+     DESCRIPTION:
+     KEEPTOPIC sets the topic to sticky. When ON, if the channel 
+     is empty when someone joins, Chanserv will set the last topic 
+     automatically
+ 
+     EXAMPLES:
+     To make the topic on #SorceryNet sticky:
+       /ChanServ set #SorceryNet keeptopic on
+     To turn off the stickiness of the topic on #SorceryNet:
+       /ChanServ set #SorceryNet keeptopic off
+     
+--- End of Services Help ---

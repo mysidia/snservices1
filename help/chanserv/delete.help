@@ -1,0 +1,18 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === DELETE ===
+ 
+     SYNTAX:
+     /ChanServ DELETE #<channel>
+ 
+     DESCRIPTION:
+     The ChanServ DELETE command is a ServOp+ only command that
+     allows you to delete any registered channel from the 
+     ChanServ database.  Extreme care should be taken when using
+     this command.
+ 
+     EXAMPLES:
+     To delete the channel #rm2k:
+       /ChanServ delete #rm2k
+ 
+--- End of Services Help ---

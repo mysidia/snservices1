@@ -1,0 +1,22 @@
+<help service="chanserv">
+ <topic name="FOUNDER">
+  <command name="FOUNDER">
+
+   <syntax>
+     /ChanServ SET #&lt;channel&gt; FOUNDER &lt;password&gt;
+   </syntax>
+ 
+   <desc>
+     FOUNDER allows you to change channel founders.  The new
+     founder is to type the command to gain foundership, using
+     the channel password.
+   </desc>
+
+   <section name="EXAMPLES">
+     For Skandranon to take over as founder of the channel 
+     #Kechara with the password k3ch@r@:
+       /ChanServ set #Kechara founder k3ch@r@
+   </section>
+  </command>
+ </topic>
+</help>

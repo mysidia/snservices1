@@ -1,0 +1,29 @@
+--- SorceryNet Nickname Services Help ---
+ 
+ === SET IPHIDE ===
+ 
+     SYNTAX:
+     /NickServ SET IPHIDE <on/off>
+   
+     DESCRIPTION:
+     The IPHIDE option, when enabled will attempt to hide
+     your hostaddress from other users by setting your usermode
+     +m and causing services to reveal only disguised information.
+
+     This option is to provided only to attempt to bolster security,
+     *NOT* as an aid to abuse, your actual hostname is only protected
+     in a weak manner.
+
+     The +m usermode which can be set at any time by you with
+     /mode <yournick> +m applies similar protection at the
+     IRC level, causing /whois, etc to show only masked data.
+
+     The obvious benefit of a masked host is some small degree
+     of protection against some 'nuking', some 'hacking', and some
+     ip-based denial of service attacks.
+ 
+     EXAMPLES:
+     To turn NickServ hiding/masking on: /NickServ set iphide on
+     To turn NickServ hiding/masking off: /NickServ set iphide off
+ 
+--- End Of Services Help ---

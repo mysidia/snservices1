@@ -1,0 +1,18 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === OPGUARD ===
+    
+     SYNTAX:
+     /ChanServ SET #<channel> OPGUARD <on|off>
+  
+     DESCRIPTION:
+     OPGUARD is a channel setting which only allows users 
+     on the channel Oplist to have Ops.
+ 
+     EXAMPLES:
+     To turn opguard on in channel #Sorcery:
+       /ChanServ set #Sorcery opguard on
+     To turn opguard off in channel #Sorcery:
+       /ChanServ set #Sorcery opguard off
+ 
+--- End of Services Help ---

@@ -1,0 +1,31 @@
+<help service="chanserv">
+ <topic name="AKICK">
+  <command name="AKICK">
+   <syntax>
+     /ChanServ AKICK &lt;#channel> &lt;list|add|del|wipe> [&lt;mask>]
+   </syntax>
+   <desc>
+     AKICK is a command used to maintain channel autokick lists.
+   </desc>
+   <section name="STATUS">
+     This command is provided for compatibility and ease-of-transition
+     purposes only.  It is recommended that you instead use the LISTAK,
+     ADDAK, and DELAK commands to maintain your autokick lists.
+     (see respectively /chanserv help listak, /chanserv help addak,
+      and /chanserv help delak -- for more information)
+   </section>
+
+   <examples>
+     <ex pre="To autokick the nick Carlton from #Dark:">
+       /ChanServ akick #Dark add Carlton!*@* Bad jokes
+     </ex>
+     <ex pre="To re-allow the nick Carlton on #Dark:">
+       /chanserv akick #dark del Carlton!*@*
+     </ex>
+     <ex pre="To list autokicks on #SorceryNet:">
+       /chanserv akick #sorcerynet list
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>

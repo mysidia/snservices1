@@ -1,0 +1,28 @@
+--- SorceryNet Operator Services Help ---
+ 
+ === CLONESET ===
+ 
+     SYNTAX:
+     /OperServ CLONESET <host> <ignore/-ignore/kill/-kill>
+ 
+     DESCRIPTION:
+     The CLONESET command allows you to set how OperServ reacts
+     to clones. OperServ will ignore all clones from a host when
+     IGNORE is set. If KILL is the command set, OperServ will
+     automaticly kill any clone that triggers the clone alert.
+ 
+     See also /OperServ help TRIGGER
+ 
+     EXAMPLES:
+     To set OperServ to ignore all clones from the host flame.org,
+     type:
+       /OperServ cloneset flame.org ignore
+     To remove the clone ignore from flame.org, type:
+       /OperServ cloneset flame.org -ignore
+     To set OperServ to kill any clone from flame.org that triggers
+     the clone alert, type:
+       /OperServ cloneset flame.org kill
+     To remove the clone kill from flame.org, type:
+       /OperServ cloneset flame.org -kill
+ 
+--- End Of Services Help ---

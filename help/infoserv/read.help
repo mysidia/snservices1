@@ -1,0 +1,16 @@
+--- SorceryNet Information Services Help ---
+ 
+ === READ ===
+ 
+     SYNTAX:
+     /InfoServ READ <#>
+ 
+     DESCRIPTION:
+     READ will display the article of your choice.
+     Use LIST to see which article you wish to read.
+ 
+     EXAMPLES:
+     To read InfoServ article 3, type:
+       /InfoServ read 3
+ 
+--- End Of Services Help ---

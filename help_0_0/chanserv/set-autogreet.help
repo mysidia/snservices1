@@ -1,0 +1,26 @@
+--- SorceryNet Channel Services Help ---
+ 
+ === AUTOGREET ===
+    
+     SYNTAX:
+     /ChanServ SET #<channel> AUTOGREET <new description>
+     OR
+     /ChanServ SET #<channel> AUTOGREET
+     OR
+     /ChanServ SET #<channel> AUTOGREET *
+    
+     DESCRIPTION:
+     AUTOGREET sets up an automatic message, which ChanServ
+     will send to everyone who joins the channel. The message
+     can be disabled by supplying "*" as the only argument.
+     It can be viewed by either joining the channel, through
+     the INFO command or by not specifying a new message in
+     the command.
+ 
+     EXAMPLES:
+     To change or set an autogreet for the channel #Sorcery
+       /ChanServ set #Sorcery autogreet Hello!
+     To disable the autogreet message for #IRCSkills 
+       /ChanServ set #IRCSkills autogreet *
+
+--- End of Services Help ---

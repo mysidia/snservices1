@@ -1,0 +1,16 @@
+--- SorceryNet Memo Services Help ---
+ 
+ === CLEAN ===
+ 
+     SYNTAX:
+     /MemoServ CLEAN
+ 
+     DESCRIPTION:
+     The MemoServ CLEAN command is used to clear ALL memos which 
+     are marked as deleted from your memobox.
+ 
+     EXAMPLES:
+     To clear all memos marked as deleted from your mailbox:
+       /MemoServ clean
+   
+--- End Of Services Help ---

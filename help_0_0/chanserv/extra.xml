@@ -1,0 +1,21 @@
+<help service="chanserv">
+ <topic>
+  <command>
+   <section>
+    The following are extended services commands and aliases
+    not needed or advised for common use.
+  </section>
+ 
+  <section name="Commands" h="u" fmt="pre">
+        CHANOP    - Maintain channel operator lists
+        AKICK     - Maintain channel autokick lists
+        ID        - alias to the identify command
+  </section>
+
+  <section>
+    Type <b>/ChanServ help &lt;command&gt;</b> for more help with each
+    command. For further assistance with services, /join #Help.
+  </section>
+ </command>
+ </topic>
+</help>

@@ -1,0 +1,30 @@
+<help service="chanserv">
+ <topic name="LIST">
+  <command name="LIST">
+   <syntax>
+     /ChanServ list &lt;#channel&gt;
+     /ChanServ list -f &lt;nick&gt;
+   </syntax>
+
+   <section name="DESCRIPTION" fmt="pre">
+     The list command allows you to search the ChanServ database in
+     three ways.
+       - Specific channel name
+       - Partial channel name (using a wildcard)
+       - Founder 
+   </section>
+
+   <examples>
+     <ex pre="Search for the channel #Help, type:">
+       /ChanServ list #Help
+     </ex>
+     <ex pre="Search for all channel names with the word &quot;help&quot;:">
+       /ChanServ list #*help*
+     </ex>
+     <ex pre="Search for all channels with the founder nick of HCC:">
+       /ChanServ list -f HCC
+     </ex>
+   </examples>
+  </command>
+ </topic>
+</help>
