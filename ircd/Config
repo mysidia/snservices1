@@ -1233,7 +1233,11 @@ while [ -z "$FOO" ] ; do
 cat <<EOF
 ENABLE_IPV6 (NEW) (EXPERIMENTAL)
 
-Support for binding and accepting connections over ipv6 interfaces
+If this option is enabled, then it should be possible to specify
+Ipv6 addresses in M:lines, P:lines, and Z:lines in ircd.conf
+and accept clients over ipv6 address interfaces.
+
+see doc/ipv6.txt for more information
 EOF
 
 	echo $n "[$FOO] -> $c"
