@@ -537,43 +537,6 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	    }
 	}
 
-
-#ifdef                DISALLOW_MIXED_CASE
-      /* check for mixed case usernames, meaning probably hacked   Jon2 3-94
-       */
-#ifdef        IGNORE_CASE_FIRST_CHAR
-      tmpstr = (&username[1]);
-#else
-      tmpstr = (username);
-#endif        /* IGNORE_CASE_FIRST_CHAR */
-      while (*tmpstr && !(lower && upper || special))
-	{
-	  c = *tmpstr;
-	  tmpstr++;
-	  if (islower(c))
-	    {
-	      lower++;
-	      continue; /* bypass rest of tests */
-	    }
-	  if (isupper(c))
-	    {
-	      upper++;
-	      continue;
-	    }
-	  if (c == '-' || c == '_' || c == '.' || isdigit(c))
-	    continue;
-	  special++;
-	}
-      if (lower && upper || special)
-	{
-	  sendto_ops("Invalid username: %s",
-		     get_client_name(sptr,FALSE));
-	  ircstp->is_ref++;
-	  return exit_client(cptr, sptr, sptr , "Invalid username");
-	}
-
-#endif                /* DISALLOW_MIXED_CASE */
-
       if (oldstatus == STAT_MASTER && MyConnect(sptr))
 	(void)m_oper(&me, sptr, 1, parv);
     }

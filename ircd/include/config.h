@@ -154,19 +154,6 @@
 #endif
 
 /*
- * Define this to prevent mixed case userids that clonebots use. However
- * this affects the servers running telclients WLD* FIN*  etc.
- */
-#undef	DISALLOW_MIXED_CASE
-
-/*
- * Define this if you wish to ignore the case of the first character of
- * the user id when disallowing mixed case. This allows PC users to
- * enter the more intuitive first name with the first letter capitalised
- */
-#define	IGNORE_CASE_FIRST_CHAR
-
-/*
  * Define this if you wish to output a *file* to a K lined client rather
  * than the K line comment (the comment field is treated as a filename)
  */
