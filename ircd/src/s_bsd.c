@@ -49,7 +49,6 @@ int gethostname(char *name, int namelen);
 #include "inet.h"
 #include "nameser.h"
 #include "resolv.h"
-#include "sock.h"
 #include "h.h"
 
 #include "ircd/res.h"
@@ -1382,12 +1381,10 @@ fd_set	*rfd;
 /*
  * Check all connections for new connections and input data that is to be
  * processed. Also check for connections with data queued and whether we can
- * write it out.
+ * write it out.  delay must be > 0.
  */
-int	read_message(delay)
-time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
-		* you have to have sleep/wait somewhere else in the code.--msa
-		*/
+int
+read_message(time_t delay)
 {
 	aClient	*cptr;
 	int	nfds;
@@ -1403,27 +1400,25 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 #endif
 	now = NOW;
 
-	for (res = 0;;)
-	    {
+	for (res = 0;;) {
 		FD_ZERO(&read_set);
 		FD_ZERO(&write_set);
 
-		for (i = highest_fd; i >= 0; i--)
-		    {
+		for (i = highest_fd ; i >= 0 ; i--) {
 			if (!(cptr = local[i]))
 				continue;
 			if (IsLog(cptr))
 				continue;
-			if ((ClientFlags(cptr) & FLAGS_SOCK) && !DoingSocks(cptr))
-			{
+			if ((ClientFlags(cptr) & FLAGS_SOCK)
+			    && !DoingSocks(cptr)) {
 				ClientFlags(cptr) &= ~FLAGS_SOCK;
-				if (cptr->socks)
-				{
+				if (cptr->socks) {
 #ifdef ENABLE_SOCKSCHECK
 					if (cptr->socks->status & SOCK_FOUND)
 						found_socks++;
                                         if (cptr->socks->status & SOCK_ERROR)
-                                            if (cptr != &me) sendto_one (cptr, ":%s NOTICE AUTH :" REPORT_ERR_SOCKS "", me.name);
+						if (cptr != &me)
+							sendto_one (cptr, ":%s NOTICE AUTH :" REPORT_ERR_SOCKS "", me.name);
 					if (cptr->socks->status & SOCK_DESTROY)
 #else
                                         if (1)
@@ -1431,8 +1426,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 					{
 						aSocks *old_ds;
 						old_ds = cptr->socks;
-						if (cptr->socks->fd >= 0)
-						{
+						if (cptr->socks->fd >= 0) {
 							close(cptr->socks->fd);
 							if (cptr->socks->fd == highest_fd)
 								while(!local[highest_fd])
@@ -1445,13 +1439,11 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 					}
 
 #ifdef ENABLE_SOCKSCHECK
-                                        if (found_socks && (cptr->socks))
-					{
+                                        if (found_socks && (cptr->socks)) {
 						void ApplySocksFound(aClient *cptr);
 
 						found_socks = 0;
-						if (cptr->socks->fd >= 0)
-						{
+						if (cptr->socks->fd >= 0) {
 							FD_CLR(cptr->socks->fd, &read_set);
 							FD_CLR(cptr->socks->fd, &write_set);
 							closesocket(cptr->socks->fd);
@@ -1469,49 +1461,42 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 				}
 			}
 			if (DoingDNS(cptr) || (ClientFlags(cptr) & FLAGS_SOCK))
-			  continue;
+				continue;
 
-			if (IsMe(cptr) && IsListening(cptr))
-			    {
+			if (IsMe(cptr) && IsListening(cptr)) {
 				FD_SET(i, &read_set);
-			    }
-			else if (!IsMe(cptr))
-			    {
+			} else if (!IsMe(cptr)) {
 				if (DBufLength(&cptr->recvQ) && delay2 > 2)
 					delay2 = 1;
 				if (DBufLength(&cptr->recvQ) < 4088)
 					FD_SET(i, &read_set);
-			    }
+			}
 
 			if (DBufLength(&cptr->sendQ) || IsConnecting(cptr))
 				FD_SET(i, &write_set);
-		    }
+		}
 
-/*               if (me.socks && me.socks->fd >= 0)
-                       FD_SET(me.socks->fd, &read_set);*/
-/*&&&*/
-                do 
-                {
+                do {
 #ifdef ENABLE_SOCKSCHECK			
-                   extern aSocks *socks_list;
-                   aSocks *sItem;
+			extern aSocks *socks_list;
+			aSocks *sItem;
 
-                   for(sItem = socks_list; sItem; sItem = sItem->next) { 
-                       if(sItem->fd < 0)
-                          continue;
-                       if ((sItem->status & SOCK_DONE)) {
-			   sendto_realops("select() -- socks check fd#%d was not closed properly.", sItem->fd);
-                           closesocket(sItem->fd);
-                           sItem->fd = -1;
-                           continue;
-                       }
-                       FD_SET(sItem->fd, &read_set);
-                       if (!IS_SET(sItem->status, SOCK_W))
-                           FD_SET(sItem->fd, &write_set);
-                       FD_SET(sItem->fd, &read_set);
-                   }
+			for (sItem = socks_list ; sItem ; sItem = sItem->next) { 
+				if (sItem->fd < 0)
+					continue;
+				if ((sItem->status & SOCK_DONE)) {
+					sendto_realops("select() -- socks check fd#%d was not closed properly.", sItem->fd);
+					closesocket(sItem->fd);
+					sItem->fd = -1;
+					continue;
+				}
+				FD_SET(sItem->fd, &read_set);
+				if (!IS_SET(sItem->status, SOCK_W))
+					FD_SET(sItem->fd, &write_set);
+				FD_SET(sItem->fd, &read_set);
+			}
 #endif		   
-                } while(0);
+                } while (0);
 
 		if (schecksfd >= 0)
 			FD_SET(schecksfd, &read_set);
@@ -1524,13 +1509,8 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 
 		wait.tv_sec = MIN(delay2, delay);
 		wait.tv_usec = usec;
-#ifdef	HPUX
-		nfds = select(FD_SETSIZE, (int *)&read_set, (int *)&write_set,
-				0, &wait);
-#else
 		nfds = select(FD_SETSIZE, &read_set, &write_set, 0, &wait);
 		update_time();
-#endif
 		if (nfds == -1 && errno == EINTR)
 			return -1;
 		else if (nfds >= 0)
@@ -1538,12 +1518,11 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 		res++;
 		if (res > 5)
 			restart("too many select errors");
-		if (errno != 0)
-		{
-		sleep(10);
-		update_time();
+		if (errno != 0) {
+			sleep(10);
+			update_time();
 		}
-	    }
+	}
 
        if (me.socks && me.socks->fd >= 0 && FD_ISSET(me.socks->fd, &read_set))
        {

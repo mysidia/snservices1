@@ -39,7 +39,6 @@
 #include <sys/un.h>
 #endif
 #include <fcntl.h>
-#include "sock.h"
 #include "h.h"
 
 IRCD_RCSID("$Id$");
