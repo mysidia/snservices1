@@ -609,45 +609,7 @@ else
 	echo "Grmpf...I guess there is a strchr() out there somewhere..."
 fi
 $RM -f $EXEC $TMP
-#
-# getrusage or times ?
-#
-echo $n "One for debugging, mainly, getrusage(2) or times(2)...$c"
-cat > $TMP <<__EOF__
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-main()
-{
-	struct	rusage	rus;
-	(void)getrusage(RUSAGE_SELF, &rus);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -eq 0 ] ; then
-	TIMES=getrusage
-	echo "getrusage()"
-else
-	$RM -f $EXEC $TMP
-	cat > $TMP <<__EOF__
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/times.h>
-main()
-{
-	struct	tms	tmsbuf;
-	(void)times(&tmsbuf);
-}
-__EOF__
-	$COMP >/dev/null 2>&1
-	if [ $? -eq 0 ] ; then
-		TIMES=times
-		echo "times()"
-	else
-		echo "couldn't get either ?!"
-		TIMES=none
-	fi
-fi
+
 #
 # what do we need that isn't here already ?
 #
@@ -885,27 +847,6 @@ elif [ -z "$cc" ] ; then
 fi
 BLOCK=$cc
 
-if [ "$TIMES" = "none" ] ; then
-	echo "I didn't find either getrusage or times earlier...If you do have"
-	echo "either of these, please tell me now."
-else
-	echo "I found $TIMES, out of getrusage and times.  getrusage is"
-	echo "more informative.  If you wish to swap your choice, please"
-	echo "do so now."
-fi
-echo $n "[$TIMES] -> $c"
-if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-    read cc
-else
-    cc=""
-fi
-if [ "$cc" = "none" ] ; then
-	cc=''
-elif [ -z "$cc" ] ; then
-	cc=$TIMES
-fi
-TIMES=$cc
-
 $RM -f $EXEC $TMP $PLATE
 cat > $SETUP  <<__EOF__
 #ifndef __setup_include__
@@ -948,16 +889,6 @@ elif [ "$BLOCK" = "O_NDELAY" ] ; then
 	echo "#define	NBLOCK_BSD" >> $SETUP
 else
 	echo "#define	NBLOCK_SYSV" >> $SETUP
-fi
-if [ "$TIMES" = "times" ] ; then
-	echo "#define	TIMES_2" >> $SETUP
-	echo "#undef	GETRUSAGE_2" >> $SETUP
-elif [ "$TIMES" = "getrusage" ] ; then
-	echo "#undef	TIMES_2" >> $SETUP
-	echo "#define	GETRUSAGE_2" >> $SETUP
-else
-	echo "#undef	TIMES_2" >> $SETUP
-	echo "#undef	GETRUSAGE_2" >> $SETUP
 fi
 echo "#endif" >> $SETUP
 

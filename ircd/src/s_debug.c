@@ -61,16 +61,13 @@ char	serveropts[] = {
 #include "hash.h"
 #include <sys/file.h>
 #include <sys/param.h>
-#ifdef GETRUSAGE_2
-# ifdef SOL20
-#  include <sys/time.h>
-#  ifdef RUSAGEH
-#   include <sys/rusage.h>
-#  endif
+#ifdef SOL20
+# include <sys/time.h>
+# ifdef RUSAGEH
+#  include <sys/rusage.h>
 # endif
-# include <sys/resource.h>
-#else
 #endif
+#include <sys/resource.h>
 #include "h.h"
 
 #ifndef ssize_t
@@ -111,8 +108,6 @@ debug(int level, char *form, ...)
  */
 void	send_usage(aClient *cptr, char *nick)
 {
-
-#ifdef GETRUSAGE_2
 	struct	rusage	rus;
 	time_t	secs, rup;
 #ifdef	hz
@@ -156,37 +151,7 @@ void	send_usage(aClient *cptr, char *nick)
 	sendto_one(cptr, ":%s %d %s :Signals %d Context Vol. %d Invol %d",
 		   me.name, RPL_STATSDEBUG, nick, rus.ru_nsignals,
 		   rus.ru_nvcsw, rus.ru_nivcsw);
-#else
-# ifdef TIMES_2
-	struct	tms	tmsbuf;
-	time_t	secs, mins;
-	int	hzz = 1, ticpermin;
-	int	umin, smin, usec, ssec;
 
-	ticpermin = hzz * 60;
-
-	umin = tmsbuf.tms_utime / ticpermin;
-	usec = (tmsbuf.tms_utime%ticpermin)/(float)hzz;
-	smin = tmsbuf.tms_stime / ticpermin;
-	ssec = (tmsbuf.tms_stime%ticpermin)/(float)hzz;
-	secs = usec + ssec;
-	mins = (secs/60) + umin + smin;
-	secs %= hzz;
-
-	if (times(&tmsbuf) == -1)
-	    {
-		sendto_one(cptr,":%s %d %s :times(2) error: %s.",
-			   me.name, RPL_STATSDEBUG, nick, strerror(errno));
-		return;
-	    }
-	secs = tmsbuf.tms_utime + tmsbuf.tms_stime;
-
-	sendto_one(cptr,
-		   ":%s %d %s :CPU Secs %d:%d User %d:%d System %d:%d",
-		   me.name, RPL_STATSDEBUG, nick, mins, secs, umin, usec,
-		   smin, ssec);
-# endif
-#endif
 	sendto_one(cptr, ":%s %d %s :Reads %d Writes %d",
 		   me.name, RPL_STATSDEBUG, nick, readcalls, writecalls);
 	sendto_one(cptr, ":%s %d %s :DBUF alloc %d blocks %d",
