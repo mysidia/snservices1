@@ -178,12 +178,6 @@ const char* TimeLengthString::asString(char* buf, int len, bool pad,
 
 		if (show_secs == false)
 			showsecs = 0;
-
-		if (showdays && showsecs)
-			showhours = showmins = 1;
-
-		if (showhours && showsecs)
-			showmins = 1;
 	}
 	else
 	{
