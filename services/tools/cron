@@ -1,3 +1,0 @@
-#0 6 * * * (cd /home/sorserv/installed/services;./stats.sh >/dev/null)
-0 18 * * * (cd /home/sorserv/installed/services;./stats.sh >/dev/null)
-#38 9 * * * (cd /home/sorserv/installed/services;./stats.sh >/dev/null) 
