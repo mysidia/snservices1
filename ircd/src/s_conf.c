@@ -322,17 +322,6 @@ aConfItem *find_admin()
 	return (aconf);
 }
 
-aConfItem *find_me()
-{
-	aConfItem *aconf;
-
-	for (aconf = conf; aconf; aconf = aconf->next)
-		if (aconf->status & CONF_ME)
-			break;
-	
-	return (aconf);
-}
-
 /*
  * attach_confs
  *  Attach a CONF line to a client if the name passed matches that for
@@ -509,61 +498,6 @@ aConfItem *find_conf_host(Link *lp, char *host, int statmask)
 }
 
 /*
- * Added for pre-I:Line checking. Skims through the conf lines looking
- * for an I:Line that matches the given mask.
- */
-aConfItem *find_iline_host(char *host)
-{
-    aConfItem *tmp;
-    char	*s;
-
-
-    for (tmp = conf; tmp; tmp = tmp->next) {
-	if (!(tmp->status & CONF_CLIENT))
-	    continue;
-	if (!tmp->host)
-	    return tmp;
-	if ((s=(char *)strchr(tmp->host, '@')) != NULL) {
-	    if (!match(s+1, host))
-		return tmp;
-	}
-	else if (!match(tmp->host, host))
-	    return NULL;	/* This is correct!! */
-    }
-
-    return NULL;
-}
-
-
-
-/*
- * scan I-lines to see if we should look for an open socks
- * server.
- */
-aConfItem *find_socksline_host(char *host)
-{
-    aConfItem *tmp;
-    char	*s;
-
-
-    for (tmp = conf; tmp; tmp = tmp->next) {
-	if (!(tmp->status & CONF_CLIENT))
-	    continue;
-	if (!tmp->host)
-	    return tmp;
-          	if ((*tmp->host == '%') && ((s=(char *)strchr(tmp->host+1, '@')) != NULL))
-                {
-	            if (!match(s+1, host))
-	         	return tmp;
-                }
-
-	else if (!match(tmp->host, host)) return NULL; /* this is correct !! */
-    }
-
-    return NULL;
-}
-
-/*
  * find_conf_ip
  *
  * Find a conf line using the IP# stored in it to search upon.
@@ -591,43 +525,6 @@ aConfItem *find_conf_ip(Link *lp, sock_address *addr, char *user, int statmask)
 			return tmp;
 	    }
 	return NULL;
-}
-
-/*
- * find_conf_entry
- *
- * - looks for a match on all given fields.
- */
-aConfItem *find_conf_entry(aConfItem *aconf, u_int mask)
-{
-	aConfItem *bconf;
-
-	for (bconf = conf, mask &= ~CONF_ILLEGAL; bconf; bconf = bconf->next)
-	    {
-		if (!(bconf->status & mask) || (bconf->port != aconf->port))
-			continue;
-
-		if ((BadPtr(bconf->host) && !BadPtr(aconf->host)) ||
-		    (BadPtr(aconf->host) && !BadPtr(bconf->host)))
-			continue;
-		if (!BadPtr(bconf->host) && mycmp(bconf->host, aconf->host))
-			continue;
-
-		if ((BadPtr(bconf->passwd) && !BadPtr(aconf->passwd)) ||
-		    (BadPtr(aconf->passwd) && !BadPtr(bconf->passwd)))
-			continue;
-		if (!BadPtr(bconf->passwd) &&
-		    mycmp(bconf->passwd, aconf->passwd))
-			continue;
-
-		if ((BadPtr(bconf->name) && !BadPtr(aconf->name)) ||
-		    (BadPtr(aconf->name) && !BadPtr(bconf->name)))
-			continue;
-		if (!BadPtr(bconf->name) && mycmp(bconf->name, aconf->name))
-			continue;
-		break;
-	    }
-	return bconf;
 }
 
 /*
@@ -684,18 +581,18 @@ aConfItem *find_temp_conf_entry(aConfItem *aconf, u_int mask)
 int	rehash(aClient *cptr, aClient *sptr, int sig)
 {
 	aConfItem **tmp = &conf, *tmp2;
-	aClass	*cltmp;
 	aClient	*acptr;
 	int	ret = 0;
 
 	if (sig == 1)
-	    {
+	{
 		sendto_ops("Got signal SIGHUP, reloading ircd conf. file");
-	    }
+	}
 
 	for (acptr = &me; acptr; acptr = acptr->lnext)
+	{
 		if (!IsMe(acptr))
-		    {
+		{
 			/*
 			 * Nullify any references from client structures to
 			 * this host structure which is about to be freed.
@@ -703,56 +600,32 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 			 * this....-avalon
 			 */
 			acptr->hostp = NULL;
-		    }
-	while ((tmp2 = *tmp))
-		if (tmp2->clients || tmp2->status & CONF_LISTEN_PORT)
-		    {
-			/*
-			** Configuration entry is still in use by some
-			** local clients, cannot delete it--mark it so
-			** that it will be deleted when the last client
-			** exits...
-			*/
-			if (!(tmp2->status & (CONF_LISTEN_PORT|CONF_CLIENT)))
-			    {
-				*tmp = tmp2->next;
-				tmp2->next = NULL;
-			    }
-			else
-				tmp = &tmp2->next;
-			tmp2->status |= CONF_ILLEGAL;
-		    }
-		else
-		    {
-			*tmp = tmp2->next;
-			free_conf(tmp2);
-	    	    }
-
-	/*
-	 * We don't delete the class table, rather mark all entries
-	 * for deletion. The table is cleaned up by check_class. - avalon
-	 */
-	for (cltmp = NextClass(FirstClass()); cltmp; cltmp = NextClass(cltmp))
-		MaxLinks(cltmp) = -1;
+		}
+	}
 
 	if (sig != 2)
 		flush_cache();
-	(void) initconf(0);
-	close_listeners();
+	config_read("ircd", configfile);
 
 	/*
-	 * flush out deleted I and P lines although still in use.
+	 * flush out deleted lines although still in use.
 	 */
 	for (tmp = &conf; (tmp2 = *tmp); )
+	{
 		if (!(tmp2->status & CONF_ILLEGAL))
+		{
 			tmp = &tmp2->next;
+		}
 		else
-		    {
+		{
 			*tmp = tmp2->next;
 			tmp2->next = NULL;
 			if (!tmp2->clients)
+			{
 				free_conf(tmp2);
-		    }
+			}
+		}
+	}
 #ifdef HASH_MSGTAB
 	/* rebuild the commands hashtable  */
 	msgtab_buildhash();
@@ -777,17 +650,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 	return ret;
 }
 
-/*
- * openconf
- *
- * returns -1 on any error or else the fd opened from which to read the
- * configuration file from.  This may either be th4 file direct or one end
- * of a pipe from m4.
- */
-int	openconf()
-{
-	return open(configfile, O_RDONLY);
-}
 extern char *getfield();
 
 int oper_access[] = {
@@ -818,393 +680,320 @@ int oper_access[] = {
 	0, 0 };
 
 /*
-** initconf() 
-**    Read configuration file.
-**
-**    returns -1, if file cannot be opened
-**             0, if file opened
-*/
+ * conf_me is called when the global configuration options are changed.
+ */
 
-#define MAXCONFLINKS 150
-
-int 	initconf(int opt)
+static CONF_HANDLER(conf_me)
 {
-	static	char	quotes[9][2] = {{'b', '\b'}, {'f', '\f'}, {'n', '\n'},
-					{'r', '\r'}, {'t', '\t'}, {'v', '\v'},
-					{'\\', '\\'}, { 0, 0}};
-	char	*tmp, *s;
-	int	fd, i;
-	char	line[512], c[80];
-	int	ccount = 0, ncount = 0;
-	aConfItem *aconf = NULL;
-	long int sendq = 0;
+	char	*name = config_get_string(n, "name");
+	char	*info = config_get_string(n, "info");
+	char	*port = config_get_string(n, "port");
 
-	Debug((DEBUG_DEBUG, "initconf(): ircd.conf = %s", configfile));
-	if ((fd = openconf()) == -1)
-	    {
-		return -1;
-	    }
-	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
-	while ((i = dgets(fd, line, sizeof(line) - 1)) > 0)
-	    {
-		line[i] = '\0';
-		if ((tmp = (char *)index(line, '\n')))
-			*tmp = 0;
-		else while(dgets(fd, c, sizeof(c) - 1) > 0)
-			if ((tmp = (char *)index(c, '\n')))
-			    {
-				*tmp = 0;
-				break;
-			    }
-		/*
-		 * Do quoting of characters and # detection.
-		 */
-		for (tmp = line; *tmp; tmp++)
-		    {
-			if (*tmp == '\\')
-			    {
-				for (i = 0; quotes[i][0]; i++)
-					if (quotes[i][0] == *(tmp+1))
-					    {
-						*tmp = quotes[i][1];
-						break;
-					    }
-				if (!quotes[i][0])
-					*tmp = *(tmp+1);
-				if (!*(tmp+1))
-					break;
-				else
-					for (s = tmp ; (*s = *(s+1)) ; s++)
-						;
-			    }
-			else if (*tmp == '#')
-				*tmp = '\0';
-		    }
-		if (!*line || line[0] == '#' || line[0] == '\n' ||
-		    line[0] == ' ' || line[0] == '\t')
-			continue;
-		/* Could we test if it's conf line at all?	-Vesa */
-		if (line[1] != ':')
-		    {
-                        Debug((DEBUG_ERROR, "Bad config line: %s", line));
-                        continue;
-                    }
-		if (aconf)
-			free_conf(aconf);
+	if (name != NULL && me.name[0] == '\0' && name[0])
+	{
+		strncpyzt(me.name, name, sizeof(me.name));
+	}
+	if (info != NULL)
+	{
+		strncpyzt(me.info, info, sizeof(me.info));
+	}
+	if (port != NULL)
+	{
+		portnum = atoi(port);
+	}
+	return CONFIG_OK;
+}
+
+/*
+ * conf_listener is called when a listener is added or removed.
+ */
+
+static CONF_HANDLER(conf_listener)
+{
+	aConfItem	*aconf;
+	aClient	*cptr;
+	char	*tmp;
+
+	if (n->status == CONFIG_NEW)
+	{
+		tmp = config_get_string(n, "address");
+		if (tmp == NULL)
+		{
+			return CONFIG_BAD;
+		}
 		aconf = make_conf();
-
-		tmp = getfield(line);
-		if (!tmp)
-			continue;
-		switch (*tmp)
+		aconf->status = CONF_LISTEN_PORT;
+		aconf->host = irc_strdup(tmp);
+		tmp = config_get_string(n, "port");
+		aconf->port = (tmp == NULL?0:atoi(tmp));
+		tmp = config_get_string(n, "ssl");
+		if (tmp != NULL)
 		{
-			case 'A': /* Name, e-mail address of administrator */
-			case 'a': /* of this server. */
-				aconf->status = CONF_ADMIN;
-				break;
-			case 'C': /* Server where I should try to connect */
-			case 'c': /* in case of lp failures             */
-				ccount++;
-				aconf->status = CONF_CONNECT_SERVER;
-				break;
-		        case 'G':
-			case 'g':
-			  /* General config options */
-			  aconf->status = CONF_CONFIG;
-			  break;
-		        case 'H': /* Hub server line */
-			case 'h':
-				aconf->status = CONF_HUB;
-				break;
-			case 'I': /* Just plain normal irc client trying  */
-			case 'i': /* to connect me */
-				aconf->status = CONF_CLIENT;
-				break;
-			case 'K': /* Kill user line on irc.conf           */
-			case 'k':
-				aconf->status = CONF_KILL;
-				break;
-			case 'W':
-			case 'w':
-				aconf->status = CONF_SUP_ZAP;
-				break;
-			/* Operator. Line should contain at least */
-			/* password and host where connection is  */
-			case 'L': /* guaranteed leaf server */
-			case 'l':
-				aconf->status = CONF_LEAF;
-				break;
-			/* Me. Host field is name used for this host */
-			/* and port number is the number of the port */
-			case 'M':
-			case 'm':
-				aconf->status = CONF_ME;
-				break;
-			case 'N': /* Server where I should NOT try to     */
-			case 'n': /* connect in case of lp failures     */
-				  /* but which tries to connect ME        */
-				++ncount;
-				aconf->status = CONF_NOCONNECT_SERVER;
-				break;
-			case 'O':
-				aconf->status = CONF_OPERATOR;
-				break;
-			/* Local Operator, (limited privs --SRB)
-			 * Not anymore, OperFlag access levels. -Cabal95 */
-			case 'o':
-				aconf->status = CONF_OPERATOR;
-				break;
-			case 'P': /* listen port line */
-			case 'p':
-				aconf->status = CONF_LISTEN_PORT;
-				break;
-			case 'Q': /* reserved nicks */
-				aconf->status = CONF_QUARANTINED_NICK;
-				break;
-			case 'q': /* a server that you don't want in your */
-				  /* network. USE WITH CAUTION! */
-				aconf->status = CONF_QUARANTINED_SERVER;
-				break;
-			case 'S': /* Service. Same semantics as   */
-			case 's': /* CONF_OPERATOR                */
-				aconf->status = CONF_SERVICE;
-				break;
-			case 'U': /* Underworld server, allowed to hack modes */
-			case 'u': /* *Every* server on the net must define the same !!! */
-				aconf->status = CONF_UWORLD;
-				break;
-			case 'Y':
-			case 'y':
-			        aconf->status = CONF_CLASS;
-		        	break;
-			case 'Z':
-			case 'z':
-				aconf->status = CONF_ZAP;
-				break;
-		    default:
-			Debug((DEBUG_ERROR, "Error in config file: %s", line));
-			break;
-		    }
-		if (IsIllegal(aconf))
-			continue;
-
-		for (;;) /* Fake loop, that I can use break here --msa */
-		    {
-			if ((tmp = getfield(NULL)) == NULL)
-				break;
-			aconf->host = irc_strdup(tmp);
-			if ((tmp = getfield(NULL)) == NULL)
-				break;
-			aconf->passwd = irc_strdup(tmp);
-			if ((tmp = getfield(NULL)) == NULL)
-				break;
 			aconf->name = irc_strdup(tmp);
-			if ((tmp = getfield(NULL)) == NULL)
-				break;
-
-			if (aconf->status & CONF_SUP_ZAP) {
-				aconf->string4 = irc_strdup(tmp);
-				if ((tmp = getfield(NULL)) == NULL)
-					break;
-
-				aconf->string5 = irc_strdup(tmp);
-				if ((tmp = getfield(NULL)) == NULL)
-					break;
-
-				aconf->string6 = irc_strdup(tmp);
-				if ((tmp = getfield(NULL)) == NULL)
-					break;
-			}
-			
-			if (aconf->status & CONF_OPS) {
-			  int   *i, flag;
-			  char  *m = "*";
-			  /*
-			   * Now we use access flags to define
-			   * what an operator can do with their O.
-			   */
-			  for (m = (*tmp) ? tmp : m; *m; m++) {
-			    for (i = oper_access; (flag = *i); i += 2)
-			      if (*m == (char)(*(i+1))) {
-				aconf->port |= flag;
-				break;
-			      }
-			  }
-			  if (!(aconf->port&OFLAG_ISGLOBAL))
-				aconf->status = CONF_LOCOP;
-			}
-			else
-				aconf->port = atoi(tmp);
-			if ((tmp = getfield(NULL)) == NULL)
-				break;
-			Class(aconf) = find_class(atoi(tmp));
-			sendq = atoi(tmp);
-			if ((tmp = getfield(NULL)) == NULL)
-			{
-				break;
-			}
-			if (aconf->status & CONF_CONNECT_SERVER)
-			{
-				aconf->string4 = irc_strdup(tmp);
-			}
-		        break;
-		    }
-		       
-		/*
-		** If conf line is a general config, just
-		** see if we recognize the keyword, and set
-		** the appropriate global.  We don't use a "standard"
-		** config link here, because these are things which need
-		** to be tested SO often that a simple global test
-		** is much better!  -Aeto
-		*/
-		if ((aconf->status & CONF_CONFIG) == CONF_CONFIG) {
-			continue;
 		}
+		Class(aconf) = find_class(0);
 
-		/* Check for bad Z-lines masks as they are *very* dangerous
-		   if not correct!!! */
-		if (aconf->status == CONF_ZAP)
-		{
-			char *tempc = aconf->host;
-			if (!tempc)
-			{
-				free_conf(aconf);
-				aconf = NULL;
-				continue;
-			}
+		n->data = add_listener(aconf);
 
-			if (!strchr(tempc, ':')) {
-				for (; *tempc; tempc++)
-					if ((*tempc >= '0') && (*tempc <= '9'))
-						goto zap_safe;
-			}
-			else {
-				for(; *tempc; tempc++) {
-					if (isxdigit(*tempc))
-						goto zap_safe;
-				}
-			}
-			free_conf(aconf);
-			aconf = NULL;
-			continue;
-			zap_safe:;
-		}
-		/*
-                ** If conf line is a class definition, create a class entry
-                ** for it and make the conf_line illegal and delete it.
-                */
-		if (aconf->status & CONF_CLASS)
-		    {
-			add_class(atoi(aconf->host), atoi(aconf->passwd),
-				  atoi(aconf->name), aconf->port,
-				  sendq);
-			continue;
-		    }
-		/*
-                ** associate each conf line with a class by using a pointer
-                ** to the correct class record. -avalon
-                */
-		if (aconf->status & (CONF_CLIENT_MASK|CONF_LISTEN_PORT))
-		    {
-			if (Class(aconf) == 0)
-				Class(aconf) = find_class(0);
-			if (MaxLinks(Class(aconf)) < 0)
-				Class(aconf) = find_class(0);
-		    }
-		if (aconf->status & (CONF_LISTEN_PORT|CONF_CLIENT))
-		    {
-			aConfItem *bconf;
-
-			if ((bconf = find_conf_entry(aconf, aconf->status))) {
-				delist_conf(bconf);
-				bconf->status &= ~CONF_ILLEGAL;
-				if (aconf->status == CONF_CLIENT)
-				    {
-					bconf->class->links -= bconf->clients;
-					bconf->class = aconf->class;
-                                        if (bconf->class)
-					 bconf->class->links += bconf->clients;
-				    }
-				free_conf(aconf);
-				aconf = bconf;
-			    }
-			else if (aconf->host &&
-				 aconf->status == CONF_LISTEN_PORT)
-				(void)add_listener(aconf);
-		    }
-		if (IsCNLine(aconf))
-			if (ncount > MAXCONFLINKS || ccount > MAXCONFLINKS ||
-			    !aconf->host || index(aconf->host, '*') ||
-			     index(aconf->host,'?') || !aconf->name)
-				continue;
-
-		if (aconf->status & (CONF_SERVER_MASK|CONF_LOCOP|CONF_OPERATOR))
-			if (!index(aconf->host, '@') && *aconf->host != '/')
-			    {
-				char	*newhost;
-				int	len = 3;	/* *@\0 = 3 */
-
-				len += strlen(aconf->host);
-				newhost = irc_malloc(len);
-				(void)sprintf(newhost, "*@%s", aconf->host);
-				irc_free(aconf->host);
-				aconf->host = newhost;
-			    }
-		if (IsCNLine(aconf))
-		    {
-			if (BadPtr(aconf->passwd))
-				continue;
-			else
-				(void)lookup_confhost(aconf);
-		    }
-
-		/*
-		** Own port and name cannot be changed after the startup.
-		** (or could be allowed, but only if all links are closed
-		** first).
-		** Configuration info does not override the name and port
-		** if previously defined. Note, that "info"-field can be
-		** changed by "/rehash".
-		*/
-		if (aconf->status == CONF_ME)
-		    {
-			strncpyzt(me.info, aconf->name, sizeof(me.info));
-			if (me.name[0] == '\0' && aconf->host[0])
-				strncpyzt(me.name, aconf->host,
-					  sizeof(me.name));
-
-			if (localaddr != NULL)
-			{
-				address_free(localaddr);
-			}
-			localaddr = address_make(aconf->passwd, 0);
-
-			if (aconf->port > 0)
-				portnum = aconf->port;
-		    }
-		if (aconf->status == CONF_KILL)
-			aconf->tmpconf = KLINE_PERM;
-		(void)collapse(aconf->host);
-		(void)collapse(aconf->name);
-		Debug((DEBUG_NOTICE,
-		      "Read Init: (%d) (%s) (%s) (%s) (%d) (%d)",
-		      aconf->status, aconf->host, aconf->passwd,
-		      aconf->name, aconf->port, Class(aconf)));
 		aconf->next = conf;
 		conf = aconf;
-		aconf = NULL;
-	    }
-	if (aconf) {
-		free_conf(aconf);
-		aconf = NULL;
 	}
-	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
-	(void)close(fd);
-	check_class();
-	nextping = nextconnect = NOW;
-	return 0;
-    }
+	else
+	{
+		cptr = (aClient *) n->data;
+		aconf = cptr->confs->value.aconf;
+		close_connection(cptr);
+		aconf->status = CONF_ILLEGAL;
+	}
+	return CONFIG_OK;
+}
+
+/*
+ * conf_client is called when a client configuration node is added or removed.
+ */
+
+static CONF_HANDLER(conf_client)
+{
+	aConfItem	*aconf;
+	char	*amask, *dmask, *password, *class;
+	if (n->status == CONFIG_NEW)
+	{
+		amask = config_get_string(n, "address-mask");
+		dmask = config_get_string(n, "domain-mask");
+		password = config_get_string(n, "password");
+		class = config_get_string(n, "class");
+
+		if (amask == NULL || dmask == NULL || class == NULL)
+		{
+			return CONFIG_BAD;
+		}
+
+		aconf = make_conf();
+		aconf->status = CONF_CLIENT;
+		aconf->host = irc_strdup(amask);
+		if (password != NULL)
+		{
+			aconf->passwd = irc_strdup(password);
+		}
+		aconf->name = irc_strdup(dmask);
+		Class(aconf) = find_class(class == NULL?0:atoi(class));
+		n->data = aconf;
+		aconf->next = conf;
+		conf = aconf;
+	}
+	else
+	{
+		aconf = n->data;
+		aconf->status = CONF_ILLEGAL;
+	}
+	return CONFIG_OK;
+}
+
+static CONF_HANDLER(conf_server)
+{
+	aConfItem	*aconf, **confs;
+	char	*name, *address, *password, *connect, *class, *hub, *services;
+	char	*ssl;
+	int	i;
+
+	if (n->status == CONFIG_NEW)
+	{
+		name = config_get_string(n, "name");
+		address = config_get_string(n, "address");
+		password = config_get_string(n, "password");
+		connect = config_get_string(n, "connect");
+		class = config_get_string(n, "class");
+		hub = config_get_string(n, "hub");
+		services = config_get_string(n, "services");
+		ssl = config_get_string(n, "ssl");
+
+		if (name == NULL || ((address == NULL || password == NULL || class == NULL) && services == NULL))
+		{
+			return CONFIG_BAD;
+		}
+		confs = irc_malloc(sizeof(aConfItem *) * 4);
+		confs[0] = confs[1] = confs[2] = confs[3] = NULL;
+		if (address != NULL && password != NULL)
+		{
+			aconf = make_conf();
+			aconf->status = CONF_NOCONNECT_SERVER;
+			aconf->host = irc_strdup(address);
+			aconf->passwd = irc_strdup(password);
+			aconf->name = irc_strdup(name);
+			Class(aconf) = find_class(class == NULL?0:atoi(class));
+			lookup_confhost(aconf);
+			aconf->next = conf;
+			conf = aconf;
+			confs[0] = aconf;
+
+			if (connect != NULL && (!strcmp(connect, "yes") || !strcmp(connect, "auto")))
+			{
+				aconf = make_conf();
+				aconf->status = CONF_CONNECT_SERVER;
+				aconf->host = irc_strdup(address);
+				aconf->passwd = irc_strdup(password);
+				aconf->name = irc_strdup(name);
+				if (!strcmp(connect, "auto"))
+				{
+					aconf->port = portnum;
+				}
+				if (ssl != NULL)
+				{
+					aconf->string4 = irc_strdup(ssl);
+				}
+				Class(aconf) = find_class(class == NULL?0:atoi(class));
+				lookup_confhost(aconf);
+				aconf->next = conf;
+				conf = aconf;
+				confs[1] = aconf;
+			}
+			if (hub != NULL && !strcmp(hub, "yes"))
+			{
+				aconf = make_conf();
+				aconf->status = CONF_HUB;
+				aconf->name = irc_strdup(name);
+				aconf->next = conf;
+				conf = aconf;
+				confs[2] = aconf;
+			}
+		}
+		if (services != NULL && !strcmp(services, "yes"))
+		{
+			aconf = make_conf();
+			aconf->status = CONF_UWORLD;
+			aconf->host = irc_strdup(name);
+			aconf->next = conf;
+			conf = aconf;
+			confs[3] = aconf;
+		}
+		n->data = confs;
+	}
+	else
+	{
+		confs = n->data;
+		for (i=0; i<4; i++)
+		{
+			if (confs[i] != NULL)
+			{
+				confs[i]->status = CONF_ILLEGAL;
+			}
+		}		
+	}
+	return CONFIG_OK;
+}
+
+static CONF_HANDLER(conf_class)
+{
+	aClass	*class;
+	char	*name, *pingfreq, *connfreq, *maxconn, *sendqueue;
+
+	if (n->status == CONFIG_NEW)
+	{
+		name = config_get_string(n, "name");
+		if (name == NULL)
+		{
+			return CONFIG_BAD;
+		}
+		pingfreq = config_get_string(n, "ping-frequency");
+		connfreq = config_get_string(n, "connect-frequency");
+		maxconn = config_get_string(n, "max-connections");
+		sendqueue = config_get_string(n, "send-queue");
+		n->data = add_class((name == NULL?0:atoi(name)),
+			(pingfreq == NULL?0:atoi(pingfreq)),
+			(connfreq == NULL?0:atoi(connfreq)),
+			(maxconn == NULL?0:atoi(maxconn)),
+			(sendqueue == NULL?0:atoi(sendqueue)));
+	}
+	else
+	{
+		class = (aClass *) n->data;
+		MaxLinks(class) = -1;
+	}
+	return CONFIG_OK;
+}
+
+static CONF_HANDLER(conf_operator)
+{
+	aConfItem	*aconf;
+	char	*nick, *mask, *password, *class, *flags;
+	int	*i, flag;
+	char	*m = "*";
+
+	if (n->status == CONFIG_NEW)
+	{
+		nick = config_get_string(n, "nick");
+		mask = config_get_string(n, "mask");
+		password = config_get_string(n, "password");
+		class = config_get_string(n, "class");
+		flags = config_get_string(n, "flags");
+
+		if (nick == NULL || mask == NULL || password == NULL)
+		{
+			return CONFIG_BAD;
+		}
+
+		aconf = make_conf();
+		aconf->status = CONF_OPERATOR;
+		aconf->host = irc_strdup(mask);
+		aconf->passwd = irc_strdup(password);
+		aconf->name = irc_strdup(nick);
+		Class(aconf) = find_class(class == NULL?0:atoi(class));
+
+		for (m = (*flags) ? flags : m; *m; m++)
+		{
+			for (i = oper_access; (flag = *i); i += 2)
+			{
+				if (*m == (char)(*(i+1)))
+				{
+					aconf->port |= flag;
+					break;
+				}
+			}
+		}
+		if (!(aconf->port & OFLAG_ISGLOBAL))
+		{
+			aconf->status = CONF_LOCOP;
+		}
+
+		if (!index(aconf->host, '@'))
+		{
+			char	*newhost;
+			int	len = 3;	/* *@\0 = 3 */
+
+			len += strlen(aconf->host);
+			newhost = irc_malloc(len);
+			sprintf(newhost, "*@%s", aconf->host);
+			irc_free(aconf->host);
+			aconf->host = newhost;
+		}
+
+		aconf->next = conf;
+		conf = aconf;
+
+		n->data = aconf;
+	}
+	else
+	{
+		aconf = n->data;
+		aconf->status = CONF_ILLEGAL;		
+	}
+	return CONFIG_OK;
+}
+
+/*
+ * conf_init is called once, at startup, to setup the necessary configuration
+ * monitoring handlers.
+ */
+
+void conf_init()
+{
+	config_monitor("config", conf_me, CONFIG_SINGLE);
+	config_monitor("class", conf_class, CONFIG_LIST);
+	config_monitor("listener", conf_listener, CONFIG_LIST);
+	config_monitor("server", conf_server, CONFIG_LIST);
+	config_monitor("client", conf_client, CONFIG_LIST);
+	config_monitor("operator", conf_operator, CONFIG_LIST);
+}
 
 /*
  * lookup_confhost
@@ -2077,7 +1866,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
              sendto_failops_whoare_opers("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
              sendto_serv_butone(NULL,":%s GLOBOPS :z:line error: mask=%s parsed=%s I tried to zap cptr", me.name, mask, userhost);
              flush_connections(&me);
-             (void)rehash(&me, &me, 0);
+             rehash(&me, &me, 0);
              return 0;
        }
 

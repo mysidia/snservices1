@@ -77,7 +77,7 @@ char	*find_zap(aClient *, int);
 char    *find_sup_zap(aClient *, int);
 int	find_restrict(aClient *);
 int	rehash(aClient *, aClient *, int);
-int	initconf(int);
+void	conf_init();
 aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp);
 
 char	*debugmode, *configfile, *sbrk0;
@@ -92,10 +92,9 @@ void boot_replies(void);
 extern	int	dbufalloc, dbufblocks, debuglevel;
 extern	int	debuglevel, portnum, debugtty, maxusersperchannel;
 extern	int	readcalls, resfd;
-extern	sock_address	*localaddr;
 
 aClient	*add_connection(aClient *, sock *);
-int	add_listener(aConfItem *);
+aClient	*add_listener(aConfItem *);
 void	add_local_domain(char *, int);
 int	check_client(aClient *);
 int	check_server(aClient *, struct HostEnt *, \
@@ -178,7 +177,7 @@ void	add_client_to_list(aClient *);
 void	remove_client_from_list(aClient *);
 void	initlists(void);
 
-void	add_class(int, int, int, int, long);
+aClass	*add_class(int, int, int, int, long);
 void	fix_class(aConfItem *, aConfItem *);
 long	get_sendq(aClient *);
 int	get_con_freq(aClass *);

@@ -30,28 +30,57 @@
  */
 
 /*
- * This is a standard header each of the ircd sources will include, to get
- * rid of the long and identical list of headers in each file.
+ * This header defines the generic configuration functions and structures used
+ * by ircd.
  *
  * $Id$
  */
 
-#ifndef IRCD_H
-#define IRCD_H
+#ifndef CONF_H
+#define CONF_H
 
-#include "socket.h"
-#include "conf.h"
+#define CONF_HANDLER(name) int name(node *n)
 
-#include "common.h"
-#include "struct.h"
-#include "h.h"
-#include "numeric.h"
+typedef struct attribute_t attribute;
+typedef struct node_t node;
+typedef struct monitor_t monitor;
+typedef int (*conf_handler)(node *);
 
-#include "network.h"
+struct attribute_t {
+        char    *name;
+        char    *value;
+        attribute       *next;
+};
 
-#include "ircd/memory.h"
-#include "ircd/string.h"
-#include "ircd/send.h"
-#include "ircd/match.h"
+struct node_t {
+        char    *name;
+        attribute       *attrs;
+        node    *parent;
+        node    *next;
+        node    *children;
+        void    *data;
+	int	status;
+};
+
+struct monitor_t {
+        char    *path;
+        int     type;
+        conf_handler h;
+        monitor *next;
+};
+
+#define CONFIG_NEW	0
+#define CONFIG_OK	1
+#define CONFIG_BAD	2
+
+#define CONFIG_SINGLE	0
+#define CONFIG_LIST	1
+
+char *config_get_attribute(node *n, char *name);
+char *config_get_string(node *root, char *name);
+node *config_get_node(node *root, char *name);
+node *config_get_next_node(node *root, char *name, node *elm);
+int config_read(char *name, char *file);
+void config_monitor(char *path, conf_handler h, int type);
 
 #endif

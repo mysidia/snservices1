@@ -639,24 +639,6 @@ m_server_estab(aClient *cptr)
 			   my_name_for_link(me.name, aconf), 
 			   (me.info[0]) ? (me.info) : "IRCers United");
 	    }
-	else
-	    {
-		s = (char *)index(aconf->host, '@');
-		*s = '\0'; /* should never be NULL */
-		Debug((DEBUG_INFO, "Check Usernames [%s]vs[%s]",
-			aconf->host, cptr->username));
-		if (match(aconf->host, cptr->username))
-		    {
-			*s = '@';
-			ircstp->is_ref++;
-			sendto_ops("Username mismatch [%s]v[%s] : %s",
-				   aconf->host, cptr->username,
-				   get_client_name(cptr, TRUE));
-			sendto_one(cptr, "ERROR :No Username Match");
-			return exit_client(cptr, cptr, cptr, "Bad User");
-		    }
-		*s = '@';
-	    }
 
 	det_confs_butmask(cptr, CONF_LEAF|CONF_HUB|CONF_NOCONNECT_SERVER|CONF_UWORLD);
 	/*

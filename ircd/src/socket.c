@@ -42,10 +42,12 @@
 
 IRCD_RCSID("$Id$");
 
-int _socket_fds = 0;
-sock **fds;
+int	_socket_fds = 0;
+sock	**fds;
+sock_address	*local = NULL;
+sock_address	*local6 = NULL;
 #ifdef HAVE_SSL
-SSL_CTX *ctx;
+SSL_CTX	*ctx = NULL;
 #endif
 
 #ifdef SOL20
@@ -53,6 +55,79 @@ struct sockaddr_storage
 {
 	char	dummy[128];
 };
+#endif
+
+/*
+ * conf_fds is called when the configured maximum number of filedescriptors is
+ * changed.
+ */
+
+static CONF_HANDLER(conf_fds)
+{
+	return CONFIG_OK;
+}
+
+/*
+ * conf_address is called when default source address for IPv4 is changed.
+ */
+
+static CONF_HANDLER(conf_address)
+{
+	char	*s = config_get_string(n, NULL);
+	if (s == NULL)
+	{
+		return CONFIG_BAD;
+	}
+	if (local != NULL)
+	{
+		address_free(local);
+	}
+	local = address_make(s, 0);
+	return CONFIG_OK;
+}
+
+/*
+ * conf_address6 is called when default source address for IPv6 is changed.
+ */
+
+static CONF_HANDLER(conf_address6)
+{
+	char	*s = config_get_string(n, NULL);
+	if (s == NULL)
+	{
+		return CONFIG_BAD;
+	}
+	if (local6 != NULL)
+	{
+		address_free(local);
+	}
+	local6 = address_make(s, 0);
+	return CONFIG_OK;
+}
+
+#ifdef HAVE_SSL
+/*
+ * conf_ssl is called when the SSL configuration is changed.
+ */
+
+static CONF_HANDLER(conf_ssl)
+{
+	char	*cert = config_get_string(n, "certificate");
+	char	*key = config_get_string(n, "key");
+	if (cert == NULL || key == NULL)
+	{
+		return CONFIG_BAD;
+	}
+	if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_PEM) != 1)
+	{
+		return CONFIG_BAD;
+	}
+	if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_PEM) <= 0)
+	{
+		return CONFIG_BAD; 
+	}
+	return CONFIG_OK;
+}
 #endif
 
 /* 
@@ -85,6 +160,9 @@ int socket_init(int maxfds)
 	{
 		return -1;
 	}
+	config_monitor("network/maxfds", conf_fds, CONFIG_SINGLE);
+	config_monitor("network/address", conf_address, CONFIG_SINGLE);
+	config_monitor("network/address6", conf_address6, CONFIG_SINGLE);
 #ifdef HAVE_SSL
 	SSL_load_error_strings();
 	SSLeay_add_ssl_algorithms();
@@ -93,18 +171,7 @@ int socket_init(int maxfds)
 	{
 		return 0;
 	}
-	if (SSL_CTX_use_certificate_file(ctx, "ircd.cert", SSL_FILETYPE_PEM) != 1)
-	{
-		SSL_CTX_free(ctx);
-		ctx = NULL;
-		return 0;
-	}
-	if (SSL_CTX_use_PrivateKey_file(ctx, "ircd.key", SSL_FILETYPE_PEM) <= 0)
-	{
-		SSL_CTX_free(ctx);
-		ctx = NULL;
-		return 0;
-	}
+	config_monitor("network/ssl", conf_ssl, CONFIG_SINGLE);
 #endif
 	return 0;
 }
@@ -279,7 +346,21 @@ sock *socket_connect(sock_address *src, sock_address *dst, int flags)
 		return NULL;
 	}
 	fcntl(s->fd, F_SETFL, O_NONBLOCK);
-	if (src)
+	if (src == NULL)
+	{
+		switch (dst->addr->sa_family)
+		{
+			case AF_INET:
+				src = local;
+				break;
+#ifdef AF_INET6
+			case AF_INET6:
+				src = local6;
+				break;
+#endif
+		}
+	}
+	if (src != NULL)
 	{
 		if (bind(s->fd, src->addr, src->len))
 		{
@@ -287,8 +368,6 @@ sock *socket_connect(sock_address *src, sock_address *dst, int flags)
 			_socket_free(s);
 			return NULL;
 		}
-
-		s->laddr = address_copy(src);
 	}
 	if (connect(s->fd, dst->addr, dst->len) && errno != EINPROGRESS)
 	{
@@ -297,19 +376,16 @@ sock *socket_connect(sock_address *src, sock_address *dst, int flags)
 		return NULL;
 	}
 	s->raddr = address_copy(dst);
-	if (!src)
+	if (getsockname(s->fd, (struct sockaddr *) &ss, &ss_len))
 	{
-		if (getsockname(s->fd, (struct sockaddr *) &ss, &ss_len))
-		{
-			close(s->fd);
-			_socket_free(s);
-			return NULL;
-		}
-		sa.addr = (struct sockaddr *) &ss;
-		sa.len = ss_len;
-
-		s->laddr = address_copy(&sa);
+		close(s->fd);
+		_socket_free(s);
+		return NULL;
 	}
+	sa.addr = (struct sockaddr *) &ss;
+	sa.len = ss_len;
+
+	s->laddr = address_copy(&sa);
 	fds[s->fd] = s;
 
 #ifdef HAVE_SSL
@@ -472,7 +548,7 @@ sock *socket_accept(sock *listensock)
  *            occurs.
  */
 
-void socket_monitor(sock *sock, int type, handler handler)
+void socket_monitor(sock *sock, int type, socket_handler handler)
 {
 	if (type & MONITOR_READ)
 	{

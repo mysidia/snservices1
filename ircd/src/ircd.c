@@ -48,7 +48,6 @@ static void setup_signals(void);
 
 char **myargv;
 int portnum = PORTNUM;		/* Default port for outgoing connections */
-sock_address *localaddr = NULL;	/* Default address for outgoing connections */
 char *configfile = CONFIGFILE;	/* Server configuration file */
 int debuglevel = -1;		/* Server debug level */
 int bootopt = BOOT_FORK;	/* Server boot option flags */
@@ -552,11 +551,13 @@ main(int argc, char **argv)
 
 	socket_init(MAXCONNECTIONS);
 	resolver_init();
+	conf_init();
 
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
 #endif
-	if (initconf(bootopt) == -1) {
+	if (config_read("ircd", configfile) != 0)
+	{
 		fprintf(stderr, "error opening ircd config file: %s\n",
 			configfile);
 		Debug((DEBUG_FATAL, "Failed in reading configuration file %s",
