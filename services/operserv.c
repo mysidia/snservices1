@@ -243,9 +243,12 @@ OCMD(os_akill)
 	int i, t, count, akill_type, has_prim = 0;
 	interp::services_cmd_id log_type = OS_AKILL;
 	char akreason[IRCBUF];
+	char keywords[IRCBUF];
+	ak_search_method method = SEARCH_NONE;
 	const char *listProper, *p;
 	flag_t permPrim, perm2;
 	char *from = nick->nick;
+	char *search = NULL;
 #       if AKREASON_LEN >= IRCBUF
 #          error AKREASON_LEN cannot be >= IRCBUF!
            *;
@@ -292,14 +295,60 @@ OCMD(os_akill)
 
 	listProper = aktype_str(akill_type, 0);
 
+	if (!str_cmp(args[1], "list") && numargs > 2) {
+		if (args[2][0] == '-') {
+			switch(args[2][1]) {
+			case 'r':
+				method = SEARCH_REASON;
+
+				memset(keywords, 0, sizeof(keywords));
+				strncpy(keywords, args[3], sizeof(keywords));
+				for (i = 4; i < numargs; i++) {
+				  strcat(keywords, " ");
+				  strcat(keywords, args[i]);
+				}
+
+				search = keywords;
+				break;
+
+			default:
+				sSend(":%s NOTICE %s :Unknown list option",
+				      OperServ, from);
+				return RET_EFAULT;
+			}
+		}
+
+		else if (strchr(args[2], '@')) {
+			method = SEARCH_UMASK;
+			search = args[2];
+		}
+
+		else {
+			sSend(":%s NOTICE %s :Unrecognized search string",
+			      OperServ, from);
+			return RET_EFAULT;
+		}
+	}
+
 	/*
 	 * No subcommand means list, and so does "list"
 	 */
 	if ((numargs < 2) || (!str_cmp(args[1], "list"))) {
-		if (!opFlagged(nick, OVERRIDE))
-			listAkills(from, akill_type);
-		else
-			listAkills(from, 0);
+		if (!opFlagged(nick, OVERRIDE)) {
+			if (numargs > 2)
+				listAkills(from, akill_type, search,
+					   method);
+			else
+				listAkills(from, akill_type, NULL, SEARCH_NONE);
+		}
+
+		else {
+			if (numargs > 2)
+				listAkills(from, 0, search, method);
+			else
+				listAkills(from, 0, NULL, SEARCH_NONE);
+		}
+
 		return RET_OK;
 	}
 

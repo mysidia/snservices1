@@ -78,6 +78,7 @@
 #include "options.h"
 #include "parse.h"
 #include "struct.h"
+#include "operserv.h"
 
 #ifdef USE_SQL
 #include <libpq-fe.h>
@@ -303,7 +304,7 @@ unsigned char *fromBase64(const char *cStr, int *len);
 /*
  * akill.c
  */
-void listAkills(char *from, char type);
+void listAkills(char *from, char type, char *match, ak_search_method method);
 int addakill(long length, char *mask, char *by, char type, char *reason);
 int removeAkill(char *from, char *mask);
 int removeAkillType(char *from, char *mask, int type, int restrict);
