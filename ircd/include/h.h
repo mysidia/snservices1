@@ -41,7 +41,6 @@ void	send_user_joins(aClient *, aClient *);
 void	clean_channelname(char *);
 int	can_send(aClient *, aChannel *);
 int	is_chan_op(aClient *, aChannel *);
-int	is_zombie(aClient *, aChannel *);
 int	has_voice(aClient *, aChannel *);
 int	count_channels(aClient *);
 Link    *is_banned(aClient *, aChannel *, int *);
