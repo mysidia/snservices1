@@ -1566,7 +1566,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=services
- VERSION=1.4.4
+ VERSION=1.4.5-test
 
 
 cat >>confdefs.h <<_ACEOF
