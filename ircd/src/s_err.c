@@ -240,6 +240,7 @@ static  Numeric local_replies[] = {
 /* 523 */	0, NULL, /* who limit */
 
 /* 550 */	RPL_WHOISMASKED, "%s :is masked as %s",
+/* 551 */	RPL_WHOISVERSION, "%s :is using %s",
 
 /* 600 */ RPL_LOGON, "%s %s %s %d :logged online",
 /* 601 */ RPL_LOGOFF, "%s %s %s %d :logged offline",

@@ -494,7 +494,7 @@ struct	Message *mptr;
 				    mptr->func != m_heal && mptr->func != m_userhost)*/
 			if (IsPerson(from) && MyConnect(from))
 			{
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 			        if (MyClient(from) && !IsUserVersionKnown(from)
 					&& mptr->func != m_notice && mptr->func != m_mode 
                                         && mptr->func != m_mode  && mptr->func != m_ison

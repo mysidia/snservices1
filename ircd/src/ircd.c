@@ -328,13 +328,13 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
 	int	ping = 0, i, rflag = 0;
 	time_t	oldest = 0, timeout;
 
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 	#define LAST_TIME(xptr)                                          \
 		(!IsRegisteredUser(xptr) ?                               \
 		     ( (xptr)->lasttime )                                \
 		 :                                                       \
 		     ( IsUserVersionKnown((xptr))                        \
-		       ?                                                 \  
+		       ?                                                 \
 			((xptr)->lasttime)                               \
 		       :                                                 \
                 	MIN( (xptr)->firsttime + MAX_NOVERSION_DELAY,    \
@@ -494,7 +494,7 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
                                 (void)exit_client(cptr, cptr, &me,
                                   "User has been banned");
                          else {
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)				 
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE) 
 				 if (IsRegisteredUser(cptr) &&
 				     !IsUserVersionKnown(cptr) &&
 				     (NOW - cptr->lasttime) < ping) {

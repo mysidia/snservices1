@@ -1365,7 +1365,7 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as a silenced user, you may only message an IRC Operator, type /who 0 o for a list.", me.name, parv[0]);
 				continue;
 			}
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 			if (!IsUserVersionKnown(sptr) && acptr != sptr &&
 			    !IsAnOper(acptr) && !IsULine(acptr, acptr) &&
 			    !IsInvisible(acptr)) {
@@ -1619,30 +1619,47 @@ int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
 	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0]) && !IsUserVersionKnown(cptr) && cptr->nospoof)
 	{
+		char version_buf[BUFSIZE];
+		int l;
+		
 		if (parc < 3 || BadPtr(parv[1]) || BadPtr(parv[2]))
 			return 0;
 		if (strlen(parv[1]) < 6 || myncmp(parv[1], "Auth-", 5) || parv[2][0] != '\001')
 			return 0;
 		if (strtoul((parv[1])+5, NULL, 16) != (cptr->nospoof ^ 0xbeefdead))
 			return 0;
-		if (myncmp(parv[2], "\001VERSION", 8))
+		if (myncmp(parv[2], "\001VERSION ", 9))
 			return 0;
 		if (!IsRegistered(cptr) && !IsNotSpoof(cptr) && !SentNoSpoof(cptr)) {
 			NospoofText(cptr);
 			SetSentNoSpoof(cptr);
 		}
 		SetUserVersionKnown(cptr);
+
+		l = strlen(parv[2]) - 9;
+
+		if ( l > 0 ) {
+			strncpyzt(version_buf, parv[2]+9, l);
+			if (version_buf[l - 1] == '\1')
+				version_buf[l - 1] = '\0';
+			dup_sup_version(sptr->user, version_buf);
+		}
 		return;
 	}
 
+#ifdef REQ_VERSION_RESPONSE
 	if (MyClient(sptr) && !IsUserVersionKnown(sptr)) {
 		sendto_one(":%s NOTICE %s :Sorry, but your IRC software "
                            "program has not yet reported its version. "
                            "Your request (NOTICE) was not processed.",
                             me.name, sptr->name);
 
-		return FailClientCheck(sptr);
+		return 0;
 	}
+#else
+	if ( 0 )
+		;	
+#endif	
 	else if (parc >= 2 && !BadPtr(parv[1]) && 
                  (toupper(parv[1][0]) == 'A') && 
                  (toupper(parv[1][1]) == 'U') && 
@@ -1719,7 +1736,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 	who_opsonly = (IsHurt(sptr) && sptr->hurt);
 
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 	if (!IsAnOper(sptr) && !UserVersionKnown(sptr)) 
 		who_opsonly = 1;
 #endif
@@ -2041,6 +2058,12 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				sendto_one(sptr, rpl_str(RPL_WHOISHURT),
 					   me.name, parv[0], name);
 			}
+#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+			if (acptr->user && MyConnect(acptr) && IsAnOper(sptr)
+			    && !BadPtr(acptr->user->sup_version))
+				sendto_one(sptr, rpl_str(RPL_WHOISVERSION),
+					me.name, parv[0], name, acptr->user->sup_version);
+#endif
 			if (acptr->user && MyConnect(acptr))
 				sendto_one(sptr, rpl_str(RPL_WHOISIDLE),
 					   me.name, parv[0], name,

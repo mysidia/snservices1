@@ -228,6 +228,7 @@ anUser	*make_user(aClient *cptr)
 	    }
 	cptr->user = user;
 	user->nextu = NULL;
+	user->sup_version = NULL;
 	user->away = NULL;
 	user->mask = NULL;
 	user->refcnt = 1;
@@ -287,6 +288,9 @@ void	free_user(anUser *user, aClient *cptr)
 	}
 	user->bcptr = cptr;
 	user->refcnt--;
+	if (!BadPtr(user->sup_version))
+		free_sup_version(user->sup_version);
+
 	Debug((DEBUG_LIST, "free_user(%#x,%#x) %d",
 		user, cptr, user->refcnt));
 	if (user->refcnt <= 0)

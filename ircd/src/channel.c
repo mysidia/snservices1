@@ -2078,7 +2078,7 @@ char	*parv[];
 	if (check_registered_user(sptr))
 		return 0;
 
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 	if (MyClient(sptr) && !IsUserVersionKnown(sptr) && parc >= 2) {
 			sendto_one(sptr,
 				":%s %d %s %s :Sorry, cannot join channel. (Client hasn't responded to version check, try typing /join %s  again in a moment)",

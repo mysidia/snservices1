@@ -45,6 +45,7 @@ Computing Center and Jarkko Oikarinen";
 #include "common.h"
 #include "sys.h"
 #include "h.h"
+#include "hash.h"
 #include "numeric.h"
 #ifdef	DBMALLOC
 #include "malloc.h"
@@ -188,6 +189,7 @@ anUser	*make_user(aClient *cptr)
 		user->invited = NULL;
 		user->silence = NULL;
 		user->mask = NULL;
+		user->sup_version = NULL;
 #ifdef  KEEP_HURTBY
 		user->hurtby = NULL;
 #endif
@@ -218,6 +220,102 @@ aServer	*make_server(aClient *cptr)
 	return cptr->serv;
 }
 
+static struct StringHash version_strings[STRINGHASHSIZE];
+
+struct StringHashElement* make_stringhash_element()
+{
+	struct StringHashElement *e;
+
+	e = (struct StringHashElement*)
+		MyMalloc(sizeof(struct StringHashElement));
+	e->str = NULL;
+	e->next = NULL;
+	e->refct = 0;
+
+	return e;
+}
+
+void free_stringhash_element(struct StringHashElement* e)
+{
+	if ( e->str )
+		MyFree(e->str);
+	MyFree(e);
+}
+
+
+void dup_sup_version(anUser* user, const char* buf)
+{
+	long k;
+	struct StringHashElement *e, *tmp;
+	
+	if (BadPtr(buf)) {
+		user->sup_version = NULL;
+		return;
+	}
+	
+	k = hash_nn_name(buf) % STRINGHASHSIZE;
+	if ( k < 0 )
+		k = -k;
+
+	for(e = version_strings[k].ptr, tmp = NULL; e; e = e->next) {
+		if (!BadPtr(e->str) && mycmp(buf, e->str) == 0) {
+			if (e->refct < 0 || e->refct == INT_MAX )
+				continue;
+
+			/* Move it to the top */
+			if ( tmp ) {
+				tmp->next = e->next;
+				e->next = version_strings[k].ptr;
+				version_strings[k].ptr = e;
+			}
+			user->sup_version = e->str;
+			e->refct++;
+			break;
+		}
+		else tmp = e;
+	}
+
+	if ( !e ) {
+		e = make_stringhash_element();
+		
+		DupString(user->sup_version, buf);
+		e->str = user->sup_version;
+		e->refct = 1;
+		e->next = version_strings[k].ptr;
+		version_strings[k].ptr = e;
+	}
+}
+			
+void free_sup_version(char *x)
+{
+	long k;
+	struct StringHashElement* e, *tmp;
+
+	if (BadPtr(x))
+		return;
+
+	k = hash_nn_name(x) % STRINGHASHSIZE;
+	if (k < 0)
+		k = -k;
+
+	for(e = version_strings[k].ptr, tmp = NULL; e; e = e->next)
+	{
+		if (e->str == x) {
+			if (e->refct > 0)	
+				e->refct--;
+			if (e->refct == 0) {
+				if ( tmp )
+					tmp->next = e->next;
+				else
+					version_strings[k].ptr = e->next;
+				
+				free_stringhash_element(e);
+				return;
+			}
+		} else tmp = e;
+	}
+}
+
 /*
 ** free_user
 **	Decrease user reference count by one and realease block,
@@ -231,6 +329,10 @@ void	free_user(anUser *user, aClient *cptr)
 			MyFree((char *)user->away);
 		if (user->mask)
 			MyFree((char *)user->mask);
+
+		if (!BadPtr(user->sup_version))
+			free_sup_version(user->sup_version);
+		user->sup_version = NULL;
 
 #ifdef  KEEP_HURTBY
 		if (user->hurtby)
