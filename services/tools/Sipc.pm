@@ -46,6 +46,10 @@ sub validNickName
 	my $x = shift;
 	my $name = shift;
 
+	if (index($name, "\n") > -1 || index($name, "\r") > -1)  {
+		return 0;
+	}
+
 	if ($name =~ /^[0-9]/ || $name =~ / /) {
 		return 0;
 	}
@@ -60,6 +64,10 @@ sub validChanName
 {
 	my $x = shift;
 	my $name = shift;
+
+	if (index($name, "\n") > -1 || index($name, "\r") > -1) {
+		return 0;
+	}
 
 	if ($name =~ /[ ,\33\t\003\017\026\037\002\001\b]/) {
 		return 0;
