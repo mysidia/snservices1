@@ -542,6 +542,9 @@ parseLine(char *line)
 		if ((hurtwho = getNickData(args[2]))) {
 			if (args[3] && *args[3] == '-')
 				hurtwho->oflags &= ~(NISAHURT);
+			else if (args[3] && atoi(args[3]) == 4) {
+				hurtwho->oflags |= (NISAHURT);
+			}
 			else if (args[3] && isdigit(*args[3])
 					 && isAHurt(hurtwho->nick, hurtwho->user,
 								hurtwho->host)) hurtwho->oflags |=
