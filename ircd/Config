@@ -750,11 +750,9 @@ cat >$TMP<<__EOF__
 #include <arpa/nameser.h>
 #include <resolv.h>
 
-extern struct state _res;
-
 int main()
 {
-	struct state *s = &_res; return s==s;
+	void *s = &_res; return s==s;
 }
 __EOF__
 $COMP >/dev/null 2>&1
