@@ -60,7 +60,7 @@ typedef	struct	SMode	Mode;
 typedef struct	Watch	aWatch;
 typedef struct  ListOptions     LOpts;
 
-#ifdef NEED_U_INT32_T
+#ifndef HAVE_U_INT32_T
 typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #endif
 

@@ -12,6 +12,9 @@
 /*
  * $Id:
  * $Log$
+ * Revision 1.1.1.1  2003/07/05 02:31:54  Mysid
+ *
+ *
  * Revision 1.1  1998/12/05 08:39:10  explorer
  * make changes for slowaris.
  *
@@ -21,7 +24,7 @@
 #ifndef SNPRINTF_H
 #define SNPRINTF_H
 
-#ifdef NEED_SNPRINTF
+#ifndef HAVE_SNPRINTF
 
 /* Write formatted text to buffer 'str', using format string 'format'.
    Returns number of characters written, or negative if error

@@ -39,15 +39,11 @@
 
 int match(const char *, const char *);
 
-#ifdef NEED_INET_ADDR
-unsigned long inet_addr(char *);
-#endif
-
-#if defined(NEED_INET_NTOA)
+#ifndef HAVE_INET_NTOA
 #include <netinet/in.h>
 #endif
 
-#ifdef NEED_INET_NTOA
+#ifndef HAVE_INET_NTOA
 char *inet_ntoa(struct in_addr);
 #endif
 
@@ -89,7 +85,7 @@ extern const char *service_nick[];
 #define cInfoServ       service_nick[4]
 #define cGameServ       service_nick[5]
 
-#ifdef NEED_SPRINTF
+#ifndef HAVE_SNPRINTF
 int snprintf(char *str, size_t size, const char *format, ...);
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 #endif

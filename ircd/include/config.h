@@ -122,26 +122,23 @@
  * these are only the recommened names and paths. Change as needed.
  * You must define these to something, even if you don't really want them.
  */
-#ifndef DPATH
-#define	DPATH	"/usr/local/lib/ircd"	/* dir where all ircd stuff is */
-#endif
-#ifndef SPATH
-#define	SPATH	"/usr/local/bin/ircd"	/* path to server executeable */
-#endif
-#define	CPATH	"ircd.conf.xml"	/* server configuration file */
-#define	MPATH	"ircd.motd"	/* server MOTD file */
-#define	LPATH	"debug.log"	/* Where the debug file lives, if DEBUGMODE */
-#define	PPATH	"ircd.pid"	/* file for server pid */
 
-/*
- * this define sets the filename to maintain a list of persons who log
- * into this server. Logging will stop when the file does not exist.
- * FNAME_USERLOG just logs user connections, FNAME_OPERLOG logs oper actions
- * These are either full paths or files within DPATH.
- */
+/* Server binary */
+#define FNAME_ME	BINDIR "/" BASENAME
+/* Server configuration file */
+#define FNAME_CONFIG	CONFDIR "/" BASENAME ".conf.xml"
+/* Server MOTD file */
+#define FNAME_MOTD	CONFDIR "/" BASENAME ".motd"
+/* Where the debug file lives, if DEBUGMODE */
+#define	FNAME_DEBUGLOG	DATADIR "/log/" BASENAME" .debug.log"
+/* File for user connections log */
+#define FNAME_USERLOG	DATADIR "/log/" BASENAME ".users.log"
+/* File for oper actions log */
+#define FNAME_OPERLOG	DATADIR "/log/" BASENAME ".opers.log"
+/* File for server PID */
+#define	FNAME_PID	DATADIR "/run/" BASENAME ".pid"
+
 #define	IRC_LOGGING
-#define FNAME_USERLOG "users.log"
-#define FNAME_OPERLOG "opers.log"
 
 /* FAILOPER_WARN
  *
@@ -384,11 +381,6 @@
 #define MAXCHANNELSPERUSER  10	/* Recommended value: 10 */
 
 /* ------------------------- END CONFIGURATION SECTION -------------------- */
-#define MOTD MPATH
-#define	MYNAME SPATH
-#define	CONFIGFILE CPATH
-#define	IRCD_PIDFILE PPATH
-
 #ifdef	__osf__
 #define	OSF
 /* OSF defines BSD to be its version of BSD */
@@ -407,7 +399,7 @@
 
 #ifdef DEBUGMODE
 # define Debug(x) debug x
-# define LOGFILE LPATH
+# define LOGFILE FNAME_DEBUGLOG
 #else
 # define Debug(x) ;
 # define LOGFILE "/dev/null"

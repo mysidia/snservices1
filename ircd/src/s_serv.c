@@ -1444,7 +1444,7 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    {
 	      sendto_one(sptr,
 			 "NOTICE %s :Connect: Host %s not listed in %s",
-			 parv[0], parv[1], CPATH);
+			 parv[0], parv[1], FNAME_CONFIG);
 	      return 0;
 	    }
 	/*
@@ -1971,7 +1971,7 @@ m_motd(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	 * 3 seconds. -avalon (curtesy of wumpus)
 	 */
 	alarm(3);
-	fd = open(MOTD, O_RDONLY);
+	fd = open(FNAME_MOTD, O_RDONLY);
 	alarm(0);
 	if (fd == -1)
 	    {
