@@ -376,22 +376,6 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 					get_client_name(cptr,TRUE)));
 				del_queries((char *)cptr);
 				ClearDNS(cptr);
-#if 0
-				if (DoingSocks(cptr))
-				{
-					cptr->socks->status |= SOCK_DONE|SOCK_DESTROY;
-				}
-				else if (cptr->socks)
-				{
-					if (cptr->socks->fd >= 0) 
-					{
-						closesocket(cptr->socks->fd);
-					}
-					irc_free(cptr->socks);
-					cptr->socks = NULL;
-					ClientFlags(cptr) &= ~FLAGS_SOCK;
-				}
-#endif
 				if (!DoingSocks(cptr))
 				  SetAccess(cptr);
 

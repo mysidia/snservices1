@@ -49,8 +49,7 @@ int gethostname(char *name, int namelen);
 #include "inet.h"
 #include "nameser.h"
 #include "resolv.h"
-#include "sock.h"	/* If FD_ZERO isn't define up to this point,  */
-			/* define it (BSD4.2 needs this) */
+#include "sock.h"
 #include "h.h"
 
 #include "ircd/res.h"
@@ -1228,28 +1227,6 @@ int	fd;
 				acptr->port = ntohs(addr.in6.sin6_port);
 				break;
 		}
-#if 0
-		/*
-		 * Some genious along the lines of ircd took out the code
-		 * where ircd loads the IP mask from the P:Lines, so this
-		 * is useless untill that's added back. :)
-		 */
-		/*
-		 * Check that this socket (client) is allowed to accept
-		 * connections from this IP#.
-		 */
-		for (s = (char *)&cptr->ip, t = (char *)&acptr->ip, len = 4;
-		     len > 0; len--, s++, t++)
-		    {
-			if (!*s)
-				continue;
-			if (*s != *t)
-				break;
-		    }
-
-		if (len)
-			goto add_con_refuse;
-#endif
 
                 sendto_one(acptr, ":%s NOTICE AUTH :*** Hello, you are connecting to %s, the progress of your connection follows", me.name, me.name);
 #ifndef URL_CONNECTHELP
@@ -1437,23 +1414,6 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 				continue;
 			if (IsLog(cptr))
 				continue;
-#if 0
-			if ((ClientFlags(cptr) & FLAGS_SOCK)
-                            && cptr->socks
-			    && (cptr->socks->status & SOCK_FOUND)) {
-				if (cptr->socks->fd >= 0) {
-					close(cptr->socks->fd);
-					FD_CLR(cptr->socks->fd, &read_set);
-					FD_CLR(cptr->socks->fd, &write_set);
-				}
-				if (cptr->socks->fd == highest_fd)
-					while(!local[highest_fd])
-						highest_fd--;
-				cptr->socks->fd = -1;
-				cptr->socks->status |= SOCK_GO|SOCK_DESTROY;
-					
-			}
-#endif
 			if ((ClientFlags(cptr) & FLAGS_SOCK) && !DoingSocks(cptr))
 			{
 				ClientFlags(cptr) &= ~FLAGS_SOCK;
@@ -1575,9 +1535,6 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
 			return -1;
 		else if (nfds >= 0)
 			break;
-#if 0
-		report_error("select %s:%s", &me);
-#endif
 		res++;
 		if (res > 5)
 			restart("too many select errors");
