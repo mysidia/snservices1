@@ -432,6 +432,8 @@ ResRQ	*rptr;
 	int	len;
 
 	(void)strncpy(hname, name, sizeof(hname) - 1);
+	hname[sizeof(hname) - 1] = '\0';
+
 	len = strlen(hname);
 
 	if (rptr && !index(hname, '.') && _res.options & RES_DEFNAMES)
