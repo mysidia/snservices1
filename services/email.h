@@ -75,7 +75,11 @@ class EmailString
     }
 
     const char *add(const char *);
-    const char *get_string() { return theString ? theString : ""; }
+    const char *get_string() { 
+	    if ( theString ) 
+		    return theString;
+	    return "";
+    }
     const char *set_string(const char *s);
     const char *set_string_ptr(char *s) {
           theLength = s ? strlen(s) : 0;

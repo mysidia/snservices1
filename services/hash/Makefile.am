@@ -31,7 +31,9 @@
 DEFS = @DEFS@ $(DEFINES)
 CFLAGS  = @CFLAGS@ $(DEFS) -Wall $(WARN) -g
 LDFLAGS = @LDFLAGS@
-INCLUDES = -I- -I/usr/include -I@includedir@
+INCLUDES = -I. -I- -I/usr/include -I@includedir@
+DEFAULT_INCLUDES = 
+#DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 
 # Warning flags
 WARN    = -Wpointer-arith \

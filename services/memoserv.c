@@ -1102,7 +1102,7 @@ MCMD(ms_mblock)
 static cmd_return ms_DelMemoBlock(UserList * nick, char *text)
 {
 	char *from = nick->nick;
-	MemoBlock *olditem;
+	MemoBlock *olditem = NULL;
 	RegNickList *rnl, *rnlTarget;
 
 	if (!nick || !text) {
