@@ -5321,10 +5321,11 @@ NCMD(ns_bypass)
 				        from, "bypass_allon", args[2]);
 			    return RET_NOPERM;
 			}
+			nicklog->log(nick, NS_BYPASS, args[2], LOGF_ON | LOGF_PATTERN);
 		}
-
-
-		nicklog->log(nick, NS_BYPASS, args[2], LOGF_ON | LOGF_PATTERN);
+		else {
+			nicklog->log(nick, NS_BYPASS, "*!*@*", LOGF_ON | LOGF_PATTERN);
+		}
 
 		for (hashEnt = 0; hashEnt < NICKHASHSIZE; hashEnt++) {
 			for (targetnick = LIST_FIRST(&RegNickHash[hashEnt]);
@@ -5369,13 +5370,14 @@ NCMD(ns_bypass)
                             sSend(":%s NOTICE %s :That %s is too broad.", OperServ,
                                         from, "bypass mask");
                             sSend(":%s GLOBOPS :%s attempts to set %s for %s", OperServ,
-                                        from, "bypass_allon", args[2]);
+                                        from, "bypass_alloff", args[2]);
                             return RET_NOPERM;
                         }
-                }
-
-
-		nicklog->log(nick, NS_BYPASS, args[2], LOGF_ON | LOGF_PATTERN);
+			nicklog->log(nick, NS_BYPASS, args[2], LOGF_OFF | LOGF_PATTERN);
+		}
+		else {
+			nicklog->log(nick, NS_BYPASS, "*!*@*", LOGF_OFF | LOGF_PATTERN);
+		}
 
 		for (hashEnt = 0; hashEnt < NICKHASHSIZE; hashEnt++) {
 			for (targetnick = LIST_FIRST(&RegNickHash[hashEnt]);
