@@ -20,7 +20,6 @@ STDDEFH=undef
 PARAMH=undef
 RUSAGEH=undef
 NOINDEX=undef
-NSTRERROR=undef
 NSTRTOKEN=undef
 NSTRTOK=undef
 REDHAT6=undef
@@ -503,19 +502,6 @@ if [ $? -ne 0 ] ; then
 fi
 
 cat > $TMP <<__EOF__
-main()
-{
-	char  *s = strerror(0);
-	exit(0);
-}
-__EOF__
-$COMP >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
-	echo $n " strerror$c"
-	NSTRERROR=define
-fi
-$RM -f $EXEC $TMP
-cat > $TMP <<__EOF__
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -674,7 +660,6 @@ cat > $SETUP  <<__EOF__
 /*#$LINUX_GLIBC_RRES LINUX_GLIBC_RRES*/
 #$STDDEFH	STDDEFH
 #$NOINDEX	NOINDEX
-#$NSTRERROR	NEED_STRERROR
 #$NSTRTOKEN	NEED_STRTOKEN
 #$NSTRTOK	NEED_STRTOK
 #$NINETADDR	NEED_INET_ADDR

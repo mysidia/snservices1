@@ -3084,9 +3084,6 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	char	*name, *password, *encr;
 #ifdef CRYPT_OPER_PASSWORD
 	char	salt[3];
-#ifndef USE_DES
-	extern	char *crypt();
-#endif
 #endif /* CRYPT_OPER_PASSWORD */
 
 	if (check_registered_user(sptr))

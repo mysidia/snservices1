@@ -357,10 +357,7 @@ m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	  if(*cptr->passwd)
 	    {
 	      char    salt[3];
-#ifndef USE_DES
-	      extern  char *crypt();
-#endif
-	      
+
 	      salt[0]=aconf->passwd[0];
 	      salt[1]=aconf->passwd[1];
 	      salt[2]='\0';
@@ -614,7 +611,6 @@ m_server_estab(aClient *cptr)
 	if(*cptr->passwd)
 	    {
 		char    salt[3];
-		extern  char *crypt();
 
 		salt[0]=aconf->passwd[0];
 		salt[1]=aconf->passwd[1];
