@@ -2318,6 +2318,18 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (!IsUnknown(acptr) && !IsConnecting(acptr) &&
 		    !IsHandshake(acptr))
 			continue;
+		if (parc >= 2 && match(parv[1], acptr->sockhost)) {
+			continue;
+		}
+
+		if (parc <= 1) {
+			sendto_one(sptr, ":%s NOTICE %s :%d. Unknown [%s] [n:%s] [%s]", me.name,
+				       	sptr->name, i, acptr->sockhost,
+				       	BadPtr(acptr->name) ? "" : acptr->name,
+					DoingDNS(acptr) ? "DoingDNS" : "");
+			continue;
+		}
+		
 		sendto_one(sptr, rpl_str(RPL_CLOSING), me.name, parv[0],
 			   get_client_name(acptr, TRUE), acptr->status);
 		(void)exit_client(acptr, acptr, acptr, "Oper Closing");
