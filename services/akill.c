@@ -52,6 +52,21 @@
 #include "sipc.h"
 
 /*******************************************************************/
+#define NUM_AKTYPE_INDICES 4
+
+struct _akill_mail_exclude {
+	const char* nick;
+	int count_removes[NUM_AKTYPE_INDICES];
+	int count_adds[NUM_AKTYPE_INDICES];
+
+	LIST_ENTRY(_akill_mail_exclude) dm_lst;
+};
+
+typedef struct _akill_mail_exclude SetterExclude;
+
+static LIST_HEAD(, _akill_mail_exclude)  dontMailAkills;
+
+/*******************************************************************/
 
 /*! \def AKREASON_LEN
  * \brief Maximum length of an autokill reason
@@ -520,6 +535,30 @@ int addakill(long length, char *mask, char *by, char type, char *reason)
 }*/
 #endif
 
+// Used by queueAkill and kline mailing only
+int akill_flag_toindex(int type_flag)
+{
+	if (type_flag & A_AKILL)
+		return 0;
+	if (type_flag & A_AHURT)
+		return 2;
+	if (type_flag & A_IGNORE)
+		return 1;
+	return 3;
+}
+
+// Used by queueAkill and kline mailing only
+int akill_index_toflag(int index)
+{
+	switch(index)
+	{
+		case 0: return A_AKILL;
+		case 1: return A_IGNORE;
+		case 2: return A_AHURT;
+		default: return A_AKILL;
+	}
+}
+
 
 /**
  * \brief Adds information about an autokill to the body of the kline queue
@@ -537,7 +576,7 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 				time_t time, int type, int id, int added)
 {
 	static char buf[8192];
-
+	SetterExclude* se, *excluded = 0;
 
 	if (added) {
 		sprintf(buf,
@@ -552,6 +591,17 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 				ctime(&(time)));
 	}
 
+	for(se = LIST_FIRST(&dontMailAkills); se; se = LIST_NEXT(se, dm_lst))
+	{
+		if (se->nick && !str_cmp(se->nick, setby))
+		{
+			excluded = se;
+			break;
+		}	
+	}
+
+	if (excluded == 0) 
+	{
 #ifdef AKILLMAILTO
 	kline_email.body.add(buf);
 	kline_email_nitems++;
@@ -561,6 +611,20 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 	ops_email.body.add(buf);
 	ops_email_nitems++;
 #endif
+	}
+	else {
+		int x = akill_flag_toindex(type);
+
+		if (x >= 0 && x < NUM_AKTYPE_INDICES) 
+		{
+			if (added) {
+				excluded->count_adds[x]++;
+			}
+			else {
+				excluded->count_removes[x]++;
+			}	
+		}
+	}
 }
 
 
@@ -618,7 +682,9 @@ const char *aktype_str(int type, int which)
  */
 void timed_akill_queue(char *)
 {
-	char buf1[1024];
+	char buf1[1024], buf2[1024];
+	SetterExclude* se = LIST_FIRST(&dontMailAkills);
+	int i, l;
 
 #ifdef AKILLMAILTO
 	if (
@@ -654,6 +720,33 @@ void timed_akill_queue(char *)
 		ops_email.to = OPSMAILTO;
 		ops_email.from = buf1;
 		ops_email.subject = "Kline log";
+		if (se)
+		{
+			ops_email.body.add("");
+			ops_email.body.add("Excluded Setters/Remover Activity: ");
+			ops_email.body.add("Nick               Ak+     Ig+     Ah+"
+					   "       Ak-      Ig-      Ah-");
+			for(; se; se = LIST_NEXT(se, dm_lst))
+			{
+				if (!se->nick) {
+					continue;
+				}
+				l = sprintf(buf2,      "%-20.20s", se->nick);
+
+				for(i = 0 ; i < NUM_AKTYPE_INDICES; i++) {
+					l += sprintf(buf2 + l, " %-6.6d", se->count_adds[i]);
+
+					se->count_adds[i] = 0;
+				}
+
+				for(i = 0 ; i < NUM_AKTYPE_INDICES; i++) {
+					l += sprintf(buf2 + l, " %-6.6d", se->count_adds[i]);
+					se->count_adds[i] = 0;
+				}
+				
+				ops_email.body.add(buf2);
+			}
+		}
 		if (ops_enforce_buf.length() > 0) {
 			ops_email.body.add("");
 			ops_email.body.add(kline_enforce_buf.get_string());
