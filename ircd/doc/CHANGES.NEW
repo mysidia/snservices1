@@ -14,6 +14,12 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 CHANGES SINCE sorircd1.3.4
 *********************************************************************
 
+Mon Sep 20 20:13:44 CEST 2004 sor1.5.0devel - Onno
+ * New networking code with support for select(), poll(), epoll(), /dev/poll,
+   kqueue(), IPv4 and IPv6 and SSL.
+ * The M line doesn't open a listener anymore, only P lines will do this.
+ * Removed a lot of old/unsupported/unmaintained/unused documents and code.
+
 Sat Jul 17 02:26:59 CDT 2004  sor1.3.5pre3 - Mysidia
  * +r/R usermodes, new /whois entry
  * New ban record types RR and RV   (Require registered, Require-validated
