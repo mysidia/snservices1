@@ -26,6 +26,10 @@
 
 #include "ircd/send.h"
 
+#ifdef SOL20
+int getrusage(int who, struct rusage *rusage);
+#endif
+
 IRCD_SCCSID("@(#)s_debug.c	2.30 1/3/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
 
