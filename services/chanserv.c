@@ -6461,6 +6461,12 @@ CCMD(cs_unban)
 	char userhost[NICKLEN + USERLEN + HOSTLEN];
 	char userhostM[NICKLEN + USERLEN + HOSTLEN];
 
+	if (numargs < 2) {
+		sSend(":%s NOTICE %s :You must specify a channel.", ChanServ,
+			  from);
+		return RET_SYNTAX;
+	}
+
 	tmp = getChanData(args[1]);
 	chan = getRegChanData(args[1]);
 
