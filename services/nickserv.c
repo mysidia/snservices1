@@ -270,7 +270,7 @@ void nDesynch(char *nick, char *type)
 /**
  * Send an IRC Protocol message to grant the user their IDENTIFIED flag on IRC
  */
-void grantIdentifiedUmode(NickList* nick)
+void grantIdentifiedUmode(UserList* nick)
 {
 	const char* name = nick->nick;
 
