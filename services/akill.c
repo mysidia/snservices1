@@ -632,19 +632,18 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 		}	
 	}
 
-	if (excluded == 0) 
-	{
 #ifdef AKILLMAILTO
 	kline_email.body.add(buf);
 	kline_email_nitems++;
 #endif
 
-#ifdef OPSMAILTO
-	ops_email.body.add(buf);
-	ops_email_nitems++;
-#endif
+#ifdef OPSMAILTO	
+	if (excluded == 0)
+	{
+		ops_email.body.add(buf);
+		ops_email_nitems++;
 	}
-	else {
+	else {		
 		int x = akill_flag_toindex(type);
 
 		if (x >= 0 && x < NUM_AKTYPE_INDICES) 
@@ -657,6 +656,7 @@ void queueakill(char *mask, char *setby, char *length, char *reason,
 			}	
 		}
 	}
+#endif	
 }
 
 
