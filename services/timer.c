@@ -144,7 +144,7 @@ timer(long seconds, void (*func) (char *), void *args)
 	curtid++;
 	if (!curtid) {
 		sSend
-			("%s GOPER :Timer ID overrun!  Services may be unstable until a restart.\n",
+			("%s GOPER :Timer ID overrun!  Services may be unstable until a restart.",
 			 myname);
 		curtid++;
 	}
