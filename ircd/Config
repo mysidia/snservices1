@@ -752,9 +752,9 @@ cat >$TMP<<__EOF__
 
 extern struct state _res;
 
-main()
+int main()
 {
-	struct state *s = &_res;
+	struct state *s = &_res; return s==s;
 }
 __EOF__
 $COMP >/dev/null 2>&1
