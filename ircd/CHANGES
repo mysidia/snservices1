@@ -1,3 +1,15 @@
+Wed Jan 12 23:43:39 CET 2005 - Onno - sor1.3.7
+ * Changed casetables back to <= 1.3.4 version.
+ * Added casetables check in startup code.
+ * Include CASEMAPPING=ascii in 005 reply.
+ * Critical bugfix for channel bans.
+ * RR/RV banrules are now R and V.
+ * Better check for illegal banrules.
+ * Disabled /stats k and q for normal users.
+ * Include origin in all server-generated notices.
+ * Give clients some extra information again when the connection is closed
+   because nospoof/version check times out.
+
 Sat Jan  8 19:36:44 CET 2005 - Onno - sor1.3.6
  * Fixed compilation warning on Alpha architecture.
  * Fixed signal handling: ircd won't ignore all signals anymore after a SIGINT
