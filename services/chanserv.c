@@ -728,6 +728,13 @@ void delChanUser(ChanList * channel, cNickList * nick, int doCleanChan)
  */
 void delChanBan(ChanList * channel, cBanList * item)
 {
+	if (item->next == NULL && item->previous == NULL
+	      && channel->firstBan != item) 
+	{
+	      logDump(corelog, "delChanBan: attempt to delete unlinked ban");
+	      raise(SIGSEGV);
+	}
+
 	if (item->previous)
 		item->previous->next = item->next;
 	else
@@ -738,6 +745,8 @@ void delChanBan(ChanList * channel, cBanList * item)
 	else
 		channel->lastBan = item->previous;
 
+	item->next = NULL;
+	item->previous = NULL;
 	FREE(item);
 }
 

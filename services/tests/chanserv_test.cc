@@ -188,7 +188,7 @@ ChanServTestCase::testbanlist()
 
 	for(i = 7; i >= 0; i--)
 		CPPUNIT_ASSERT(getChanBan(&foo, a[i]->ban) != NULL);
-	delChanBan(&foo, a[8]);
+	/* delChanBan(&foo, a[8]); */
 
 	for(i = 7; i >= 0; i--) {
 		if (i < 8 && i > 1) {
@@ -199,8 +199,9 @@ ChanServTestCase::testbanlist()
 			CPPUNIT_ASSERT(getChanBan(&foo, buf) != NULL);
 			CPPUNIT_ASSERT(getChanBan(&foo, buf) == a[i]);
 		}
-		else {
+		else if (a[0]) {
 			delChanBan(&foo, a[0]);
+			a[0] = NULL;
 			CPPUNIT_ASSERT(getChanBan(&foo, "0") == NULL);
 		}
         }
