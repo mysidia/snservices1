@@ -19,7 +19,7 @@
 
 	<toc />
 
-	<chapter id="Intro">
+	<chapter id="intro">
 		<title>Introduction</title>
 
 		<sect1 id="introsec">
@@ -229,7 +229,7 @@
 			</para>
 		</sect1>
 
-		<sect1 id="INSTALL">
+		<sect1 id="install">
 			<title>Installing Services</title>
 			<para>
 			<itemizedlist>
@@ -387,7 +387,7 @@ named in the --with-help configure option.  For example:
 				Test to ensure that requests such as
 				<emphasis>/NickServ HELP</emphasis>
 				work (if it fails, you may not have installed
-				the helpfiles properly, see <xref linkend="INSTALL" />.), and register sample nicks, channels,
+				the helpfiles properly, see <xref linkend="install" />.), and register sample nicks, channels,
 				memos, triggers, and restart services to
 				ensure all databases are being written:
 				if they are not, ensure that the permissions
@@ -736,7 +736,7 @@ ServOps can be added or removed when services is online using the
 
 			First of all, to perform any administration,
 			you must have administrative access to services.
-			See <xref linkend="INSTALL" /> for
+			See <xref linkend="install" /> for
 			information on how to get services to give you
 			full access.
 			</para>
