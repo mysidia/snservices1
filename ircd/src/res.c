@@ -439,7 +439,10 @@ anAddress	*numb;
 ResRQ	*rptr;
 {
 	char	ipbuf[73];
-	u_char	*cp, *cp2;
+	u_char	*cp;
+#ifdef AF_INET6
+	u_char  *cp2;
+#endif
 
 	switch (numb->addr_family)
 	{
@@ -901,11 +904,13 @@ getres_err:
 	return (struct HostEnt *)NULL;
 }
 
-static	int	hash_number(ip)
-anAddress *ip;
+static int
+hash_number(anAddress *ip)
 {
 	char *p4;
+#ifdef AF_INET6
 	int *p6;
+#endif
 	u_int	hashv = 0;
 
 	switch (ip->addr_family)
