@@ -19,7 +19,6 @@ AUTO_CONFIG=""
 STDLIBH=undef
 STDDEFH=undef
 SYSSYSLOGH=undef
-MALLOCH=undef
 PARAMH=undef
 UNISTDH=undef
 STRINGH=undef
@@ -752,11 +751,6 @@ cat > $SETUP  <<__EOF__
 #$NINETNTOA	NEED_INET_NTOA
 #$NINETNETOF	NEED_INET_NETOF
 __EOF__
-if [ "$MALLOCH" = "undef" ] ; then
-	echo "#undef	MALLOCH" >> $SETUP
-else
-	echo "#define	MALLOCH	<$MALLOCH>" >> $SETUP
-fi
 if [ "$BZERO" = "memset" ] ; then
 	cat >> $SETUP <<__EOF__
 #define	bzero(a,b)	memset(a,0,b)
