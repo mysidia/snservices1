@@ -80,6 +80,7 @@ char *infotext[] =
 	"Onno         -                        -",
 	"Halcy0n      -                        -",
 	"Milambar     -                        -",
+    	"Onno         -                        -",
 	"",
 	"The following people have helped in making the DALnet ircd",
 	"that is based on irc2.8.21.mu3.2 :",
