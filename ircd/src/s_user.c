@@ -1982,6 +1982,10 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				continue;
 
 			a2cptr = find_server(user->server, NULL);
+			if (a2cptr == NULL)
+			{
+				a2cptr = &me;
+			}
 
                         /* RPL_WHOISUSER used to be at this point */
 			found = 1;
