@@ -472,9 +472,9 @@ sendto_channel_butserv_unmask(aChannel *chptr, aClient *from, char *fmt, ...)
         for (lp = chptr->members; lp; lp = lp->next) {
                 if (MyConnect(acptr = lp->value.cptr) &&
                     !(lp->flags & CHFL_ZOMBIE)) {
-                        if (IS_SET(chptr->mode.mode, MODE_SHOWHOST) &&
+                        if (IsSet(chptr->mode.mode, MODE_SHOWHOST) &&
                             (lp->flags & CHFL_CHANOP) &&
-                            !IS_SET(ClientUmode(from), U_FULLMASK) && from->user) {
+                            !IsSet(ClientUmode(from), U_FULLMASK) && from->user) {
                             ClearMasked(from);
 			    origMask = from->user->mask;
 			    from->user->mask = NULL;
