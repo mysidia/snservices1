@@ -5298,6 +5298,7 @@ CCMD(cs_set)
 		{"ident", cs_set_bool, FOUNDER, CSO(flags), "ident", CIDENT},
 		{"quiet", cs_set_bool, FOUNDER + 1, CSO(flags), "quiet changes",
 		 CQUIET},
+		{"gs_roll", cs_set_bool, FOUNDER, CSO(flags), "+v gameserv roll", CGAMESERV},
 		{"passw*d", cs_set_passwd, FOUNDER + 1},
 		{"memo*", cs_set_memolvl, FOUNDER},
 		{"desc*", cs_set_fixed, FOUNDER, CSO(desc), "description",

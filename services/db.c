@@ -998,7 +998,8 @@ void readMemoData(void)
 
 			/* Memo expiration code */
 
-			if ((time(NULL) - newmemo->sent) >= NICKDROPTIME) {
+			if ((time(NULL) - newmemo->sent) >= NICKDROPTIME
+			     && !(newmemo->flags & MEMO_SAVE)) {
 				FREE(newmemo);
 				continue;
 			}
