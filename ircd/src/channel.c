@@ -442,11 +442,14 @@ int BanRuleMatch(const char *text, aClient *cptr, int *result,
             ban_flags = BAN_GECOS;
             pattern_start = 2;
         }
-        else if (((pattern_start = index_left_part(text, "NR:")) > 0)
+	else if (((pattern_start = index_left_part(text, "real:")) > 0)) {
+	    ban_flags = BAN_GECOS;	    
+	}
+        else if (((pattern_start = index_left_part(text, "RR:")) > 0)
 	          && !IsRegNick(cptr)) {
             ban_flags = BAN_REGONLY;
         }
-        else if (((pattern_start = index_left_part(text, "NV:")) > 0)
+        else if (((pattern_start = index_left_part(text, "RV:")) > 0)
 	          && !IsVerNick(cptr)) {
 	    ban_flags = BAN_VERONLY;
         }	
