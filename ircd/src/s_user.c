@@ -2283,7 +2283,8 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 
 	char buf1[BUFSIZE], buf2[BUFSIZE], buf3[BUFSIZE];
 	
-	int show_unknowns = 0, show_users = 0, need_start = 1, extended = 0, show_all = 0, i;
+	int show_unknowns = 0, show_users = 0, need_start = 1, extended = 0, show_all = 0, i,
+	     show_servers = 0, show_ports = 0;
 	
 	if (!IsPrivileged(sptr) || !IsPrivileged(cptr)) {
 		sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
@@ -2291,7 +2292,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 	}
 
 	if (parc < 2) {
-		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON [<server>] (unknowns | users)", me.name, sptr->name);
+		sendto_one(sptr, ":%s NOTICE %s :Syntax: SHOWCON [<server>] {(unknowns | users | servers | ports) + ...}", me.name, sptr->name);
 		return 0;
 
 	}
@@ -2314,8 +2315,19 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 			show_unknowns = 1;
 		else if (mycmp(option, "users") == 0)
 			show_users = 1;
-		else if (mycmp(option, "all") == 0) 
+		else if (mycmp(option, "all") == 0)  {
 			show_all = 1;
+			show_servers = 1;
+			show_users = 1;
+			show_unknowns = 1;
+			show_ports = 1;
+		}
+		else if (mycmp(option, "ports") == 0) {
+			show_ports = 1;
+		}
+		else if (mycmp(option, "servers") == 0) {
+			show_servers = 1;
+		}	
 		else if (mycmp(option, "xml") == 0) 
 			extended = 1;
 		else {
@@ -2332,13 +2344,19 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		if (!(ptr = local[i]))
 			continue;
 
-		if (IsLog(ptr) || IsMe(ptr) || IsServer(ptr) || IsListening(ptr))
+		if (IsLog(ptr) || IsMe(ptr))
 			continue;
 
-		if (show_unknowns && !IsUnknown(ptr))
+		if (!show_unknowns && IsUnknown(ptr))
 			continue;
 
-		if (show_users && !IsPerson(ptr))
+		if (!show_users && IsPerson(ptr))
+			continue;
+
+		if (!show_servers && IsServer(ptr))
+			continue;
+
+		if (!show_ports && IsListening(ptr))
 			continue;
 
 		if (extended == 0) {
