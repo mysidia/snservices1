@@ -1,0 +1,21 @@
+Please remember:
+
+* If you are using a precompiled binary of this program, PLEASE check it
+  and make sure it does not reference any networks before using it.
+
+* This server is *incompatible* with many other networks, check and be
+  sure it is compatible before trying to link to the network.
+
+* PLEASE remember to add these U lines to your conf. BEFORE starting your
+  server: 
+
+U:warlock.sorcery.net:*:*
+
+* All the information you need on the patches is in the file README.patches
+
+* Remember to add the lines suggested in your .ircrc to obtain the full benefit
+  of your server patches. Distribute the lines to your users too! Check the
+  file ADD-TO-IRCRC for the new additions.
+
+* You might want to go thru Run's server compile guide in case you have
+  compilation problems. The file is doc/server-compile-guide.
