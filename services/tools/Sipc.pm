@@ -478,14 +478,14 @@ using the IPC interface and a TCP socket.
    Checks if a nickname is legitimate for most IRC networks.   The length is not
    checked, only the set of characters contained.
 
-   Example:  if (validNickName("Guest-1234") == 1) { print "Valid nick!\n"; }
+   Example:  if (Sipc->validNickName("Guest-1234") == 1) { print "Valid nick!\n"; }
 
 =item validChankName(nick)
 
    Checks if a channel name is legitimate for most IRC networks.   The length is not
    checked, only the set of characters contained.
 
-   Example:  if (validChanName("#") == 1) { print "Valid chan!\n"; }
+   Example:  if (Sipc->validChanName("#") == 1) { print "Valid chan!\n"; }
 
 =item hashPw(password)
 
