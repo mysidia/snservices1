@@ -22,7 +22,6 @@
 
 extern aChannel *hash_get_chan_bucket(int);
 
-#define STRINGHASHSIZE 500
 
 #define WATCHHASHSIZE 300
 

@@ -87,8 +87,6 @@ extern	char	*rindex PROTO((char *, char));
 #  define MyFree(x)       if ((x) != NULL) GlobalFree(x)
 # endif
 #else
-void    dumpcore(const char *msg, ...);
-void    MyFree(void *x);
 #define	free(x)		MyFree(x)
 #endif
 
@@ -103,6 +101,18 @@ void    MyFree(void *x);
 #else
 #define OPT_TYPE void
 #endif
+
+/*
+ * Different name on NetBSD, FreeBSD, and BSDI
+ */
+#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__bsdi__) || defined(REDHAT6) || defined(LINUX_GLIBC)
+#define dn_skipname  __dn_skipname
+#endif
+
+#ifdef LINUX_GLIBC_RRES
+#define res_init __res_init
+#endif
+
 
 #ifndef _WIN32
 extern	VOIDSIG	dummy();
@@ -123,7 +133,9 @@ typedef	unsigned long	u_long;
 typedef	unsigned int	u_int;
 #endif
 
-#include <stdarg.h>
+#ifdef	USE_VARARGS
+#include <varargs.h>
+#endif
 
 #ifdef USE_DES
 #include <des.h>

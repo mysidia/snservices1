@@ -216,7 +216,6 @@
 #define ERR_LISTSYNTAX       517
 
 #define	RPL_WHOISMASKED	     550
-#define RPL_WHOISVERSION     551
 
 #define RPL_LOGON	     600
 #define RPL_LOGOFF	     601

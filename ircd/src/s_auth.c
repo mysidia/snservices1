@@ -56,15 +56,13 @@ static  char sccsid[] = "@(#)s_auth.c	1.18 4/18/94 (C) 1992 Darren Reed";
  */
 void	start_auth(aClient *cptr)
 {
-	anAddress	sock;
-	int	addrlen = sizeof(anAddress);
+	struct	sockaddr_in	sock;
+	int	addrlen = sizeof(struct sockaddr_in);
 
 	Debug((DEBUG_NOTICE,"start_auth(%x) fd %d status %d",
 		cptr, cptr->fd, cptr->status));
-	getsockname(cptr->fd, (struct sockaddr *)&sock, &addrlen);
 	(void)alarm(2); /* To catch waiting for 'no more sockets' */
-
-	if ((cptr->authfd = socket(sock.addr_family, SOCK_STREAM, 0)) == -1)
+	if ((cptr->authfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	    {
 	        (void)alarm(0);
 #ifdef	USE_SYSLOG
@@ -91,35 +89,16 @@ void	start_auth(aClient *cptr)
 #endif
 	set_non_blocking(cptr->authfd, cptr);
 
-	switch (sock.addr_family)
-	{
-		default:
-		case AF_INET:
-			sock.in.sin_port = 0;
-			break;
-#ifdef ENABLE_IPV6
-		case AF_INET6:
-			sock.in6.sin6_port = 0;
-			break;
-#endif			
-	}
+	getsockname(cptr->fd, (struct sockaddr *)&sock, &addrlen);
+	sock.sin_port = 0;
+	sock.sin_family = AF_INET; /* redundant? */
 	(void)bind(cptr->authfd, (struct sockaddr *)&sock, sizeof(sock));
 
-	bcopy((char *)&cptr->addr, (char *)&sock,
-		sizeof(anAddress));
+	bcopy((char *)&cptr->ip, (char *)&sock.sin_addr,
+		sizeof(struct in_addr));
 
-	switch (sock.addr_family)
-	{
-		default:
-		case AF_INET:
-			sock.in.sin_port = htons(113);
-			break;
-#ifdef ENABLE_IPV6
-		case AF_INET6:
-			sock.in6.sin6_port = htons(113);
-			break;
-#endif			
-	}
+	sock.sin_port = htons(113);
+	sock.sin_family = AF_INET;
 
 	(void)alarm((unsigned)4);
 	if (connect(cptr->authfd, (struct sockaddr *)&sock,
@@ -165,7 +144,7 @@ void	start_auth(aClient *cptr)
  */
 void	send_authports(aClient *cptr)
 {
-	anAddress	us, them;
+	struct	sockaddr_in	us, them;
 	char	authbuf[32];
 	int	ulen, tlen;
 
@@ -182,25 +161,12 @@ void	send_authports(aClient *cptr)
 		goto authsenderr;
 	    }
 
-	switch (us.addr_family)
-	{
-		default:
-		case AF_INET:
-			(void)sprintf(authbuf, "%u , %u\r\n",
-				(unsigned int)ntohs(them.in.sin_port),
-				(unsigned int)ntohs(us.in.sin_port));
-			break;
-#ifdef ENABLE_IPV6
-		case AF_INET6:
-			(void)sprintf(authbuf, "%u , %u\r\n",
-				(unsigned int)ntohs(them.in6.sin6_port),
-				(unsigned int)ntohs(us.in6.sin6_port));
-			break;
-#endif			
-	}
+	(void)sprintf(authbuf, "%u , %u\r\n",
+		(unsigned int)ntohs(them.sin_port),
+		(unsigned int)ntohs(us.sin_port));
 
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",
-		authbuf, inetntoa(&them)));
+		authbuf, inetntoa((char *)&them.sin_addr)));
 #ifndef _WIN32
 	if (write(cptr->authfd, authbuf, strlen(authbuf)) != strlen(authbuf))
 #else

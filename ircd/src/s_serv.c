@@ -736,7 +736,7 @@ int	m_server_estab(aClient *cptr)
 		if (split) {
 			sendto_one(acptr,":%s SERVER %s 2 :[%s] %s",
 				   me.name, cptr->name,
-				   /*cptr->sockhost*/ inetntoa(&cptr->addr), cptr->info);
+				   /*cptr->sockhost*/ inetntoa((char *)&cptr->ip), cptr->info);
 		}
 		else
 			sendto_one(acptr,":%s SERVER %s 2 :%s",
@@ -909,8 +909,7 @@ const char* safe_info(int showIp, aClient* acptr)
 				break;
 			}
 			
-			if (acptr->info[i] != '.' && acptr->info[i] != ':' 
-			    && !isxdigit(acptr->info[i]))
+			if (acptr->info[i] != '.' && !isdigit(acptr->info[i]))
 				break;
 		}
 
@@ -989,14 +988,13 @@ int	m_links(aClient *cptr, aClient *sptr, int parc, char *parv[])
 **            it--not reversed as in ircd.conf!
 */
 
-static int report_array[19][3] = {
+static int report_array[18][3] = {
 		{ CONF_CONNECT_SERVER,    RPL_STATSCLINE, 'C'},
 		{ CONF_NOCONNECT_SERVER,  RPL_STATSNLINE, 'N'},
 		{ CONF_CLIENT,            RPL_STATSILINE, 'I'},
 		{ CONF_AHURT,		  RPL_STATSKLINE, 'h'},
 		{ CONF_KILL,              RPL_STATSKLINE, 'K'},
 		{ CONF_ZAP,		  RPL_STATSKLINE, 'Z'},
-		{ CONF_SUP_ZAP,		  RPL_STATSKLINE, 'W'},
 		{ CONF_QUARANTINED_SERVER,RPL_STATSQLINE, 'q'},
 		{ CONF_QUARANTINED_NICK,  RPL_STATSQLINE, 'Q'},
 		{ CONF_LEAF,		  RPL_STATSLLINE, 'L'},
@@ -1040,9 +1038,6 @@ static	void	report_configured_links(aClient *sptr, int mask)
 			if (tmp->status == CONF_KILL &&
 			    tmp->tmpconf == KLINE_AKILL && !IsAnOper(sptr))
 			    continue;
-
-			if (tmp->status == CONF_SUP_ZAP && !IsAnOper(sptr))
-				continue;
 
 
                         if (tmp->status == CONF_OPERATOR ||
@@ -1312,7 +1307,7 @@ int	m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (!IsAnOper(sptr))
 			report_configured_links(sptr, CONF_KILL|CONF_ZAP);
 		else
-			report_configured_links(sptr, CONF_KILL|CONF_ZAP|CONF_AHURT|CONF_SUP_ZAP);
+			report_configured_links(sptr, CONF_KILL|CONF_ZAP|CONF_AHURT);
 
 		break;
 	case 'M' : case 'm' :

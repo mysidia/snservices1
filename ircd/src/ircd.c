@@ -309,7 +309,7 @@ time_t	currenttime;
 			(*pconf = con_conf)->next = 0;
 		    }
 		if (connect_server(con_conf, (aClient *)NULL,
-				   (struct HostEnt *)NULL) == 0)
+				   (struct hostent *)NULL) == 0)
 			sendto_ops("Connection to %s[%s] activated.",
 				   con_conf->name, con_conf->host);
 	    }
@@ -321,30 +321,12 @@ time_t	currenttime;
    AKILL/RAKILL/KLINE/UNKLINE/REHASH.  Very significant CPU usage decrease.
    I made changes to every check_pings call to add new parameter.
    -- Barubary */
-extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
+extern	time_t	check_pings(time_t currenttime, int check_kills)
 {		
 	aClient	*cptr;
 	int	killflag;
 	int	ping = 0, i, rflag = 0;
 	time_t	oldest = 0, timeout;
-
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-	#define LAST_TIME(xptr)                                          \
-		(!IsRegisteredUser(xptr) ?                               \
-		     ( (xptr)->lasttime )                                \
-		 :                                                       \
-		     ( IsUserVersionKnown((xptr))                        \
-		       ?                                                 \
-			((xptr)->lasttime)                               \
-		       :                                                 \
-                	MIN( (xptr)->firsttime + MAX_NOVERSION_DELAY,    \
-				(xptr)->lasttime )                       \
-		     )                                                   \
-		)
-#else
-	#define LAST_TIME(xptr) \
-		 ((const int)((xptr)->lasttime))
-#endif
 
 #ifdef TIMED_KLINES
 	check_kills = 1;
@@ -361,12 +343,11 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
 		if (ClientFlags(cptr) & FLAGS_DEADSOCKET)
 		    {
 			(void)exit_client(cptr, cptr, &me, "Dead socket");
-			i--;  /* catch re-mapped fds */
 			continue;
 		    }
 
 		if (check_kills)
-			killflag = IsPerson(cptr) ? find_kill(cptr, conf_target) : 0;
+			killflag = IsPerson(cptr) ? find_kill(cptr) : 0;
 		else
 			killflag = 0;
 		if (check_kills && !killflag && IsPerson(cptr))
@@ -379,13 +360,13 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
 					    CONNECTTIMEOUT;
 		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d r %d a %d",
 			cptr->name, cptr->status, ping, killflag, rflag,
-			currenttime - LAST_TIME(cptr)));
+			currenttime - cptr->lasttime));
 		/*
 		 * Ok, so goto's are ugly and can be avoided here but this code
 		 * is already indented enough so I think its justified. -avalon
 		 */
 		if (!killflag && !rflag && IsRegistered(cptr) &&
-		    (ping >= currenttime - LAST_TIME(cptr)))
+		    (ping >= currenttime - cptr->lasttime))
 			goto ping_timeout;
 		/*
 		 * If the server hasnt talked to us in 2*ping seconds
@@ -394,10 +375,10 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
 		 * to be active, close this connection too.
 		 */
 		if (killflag || rflag ||
-		    ((currenttime - LAST_TIME(cptr)) >= (2 * ping) &&
+		    ((currenttime - cptr->lasttime) >= (2 * ping) &&
 		     (ClientFlags(cptr) & FLAGS_PINGSENT)) ||
 		    (!IsRegistered(cptr) &&
-		     (currenttime - LAST_TIME(cptr)) >= ping))
+		     (currenttime - cptr->firsttime) >= ping))
 		    {
 #ifdef ENABLE_SOCKSCHECK
                         if (cptr->socks && cptr->socks->fd >= 0)
@@ -493,19 +474,9 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
                          if (killflag)
                                 (void)exit_client(cptr, cptr, &me,
                                   "User has been banned");
-                         else {
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE) 
-				 if (IsRegisteredUser(cptr) &&
-				     !IsUserVersionKnown(cptr) &&
-				     (NOW - cptr->lasttime) < ping) {
-					return FailClientCheck(cptr);
-				 }
-				 else
-#endif					 
+                         else
                                 (void)exit_client(cptr, cptr, &me,
                                   "Ping timeout");
-			 }
-			i--;  /* catch re-mapped fds */
 			continue;
 		    }
 		else if (IsRegistered(cptr) && (ClientFlags(cptr) & FLAGS_PINGSENT) == 0)
@@ -531,8 +502,7 @@ extern	time_t	check_pings(time_t currenttime, int check_kills, aConfItem *conf_t
 		}*/
 #endif			
 ping_timeout:
-		timeout = LAST_TIME(cptr) + ping;
-		
+		timeout = cptr->lasttime + ping;
 		/*if (ping > 20 && !IsRegistered(cptr) &&
 			!DoingDNS(cptr) && !DoingSocks(cptr) &&
 			!IsNotSpoof(cptr) && !SentNoSpoof(cptr)
@@ -995,7 +965,7 @@ void    SocketLoop(void *dummy)
 		** ping times) --msa
 		*/
 		if (now >= nextping) {
-			nextping = check_pings(now, 0, NULL);
+			nextping = check_pings(now, 0);
                 }
 
 #ifdef ENABLE_SOCKSCHECK

@@ -386,7 +386,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	     -- OnyxDragon */
 	  for (tmpstr = sptr->sockhost; *tmpstr > ' ' && *tmpstr < 127; tmpstr++);
 	  if (*tmpstr || !*sptr->sockhost || isdigit(*(tmpstr-1)))
-	    strncpyzt(sptr->sockhost, (char *)inetntoa(&sptr->addr),
+	    strncpyzt(sptr->sockhost, (char *)inetntoa((char *)&sptr->ip),
 		      sizeof(sptr->sockhost));
 	  strncpyzt(user->host, sptr->sockhost, sizeof(user->host));
 	}
@@ -455,21 +455,11 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
       /*
        * following block for the benefit of time-dependent K:-lines
        */
-      if (find_kill(sptr, NULL))
+      if (find_kill(sptr))
 	{
 	  ircstp->is_ref++;
 	  return exit_client(cptr, sptr, &me, "K-lined");
 	}
-
-      if (find_sup_zap(cptr, TRUE)) {
-	      char* s = find_sup_zap(cptr, FALSE);
-
-	      if ( s )
-		      return exit_client(cptr, sptr, &me, s);
-	      else
-		      return exit_client(cptr, sptr, &me, "W-lined");
-      }
-		      
 
       if ((sconf = find_ahurt(sptr)))
 	{
@@ -478,7 +468,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  /* ircstp->is_ref++; */
 	  SetHurt(sptr); 
 	  sptr->hurt = 3;
-/*        sendto_serv_butone(sptr, ":%s HURTSET %s 3", me.name, sptr->name); */
+          sendto_serv_butone(sptr, ":%s HURTSET %s 3", me.name, sptr->name);
 
 	  if (sconf->tmpconf == KLINE_AKILL)
 	    {
@@ -615,16 +605,9 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	  (void)m_lusers(sptr, sptr, 1, parv);
 	  update_load();
 	  (void)m_motd(sptr, sptr, 1, parv);
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)	  
-	  
-          if (!IsUserVersionKnown(sptr)) {
-	      if (!IsHurt(sptr)) {
-		      sptr->hurt = 4;
-		      SetHurt(sptr);
-	      }
-			
+#ifndef NO_VERSION_CHECK
+          if (!IsUserVersionKnown(sptr))
  	      sendto_one(sptr, ":Auth-%X!auth@nil.imsk PRIVMSG %s :\001VERSION\001", (sptr->nospoof ^ 0xbeefdead), nick);
-	 }
 #endif
 	}
       else 
@@ -644,7 +627,7 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
       nextping = NOW;
       sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client connecting on port %d: %s (%s@%s) [%s] [%s/%s]", 
 		   sptr->acpt->port, nick, user->username,
-		   user->host, inetntoa(&sptr->addr), sptr->sup_host, sptr->sup_server /*[...]*/);
+		   user->host, inetntoa((char *)&sptr->ip), sptr->sup_host, sptr->sup_server /*[...]*/);
     }
   else if (IsServer(cptr))
     {
@@ -684,10 +667,6 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
   sendto_serv_butone(cptr, "NICK %s %d %d %s %s %s :%s", nick,
 		     sptr->hopcount+1, sptr->lastnick, user->username, user->host,
 		     user->server, sptr->info);
-  if (IsHurt(sptr)) {
-       sendto_serv_butone(sptr, ":%s HURTSET %s %d", me.name, sptr->name,
-		            sptr->hurt);
-  }
   if (MyConnect(sptr))
     send_umode_out(cptr, sptr, sptr, 0);
 
@@ -1203,7 +1182,7 @@ nickkilldone:
 	  md5data[4] = me.receiveM;
 	  md5data[5] = 0;
 	  md5data[6] = getpid();
-	  md5data[7] = (int) &sptr->addr.in.sin_addr;
+	  md5data[7] = sptr->ip.s_addr;
 	  md5data[8] = sptr->fd;
 	  md5data[9] = 0;
 	  md5data[10] = 0;
@@ -1376,20 +1355,6 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as a silenced user, you may only message an IRC Operator, type /who 0 o for a list.", me.name, parv[0]);
 				continue;
 			}
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-			if (!IsUserVersionKnown(sptr) && acptr != sptr &&
-			    !IsAnOper(acptr) && !IsULine(acptr, acptr) &&
-			    !IsInvisible(acptr)) {
-				sendto_one(sptr, ":%s NOTICE %s :Sorry, but your client "
-                                                 "software has not yet passed the "
-                                                 "version check, you may only "
-                                                 "message an IRC Operator, "
-                                                 "type /who 0 o for a list.",
-                                            me.name, parv[0]);
-				continue;
-			}
-#endif
-
 		      if (sptr->hurt == 3 && !IsULine(acptr, acptr) && IsInvisible(acptr))
 			{
 				sendto_one(sptr, ":%s NOTICE %s :Sorry, but as an autohurt user, you may send messages only to services.", me.name, parv[0]);
@@ -1610,11 +1575,6 @@ static int m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int n
 
 int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
-	int i, j;
- 
-	if (check_registered(sptr))
-		return 0;
-
 	return m_message(cptr, sptr, parc, parv, 0);
 }
 
@@ -1628,57 +1588,27 @@ int m_private(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_notice(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 #if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
-	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0])
-	   && cptr->nospoof && (parc > 1) && !myncmp(parv[1], "Auth-", 5))
+	if ((!IsRegistered(cptr) || MyClient(sptr)) && (cptr->name[0]) && !IsUserVersionKnown(cptr) && cptr->nospoof)
 	{
-		char version_buf[BUFSIZE];
-		int l;
-		
 		if (parc < 3 || BadPtr(parv[1]) || BadPtr(parv[2]))
 			return 0;
-		if (strlen(parv[1]) < 6 || parv[2][0] != '\001')
+		if (strlen(parv[1]) < 6 || myncmp(parv[1], "Auth-", 5) || parv[2][0] != '\001')
 			return 0;
 		if (strtoul((parv[1])+5, NULL, 16) != (cptr->nospoof ^ 0xbeefdead))
 			return 0;
-		if (myncmp(parv[2], "\001VERSION ", 9))
+		if (myncmp(parv[2], "\001VERSION", 8))
 			return 0;
 		if (!IsRegistered(cptr) && !IsNotSpoof(cptr) && !SentNoSpoof(cptr)) {
 			NospoofText(cptr);
 			SetSentNoSpoof(cptr);
 		}
 		SetUserVersionKnown(cptr);
-#ifdef REQ_VERSION_RESPONSE
-		if (IsRegisteredUser(cptr) && IsHurt(cptr) 
-		    && cptr->hurt == 4) {
-			sendto_serv_butone(sptr, ":%s HURTSET %s -", me.name, sptr->name);
-			remove_hurt(cptr);
-		}
-#endif
-
-		l = strlen(parv[2]) - 9;
-
-		if ( l > 0 ) {
-			strncpyzt(version_buf, parv[2]+9, l);
-			if (version_buf[l - 1] == '\1')
-				version_buf[l - 1] = '\0';
-			dup_sup_version(sptr->user, version_buf);
-		}
 		return;
 	}
 
-#ifdef REQ_VERSION_RESPONSE
 	if (MyClient(sptr) && !IsUserVersionKnown(sptr)) {
-		sendto_one(sptr, ":%s NOTICE %s :Sorry, but your IRC software "
-                           "program has not yet reported its version. "
-                           "Your request (NOTICE) was not processed.",
-                            me.name, sptr->name);
-
-		return 0;
+		return FailClientCheck(sptr);
 	}
-#else
-	if ( 0 )
-		;	
-#endif	
 	else if (parc >= 2 && !BadPtr(parv[1]) && 
                  (toupper(parv[1][0]) == 'A') && 
                  (toupper(parv[1][1]) == 'U') && 
@@ -1747,20 +1677,12 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	aChannel *chptr, *mychannel;
 	char	*channame = NULL, *s;
 	int	oper = parc > 2 ? (*parv[2] == 'o' ): 0; /* Show OPERS only */
-	int	member, who_opsonly = 0;
+	int	member;
         char everyone[5] = "0";
 
 	if (check_registered_user(sptr))
 		return 0;
-
-	who_opsonly = (IsHurt(sptr) && sptr->hurt);
-
-#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
-	if (!IsAnOper(sptr) && !IsUserVersionKnown(sptr)) 
-		who_opsonly = 1;
-#endif
-	
-	if ( who_opsonly )
+	if (IsHurt(sptr) && sptr->hurt)
 	{
 /*	      if (sptr->hurt == 3)
 		{
@@ -2077,12 +1999,6 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				sendto_one(sptr, rpl_str(RPL_WHOISHURT),
 					   me.name, parv[0], name);
 			}
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
-			if (acptr->user && MyConnect(acptr) && IsAnOper(sptr)
-			    && !BadPtr(acptr->user->sup_version))
-				sendto_one(sptr, rpl_str(RPL_WHOISVERSION),
-					me.name, parv[0], name, acptr->user->sup_version);
-#endif
 			if (acptr->user && MyConnect(acptr))
 				sendto_one(sptr, rpl_str(RPL_WHOISIDLE),
 					   me.name, parv[0], name,
@@ -2672,8 +2588,7 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                acptr->name,sptr->name);
             if (MyClient(acptr))
             {
-              if (MyClient(sptr) && (!IsHurt(acptr) || !(acptr->hurt))
-		  && (!IsRegisteredUser(acptr) || !IsUserVersionKnown(acptr)))
+              if (MyClient(sptr) && (!IsHurt(acptr) || !(acptr->hurt)))
               {
                   sendto_one(sptr,"NOTICE %s :%s is not hurt!",
                   sptr->name,acptr->name);
@@ -2687,11 +2602,8 @@ int m_heal(aClient *cptr, aClient *sptr, int parc, char *parv[])
                           sptr->name, acptr->name);
                sendto_one(acptr,":%s NOTICE %s :%s Has removed your hurt status and restored your command access.", me.name, 
                           acptr->name, sptr->name);
-	       if (IsHurt(acptr))
-	               remove_hurt(acptr);
-               acptr->hurt = 0;  	       
-	       if (IsRegisteredUser(acptr) && !IsUserVersionKnown(acptr))
-		       SetUserVersionKnown(acptr);
+               remove_hurt(acptr);
+               acptr->hurt = 0;  
             }   
             else
             if (!MyClient(acptr) && IsPrivileged(cptr))
@@ -3216,7 +3128,7 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	 * it doesn't break anything - DuffJ
 	 */
 	if (!(aconf = find_conf_exact(name, sptr->user->username, sptr->sockhost, CONF_OPS)) &&
-	    !(aconf = find_conf_exact(name, sptr->user->username, inetntoa(&cptr->addr), CONF_OPS)))
+	    !(aconf = find_conf_exact(name, sptr->user->username, inetntoa((char *)&cptr->ip), CONF_OPS)))
 	    {
 		sendto_one(sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
                 if (IsHurt(sptr) && MyConnect(sptr))
@@ -3828,21 +3740,6 @@ void perform_mask(aClient *acptr, int v)
     }
 }
 
-int ip6TokPut(char *s, int n)
-{
-	const char tb[] = "zvpd63g8x7omwb1yecrfl2qs9h4t0j5an_k";
-	int i = 0;
-
-	while ( n > (sizeof tb) ) {
-		s[i++] = tb[n % ((sizeof tb) - 1)];
-		n /= ((sizeof tb) - 1);
-	}
-
-	s[i++] = tb[n % ((sizeof tb) - 1)];
-	return i;
-}
-
-
 char *genHostMask(char *host)
 {
     char tok1[USERLEN+HOSTLEN+255];
@@ -3851,101 +3748,7 @@ char *genHostMask(char *host)
     char fintmp[USERLEN+HOSTLEN+255];
     int i, fIp = TRUE;
 
-    if (!host)
-        return (host ? host : "");
-
-    if (strchr(host, ':'))
-    {
-        /* ipv6 address */
-	struct in6_addr addr_dst;
-	u_int32_t	     md5data[16];
-	static u_int32_t     md5hash[4];
-	int k, x[8] = {}, j;
-	char* s;
-	
-        strcpy(tok2,host);
-        tok1[0] = '\0';
-	k = 0;
-
-	for(q = 0, k = 0, p = host; (p && *p);)
-	{
-		x[k++] = (short int)strtol(p, (char **)&s, 16);
-		if ( s == p ) {
-			if ( *p == ':' )
-				s++;
-		}
-
-		if (s && *s && *s != ':') {
-			return (host ? host : "");
-		}
-
-		if (k > 7)
-			break;
-		p = s + 1;
-	}
-
-	if ( k != 8 )
-		return (host ? host : "");
-
-	memset(md5data, 0, sizeof(md5data));
-	for(k = 0, j = 0; k < 16; k += 2, j++)
-		md5data[k] = x[j];
-	md5data[1] = '6';
-	md5data[3] = 0x6f1553bc;
-	md5data[5] = 0x7ef01c9e;
-	md5data[7] = 0x606b909f;
-	md5data[9] = 0x9495742e;
-	md5data[11] = 0xe8f50e06;
-	md5data[13] = 0xd7b58f7f;
-	md5data[15] = 0x4c27d776;
-
-
-        MD5Init(md5hash);
-        MD5Transform(md5hash, md5data);
-
-	fin[0] = '\0';
-	k = 0;
-
-	k += ip6TokPut(fin + k, md5hash[0]);
-	fin[k++] = '.';
-	
-	k += ip6TokPut(fin + k, md5hash[1]);
-	fin[k++] = '.';
-
-	k += ip6TokPut(fin + k, x[2]);
-	k += ip6TokPut(fin + k, x[3]);
-	fin[k++] = '.';
-
-	k += ip6TokPut(fin + k, x[4]);
-	k += ip6TokPut(fin + k, x[5]);
-	fin[k++] = '.';
-
-	k += ip6TokPut(fin + k, x[6]);
-	k += ip6TokPut(fin + k, x[7]);
-	fin[k++] = '.';
-	fin[k++] = 'i';
-	fin[k++] = 'p';
-	fin[k++] = 'v';
-	fin[k++] = '6';
-	fin[k++] = '\0';
-
-	return fin;
-	
-//        while (( p = strrchr(tok2, ':') ))
-  //      {
-//inet_addr_ipv6		
-/*                strcat(tok1,((i & 2)?(p+1):tokenEncode(p+1)));
-                strcat(tok1,".");
-                *p = '\0';
-                i++;*/
-    //    }
-    //
-
-        sprintf(fin,"%s%s.imsk",tok1,tok2);
-        return fin;
-    }
-
-    if (!strchr(host, '.'))
+    if (!host || !strchr(host, '.'))
         return (host ? host : "");
     for (i = 0; host[i]; i++)
          if ((host[i] < '0' || host[i] > '9') && host[i] != '.')

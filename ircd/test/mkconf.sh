@@ -35,7 +35,6 @@ Y:10:360:0:20:300000
 
 I:*::*::1:!sockscheck
 
-`cat extra`
 EOF
 
 

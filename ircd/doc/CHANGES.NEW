@@ -11,32 +11,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-CHANGES SINCE sorircd1.3.4
-*********************************************************************
-
-Wed Jul 16 13:39:51 CDT 2003  sor1.3.5 - Mysidia
- * Ipv6 improved masking support
- * Ipv6 patch [Onno]
- * REQ_VERSION_RESPONSE now separate from NO_VERSION_CHECK
- * Show version reply in whois [Onno]
- * Bugfix [channel.c] rule-based bans, ban list could prevously be truncated
-   during net.merge; this change allows spaces in bans to work properly
- * Don't allow \033, \037, \026, \017, \b, \t, \003, \002, \001, or \240
-   in channel names
- * New ircd configuration line: W-line, enhanced K-line for banning by information
-   supplied in the User line, usage:
-       W:[host]:[reason]:[nickname]:[username]:[sup user]:[sup server]:[real name]
-           ^        ^      ^           ^         ^           ^           ^
-          host   passwd   name       string4     string5     string6    string7
-
-   For example:
-       W::Blah blah:::::Forbidden Realname
-
- * Changes to the akill command to reduce CPU usage [Skandranon]
-
-
 CHANGES SINCE sorircd1.3.3
-*********************************************************************
 
 Wed Mar  5 21:15:19 CST 2003 - Mysidia - sor1.3.4
        * the $b ban type is now $q
@@ -54,3 +29,23 @@ Wed Mar  5 21:15:19 CST 2003 - Mysidia - sor1.3.4
          and +s)
        * Network name and Help URL can now be set in Config script (Milambar)
        * ENABLE_SOCKSCHECK is now off by default and is added to Config
+       
+
+
+
+
+Sat Aug  7 18:42:34 CDT 2001 - Mysidia - sor1.3.3-p1
+       * Backporting some features from sor1.4:
+          * Safe /list to help stop sendQ exceeds/dead sockets
+          * List options features (from dreamforge)
+          * +H channel mode to block +m users (/join unmask)
+          * Hiding of the keys in +k mode resets from non-ops to help
+            protect key security (ChanServ MLOCK)
+          * Ban caching for channel members to reduce the CPU cost of
+            BQUIET
+          * Prevent a user from switching to a nickname banned
+            on a channel, block nick changes while moderated
+          * Shortcut for /msg service@services.sorcery.net,
+            /msg service@ or /msg service@services
+          * +c channel mode to block colors
+          * Fixed many holes in the ip masking scheme

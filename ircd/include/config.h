@@ -46,12 +46,6 @@
 #define __inline
 #endif
 
-/**
- * Number of seconds a client has to reply to CTCP version prior
- * to disconnection
- */
-#define MAX_NOVERSION_DELAY 300
-
 #define	MAXKILLS 25     /* maximum # of people listed per kill   */
 #define	MAXHURTS 25     /* maximum # of people listed in a /hurt */
 #undef	BOOT_MSGS
@@ -219,7 +213,7 @@
  *       the maintainer.
  */
 
-#define	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
+#undef	DEBUGMODE	/* define DEBUGMODE to enable debugging mode.*/
 
 /*
  * defining FORCE_CORE will automatically "unlimit core", forcing the
@@ -594,10 +588,6 @@
 #define	MYNAME SPATH
 #define	CONFIGFILE CPATH
 #define	IRCD_PIDFILE PPATH
-
-#if defined(NO_VERSION_CHECK) && defined(REQ_VERSION_RESPONSE)
-error No_version_check and req_version_response are mutually exclusive
-#endif
 
 #ifdef	__osf__
 #define	OSF

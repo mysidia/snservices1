@@ -148,7 +148,7 @@ char	*str;
 		writeb[0]++;
 # ifndef _WIN32
                Debug((DEBUG_ERROR,"write error (%s) to %s",
-                        strerror(errno), cptr->name));
+                        sys_errlist[errno], cptr->name));
 # else
                Debug((DEBUG_ERROR,"write error (%s) to %s",
 			sys_errlist[WSAGetLastError()], cptr->name));

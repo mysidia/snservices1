@@ -22,8 +22,6 @@ n=3
 p=9099
 CONFS=''
 
-rm -f test*.conf
-
 if [ ! -x ../src/ircd ] ; then
 	  echo "Ircd need first be compiled"
 	  exit

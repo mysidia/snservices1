@@ -19,8 +19,10 @@
 struct	hent {
 	char	*h_name;	/* official name of host */
 	char	*h_aliases[MAXALIASES];	/* alias list */
+	int	h_addrtype;	/* host address type */
+	int	h_length;	/* length of address */
 	/* list of addresses from name server */
-	anAddress	h_addr_list[MAXADDRS];
+	struct	in_addr	h_addr_list[MAXADDRS];
 #define	h_addr	h_addr_list[0]	/* address, for backward compatiblity */
 };
 
@@ -39,14 +41,14 @@ typedef	struct	reslist {
 	char	resend;	/* send flag. 0 == dont resend */
 	time_t	sentat;
 	time_t	timeout;
-	anAddress	addr;
+	struct	in_addr	addr;
 	char	*name;
 	struct	reslist	*next;
 	Link	cinfo;
 #ifndef _WIN32
 	struct	hent he;
 #else
-	struct	HostEnt *he;
+	struct	hostent *he;
 	char	locked;
 #endif
 	} ResRQ;
@@ -55,9 +57,9 @@ typedef	struct	cache {
 	time_t	expireat;
 	time_t	ttl;
 #ifndef _WIN32
-	struct	HostEnt	he;
+	struct	hostent	he;
 #else
-	struct	HostEnt	*he;
+	struct	hostent	*he;
 #endif
 	struct	cache	*hname_next, *hnum_next, *list_next;
 	} aCache;

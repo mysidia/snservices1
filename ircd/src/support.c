@@ -33,7 +33,7 @@ static  char sccsid[] = "@(#)support.c	2.21 4/13/94 1990, 1991 Armin Gruner;\
 #ifdef _WIN32
 #include <io.h>
 #else
-#include <sys/socket.h>
+
 extern	int errno; /* ...seems that errno.h doesn't define this everywhere */
 #endif
 extern	void	outofmemory();
@@ -132,20 +132,6 @@ char *strerror(int err_no)
 
 #endif /* NEED_STRERROR */
 
-int addr_cmp(const anAddress *a1, const anAddress *a2)
-{
-	if (a1->addr_family != a2->addr_family)
-		return 1;
-	switch (a1->addr_family)
-	{
-		case AF_INET:
-			return bcmp(&a1->in.sin_addr, &a2->in.sin_addr, sizeof(struct in_addr));
-		case AF_INET6:
-			return bcmp(&a1->in6.sin6_addr, &a2->in6.sin6_addr, sizeof(struct in6_addr));
-	}
-	return 1;
-}
-
 /*
 **	inetntoa  --	changed name to remove collision possibility and
 **			so behaviour is gaurunteed to take a pointer arg.
@@ -156,34 +142,18 @@ int addr_cmp(const anAddress *a1, const anAddress *a2)
 **	inet_ntoa --	its broken on some Ultrix/Dynix too. -avalon
 */
 
-char	*inetntoa(const anAddress *addr)
+char	*inetntoa(char *in)
 {
-	static	char	buf[40];
-	u_char	*s;
+	static	char	buf[16];
+	u_char	*s = (u_char *)in;
 	int	a,b,c,d;
 
-	switch (addr->addr_family)
-	{
-		case AF_INET:
-			s = (u_char *)&addr->in.sin_addr;
-			a = (int)*s++;
-			b = (int)*s++;
-			c = (int)*s++;
-			d = (int)*s++;
-			(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
-			break;
-		case AF_INET6:
-			sprintf(buf, "%x:%x:%x:%x:%x:%x:%x:%x",
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[0]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[2]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[4]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[6]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[8]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[10]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[12]),
-				ntohs(*(short int *) &addr->in6.sin6_addr.s6_addr[14]));
-			break;
-	}
+	a = (int)*s++;
+	b = (int)*s++;
+	c = (int)*s++;
+	d = (int)*s++;
+	(void) sprintf(buf, "%d.%d.%d.%d", a,b,c,d );
+
 	return buf;
 }
 
@@ -210,19 +180,15 @@ int inet_netof(struct in_addr in)
 
 
 #if defined(DEBUGMODE)
-void	dumpcore(const char *fmt, ...)
+void	dumpcore(char *msg, char *p1, char *p2, char *p3, char *p4, char *p5, char *p6, char *p7, char *p8, char *p9)
 {
-	char *msg;
-	va_list ap;
 	static	time_t	lastd = 0;
 	static	int	dumps = 0;
 	char	corename[12];
-	time_t	now = NOW;
+	time_t	now;
 	int	p;
 
-	va_start(ap, fmt);
-	vasprintf(&msg, fmt, ap);
-	va_end(ap);
+	now = NOW;
 
 	if (!lastd)
 		lastd = now;
@@ -247,9 +213,9 @@ void	dumpcore(const char *fmt, ...)
 	Debug((DEBUG_FATAL, "Dumped core : core.%d", p));
 	sendto_ops("Dumped core : core.%d", p);
 #endif
-	Debug((DEBUG_FATAL, "%s", msg));
-	sendto_ops("%s", msg);
-	(void)s_die();
+	Debug((DEBUG_FATAL, msg, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+	sendto_ops(msg, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+		(void)s_die();
 }
 
 static	char	*marray[20000];
@@ -305,8 +271,7 @@ char    *MyRealloc(char *x, size_t y)
 	bcopy(x + SZ_CH, (char *)&i, SZ_ST);
 	bcopy(x + (int)i + SZ_CHST, (char *)&k, 4);
 	if (bcmp((char *)&k, "VAVA", 4) || (x != cp))
-		dumpcore("MyRealloc %#x %d %d %#x %#x", (char *)x, (char *)y, 
-			 (char *)i, cp, (char *)k,
+		dumpcore("MyRealloc %#x %d %d %#x %#x", x, y, i, cp, k,
 			 NULL, NULL, NULL, NULL);
 #ifndef _WIN32
 	ret = (char *)realloc(x, y + (size_t)SZ_EX);
@@ -339,9 +304,8 @@ char    *MyRealloc(char *x, size_t y)
 	return ret + SZ_CHST;
     }
 
-void	MyFree(void *yloc)
+void	MyFree(char *x)
 {
-	char    *x = (char *)yloc;
 	size_t	i;
 	char	*j;
 	u_char	k[4];
@@ -357,9 +321,8 @@ void	MyFree(void *yloc)
 	bcopy(x + SZ_CHST + (int)i, (char *)k, 4);
 
 	if (bcmp((char *)k, "VAVA", 4) || (j != x))
-		dumpcore("MyFree %#x %ld %#x %#x", (char *)x, (char *)i, 
-			 (char *)j,
-			 (char *)((k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0]),
+		dumpcore("MyFree %#x %ld %#x %#x", x, i, j,
+			 (k[3]<<24) | (k[2]<<16) | (k[1]<<8) | k[0],
 			 NULL, NULL, NULL, NULL, NULL);
 
 #undef	free

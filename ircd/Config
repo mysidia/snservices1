@@ -4,7 +4,7 @@
 # You may distribute this file without changes freely providing this notice
 # remains intact.
 #
-IRCD_VERSION="sor1.3.5 (pre-release 1)"
+IRCD_VERSION="sor1.3.4_2 (release)"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #
@@ -45,8 +45,7 @@ BLOCKING=''
 SN_MODE='1'
 NETNAME='SorceryNet'
 URL_CONNECTHELP='none'
-NO_VERSION_CHECK='1'
-REQ_VERSION_RESPONSE='1'
+NO_VERSION_CHECK=''
 EXEC=/tmp/.Configtmp$$
 PLATE=/tmp/.ConPlate$$
 c=''
@@ -86,7 +85,6 @@ BUFFERPOOL="(9 * MAXSENDQLENGTH)"
 NICKNAMEHISTORYLENGTH="750"
 MAXCONNECTIONS="1024"
 ENABLE_SOCKSCHECK=''
-ENABLE_IPV6=''
 
 #
 # load $OPTIONS if present
@@ -1218,57 +1216,6 @@ done
 fi
 
 ############################################################
-# IP Version 6
-
-FOO=''
-runonce=''
-
-while [ -z "$FOO" ] ; do
-	FOO="$ENABLE_IPV6"
-	if [ -n "$ENABLE_IPV6" ] ; then
-		FOO="Yes"
-	else
-		FOO="No"
-	fi
-cat <<EOF
-ENABLE_IPV6 (NEW) (EXPERIMENTAL)
-
-If this option is enabled, then it should be possible to specify
-Ipv6 addresses in M:lines, P:lines, and Z:lines in ircd.conf
-and accept clients over ipv6 address interfaces.
-
-see doc/ipv6.txt for more information
-EOF
-
-	echo $n "[$FOO] -> $c"
-	if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-		read cc
-		runonce=Yes
-	else
-		cc=""
-	fi
-
-	if [ -z "$cc" ] ; then
-		cc="$FOO"
-	fi
-
-    case "$cc" in
-	            [Yy]*)
-	                ENABLE_IPV6="1"
-	            ;;
-	            [Nn]*)
-	                ENABLE_IPV6=""
-	            ;;
-	            *)
-			echo ""
-		        echo "You need to enter either Yes or No here..."
-			echo ""
-			FOO=""
-	            ;;
-		    esac
-done
-
-############################################################
 FOO=''
 runonce=''
 
@@ -1515,7 +1462,8 @@ NO_VERSION_CHECK
 ONLY from clients not responding to the NOSPOOF message properly.
 
 If this option is set to NO, then every client logging on will be
-polled for version information.
+polled for version information, and any client that fails to reply
+will not be allowed access to IRC.
 EOF
 
          echo $n "[$FOO] -> $c"
@@ -1543,61 +1491,6 @@ EOF
                     ;;
                     esac
 done	  
-
-if [ -z "$NO_VERSION_CHECK" ] ; then
-FOO=''
-runonce=''
-while [ -z "$FOO" ] ; do
-   FOO="$REQ_VERSION_RESPONSE"
-          if [ -n "$REQ_VERSION_RESPONSE" ] ; then
-               FOO="Yes"
-          else
-               FOO="No"
-          fi
-
-cat << EOF
-REQ_VERSION_RESPONSE
-
-If this option is enabled, then all clients MUST provide a response
-to the CTCP VERSION check in order to connect to IRC.
-
-Clients that do not respond to the CTCP version request will be treated
-similarly to AHURT clients and will be disconnected within 5 minutes.
-
-Do you wish to enable this option?
-
-EOF
-         echo $n "[$FOO] -> $c"
-         if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
-               read cc
-               runonce=Yes
-         else
-               cc=""
-         fi
-
-         if [ -z "$cc" ] ; then
-             cc=$FOO
-         fi
-
-         case "$cc" in
-                    [Yy]*)
-                        REQ_VERSION_RESPONSE="1"
-                    ;;
-                    [Nn]*)
-                        REQ_VERSION_RESPONSE=""
-                    ;;
-                    *)
-                        echo "You need to enter either Yes or No here..."
-                        FOO=""
-                    ;;
-         esac
-
- done
-
-else
-	REQ_VERSION_RESPONSE=''
-fi
-
 
 # this matches a NOSPOOF check waaaaaay up there
 fi
@@ -2200,12 +2093,6 @@ else
     echo "#undef CRYPT_OPER_PASSWORD" >> $OPTIONS_H
 fi
 
-if [ -n "$ENABLE_IPV6" ] ; then
-	echo "#define ENABLE_IPV6 1"  >> $OPTIONS_H
-else
-	echo "#undef ENABLE_IPV6" >> $OPTIONS_H
-fi
-
 if [ -n "$ENABLE_SOCKSCHECK" ] ; then
     echo "#define ENABLE_SOCKSCHECK 1"  >> $OPTIONS_H
 else
@@ -2214,10 +2101,6 @@ fi
 
 if [ -n "$NO_VERSION_CHECK" ] ; then
     echo "#define NO_VERSION_CHECK 1"  >> $OPTIONS_H
-fi
-
-if [ -n "$REQ_VERSION_RESPONSE" ] ; then
-    echo "#define REQ_VERSION_RESPONSE 1" >> $OPTIONS_H	
 fi
 
 if [ -n "$CRYPT_LINK_PASSWORD" ] ; then
@@ -2275,7 +2158,6 @@ NOSPOOF_SEED02="$NOSPOOF_SEED02"
 IMODE="$IMODE"
 ENABLE_SOCKSCHECK="$ENABLE_SOCKSCHECK"
 NO_VERSION_CHECK="$NO_VERSION_CHECK"
-REQ_VERSION_RESPONSE="$REQ_VERSION_RESPONSE"
 NS_ADDRESS="$NS_ADDRESS"
 KLINE_ADDRESS="$KLINE_ADDRESS"
 NETWORK_KLINE_ADDRESS="$NETWORK_KLINE_ADDRESS"
