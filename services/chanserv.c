@@ -5972,6 +5972,7 @@ cmd_return cs_set_founder(cs_settbl_t * cmd, UserList * nick,
 		sSend(":%s NOTICE %s :You are now the founder of %s", ChanServ,
 			  from, regchan->name);
 		GoodPwChan(nick, regchan);
+		chanlog->log(nick, CS_SET_FOUNDER, chan->name, LOGF_OK);
 
 		return RET_OK_DB;
 	}
@@ -5981,6 +5982,7 @@ cmd_return cs_set_founder(cs_settbl_t * cmd, UserList * nick,
 	sSend(":%s NOTICE %s :Incorrect password", ChanServ, from);
 	if (BadPwChan(nick, regchan))
 		return RET_KILLED;
+	chanlog->log(nick, CS_SET_FOUNDER, chan->name, LOGF_BADPW);
 
 	return RET_BADPW;
 }
