@@ -2304,7 +2304,7 @@ int m_showcon(aClient *cptr, aClient* sptr, int parc, char* parv[])
 		sendto_one(sptr, ":%s NOTICE %s : [%ld/%ld]  [%s:%s] [%s] ",  me.name, sptr->name,
 			              ptr->firsttime, ptr->lasttime,
 				      IsUserVersionKnown( ptr ) ? "V" : "NV",
-				      ((BadPtr(ptr->user) || BadPtr(ptr->user->sup_version))
+				      ((ptr->user == NULL || BadPtr(ptr->user->sup_version))
 				                ? "-" : ptr->user->sup_version),
 			              BadPtr(ptr->info) ? "" : ptr->info );
 	}
