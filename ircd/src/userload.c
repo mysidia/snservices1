@@ -112,7 +112,7 @@ char    *parv;  /* we only get passed the original parv[0] */
   struct load_entry *last;
   u_long secs = 0, adj_secs, total[3], adj[3];/*[local,client,conn]*/
   int i, times[5][3]; /* [min,hour,day,Yest,YYest][local,client,conn] */
-  char what[3][HOSTLEN + 1];
+  char what[3][HOSTLEN + 1 + 10];
 
   bzero(total, 3 * sizeof(u_long));
   current_load_data.entries = 0;

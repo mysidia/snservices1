@@ -26,6 +26,11 @@
 #include "sys.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
+#include "snprintf.h"
+
 #include <sys/types.h>
 #ifndef _WIN32
 #include <netinet/in.h>
@@ -66,7 +71,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #endif
 
 #define NETWORK_KLINE_ADDRESS	"kline@sorcery.net"
-#define SOCKS_TIMEOUT	15	/* number of seconds to wait before giving
+#define SOCKS_TIMEOUT	30	/* number of seconds to wait before giving
 				   up on a socks request */
 #define DEBUG_CHAN "#debug"     /* channel to output fake directions to */
 
@@ -88,7 +93,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
                                 * is, raise the nicklen define itself
                                 * have all servers do the same, then
                                 * comment these two defines. */
-#undef NEWNICKLEN       17
+/* #define NEWNICKLEN       17 */
 
 
 #define	NICKLEN		17	/* maximum length of a nickname. */
@@ -267,6 +272,12 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define SOCK_ERROR		BIT07
 #define SOCK_SENT		BIT08	/* sent data already */
 
+typedef	enum {
+	LOG_OPER, 
+	LOG_USER,
+	LOG_HI
+} loglevel_value_t;
+
 #define SET_BIT(x, y)		((x) |= (y))
 #define REMOVE_BIT(x, y)	((x) &= ~(y))
 #define IS_SET(x, y)		((x) & (y))
@@ -281,22 +292,22 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	IsListening(x)		((x)->flags & FLAGS_LISTEN)
 #define SetListening(x)		((x)->flags |= FLAGS_LISTEN)
 
-#define	DoAccess(x)		((x)->flags & FLAGS_CHKACCESS)
-#define	SetAccess(x)		((x)->flags |= FLAGS_CHKACCESS)
-#define	ClearAccess(x)		((x)->flags &= ~FLAGS_CHKACCESS)
+#define	DoAccess(x)		((x)->flags & FLAGS_CHKACCESS)   /* Has he got "access"? */
+#define	SetAccess(x)		((x)->flags |= FLAGS_CHKACCESS)  /* Give him access */
+#define	ClearAccess(x)		((x)->flags &= ~FLAGS_CHKACCESS) /* Remove his access */
 
-#define IsHurt(x)		((x)->flags & FLAGS_HURT)
-#define SetHurt(x)		((x)->flags |= FLAGS_HURT)
-#define ClearHurt(x)		((x)->flags &= ~FLAGS_HURT)
+#define IsHurt(x)		((x)->flags & FLAGS_HURT)   /* Is he hurt? */
+#define SetHurt(x)		((x)->flags |= FLAGS_HURT)  /* Hurt him! Hurt him! */
+#define ClearHurt(x)		((x)->flags &= ~FLAGS_HURT) /* Ye Gods! He's healed! */
 #define check_hurt(x)		((IsHurt((x)) && (x)->hurt && ((x)->hurt > 5) && ((x)->hurt < NOW)) ? (remove_hurt((x)) || 1) : 0)
 
 #define	IsPerson(x)		((x)->user && IsClient(x))
 #define	IsLocal(x)		((x)->flags & FLAGS_LOCAL)
 #define	IsDead(x)		((x)->flags & FLAGS_DEADSOCKET)
 
-#define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)
-#define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)
-#define	ClearDNS(x)		((x)->flags &= ~FLAGS_DOINGDNS)
+#define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)   /* Are we doing a DNS check? */
+#define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)  /* DNS check pending */
+#define	ClearDNS(x)		((x)->flags &= ~FLAGS_DOINGDNS) /* Yay, finished the DNS check */
 
 #define	DoingAuth(x)		((x)->flags & FLAGS_AUTH)
 #define SetAuth(x)		((x)->flags |= FLAGS_AUTh)
@@ -304,7 +315,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 
 #define	NoNewLine(x)		((x)->flags & FLAGS_NONL)
 #define DoingSocks(x)		(((x)->flags & FLAGS_SOCKS) && (x)->socks && (!((x)->socks->status & SOCK_DONE)) && (!((x)->socks->status & SOCK_DESTROY)) )
-#define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x))
+#define	IsPrivileged(x)		(IsAnOper(x) || IsServer(x)) /* Can this client see cool messages? */
 #define IsULine(cptr,sptr)      (ClientFlags(sptr) & FLAGS_ULINE)
 
 /* usermode macros */
@@ -333,6 +344,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	ClearOper(x)		(ClientUmode(x) &= ~U_OPER)
 
 #define	IsAnOper(x)		(ClientUmode(x) & (U_OPER|U_LOCOP))
+
 #define	IsLocOp(x)		(ClientUmode(x) & U_LOCOP)
 #define	SetLocOp(x)    		(ClientUmode(x) |= U_LOCOP)
 #define	ClearLocOp(x)		(ClientUmode(x) &= ~U_LOCOP)
@@ -340,7 +352,6 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define	IsInvisible(x)		(ClientUmode(x) & U_INVISIBLE)
 #define	SetInvisible(x)		(ClientUmode(x) |= U_INVISIBLE)
 #define	ClearInvisible(x)	(ClientUmode(x) &= ~U_INVISIBLE)
-
 
 #define	SendWallops(x)		(ClientUmode(x) & U_WALLOP)
 #define	SetWallops(x)  		(ClientUmode(x) |= U_WALLOP)
@@ -380,11 +391,12 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OFLAG_UMODEF	0x02000000  /* Oper can set umode +f */
 #define OFLAG_SGLOB	0x04000000  /* Oper can send globops */
 #define OFLAG_ZLINE     0x08000000  /* Oper can use /zline and /unzline */
+#define	OFLAG_MHACK	0x10000000  /* Oper can hack channel modes */
 
 #define OFLAG_SGLOBOP	(OFLAG_GLOBOP|OFLAG_SGLOB)
 #define OFLAG_LOCAL	(OFLAG_REHASH|OFLAG_HELPOP|OFLAG_SGLOBOP|OFLAG_GLOBOP|OFLAG_WALLOP|OFLAG_LOCOP|OFLAG_LROUTE|OFLAG_LKILL|OFLAG_KLINE|OFLAG_UNKLINE|OFLAG_LNOTICE|OFLAG_UMODEC|OFLAG_UMODEF)
-#define OFLAG_GLOBAL	(OFLAG_LOCAL|OFLAG_DIE|OFLAG_RESTART|OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE|OFLAG_ZLINE)
-#define OFLAG_ISGLOBAL	(OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE|OFLAG_ZLINE)
+#define OFLAG_GLOBAL	(OFLAG_LOCAL|OFLAG_DIE|OFLAG_RESTART|OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE|OFLAG_ZLINE|OFLAG_MHACK)
+#define OFLAG_ISGLOBAL	(OFLAG_GROUTE|OFLAG_GKILL|OFLAG_GNOTICE|OFLAG_ZLINE|OFLAG_MHACK)
 
 #define OPCanRehash(x)	((x)->oflag & OFLAG_REHASH)
 #define OPCanDie(x)	((x)->oflag & OFLAG_DIE)
@@ -406,6 +418,11 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OPCanUModeC(x)	((x)->oflag & OFLAG_UMODEC)
 #define OPCanUModeF(x)	((x)->oflag & OFLAG_UMODEF)
 #define OPCanZline(x)	((x)->oflag & OFLAG_ZLINE)
+#ifdef ALLOW_MODEHACK
+#define	OPCanModeHack(x) ((x)->oflag & OFLAG_MHACK)
+#else
+#define	OPCanModeHack(x) (0)
+#endif
 
 #define OPSetRehash(x)	((x)->oflag |= OFLAG_REHASH)
 #define OPSetDie(x)	((x)->oflag |= OFLAG_DIE)
@@ -426,6 +443,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OPSetUModeC(x)	((x)->oflag |= OFLAG_UMODEC)
 #define OPSetUModeF(x)	((x)->oflag |= OFLAG_UMODEF)
 #define OPSetZline(x)	((x)->oflag |= OFLAG_ZLINE)
+#define	OPSetModeHack(x) ((x)->oflag |= OFLAG_MHACK)
 
 #define OPClearRehash(x)	((x)->oflag &= ~OFLAG_REHASH)
 #define OPClearDie(x)		((x)->oflag &= ~OFLAG_DIE)  
@@ -446,6 +464,7 @@ typedef unsigned int  u_int32_t; /* XXX Hope this works! */
 #define OPClearUModeC(x)	((x)->oflag &= ~OFLAG_UMODEC)
 #define OPClearUModeF(x)	((x)->oflag &= ~OFLAG_UMODEF)
 #define OPClearZline(x) 	((x)->oflag &= ~OFLAG_ZLINE)
+#define	OPClearModeHack(x)	((x)->oflag &= ~OFLAG_MODEHACK)
 
 
 /*
@@ -478,12 +497,15 @@ struct	ConfItem	{
 	char	*name;
 	int	port;
 	time_t	hold;	/* Hold action until this time (calendar time) */
-	int	tmpconf;
+	int	tmpconf, bits;
 #ifndef VMSP
 	aClass	*class;  /* Class of connection */
 #endif
 	struct	ConfItem *next;
 };
+
+#define	CFLAG_NOSOCKS		0x00000001
+#define	CFLAG_NOIDENT		0x00000002
 
 #define	CONF_ILLEGAL		0x80000000
 #define	CONF_MATCH		0x40000000
@@ -516,12 +538,12 @@ struct	ConfItem	{
 #define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER)
-#define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | \
-				 CONF_SERVER_MASK )
+#define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | CONF_SERVER_MASK )
 #define CONF_CRULE              (CONF_CRULEALL | CONF_CRULEAUTO)
 #define CONF_QUARANTINE		(CONF_QUARANTINED_SERVER|CONF_QUARANTINED_NICK)
 
 #define	IsIllegal(x)	((x)->status & CONF_ILLEGAL)
+#define	IsCNLine(x)	((x)->status & CONF_SERVER_MASK)
 #define IsTemp(x)	((x)->tmpconf)
 
 /*
@@ -833,21 +855,5 @@ extern	int	schecksfd;
 #define	COMMA		","
 
 /* IRC client structures */
-
-#ifdef	CLIENT_COMPILE
-typedef	struct	Ignore {
-	char	user[NICKLEN+1];
-	char	from[USERLEN+HOSTLEN+2];
-	int	flags;
-	struct	Ignore	*next;
-} anIgnore;
-
-#define	IGNORE_PRIVATE	1
-#define	IGNORE_PUBLIC	2
-#define	IGNORE_TOTAL	3
-
-#define	HEADERLEN	200
-
-#endif
 
 #endif /* __struct_include__ */

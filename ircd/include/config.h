@@ -39,10 +39,18 @@
  *
  */
 
+/*
+ * If we are using GNUC, __inline is ok.  Otherwise, remove it.
+ */
+#if !defined(__GNUC__)
+#define __inline
+#endif
+
 #define	MAXKILLS 25     /* maximum # of people listed per kill   */
 #define	MAXHURTS 25     /* maximum # of people listed in a /hurt */
 #undef	BOOT_MSGS
 #define	HASH_MSGTAB
+#define	ALLOW_MODEHACK	/* enable Modehack operator flag */
 
 /*
  *  URL people denied access as result of open socks server should be sent to
@@ -52,19 +60,19 @@
 
 /* Type of host. These should be made redundant somehow. -avalon */
 
-/*	BSD			Nothing Needed 4.{2,3} BSD, SunOS 3.x, 4.x */
-/*	HPUX			Nothing needed (A.08/A.09) */
-/*	ULTRIX			Nothing needed (4.2) */
-/*	OSF			Nothing needed (1.2) */
-/* #undef	AIX		/* IBM ugly so-called Unix, AIX */
-/* #undef	MIPS		/* MIPS Unix */
-/*	SGI			Nothing needed (IRIX 4.0.4) */
-/* #undef 	SVR3		/* SVR3 stuff - being worked on where poss. */
-/* #undef	DYNIXPTX	/* Sequents Brain-dead Posix implement. */
-/* #undef	SOL20		/* Solaris2 */
-/* #undef	ESIX		/* ESIX */
-/* #undef	NEXT		/* NeXTStep */
-/* #undef	SVR4 /* */
+/*	BSD		Nothing Needed 4.{2,3} BSD, SunOS 3.x, 4.x */
+/*	HPUX		Nothing needed (A.08/A.09) */
+/*	ULTRIX		Nothing needed (4.2) */
+/*	OSF		Nothing needed (1.2) */
+/* 	AIX		IBM ugly so-called Unix, AIX */
+/* 	MIPS		MIPS Unix */
+/*	SGI		Nothing needed (IRIX 4.0.4) */
+/*  	SVR3		SVR3 stuff - being worked on where poss. */
+/* 	DYNIXPTX	Sequents Brain-dead Posix implement. */
+/* 	SOL20		Solaris2 */
+/* 	ESIX		ESIX */
+/* 	NEXT		NeXTStep */
+/* 	SVR4 */
 
 /* Timed K-line support - Timed K-lines are K-lines that only are active
    certain times of day.  This may be helpful so some, but they eat up the
@@ -88,7 +96,7 @@
  *
  * This enables the spoof protection.
  */
-/* #define NOSPOOF 1 /* */
+/* #define NOSPOOF 1 */
 
 #ifdef NOSPOOF
 /*
@@ -178,10 +186,6 @@
 
 /* Do these work? I dunno... */
 
-/* #undef	VMS		/* Should work for IRC client, not server */
-/* #undef	MAIL50		/* If you're running VMS 5.0 */
-/* #undef	PCS		/* PCS Cadmus MUNIX, use with BSD flag! */
-
 /*
  * NOTE: On some systems, valloc() causes many problems.
  */
@@ -213,7 +217,7 @@
  * defining FORCE_CORE will automatically "unlimit core", forcing the
  * server to dump a core file whenever it has a fatal error.  -mlv
  */
-#define FORCE_CORE
+#undef FORCE_CORE
 
 /*
  * Full pathnames and defaults of irc system's support files. Please note that
@@ -232,12 +236,12 @@
 #define	PPATH	"ircd.pid"	/* file for server pid */
 
 /*
- * Define this filename to maintain a list of persons who log
+ * this define sets the filename to maintain a list of persons who log
  * into this server. Logging will stop when the file does not exist.
- * Logging will be disable also if you do not define this.
- * FNAME_USERLOG just logs user connections, FNAME_OPERLOG logs every
- * successful use of /oper.  These are either full paths or files within DPATH.
+ * FNAME_USERLOG just logs user connections, FNAME_OPERLOG logs oper actions
+ * These are either full paths or files within DPATH.
  */
+#define	IRC_LOGGING
 #define FNAME_USERLOG "users.log"
 #define FNAME_OPERLOG "opers.log"
 
@@ -265,16 +269,7 @@
  *
  * You may want to define IRC_UID and IRC_GID
  */
-/* #define CHROOTDIR /* */
-
-/* SHOW_INVISIBLE_LUSERS
- *
- * As defined this will show the correct invisible count for anyone who does
- * LUSERS on your server. On a large net this doesnt mean much, but on a
- * small net it might be an advantage to undefine it.
- * (This will get defined for you if you're using userload (stats w).  -mlv)
- */
-#define	SHOW_INVISIBLE_LUSERS
+/* #define CHROOTDIR */
 
 /* NO_DEFAULT_INVISIBLE
  *
@@ -328,7 +323,7 @@
  * to a leaf which just has 1 server (typically the uplink). Define this
  * correctly for performance reasons.
  */
-/* #define	HUB /* */
+/* #define	HUB */
 
 /* R_LINES:  The conf file now allows the existence of R lines, or
  * restrict lines.  These allow more freedom in the ability to restrict
@@ -403,7 +398,7 @@
  * define this if you want to use crypted passwords for operators in your
  * ircd.conf file. See ircd/crypt/README for more details on this.
  */
-/* #define	CRYPT_OPER_PASSWORD /* */
+/* #define	CRYPT_OPER_PASSWORD */
 
 /*
  * If you want to store encrypted passwords in N-lines for server links,
@@ -411,7 +406,7 @@
  * need not be the same for both, as long as hte opposite end has the
  * right password in the opposite line.  See INSTALL doc for more details.
  */
-/* #undef	CRYPT_LINK_PASSWORD /* */
+/* #undef	CRYPT_LINK_PASSWORD */
 
 /*
  * IDLE_FROM_MSG
@@ -452,8 +447,8 @@
  * define IRC_UID to that UID.  This should only be defined if you are running
  * as root and even then perhaps not.
  */
-/* #undef	IRC_UID /* */
-/* #undef	IRC_GID /* */
+/* #undef	IRC_UID */
+/* #undef	IRC_GID */
 
 /*
  * CLIENT_FLOOD
@@ -619,11 +614,6 @@
 #define	SGI
 #endif
 
-#ifdef	CLIENT_COMPILE
-#undef	SENDQ_ALWAYS
-#undef	NPATH		/* _dl */
-#endif
-
 #ifndef KLINE_TEMP
 #define KLINE_PERM 0
 #define KLINE_TEMP 1
@@ -636,15 +626,7 @@ extern	void	debug();
 # define LOGFILE LPATH
 #else
 # define Debug(x) ;
-# if VMS
-#	define LOGFILE "NLA0:"
-# else
-#	define LOGFILE "/dev/null"
-# endif
-#endif
-
-#ifndef ENABLE_SUMMON
-#  undef LEAST_IDLE
+# define LOGFILE "/dev/null"
 #endif
 
 #if defined(mips) || defined(PCS)
@@ -680,10 +662,6 @@ error You stuffed up config.h signals #defines use only one.
 
 #ifdef	POSIX_SIGNALS
 #define	HAVE_RELIABLE_SIGNALS
-#endif
-
-#ifdef	CLIENT_COMPILE
-#undef	SENDQ_ALWAYS
 #endif
 
 /*
@@ -747,16 +725,5 @@ error SOCKSFOUND_URL is not defined: Please define in config.h
 #ifdef _WIN32
 # undef FORCE_CORE
 #endif
-
-#define Reg1 register
-#define Reg2 register
-#define Reg3 register
-#define Reg4 register
-#define Reg5 register
-#define Reg6 register
-#define Reg7 register
-#define Reg8 register
-#define Reg9 register
-#define Reg10 register
 
 #endif /* __config_include__ */

@@ -143,18 +143,19 @@ int     port, class;
 	aconf->port = port;
 	if(class)
 		Class(aconf) = find_class(class);
-	mask = CONF_KILL;
+        if (status & CONF_AHURT) mask = status &= ~(CONF_ILLEGAL);
+	else                     mask = CONF_KILL;
 	if (bconf=find_temp_conf_entry(aconf,mask)) /* only if non-null ptr */
 	{
 /* Completely skirt the akill error messages if akill is set to 1
  * this allows RAKILL to do its thing without having to go through the
  * error checkers.  If it had to it would go kaplooey. --Russell
  */
-		if (bconf->tmpconf == KLINE_PERM)
+		if (bconf->tmpconf == KLINE_PERM && (akill < 3))
 			result = KLINE_RET_PERM;/* Kline permanent */
 		else if (!akill && (bconf->tmpconf == KLINE_AKILL))
 			result = KLINE_RET_AKILL;  /* Akill */
-		else if (akill && (bconf->tmpconf != KLINE_AKILL))
+		else if (akill && (bconf->tmpconf != KLINE_AKILL) && (akill < 3))
 			result = KLINE_RET_PERM;
 		else
 		{
@@ -208,7 +209,11 @@ char	*sockhost;
 					*uhost = '\0';
 				(void)strncat(uhost, fullname,
 					sizeof(uhost) - strlen(uhost));
+                               if (*uhost != '%')
 				if (!match(aconf->name, uhost))
+					goto attach_iline;
+                               else
+				if (!match(aconf->name, uhost+1))
 					goto attach_iline;
 			    }
 
@@ -225,7 +230,7 @@ char	*sockhost;
 		continue;
 attach_iline:
 		if (index(uhost, '@'))
-			cptr->flags |= FLAGS_DOID;
+			ClientFlags(cptr) |= FLAGS_DOID;
 		get_sockhost(cptr, uhost);
 		return attach_conf(cptr, aconf);
 	    }
@@ -582,6 +587,36 @@ char	*host;
     return NULL;
 }
 
+
+
+/*
+ *       scan I-lines to see if we should look for an open socks
+ *    server.
+ */
+aConfItem *find_socksline_host(host)
+char	*host;
+{
+    Reg1	aConfItem *tmp;
+    char	*s;
+
+
+    for (tmp = conf; tmp; tmp = tmp->next) {
+	if (!(tmp->status & CONF_CLIENT))
+	    continue;
+	if (!tmp->host)
+	    return tmp;
+          	if ((*tmp->host == '%') && ((s=(char *)strchr(tmp->host+1, '@')) != NULL))
+                {
+	            if (!match(s+1, host))
+	         	return tmp;
+                }
+
+	else if (!match(tmp->host, host)) return NULL; /* this is correct !! */
+    }
+
+    return NULL;
+}
+
 /*
  * find_conf_ip
  *
@@ -802,6 +837,10 @@ int	sig;
 			if (!tmp2->clients)
 				free_conf(tmp2);
 		    }
+#ifdef HASH_MSGTAB
+	/* rebuild the commands hashtable  */
+	msgtab_buildhash();
+#endif
 	/* Added to make sure K-lines are checked -- Barubary */
 	check_pings(NOW, 1);
 
@@ -813,9 +852,9 @@ int	sig;
 				CONF_UWORLD) || (acptr->user && find_conf_host(
 				acptr->from->confs, acptr->user->server,
 				CONF_UWORLD)))
-				acptr->flags |= FLAGS_ULINE;
+				ClientFlags(acptr) |= FLAGS_ULINE;
 			else
-				acptr->flags &= ~FLAGS_ULINE;
+				ClientFlags(acptr) &= ~FLAGS_ULINE;
 		}
 
 	return ret;
@@ -891,6 +930,7 @@ int oper_access[] = {
 	OFLAG_ADMIN,    	'A',
 	OFLAG_UMODEC,   	'u',
 	OFLAG_UMODEF,   	'f',
+	OFLAG_ZLINE,		'z',
 	0, 0 };
 
 /*
@@ -1403,6 +1443,38 @@ aClient	*cptr;
  	return (tmp ? -1 : 0);
 }
 
+
+
+aConfItem	*find_ahurt(cptr)
+aClient	*cptr;
+{
+	char	*host, *name;
+	aConfItem *tmp;
+
+	if (!cptr->user)
+		return NULL;
+
+	host = cptr->sockhost;
+	name = cptr->user->username;
+
+	if (strlen(host)  > (size_t) HOSTLEN ||
+            (name ? strlen(name) : 0) > (size_t) HOSTLEN)
+		return (NULL);
+
+	for (tmp = conf; tmp; tmp = tmp->next)
+ 		if ((tmp->status == CONF_AHURT) && tmp->host && tmp->name &&
+		    (match(tmp->host, host) == 0) &&
+ 		    (!name || match(tmp->name, name) == 0) &&
+		    (!tmp->port || (tmp->port == cptr->acpt->port)))
+                {
+                        return tmp;
+                }
+
+ 	return (NULL);
+}
+
+
+
 char *find_zap(aClient *cptr, int dokillmsg)  
 {
 	aConfItem *tmp;
@@ -1789,6 +1861,83 @@ char	*parv[];
 
     }
 
+
+
+
+
+/*
+** m_rahurt;
+**      parv[0] = sender prefix
+**      parv[1] = hostmask
+**      parv[2] = username
+**      parv[3] = comment
+*/
+int     m_rahurt(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int     parc;
+char    *parv[];
+{
+        int i = 0;
+        if (check_registered(sptr))
+                return 0;
+
+        if (parc < 3)
+            {
+                sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+                           me.name, parv[0], "RAHURT");
+                return 0;
+            }
+
+           if (!IsULine(sptr, sptr)) return;
+
+                	del_temp_conf(CONF_AHURT, parv[1], NULL, 
+				parv[2], NULL, NULL, 1); 
+
+                if(parv[3])
+                        sendto_serv_butone(cptr, ":%s RAHURT %s %s :%s", 
+				parv[0], parv[1], parv[2], parv[3]);
+                else
+                        sendto_serv_butone(cptr, ":%s RAHURT %s %s", 
+				parv[0], parv[1], parv[2]);
+}
+
+
+/* ** m_ahurt
+**	parv[0] = sender prefix
+**	parv[1] = hostmask
+**	parv[2] = username
+**	parv[3] = comment
+*/
+int	m_ahurt(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int	parc;
+char	*parv[];
+{
+	if (check_registered(sptr))
+		return 0;
+	if (parc < 3)
+	    {
+		sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+			   me.name, parv[0], "AHURT");
+		return 0;
+	    }
+
+        if (!IsULine(cptr, sptr))
+                 return 0;
+		add_temp_conf(CONF_AHURT, parv[1], parv[3], parv[2], 0, 0, KLINE_AKILL); 
+		if(parv[3])
+			sendto_serv_butone(cptr, ":%s AHURT %s %s :%s", parv[0],
+				     parv[1], parv[2], parv[3]);
+		else
+			sendto_serv_butone(cptr, ":%s AHURT %s %s", parv[0],
+				     parv[1], parv[2]);
+}
+
+
+
+
+
+
 /*
 ** m_kline;
 **	parv[0] = sender prefix
@@ -1954,4 +2103,411 @@ char    *parv[];
 	}
 	/* This wasn't here before -- Barubary */
 	check_pings(NOW, 1);
+}
+
+  /******************************************************************************
+  ***       tempzline mods   : allow opers/servers to (safely) set and remove ***
+  ***                          temporary Z-lines                              ***
+  ***   Client Usage: /zline <nick/ip> <reason>                               ***
+  ***   Services Usage: /zline <nick> [onwhatserver] <reason>                 ***
+  ***                                                                         ***
+  ***                                                     -- Mysidia          ***
+  ******************************************************************************/
+
+/*
+ *  m_zline                       add a temporary zap line
+ *    parv[0] = sender prefix
+ *    parv[1] = host
+ *    parv[2] = reason
+ */
+int m_zline(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int     parc;
+char    *parv[];
+{
+	char userhost[512+2]="", *in;
+	int result=0, uline=0, i=0, propo=0;
+	char *reason, *mask, *server, *person;
+	aClient *acptr;
+	
+	reason=mask=server=person=NULL;
+	
+	reason = ((parc>=3) ? parv[parc-1] : "Reason unspecified");
+	mask   = ((parc>=2) ? parv[parc-2] : NULL);
+	server   = ((parc>=4) ? parv[parc-1] : NULL);
+
+	if (parc == 4)
+	{
+	      mask = parv[parc-3];
+	      server = parv[parc-2];
+	      reason = parv[parc-1];
+	}
+
+	uline = IsULine(cptr, sptr) ? 1 : 0;
+
+	if (!uline && ( !MyConnect(sptr) || !OPCanZline(sptr) || !IsOper(sptr)))
+	{
+	  sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+	  return -1;
+	}
+
+	if (uline)
+	{
+	  if (parc>=4 && server)
+	  {
+	    if (hunt_server(cptr, sptr, ":%s ZLINE %s %s :%s", 2, parc, parv)
+                != HUNTED_ISME)
+	      return 0;
+	    else    ;
+	  }
+	  else propo=1;
+	}
+
+	if (parc < 2)
+	{
+	  sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+	             me.name, parv[0], "ZLINE");
+	  return -1;
+	}
+
+	if (acptr = find_client(parv[1], NULL))
+	{
+	  strcpy(userhost, inetntoa((char *) &acptr->ip));
+	  person = &acptr->name[0];
+	  acptr = NULL;
+	}
+     /* z-lines don't support user@host format, they only 
+        work with ip addresses and nicks */
+	else
+	if ((in = index(parv[1], '@')) && (*(in+1)!='\0'))
+	{
+	  strcpy(userhost, in+1);
+	  in = &userhost[0];
+	  while(*in) 
+	  { 
+	    if (!isdigit(*in) && !ispunct(*in)) 
+	    {
+	      sendto_one(sptr, ":%s NOTICE %s :z:lines work only with ip addresses (you cannot specify ident either)", me.name, sptr->name);
+	      return;
+	    }
+	    in++;
+	    }
+	  } else if (in && !(*(in+1))) /* sheesh not only specifying a ident@, but
+                                   omitting the ip...?*/
+	  {
+	    sendto_one(sptr, ":%s NOTICE %s :Hey! z:lines need an ip address...",
+                       me.name, sptr->name);
+	    return -1;
+	  }
+	else
+	{
+	  strcpy(userhost, parv[1]);
+	  in = &userhost[0];
+	  while(*in) 
+	  { 
+	    if (!isdigit(*in) && !ispunct(*in)) 
+	    {
+	       sendto_one(sptr, ":%s NOTICE %s :z:lines work only with ip addresses (you cannot specify ident either)", me.name, sptr->name);
+	       return;
+	    }
+	    in++;
+	  }
+	}
+    
+	   /* this'll protect against z-lining *.* or something */
+	if (banmask_check(userhost, TRUE) == FALSE)
+	{ 
+	  sendto_ops("Bad z:line mask from %s *@%s [%s]", parv[0], userhost, reason?reason:"");
+	  if (MyClient(sptr))
+	  sendto_one(sptr, ":%s NOTICE %s :*@%s is a bad z:line mask...", me.name, sptr->name, userhost);
+	  return;
+        }
+
+	if (uline == 0)
+	{
+	  if (person)
+	    sendto_ops("%s added a temp z:line for %s (*@%s) [%s]", parv[0], person, userhost, reason?reason:"");
+	  else
+	    sendto_ops("%s added a temp z:line *@%s [%s]", parv[0], userhost, reason?reason:"");
+	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_TEMP); 
+        }
+	else
+	 {
+	 if (person)
+	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:"DALnet" , reason?reason:"");
+	 else
+	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:"DALnet" , reason?reason:"");
+	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
+        }
+
+                                           /* something's wrong if i'm
+                                              zapping the command source... */
+       if (find_zap(cptr, 0)||find_zap(sptr, 0))
+       {
+             sendto_failops_whoare_opers("z:line error: mask=%s parsed=%s I tried to zap cptr", mask, userhost);
+             sendto_serv_butone(NULL,":%s GLOBOPS :z:line error: mask=%s parsed=%s I tried to zap cptr", me.name, mask, userhost);
+             flush_connections(me.fd);
+             (void)rehash(&me, &me, 0);
+             return;
+       }
+
+	for (i=highest_fd;i>0;i--)
+	{
+	  if (!(acptr = local[i]) || IsLog(acptr) || IsMe(acptr));
+	     continue;
+	  if (  find_zap(acptr, 1) )
+          {
+	    if (!IsServer(acptr))
+	    {
+               sendto_one(sptr,":%s NOTICE %s :*** %s %s",
+                          me.name, sptr->name, 
+	                  IsPerson(acptr)?"exiting":"closing", 
+	                  acptr->name[0]?acptr->name:"<unknown>");
+               exit_client(acptr, acptr, acptr, "z-lined");
+	    }
+	    else
+	    {
+	      sendto_one(sptr, ":%s NOTICE %s :*** exiting %s",
+	                 me.name, sptr->name, acptr->name);
+	      sendto_ops("dropping server %s (z-lined)", acptr->name);
+	      sendto_serv_butone(cptr, "GNOTICE :dropping server %s (z-lined)",
+	                         acptr->name);
+	      exit_client(acptr, acptr, acptr, "z-lined");
+
+	    }
+	  }
+	}
+
+       if (propo==1)      /* propo is if a ulined server is propagating a z-line
+                             this should go after the above check */
+            sendto_serv_butone(cptr, ":%s ZLINE %s :%s", parv[0], parv[1], reason?reason:"");
+
+        check_pings(time(NULL), 1);
+
+}
+
+
+/*
+ *  m_unzline                        remove a temporary zap line
+ *    parv[0] = sender prefix
+ *    parv[1] = host
+ */
+
+int m_unzline(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int     parc;
+char    *parv[];
+{
+   char userhost[512+2]="", *in;
+   int result=0, uline=0, akill=0;
+   aConfItem *aconf, *tmp;
+   aConfItem dummy;
+   char *mask, *server;
+
+   uline = IsULine(cptr, sptr)? 1 : 0;
+
+   if (parc < 2)
+   {
+      sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+                 me.name, parv[0], "UNZLINE");
+                 return -1;
+   }
+
+
+  if (parc < 3 || !uline)
+  {
+      mask   = parv[parc-1];
+      server = NULL;
+  }
+  else if (parc == 3)
+  {
+      mask   = parv[parc-2];
+      server = parv[parc-1];
+  }
+ 
+    if (!uline && (!MyConnect(sptr) || !OPCanZline(sptr) || !IsOper(sptr)))
+    {
+        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+        return -1;
+    }
+ 
+    /* before we even check ourselves we need to do the uline checks
+       because we aren't supposed to add a z:line if the message is
+       destined to be passed on...*/
+ 
+    if (uline)
+    {
+      if (parc == 3 && server)
+      {
+         if (hunt_server(cptr, sptr, ":%s UNZLINE %s %s", 2, parc, parv) != HUNTED_ISME)
+                    return 0;
+         else    ;
+      }
+       else
+             sendto_serv_butone(cptr, ":%s UNZLINE %s", parv[0], parv[1]);
+ 
+    }
+ 
+ 
+    /* parse the removal mask the same way so an oper can just use
+       the same thing to remove it if they specified *@ or something... */
+    if ((in = index(parv[1], '@')))
+    {
+        strcpy(userhost, in+1);
+        in = &userhost[0];
+        while(*in) 
+        { 
+            if (!isdigit(*in) && !ispunct(*in)) 
+            {
+               sendto_one(sptr, ":%s NOTICE %s :it's not possible to have a z:line that's not an ip addresss...", me.name, sptr->name);
+               return;
+           }
+            in++;
+       }
+   }
+   else
+   {
+       strcpy(userhost, parv[1]);
+       in = &userhost[0];
+       while(*in) 
+       { 
+           if (!isdigit(*in) && !ispunct(*in)) 
+           {
+              sendto_one(sptr, ":%s NOTICE %s :it's not possible to have a z:line that's not an ip addresss...", me.name, sptr->name);
+              return;
+           }
+            in++;
+       }
+   }
+
+       akill = 0;
+retry_unzline:
+
+        if (uline == 0)
+        {
+           result = del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, akill);
+	  if ((result) == KLINE_RET_DELOK)
+          {
+   	      sendto_one(sptr,":%s NOTICE %s :temp z:line *@%s removed", me.name, parv[0], userhost);
+   	      sendto_ops("%s removed temp z:line *@%s", parv[0], userhost);
+          }
+          else if (result == KLINE_RET_PERM)
+              sendto_one(sptr, ":%s NOTICE %s :You may not remove permanent z:lines talk to your admin...", me.name, sptr->name);
+
+/*          else if (result == KLINE_RET_AKILL && !(sptr->flags & FLAGS_SADMIN))
+          {
+              sendto_one(sptr, ":%s NOTICE %s :You may not remove z:lines placed by services...", me.name, sptr->name);
+          }*/
+          else if (result == KLINE_RET_AKILL && !akill)
+          {
+             akill=1;
+             goto retry_unzline;
+          }
+          else
+              sendto_one(sptr, ":%s NOTICE %s :Couldn't find/remove zline for *@%s", me.name, sptr->name, userhost);
+
+        }
+        else    
+        {      /* services did it, services should be able to remove
+                  both types...;> */
+	  if (del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, 1) == KLINE_RET_DELOK||
+              del_temp_conf(CONF_ZAP, userhost,  NULL, NULL, 0, 0, 0) == KLINE_RET_DELOK)
+          {
+              if (MyClient(sptr))
+   	      sendto_one(sptr,"NOTICE %s :temp z:line *@%s removed", parv[0], userhost);
+   	      sendto_ops("%s removed temp z:line *@%s", parv[0], userhost);
+          }
+          else
+              sendto_one(sptr, ":%s NOTICE %s :Unable to find z:line", me.name, sptr->name);
+       }
+
+}
+
+
+/* ok, given a mask, our job is to determine
+ * wether or not it's a safe mask to kline, zline, or
+ * otherwise banish...
+ *
+ * userhost= mask to verify
+ * ipstat= TRUE  == it's an ip
+ *         FALSE == it's a hostname
+ *         UNSURE == we need to find out
+ * return value
+ *         TRUE  == mask is ok
+ *         FALSE == mask is not ok
+ *        UNSURE == [unused] something went wrong
+ */
+banmask_check(char *userhost, int ipstat)
+{
+   register int	retval = TRUE;
+   char	*up, *p, *thisseg;
+   int	numdots=0, segno=0, numseg, i=0;
+   char	*ipseg[10+2];
+   char	safebuffer[512]=""; /* buffer strtoken() can mess up to its heart's content...;>*/
+
+  strcpy(safebuffer, userhost);
+
+#define userhost safebuffer
+#define IP_WILDS_OK(x) ((x)<2? 0 : 1)
+
+   if (ipstat == UNSURE)
+   {
+        ipstat=TRUE;
+        for (;*up;up++) 
+        {
+           if (*up=='.') numdots++;
+           if (!isdigit(*up) && !ispunct(*up)) {ipstat=FALSE; continue;}
+        }
+        if (numdots != 3) ipstat=FALSE;
+        if (numdots < 1 || numdots > 9)  return(0);
+   }
+
+     /* fill in the array elements with the corresponding ip segments */
+  {
+     int l = 0;
+        for (segno = 0, i = 0, thisseg = strtoken(&p, userhost, "."); thisseg;
+             thisseg = strtoken(&p, NULL, "."), i++)
+        {
+            
+            l = strlen(thisseg)+2;
+            ipseg[segno] = MyMalloc(l+1);
+            if (!ipseg[segno]) {
+                 sendto_realops("[***] PANIC! UNABLE TO ALLOCATE MEMORY (banmask_check)"); 
+                 for (l = 0; l < segno ; l++) free(ipseg[segno]);
+                 server_reboot("UNABLE TO ALLOCATE MEMORY (banmask_check)");
+                 return;
+           }
+            strncpy(ipseg[segno], thisseg, l);
+            ipseg[segno++][l] = 0;
+        }
+  }
+     if (segno < 2 && ipstat==TRUE) retval = FALSE;  
+     numseg = segno;
+     if (ipstat==TRUE)
+      for(i=0;i<numseg;i++)
+      {
+            if (!IP_WILDS_OK(i) && index(ipseg[i], '*')||index(ipseg[i], '?'))
+               retval=FALSE;            
+            MyFree(ipseg[i]);
+      }
+     else
+     {
+      int wildsok=0;
+
+      for(i=0;i<numseg;i++)
+      {
+             /* for hosts, let the mask extend all the way to 
+                the second-level domain... */
+           wildsok=1;
+          if (i==numseg||(i+1)==numseg) wildsok=0;
+           if (wildsok == 0 && (index(ipseg[i], '*')||index(ipseg[i], '?')))
+           {
+             retval=FALSE;
+           }
+            MyFree(ipseg[i]);
+      }
+     }
+     return(retval);
+#undef userhost
+#undef IP_WILDS_OK
 }

@@ -70,10 +70,10 @@ static	dbufbuf	*freelist = NULL;
 static dbufbuf *dbuf_alloc()
 {
 #if defined(VALLOC) && !defined(DEBUGMODE)
-	Reg1	dbufbuf	*dbptr, *db2ptr;
-	Reg2	int	num;
+	dbufbuf	*dbptr, *db2ptr;
+	int	num;
 #else
-	Reg1	dbufbuf *dbptr;
+	dbufbuf *dbptr;
 #endif
 
 	dbufalloc++;
@@ -120,7 +120,7 @@ static dbufbuf *dbuf_alloc()
 ** dbuf_free - return a dbufbuf structure to the freelist
 */
 static	void	dbuf_free(ptr)
-Reg1	dbufbuf	*ptr;
+dbufbuf	*ptr;
 {
 	dbufalloc--;
 	ptr->next = freelist;
@@ -153,9 +153,9 @@ dbuf	*dyn;
 char	*buf;
 int	length;
 {
-	Reg1	dbufbuf	**h, *d;
-	Reg2	int	nbr, off;
-	Reg3	int	chunk;
+	dbufbuf	**h, *d;
+	int	nbr, off;
+	int	chunk;
 
 	off = (dyn->offset + dyn->length) % DBUFSIZ;
 	nbr = (dyn->offset + dyn->length) / DBUFSIZ;
@@ -263,12 +263,12 @@ int	length;
 /*
 int	dbuf_copy(dyn, buf, length)
 dbuf	*dyn;
-register char	*buf;
+char	*buf;
 int	length;
 {
-	register dbufbuf	*d = dyn->head;
-	register char	*s;
-	register int	chunk, len = length, dlen = dyn->length;
+	dbufbuf	*d = dyn->head;
+	char	*s;
+	int	chunk, len = length, dlen = dyn->length;
 
 	s = d->data + dyn->offset;
 	chunk = MIN(DBUFSIZ - dyn->offset, dlen);
@@ -307,12 +307,12 @@ int	length;
 int	dbuf_getmsg(dyn, buf, length)
 dbuf	*dyn;
 char	*buf;
-register int	length;
+int	length;
 {
 	dbufbuf	*d;
-	register char	*s;
-	register int	dlen;
-	register int	i;
+	char	*s;
+	int	dlen;
+	int	i;
 	int	copy;
 
 getmsg_init:

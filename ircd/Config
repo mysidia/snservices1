@@ -4,7 +4,7 @@
 # You may distribute this file without changes freely providing this notice
 # remains intact.
 #
-IRCD_VERSION="sor1.2"
+IRCD_VERSION="sor1.2.4"
 CONF_DATE=`date`
 LAST_VERSION="very very old"
 #
@@ -13,7 +13,7 @@ MV=mv
 RM=rm
 SETUP=include/setup.h
 OPTIONS_H=include/options.h
-OPTIONS=Options
+OPTIONS=./Options
 AUTO_CONFIG=""
 #
 STDLIBH=undef
@@ -145,7 +145,7 @@ case "$OS" in
 	OSNAME="SunOS 4.x"
 	;;
     *SunOS*5.*)
-	DEFCFLAGS="$DEFOPT -DSOL20"
+	DEFCFLAGS="$DEFOPT -DSOL20 -DNEED_SNPRINTF"
 	DEFLIBS="-lsocket -lnsl -lresolv"
 	OSNAME="Solaris 2.x (or SunOS 5.x)"
 	;;
@@ -177,9 +177,8 @@ echo You are running $OSNAME...
 echo " "
 	
 # Create Makefile if it doesn't exist...
-if [ ! -f Makefile ] ; then
-  cp Makefile.dist Makefile
-fi
+cp Makefile.dist Makefile
+
 cat << __EOF__
 Welcome to autoconfigure for the SorceryNet-derived IRC server
 version [1m$IRCD_VERSION[0m.

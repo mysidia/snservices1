@@ -56,6 +56,7 @@ extern	aClient	*find_server PROTO((char *, aClient *));
 extern	aClient	*find_service PROTO((char *, aClient *));
 extern	aClient	*find_userhost PROTO((char *, char *, aClient *, int *));
 
+extern	int	conf_xbits(aConfItem *aconf, char *field);
 extern	int	attach_conf PROTO((aClient *, aConfItem *));
 extern	aConfItem *attach_confs PROTO((aClient*, char *, int));
 extern	aConfItem *attach_confs_host PROTO((aClient*, char *, int));
@@ -131,6 +132,8 @@ extern	void	server_reboot PROTO((char *));
 extern	void	terminate PROTO(()), write_pidfile PROTO(());
 
 extern	int	send_queued PROTO((aClient *));
+extern	int	tolog( int logtype, char *fmt, ... );
+
 /*VARARGS2*/
 extern	void	sendto_one();
 /*VARARGS4*/
@@ -165,6 +168,8 @@ extern  void    sendto_opers();
 /*VARARGS?*/
 extern	void	sendto_flag();
 extern	void	sendto_flag_norep();
+/*VARARGS?*/
+extern	void	sendto_umode();
 
 extern	int	writecalls, writeb[];
 extern	int	deliver_it PROTO((aClient *, char *, int));
@@ -185,13 +190,11 @@ extern	int	parse PROTO((aClient *, char *, char *, struct Message *));
 extern	int	do_numeric PROTO((int, aClient *, aClient *, int, char **));
 extern	int hunt_server PROTO((aClient *,aClient *,char *,int,int,char **));
 extern	aClient	*next_client PROTO((aClient *, char *));
-#ifndef	CLIENT_COMPILE
 extern	int	m_umode PROTO((aClient *, aClient *, int, char **));
 extern	int	m_names PROTO((aClient *, aClient *, int, char **));
 extern	int	m_server_estab PROTO((aClient *));
 extern	void	send_umode PROTO((aClient *, aClient *, aClient *, int, int, char *));
 extern	void	send_umode_out PROTO((aClient*, aClient *, aClient *, int));
-#endif
 
 extern	void	free_client PROTO((aClient *));
 extern	void	free_link PROTO((Link *));
@@ -254,13 +257,9 @@ extern void send_socksquery (aClient *cptr);
 extern void read_socks (aClient *cptr);
 
 
-#ifdef	CLIENT_COMPILE
-extern	char	*mycncmp PROTO((char *, char *));
-#endif
-
 /*VARARGS2*/
 extern	void	debug();
-#if defined(DEBUGMODE) && !defined(CLIENT_COMPILE)
+#if defined(DEBUGMODE)
 extern	void	send_usage PROTO((aClient *, char *));
 extern	void	send_listinfo PROTO((aClient *, char *));
 extern	void	count_memory PROTO((aClient *, char *));
@@ -270,3 +269,8 @@ int parse_help (aClient *sptr, char *name, char *help);
 char *crule_parse PROTO((char *));
 int crule_eval PROTO((char *));
 void crule_free PROTO((char **));
+
+/*
+ * ahurt stuff
+ */
+aConfItem	*find_ahurt(aClient *);
