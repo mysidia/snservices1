@@ -22,10 +22,8 @@
 #ifndef GETADDRINFO_H
 #define GETADDRINFO_H
 
-#if !defined(_MSC_VER) && !defined(__BORLANDC__)
 #include <sys/socket.h>
 #include <netdb.h>
-#endif
 
 
 /* Various macros that ought to be in <netdb.h>, but might not be */
@@ -72,9 +70,6 @@
 #define NI_MAXSERV	32
 #endif
 
-
-#ifndef HAVE_STRUCT_ADDRINFO
-
 struct addrinfo
 {
 	int			ai_flags;
@@ -86,31 +81,7 @@ struct addrinfo
 	char	   *ai_canonname;
 	struct addrinfo *ai_next;
 };
-#endif   /* HAVE_STRUCT_ADDRINFO */
 
-
-#ifndef HAVE_GETADDRINFO
-
-/* Rename private copies per comments above */
-#ifdef getaddrinfo
-#undef getaddrinfo
-#endif
-#define getaddrinfo pg_getaddrinfo
-
-#ifdef freeaddrinfo
-#undef freeaddrinfo
-#endif
-#define freeaddrinfo pg_freeaddrinfo
-
-#ifdef gai_strerror
-#undef gai_strerror
-#endif
-#define gai_strerror pg_gai_strerror
-
-#ifdef getnameinfo
-#undef getnameinfo
-#endif
-#define getnameinfo pg_getnameinfo
 
 extern int getaddrinfo(const char *node, const char *service,
 			const struct addrinfo * hints, struct addrinfo ** res);
@@ -119,6 +90,5 @@ extern const char *gai_strerror(int errcode);
 extern int getnameinfo(const struct sockaddr * sa, int salen,
 			char *node, int nodelen,
 			char *service, int servicelen, int flags);
-#endif   /* HAVE_GETADDRINFO */
 
 #endif   /* GETADDRINFO_H */

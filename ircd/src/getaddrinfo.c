@@ -17,16 +17,11 @@
  *-------------------------------------------------------------------------
  */
 
-/* This is intended to be used in both frontend and backend, so use c.h */
-#include "c.h"
-
-#if !defined(_MSC_VER) && !defined(__BORLANDC__)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif
 
 #include "getaddrinfo.h"
 
@@ -83,16 +78,7 @@ getaddrinfo(const char *node, const char *service,
 		{
 			struct hostent *hp;
 
-#ifdef FRONTEND
-			struct hostent hpstr;
-			char		buf[BUFSIZ];
-			int			herrno = 0;
-
-			pqGethostbyname(node, &hpstr, buf, sizeof(buf),
-							&hp, &herrno);
-#else
 			hp = gethostbyname(node);
-#endif
 			if (hp == NULL)
 			{
 				switch (h_errno)
@@ -124,7 +110,7 @@ getaddrinfo(const char *node, const char *service,
 	if (service)
 		sin.sin_port = htons((unsigned short) atoi(service));
 
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SS_LEN
+#ifndef SOL20
 	sin.sin_len = sizeof(sin);
 #endif
 
@@ -171,7 +157,7 @@ freeaddrinfo(struct addrinfo * res)
 const char *
 gai_strerror(int errcode)
 {
-#ifdef HAVE_HSTRERROR
+#ifndef SOL20
 	int			hcode;
 
 	switch (errcode)
@@ -202,7 +188,7 @@ gai_strerror(int errcode)
 		default:
 			return "Unknown server error";
 	}
-#endif   /* HAVE_HSTRERROR */
+#endif
 }
 
 /*
@@ -226,7 +212,7 @@ getnameinfo(const struct sockaddr * sa, int salen,
 		|| (service && !(flags & NI_NUMERICSERV)))
 		return EAI_FAIL;
 
-#ifdef	HAVE_IPV6
+#ifdef	AF_INET6
 	if (sa->sa_family == AF_INET6)
 		return EAI_FAMILY;
 #endif

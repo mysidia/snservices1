@@ -49,6 +49,10 @@ void setlinebuf(FILE *iop);
 #include "resolv.h"
 #include "h.h"
 
+#ifdef SOL20
+#include "getaddrinfo.h"
+#endif
+
 #include "ircd/res.h"
 #include "ircd/send.h"
 #include "ircd/string.h"
