@@ -4513,30 +4513,21 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
     return 0;
   } 
 
+   if ((parc < 4 ) || !isdigit(*parv[3]))
+       ts = NOW;
+   else
+       ts = atol(parv[3]);
+
+  if(!MyConnect(acptr)) {
+     sendto_one(acptr, ":%s CNICK %s %s %ld", parv[0], parv[1], parv[2], ts);
+     return 0;
+  }
+
   if(IsServer(acptr) || IsMe(acptr)) { /* Can't change server's name */
     return 0;
   }
 
-  if(!IsServer(sptr)) {
-     return 0;
-  }
-
-  if(parc < 3) {
-     sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "CNICK");
-     return 0;
-  }
-
   if (strlen(parv[2]) > NICKLEN) return 0;
-  acptr = find_client(parv[1], NULL);
-
-   if(acptr == NULL) { /* Who? */
-     sendto_one(sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
-     return 0;
-   } 
-
-   if(IsServer(acptr) || IsMe(acptr)) { /* Can't change servers nick */
-     return 0;
-   }
 
    acptr2 = find_client(parv[2], NULL);
    if(acptr2 != NULL) { /* Nick is in use */
@@ -4551,18 +4542,9 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
            return 0;
    }
 
-   if ((parc < 4 ) || !isdigit(*parv[3]))
-       ts = NOW;
-   else
-       ts = atol(parv[3]);
  /* at this point the CNICK must -NOT- fail, even kill clients using the
     nick if necessary... */
    sendto_common_channels(acptr, ":%s NICK :%s", parv[1], parv[2]);
-   (void)add_history(acptr);
-   if(!MyConnect(acptr)) {
-      sendto_one(acptr, ":%s CNICK %s %s %ld", parv[0], parv[1], parv[2], ts);
-      return 0;
-   }
    if (IsPerson(acptr))
    (void)add_history(acptr);
    sendto_serv_butone(NULL, ":%s NICK %s :%i",
@@ -4573,7 +4555,5 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
    (void)add_to_client_hash_table(parv[2], acptr);
    hash_check_watch(acptr, RPL_LOGON);
 
-  /*tonick[0] = parv[1];  tonick[1] = parv[2];  tonick[2] = NULL;
-    return m_nick(acptr, acptr, 2, tonick);*/
   return 0;  
 }
