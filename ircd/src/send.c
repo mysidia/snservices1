@@ -401,7 +401,7 @@ sendto_serv_butone(aClient *one, char *fmt, ...)
 }
 
 /*
- * Sends a message to all people (inclusing user) on local server who are
+ * Sends a message to all people (excluding user) on local server who are
  * in same channel with user.
  */
 void
@@ -426,8 +426,6 @@ sendto_common_channels(aClient *user, char *fmt, ...)
 				break;
 			    }
 	}
-	if (MyConnect(user))
-		vsendto_prefix_one(user, user, fmt, ap);
 
 	va_end(ap);
 }
