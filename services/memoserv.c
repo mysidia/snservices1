@@ -1248,3 +1248,4 @@ int ShouldMemoExpire(MemoList *memo, int vacationPlus)
 		return 1;
 	return 0;
 }
+
