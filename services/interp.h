@@ -233,6 +233,7 @@ CCMD(cs_dmod);
 
 /* GameServ Commands */
 GCMD(gs_roll);
+GCMD(gs_ww);
 GCMD(gs_help);
 
 /* InfoServ Commands */
@@ -315,7 +316,7 @@ namespace interp {
 	IS_DEL,			IS_SAVE,
 
 	// GameServ Commands
-	GS_HELP,		GS_ROLL,
+	GS_HELP,		GS_ROLL,	GS_WW,
 
 	// Services events
 	NSE_EXPIRE,		CSE_EXPIRE
