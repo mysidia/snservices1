@@ -48,6 +48,11 @@
 #include "timestr.h"
 #include "options.h"
 
+bool TimeLengthString::isValid() const
+{
+	return f_isValid;
+}
+
 /// Build a time length from a number of seconds
 TimeLengthString::TimeLengthString(int num_secs)
 {
@@ -190,7 +195,7 @@ const char* TimeLengthString::asShortStr(char* buf, int len, bool pad) const
 		if (pad == false) 
 			k = snprintf(buf, len, "%dd", length.days);
 		else
-			k = snprintf(buf, len, "%2dd", length.days);
+			k = snprintf(buf, len, "%4dd", length.days);
 		if (k < 0)
 			return NULL;
 		l += k;
@@ -242,7 +247,7 @@ const char* TimeLengthString::asShortStr(char* buf, int len, bool pad) const
 const char* TimeLengthString::asLongStr(char* buf, int len) const
 {
 	int k =
-	snprintf(buf, len, "%2d days, %2d hours, %2d minutes, and %2d seconds",
+	snprintf(buf, len, "%4d days, %2d hours, %2d minutes, and %2d seconds",
 		length.days, length.hours, length.minutes, length.seconds);
 
 	if (k == -1)

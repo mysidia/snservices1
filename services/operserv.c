@@ -54,6 +54,7 @@
 #include "log.h"
 #include "macro.h"
 #include "interp.h"
+#include "timestr.h"
 #include "hash/md5pw.h"
 
 // *INDENT-OFF*
@@ -388,7 +389,49 @@ OCMD(os_akill)
 	if (!str_cmp(args[1], "add") || !str_cmp(args[1], "forever"))
 		t = 0;
 	else if (*args[1] == '-' || isdigit(*args[1]))
-		t = atoi(args[1]) * 3600;
+	{
+		t = 0;
+
+		/* If it's not a remove, then parse the time field */
+		if (*args[1] != '-' && strcmp(args[1], "forever"))
+		{
+			char *tmps;
+
+			for(tmps = args[1]; *tmps; tmps++)
+				if (isascii(*tmps) && isalpha(*tmps))
+					break;
+
+			if (!*tmps) {
+				t = atoi(args[1]) * 3600;
+			}
+			else 
+			{
+				TimeLengthString tls(args[1]);
+
+				if (tls.isValid() == false) {
+					PutError(OperServ, nick, ERR_AKILLSYNTAX_1ARG, args[0], 0, 0);
+					sSend(":%s NOTICE %s :The duration field should look like: 10d5h, for example.",
+						OperServ, nick->nick);
+					PutReply(OperServ, nick, RPL_AKILLHELP_2ARG, OperServ, listProper, 0);
+					return RET_SYNTAX;
+				}
+				t = tls.getTotalSeconds();
+
+				if (t < 20*60) {
+					sSend(":%s NOTICE %s :Please specify a duration 20 minutes or longer.",
+						OperServ, nick->nick);
+					return RET_SYNTAX;
+				}
+
+				// Sanity check.
+				if (t > 365*24*3600*5) {
+					sSend(":%s NOTICE %s :Sanity check: duration too long... truncating to 5 years, sorry.", OperServ, nick);
+
+					t = 365*24*3600*5;
+				}
+			}
+		}
+	}
 	else {
 		PutError(OperServ, nick, ERR_AKILLSYNTAX_1ARG, args[0], 0, 0);
 		PutReply(OperServ, nick, RPL_AKILLHELP_2ARG, OperServ, listProper, 0);
