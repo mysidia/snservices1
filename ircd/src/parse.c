@@ -524,7 +524,8 @@ struct	Message *mptr;
 				{
 					if (!IsHurt(from))
 					   from->hurt = 0;
-					if (IsHurt(from) && from->hurt)
+					if (IsHurt(from) && from->hurt
+					    && from->hurt != 4)
 					{
 						if ((NOW < from->hurt || (from->hurt>0 && from->hurt<5)) &&
                                                     (from->hurt != 3 || !IsOper(from)))
