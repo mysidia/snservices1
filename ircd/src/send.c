@@ -18,17 +18,13 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include <stdio.h>
 #include <assert.h>
 #include <stdarg.h>
 
-#include "struct.h"
-#include "common.h"
 #include "sys.h"
-#include "h.h"
-
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)send.c	2.32 2/28/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
@@ -97,7 +93,7 @@ flush_connections(aClient *cptr)
 			}
 		}
 	}
-	else if (cptr->fd >= 0 && DBufLength(&cptr->sendQ) > 0)
+	else if (cptr->sock != NULL && DBufLength(&cptr->sendQ) > 0)
 	{
 		send_queued(cptr);
 	}
@@ -183,6 +179,15 @@ send_queued(aClient *to)
 			break;
 	}
 
+	if (DBufLength(&to->sendQ) == 0)
+	{
+		socket_unmonitor(to->sock, MONITOR_WRITE);
+	}
+	else
+	{
+		socket_monitor(to->sock, MONITOR_WRITE, network_write_handler);
+	}
+
 	return (IsDead(to)) ? -1 : 0;
 }
 
@@ -208,10 +213,10 @@ vsendto_one(aClient *to, char *fmt, va_list ap)
 
 	if (to->from)
 		to = to->from;
-	if (to->fd < 0) {
-		assert(to->fd >= 0);
+	if (to->sock == NULL) {
+		assert(to->sock != NULL);
 		Debug((DEBUG_ERROR,
-		       "Local socket %s with negative fd... AARGH!",
+		       "Local socket %s without a sock... AARGH!",
 		       to->name));
 	} else if (IsMe(to)) {
 		sendto_ops("Trying to send [%s] to myself!", sendbuf);
@@ -238,7 +243,7 @@ vsendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 		acptr = lp->value.cptr;
 		if (acptr->from == one || (lp->flags & CHFL_ZOMBIE))
 			continue;	/* ...was the one I should skip */
-		i = acptr->from->fd;
+		i = acptr->from->sock->fd;
 		va_copy(ap2, ap);
 		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
 			vsendto_prefix_one(acptr, from, fmt, ap);
@@ -295,7 +300,7 @@ sendto_channelops_butone(aClient *one, aClient *from, aChannel *chptr,
 		    !(lp->flags & CHFL_CHANOP))
 			continue;       /* ...was the one I should skip
                                            or user not not a channel op */
-		i = acptr->from->fd;
+		i = acptr->from->sock->fd;
 
 		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
 			va_copy(ap2, ap);
@@ -345,7 +350,7 @@ sendto_channelvoices_butone(aClient *one, aClient *from, aChannel *chptr,
 			&& !(lp->flags & CHFL_CHANOP) ))
 			continue;       /* ...was the one I should skip
                                            or user not not a channel op */
-		i = acptr->from->fd;
+		i = acptr->from->sock->fd;
 		if (MyConnect(acptr) && IsRegisteredUser(acptr)) {
 			va_copy(ap2, ap);
 			vsendto_prefix_one(acptr, from, fmt, ap2);
@@ -1000,7 +1005,7 @@ sendto_ops_butone(aClient *one, aClient *from, char *fmt, ...)
 	for (cptr = client; cptr; cptr = cptr->next) {
 		if (!SendWallops(cptr))
 			continue;
-		i = cptr->from->fd;	/* find connection oper is on */
+		i = cptr->from->sock->fd;	/* find connection oper is on */
 		if (sentalong[i])	/* sent message along it already ? */
 			continue;
 		if (cptr->from == one)
@@ -1036,7 +1041,7 @@ sendto_opers_butone(aClient *one, aClient *from, char *fmt, ...)
 	for (cptr = client; cptr; cptr = cptr->next) {
 		if (!IsAnOper(cptr))
 			continue;
-		i = cptr->from->fd;	/* find connection oper is on */
+		i = cptr->from->sock->fd;	/* find connection oper is on */
 		if (sentalong[i])	/* sent message along it already ? */
 			continue;
 		if (cptr->from == one)
@@ -1070,7 +1075,7 @@ sendto_ops_butme(aClient *from, char *fmt, ...)
 	for (cptr = client; cptr; cptr = cptr->next) {
 		if (!SendWallops(cptr))
 			continue;
-		i = cptr->from->fd;	/* find connection oper is on */
+		i = cptr->from->sock->fd;	/* find connection oper is on */
 		if (sentalong[i])	/* sent message along it already ? */
 			continue;
 		if (!strcmp(cptr->user->server, me.name))	/* a locop */

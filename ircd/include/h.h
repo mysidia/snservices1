@@ -68,7 +68,7 @@ aConfItem *find_conf_exact(char *, char *, char *, int);
 aConfItem *find_conf_host(Link *, char *, int);
 aConfItem *find_socksline_host(char *host);
 aConfItem *find_iline_host(char *);
-aConfItem *find_conf_ip(Link *, anAddress *, char *, int);
+aConfItem *find_conf_ip(Link *, sock_address *, char *, int);
 aConfItem *find_conf_name(char *, int);
 aConfItem *find_temp_conf_entry(aConfItem *, u_int);
 aConfItem *find_conf_servern(char *);
@@ -87,14 +87,14 @@ char	*rpl_str(int);
 char *err_str(int);
 char	*strerror(int);
 int	dgets(int, char *, int);
-char	*inetntoa(const anAddress *);
-int	addr_cmp(const anAddress *, const anAddress *);
 void boot_replies(void);
 
 extern	int	dbufalloc, dbufblocks, debuglevel;
 extern	int	debuglevel, portnum, debugtty, maxusersperchannel;
 extern	int	readcalls, resfd;
-aClient	*add_connection(aClient *, int);
+extern	sock_address	*localaddr;
+
+aClient	*add_connection(aClient *, sock *);
 int	add_listener(aConfItem *);
 void	add_local_domain(char *, int);
 int	check_client(aClient *);
@@ -104,16 +104,19 @@ int	check_server_init(aClient *);
 void	close_connection(aClient *);
 void	close_listeners(void);
 int connect_server(aConfItem *, aClient *, struct HostEnt *);
+int	completed_connection(aClient *);
 void flush_connections(aClient*);
 void	get_my_name(aClient *, char *, int);
 int	get_sockerr(aClient *);
-int	inetport(aClient *, char *, int);
 void	init_sys(void);
 int	read_message(time_t);
+int	read_packet(aClient *cptr);
 void	report_error(char *, aClient *);
 void	set_non_blocking(int, aClient *);
 int	setup_ping(void);
 void	summon(aClient *, char *, char *, char *);
+
+void	do_dns_async();
 
 void	start_auth(aClient *);
 void	read_authports(aClient *);
@@ -192,10 +195,10 @@ void	report_classes(aClient *);
 
 struct	HostEnt	*get_res(char *);
 
-struct	HostEnt	*gethost_byaddr(anAddress *, Link *);
+struct	HostEnt	*gethost_byaddr(sock_address *, Link *);
 struct	HostEnt	*gethost_byname(char *, int, Link *);
 void	flush_cache(void);
-int	init_resolver(int);
+int	resolver_init();
 time_t	timeout_query_list(time_t);
 time_t	expire_cache(time_t);
 void    del_queries(char *);

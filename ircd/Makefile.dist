@@ -103,6 +103,8 @@ STRTOUL=
 
 GETADDRINFO=
 
+SOCKET=socket_select.o
+
 # [CHANGEME]
 # If you get crashes around a specific number of clients, and that client
 # load comes close or a little over the system-defined value of FD_SETSIZE,
@@ -129,7 +131,7 @@ MAKEARGS =	'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
 		'MANDIR=${MANDIR}' 'RM=${RM}' 'CP=${CP}' 'TOUCH=${TOUCH}' \
 		'DESCRYPT=${DESCRYPT}' \
 		'RES=${RES}' 'SHELL=${SHELL}' 'STRTOUL=${STRTOUL}' \
-		'GETADDRINFO=${GETADDRINFO}'
+		'GETADDRINFO=${GETADDRINFO}' 'SOCKET=${SOCKET}'
 
 server:
 build:

@@ -5,12 +5,12 @@
  * loss of property which results from the use of this software.  Distribution
  * of this file must include this notice.
  */
-#include "struct.h"
-#include "common.h"
+
+#include "ircd.h"
+
 #include "sys.h"
 #include "res.h"
 #include "numeric.h"
-#include "h.h"
 
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -21,8 +21,6 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 
-#include "ircd/send.h"
-#include "ircd/string.h"
 #include "ircd/res.h"
 
 IRCD_SCCSID("@(#)res.c	2.38 4/13/94 (C) 1992 Darren Reed");
@@ -43,20 +41,22 @@ static	ResRQ	*last, *first;
 static	void	rem_cache(aCache *);
 static	void	rem_request(ResRQ *);
 static	int	do_query_name(Link *, char *, int, ResRQ *);
-static	int	do_query_number(Link *, anAddress *, ResRQ *);
+static	int	do_query_number(Link *, sock_address *, ResRQ *);
 static	void	resend_query(ResRQ *);
 static	int	proc_answer(ResRQ *, HEADER *, char *, char *);
 static	int	query_name(char *, int, int, ResRQ *);
 static	aCache	*make_cache(ResRQ *);
 static	aCache	*find_cache_name(char *);
-static	aCache	*find_cache_number(ResRQ *, anAddress *);
+static	aCache	*find_cache_number(ResRQ *, sock_address *);
 static	int	add_request(ResRQ *);
 static	ResRQ	*make_request(Link *);
 static	int	send_res_msg(char *, int, int);
 static	ResRQ	*find_id(int);
-static	int	hash_number(anAddress *);
+static	int	hash_number(sock_address *);
 static	void	update_list(ResRQ *, aCache *);
 static	int	hash_name(char *);
+
+SOCKET_HANDLER(res_read_handler);
 
 static	struct cacheinfo {
 	int	ca_adds;
@@ -81,43 +81,43 @@ static	struct	resinfo {
 	int	re_unkrep;
 } reinfo;
 
+sock *ressock;
+
 int
-init_resolver(int op)
+resolver_init()
 {
 	int ret = 0;
+	sock_address	server;
 
-	if (op & RES_INITLIST) {
-		bzero((char *)&reinfo, sizeof(reinfo));
-		first = last = NULL;
-	}
-	if (op & RES_CALLINIT) {
-		ret = res_init();
-		if (!_res.nscount) {
-			_res.nscount = 1;
-			_res.nsaddr_list[0].sin_addr.s_addr =
-				inet_addr("127.0.0.1");
-		}
+	bzero((char *)&reinfo, sizeof(reinfo));
+	first = last = NULL;
+
+	ret = res_init();
+	if (!_res.nscount) {
+		_res.nscount = 1;
+		_res.nsaddr_list[0].sin_addr.s_addr =
+			inet_addr("127.0.0.1");
 	}
 
-	if (op & RES_INITSOCK) {
-        	int on = 0;
-		ret = resfd = socket(AF_INET, SOCK_DGRAM, 0);
-		set_non_blocking(resfd, &me);
-                (void) setsockopt(ret, SOL_SOCKET, SO_BROADCAST,
-				  (char *)&on, sizeof(on));
-        }
+	server.addr = (struct sockaddr *) &_res.nsaddr;
+	server.len = sizeof(struct sockaddr_in);
+
+	ressock = socket_connect(NULL, &server, SOCKET_DGRAM);
+
+	socket_monitor(ressock, MONITOR_READ, res_read_handler);
+
 #ifdef DEBUG
-	if (op & RES_INITDEBG);
 	_res.options |= RES_DEBUG;
 #endif
-	if (op & RES_INITCACH) {
-		bzero((char *)&cainfo, sizeof(cainfo));
-		bzero((char *)hashtable, sizeof(hashtable));
-	}
-	if (op == 0)
-		ret = resfd;
+	bzero((char *)&cainfo, sizeof(cainfo));
+	bzero((char *)hashtable, sizeof(hashtable));
 
-	return ret;
+	return 0;
+}
+
+SOCKET_HANDLER(res_read_handler)
+{
+	do_dns_async();
 }
 
 static	int	add_request(new)
@@ -229,6 +229,7 @@ time_t	now;
 				switch (rptr->cinfo.flags) {
 				case ASYNC_CLIENT :
                                         connotice(cptr, REPORT_FAIL_DNS);
+					socket_monitor(cptr->sock, MONITOR_READ, network_read_handler);
 					ClearDNS(cptr);
 					SetAccess(cptr);
 					break;
@@ -293,31 +294,20 @@ static	int	send_res_msg(msg, len, rcount)
 char	*msg;
 int	len, rcount;
 {
-	int	i;
-	int	sent = 0, max;
+	int	sent = 0;
 
 	if (!msg)
 		return -1;
 
-	max = MIN(_res.nscount, rcount);
-	if (_res.options & RES_PRIMARY)
-		max = 1;
-	if (!max)
-		max = 1;
-
-	for (i = 0; i < max; i++)
-	    {
-		_res.nsaddr_list[i].sin_family = AF_INET;
-		if (sendto(resfd, msg, len, 0, (struct sockaddr *)
-			&(_res.nsaddr_list[i]), sizeof(struct sockaddr)) == len)
-		    {
-			reinfo.re_sent++;
-			sent++;
-		    }
-		else
-			Debug((DEBUG_ERROR,"s_r_m:sendto: %d on %d",
-				errno, resfd));
-	    }
+	if (socket_write(ressock, msg, len) == len)
+	{
+		reinfo.re_sent++;
+		sent++;
+	}
+	else
+	{
+		Debug((DEBUG_ERROR,"s_r_m:sendto: %d", errno));
+	}
 
 	return (sent) ? sent : -1;
 }
@@ -353,7 +343,7 @@ Link	*lp;
 }
 
 struct	HostEnt	*gethost_byaddr(addr, lp)
-anAddress	*addr;
+sock_address	*addr;
 Link	*lp;
 {
 	aCache	*cp;
@@ -425,7 +415,7 @@ ResRQ	*rptr;
  */
 static	int	do_query_number(lp, numb, rptr)
 Link	*lp;
-anAddress	*numb;
+sock_address	*numb;
 ResRQ	*rptr;
 {
 	char	ipbuf[73];
@@ -434,19 +424,19 @@ ResRQ	*rptr;
 	u_char  *cp2;
 #endif
 
-	switch (numb->addr_family)
+	switch (numb->addr->sa_family)
 	{
 		case AF_INET:
-			cp = (u_char *)&numb->in.sin_addr.s_addr;
+			cp = (u_char *)&((struct sockaddr_in *)numb->addr)->sin_addr.s_addr;
 			(void)sprintf(ipbuf,"%u.%u.%u.%u.in-addr.arpa.",
 				(u_int)(cp[3]), (u_int)(cp[2]),
 				(u_int)(cp[1]), (u_int)(cp[0]));
 			break;
 #ifdef AF_INET6
 		case AF_INET6:
-			cp = (u_char *)&numb->in6.sin6_addr.s6_addr[15];
+			cp = (u_char *)&((struct sockaddr_in6 *)numb->addr)->sin6_addr.s6_addr[15];
 			cp2 = (u_char *)ipbuf;
-			while (cp >= &numb->in6.sin6_addr.s6_addr[0])
+			while (cp >= &((struct sockaddr_in6 *) numb->addr)->sin6_addr.s6_addr[0])
 			{
 				sprintf(cp2, "%x.%x.",(*cp & 0xf),(*cp >> 4));
 				cp--;
@@ -462,9 +452,8 @@ ResRQ	*rptr;
 		rptr = make_request(lp);
 		rptr->type = T_PTR;
 
-		bcopy((char *)numb, (char *)&rptr->addr, sizeof(anAddress));
-		bcopy((char *)numb,
-			(char *)&rptr->he.h_addr, sizeof(anAddress));
+		address_copyto(numb, &rptr->addr);
+		address_copyto(numb, &rptr->he.h_addr);
 	    }
 	return (query_name(ipbuf, C_IN, T_PTR, rptr));
 }
@@ -549,12 +538,13 @@ HEADER	*hptr;
 	char	*cp, **alias;
 	struct	hent	*hp;
 	int	class, type, dlen, len, ans = 0, n;
-	anAddress	dr, *adr;
+	sock_address	*adr;
+	struct sockaddr	*dr;
 
 	cp = buf + sizeof(HEADER);
 	hp = (struct hent *)&(rptr->he);
 	adr = &hp->h_addr;
-	while (adr->addr_family)
+	while (adr->addr)
 		adr++;
 	alias = hp->h_aliases;
 	while (*alias)
@@ -598,19 +588,24 @@ HEADER	*hptr;
 		switch(type)
 		{
 		case T_A :
-                                 /* from Christophe Kalt <kalt@stealth.net> */
-                                 if (dlen != sizeof(struct in_addr)) {
-                                                sendto_realops("Bad IP length (%d) returned for %s",
-                                                               dlen, hostbuf);
-                                                Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
-                                                return(-2);
-                                 }
-			memcpy((char *)&dr.in.sin_addr, cp, sizeof(struct in_addr));
-			adr->in.sin_addr = dr.in.sin_addr;
-			dr.addr_family = AF_INET;
-			adr->addr_family = AF_INET;
+			/* from Christophe Kalt <kalt@stealth.net> */
+			if (dlen != sizeof(struct in_addr))
+			{
+				sendto_realops("Bad IP length (%d) returned for %s",
+					dlen, hostbuf);
+				Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
+				return(-2);
+			}
+
+			dr = irc_malloc(sizeof(struct sockaddr_in));
+			dr->sa_family = AF_INET;
+			memcpy((char *)&((struct sockaddr_in *) dr)->sin_addr,
+cp, sizeof(struct in_addr));
+			adr->addr = dr;
+			adr->len = sizeof(struct sockaddr_in);
+
 			Debug((DEBUG_INFO,"got ip # %s for %s",
-				inetntoa(adr), hostbuf));
+				address_tostring(adr, 0), hostbuf));
 			if (!hp->h_name)
 			    {
 				hp->h_name =(char *)irc_malloc(len+1);
@@ -621,19 +616,24 @@ HEADER	*hptr;
  			break;
 #ifdef AF_INET6
 		case T_AAAA:
-                                 /* from Christophe Kalt <kalt@stealth.net> */
-                                 if (dlen != sizeof(struct in6_addr)) {
-                                                sendto_realops("Bad IP length (%d) returned for %s",
-                                                               dlen, hostbuf);
-                                                Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
-                                                return(-2);
-                                 }
-			memcpy((char *)&dr.in6.sin6_addr, cp, sizeof(struct in6_addr));
-			memcpy((char *)&adr->in6.sin6_addr, cp, sizeof(struct in6_addr));
-			dr.addr_family = AF_INET6;
-			adr->addr_family = AF_INET6;
+			/* from Christophe Kalt <kalt@stealth.net> */
+			if (dlen != sizeof(struct in6_addr))
+			{
+				sendto_realops("Bad IP length (%d) returned for %s",
+					dlen, hostbuf);
+				Debug((DEBUG_DNS, "Bad IP length (%d) returned for %s", dlen, hostbuf));
+				return(-2);
+			}
+
+			dr = irc_malloc(sizeof(struct sockaddr_in6));
+			dr->sa_family = AF_INET6;
+			memcpy((char *)&((struct sockaddr_in6 *)dr)->sin6_addr,
+ cp, sizeof(struct in6_addr));
+			adr->addr = dr;
+			adr->len = sizeof(struct sockaddr_in6);
+
 			Debug((DEBUG_INFO,"got ip # %s for %s",
-				inetntoa(adr), hostbuf));
+				address_tostring(adr, 0), hostbuf));
 			if (!hp->h_name)
 			    {
 				hp->h_name =irc_malloc(len+1);
@@ -705,15 +705,11 @@ char	*lp;
 {
 	static	char	buf[sizeof(HEADER) + MAXPACKET];
 	HEADER	*hptr;
-	struct	sockaddr_in	sin;
-	int	rc, a, len = sizeof(sin), max;
+	int	rc, a;
 	ResRQ	*rptr = NULL;
 	aCache	*cp = NULL;
 
-	(void)alarm((unsigned)4);
-	rc = recvfrom(resfd, buf, sizeof(buf), 0, (struct sockaddr *)&sin,
-		      &len);
-	(void)alarm((unsigned)0);
+	rc = socket_read(ressock, &buf, sizeof(buf));
 	if (rc == -1 || rc <= sizeof(HEADER))
 		goto getres_err;
 	/*
@@ -739,25 +735,6 @@ char	*lp;
 	rptr = find_id(hptr->id);
 	if (!rptr)
 		goto getres_err;
-
-	/*
-	 * check against possibly fake replies
-	 */
-	max = MIN(_res.nscount, rptr->sends);
-	if (!max)
-		max = 1;
-
-	for (a = 0; a < max; a++)
-		if (!_res.nsaddr_list[a].sin_addr.s_addr ||
-		    !bcmp((char *)&sin.sin_addr,
-			  (char *)&_res.nsaddr_list[a].sin_addr,
-			  sizeof(struct in_addr)))
-			break;
-	if (a == max)
-	    {
-		reinfo.re_unkrep++;
-		goto getres_err;
-	    }
 
 	if ((hptr->rcode != NOERROR) || (hptr->ancount == 0))
 	    {
@@ -809,14 +786,14 @@ char	*lp;
                     goto getres_err;
 
 		Debug((DEBUG_DNS, "relookup %s <-> %s",
-			rptr->he.h_name, inetntoa(&rptr->he.h_addr)));
+			rptr->he.h_name, address_tostring(&rptr->he.h_addr, 0)));
 		/*
 		 * Lookup the 'authoritive' name that we were given for the
 		 * ip#.  By using this call rather than regenerating the
 		 * type we automatically gain the use of the cache with no
 		 * extra kludges.
 		 */
-		if ((hp2 = gethost_byname(rptr->he.h_name, rptr->addr.addr_family, &rptr->cinfo)))
+		if ((hp2 = gethost_byname(rptr->he.h_name, rptr->addr.addr->sa_family, &rptr->cinfo)))
 			if (lp)
 				bcopy((char *)&rptr->cinfo, lp, sizeof(Link));
 		/*
@@ -884,7 +861,7 @@ getres_err:
 }
 
 static int
-hash_number(anAddress *ip)
+hash_number(sock_address *ip)
 {
 	char *p4;
 #ifdef AF_INET6
@@ -892,11 +869,11 @@ hash_number(anAddress *ip)
 #endif
 	u_int	hashv = 0;
 
-	switch (ip->addr_family)
+	switch (ip->addr->sa_family)
 	{
 		case AF_INET:
 			/* could use loop but slower */
-			p4 = (char *)&ip->in.sin_addr;
+			p4 = (char *)&((struct sockaddr_in *) ip->addr)->sin_addr;
 			hashv = (int)*p4++;
 			hashv += hashv + (int)*p4++;
 			hashv += hashv + (int)*p4++;
@@ -904,7 +881,7 @@ hash_number(anAddress *ip)
 			break;
 #ifdef AF_INET6
 		case AF_INET6:
-			p6 = (int *)&ip->in6.sin6_addr;
+			p6 = (int *)&((struct sockaddr_in6 *) ip->addr)->sin6_addr;
 			hashv = *p6++;
 			hashv += hashv + *p6++;
 			hashv += hashv + *p6++;
@@ -949,7 +926,7 @@ aCache	*ocp;
 	ocp->hname_next = hashtable[hashv].name_list;
 	hashtable[hashv].name_list = ocp;
 
-	hashv = hash_number((anAddress *)ocp->he.h_addr);
+	hashv = hash_number(ocp->he.h_addr);
 	ocp->hnum_next = hashtable[hashv].num_list;
 	hashtable[hashv].num_list = ocp;
 
@@ -1054,10 +1031,10 @@ aCache	*cachep;
 	 * Do the same again for IP#'s.
 	 */
 	for (s = (char *)&rptr->he.h_addr;
-	     ((anAddress *)s)->addr_family; s += sizeof(anAddress))
+	     ((sock_address *)s)->addr; s += sizeof(sock_address))
 	    {
 		for (i = 0; (t = (char *)cp->he.h_addr_list[i]); i++)
-			if (!addr_cmp((anAddress *) s, (anAddress *) t))
+			if (!address_compare((sock_address *) s, (sock_address *) t))
 				break;
 		if (i >= MAXADDRS || addrcount >= MAXADDRS)
 			break;
@@ -1075,10 +1052,10 @@ aCache	*cachep;
 			addrcount++;
 
 			t = (char *)irc_realloc(*base,
-					addrcount * sizeof(anAddress));
+					addrcount * sizeof(sock_address));
 			base = (char **)irc_realloc((char *)base,
 					(addrcount + 1) * sizeof(char *));
-			cp->he.h_addr_list = (anAddress**) base;
+			cp->he.h_addr_list = (sock_address**) base;
 #ifdef	DEBUG
 			Debug((DEBUG_DNS,"u_l:add IP %x hal %x ac %d",
 				ntohl(((struct in_addr *)s)->s_addr),
@@ -1088,10 +1065,10 @@ aCache	*cachep;
 			for (; addrcount; addrcount--)
 			    {
 				*base++ = t;
-				t += sizeof(anAddress);
+				t += sizeof(sock_address);
 			    }
 			*base = NULL;
-			bcopy(s, *--base, sizeof(anAddress));
+			bcopy(s, *--base, sizeof(sock_address));
 		    }
 	    }
 	return;
@@ -1145,7 +1122,7 @@ char	*name;
  */
 static	aCache	*find_cache_number(rptr, numb)
 ResRQ	*rptr;
-anAddress	*numb;
+sock_address	*numb;
 {
 	aCache	*cp;
 	int	hashv,i;
@@ -1155,12 +1132,12 @@ anAddress	*numb;
 	cp = hashtable[hashv].num_list;
 #ifdef DEBUG
 	Debug((DEBUG_DNS,"find_cache_number:find %s: hashv = %d",
-		inetntoa(numb), hashv));
+		address_tostring(numb, 0), hashv));
 #endif
 
 	for (; cp; cp = cp->hnum_next)
 		for (i = 0; cp->he.h_addr_list[i]; i++)
-			if (!addr_cmp(cp->he.h_addr_list[i], numb))
+			if (!address_compare(cp->he.h_addr_list[i], numb))
 			    {
 				cainfo.ca_nu_hits++;
 				update_list(rptr, cp);
@@ -1183,7 +1160,7 @@ anAddress	*numb;
 			continue;
 		for (i = 1; cp->he.h_addr_list[i]; i++)
 			if (!bcmp(cp->he.h_addr_list[i], numb,
-				  sizeof(anAddress)))
+				  sizeof(sock_address)))
 			    {
 				cainfo.ca_nu_hits++;
 				update_list(rptr, cp);
@@ -1204,7 +1181,7 @@ ResRQ	*rptr;
 	/*
 	** shouldn't happen but it just might...
 	*/
-	if (!rptr->he.h_name || !rptr->he.h_addr.addr_family)
+	if (!rptr->he.h_name || !rptr->he.h_addr.addr)
 		return NULL;
 	/*
 	** Make cache entry.  First check to see if the cache already exists
@@ -1212,7 +1189,7 @@ ResRQ	*rptr;
 	*/
 	if ((cp = find_cache_number(rptr, &rptr->he.h_addr)))
 		return cp;
-	for (i = 1; rptr->he.h_addr_list[i].addr_family; i++)
+	for (i = 1; rptr->he.h_addr_list[i].addr; i++)
 		if ((cp = find_cache_number(rptr,
 				&(rptr->he.h_addr_list[i]))))
 			return cp;
@@ -1225,22 +1202,22 @@ ResRQ	*rptr;
 	bzero((char *)cp, sizeof(aCache));
 	hp = &cp->he;
 	for (i = 0; i < MAXADDRS; i++)
-		if (!rptr->he.h_addr_list[i].addr_family)
+		if (!rptr->he.h_addr_list[i].addr)
 			break;
 
 	/*
 	** build two arrays, one for IP#'s, another of pointers to them.
 	*/
-	t = (char **) (hp->h_addr_list = (anAddress **)irc_malloc(sizeof(anAddress *) * (i+1)));
-	bzero((char *)t, sizeof(anAddress *) * (i+1));
+	t = (char **) (hp->h_addr_list = (sock_address **)irc_malloc(sizeof(sock_address *) * (i+1)));
+	bzero((char *)t, sizeof(sock_address *) * (i+1));
 
-	s = (char *)irc_malloc(sizeof(anAddress) * i);
-	bzero(s, sizeof(anAddress) * i);
+	s = (char *)irc_malloc(sizeof(sock_address) * i);
+	bzero(s, sizeof(sock_address) * i);
 
-	for (n = 0; n < i; n++, s += sizeof(anAddress))
+	for (n = 0; n < i; n++, s += sizeof(sock_address))
 	    {
 		*t++ = s;
-		bcopy(&rptr->he.h_addr_list[n], s, sizeof(anAddress));
+		bcopy(&rptr->he.h_addr_list[n], s, sizeof(sock_address));
 	    }
 	*t = (char *)NULL;
 
@@ -1328,7 +1305,7 @@ aCache	*ocp;
 	hashv = hash_number(hp->h_addr);
 #ifdef	DEBUG
 	Debug((DEBUG_DEBUG,"rem_cache: h_addr %s hashv %d next %#x first %#x",
-		inetntoa(hp->h_addr), hashv, ocp->hnum_next,
+		address_tostring(hp->h_addr, 0), hashv, ocp->hnum_next,
 		hashtable[hashv].num_list));
 #endif
 	for (cp = &hashtable[hashv].num_list; *cp; cp = &((*cp)->hnum_next))
@@ -1422,7 +1399,7 @@ char	*parv[];
 		    {
 			sendto_one(sptr, "NOTICE %s :Ex %d ttl %d host %s(%s)",
 				   parv[0], cp->expireat - NOW, cp->ttl,
-				   cp->he.h_name, inetntoa(cp->he.h_addr));
+				   cp->he.h_name, address_tostring(cp->he.h_addr, 0));
 			for (i = 0; cp->he.h_aliases[i]; i++)
 				sendto_one(sptr,"NOTICE %s : %s = %s (CN)",
 					   parv[0], cp->he.h_name,
@@ -1430,7 +1407,7 @@ char	*parv[];
 			for (i = 1; cp->he.h_addr_list[i]; i++)
 				sendto_one(sptr,"NOTICE %s : %s = %s (IP)",
 					   parv[0], cp->he.h_name,
-					   inetntoa(cp->he.h_addr_list[i]));
+					   address_tostring(cp->he.h_addr_list[i], 0));
 		    }
 		return 0;
 	}
@@ -1464,7 +1441,7 @@ aClient	*sptr;
 		for (i = 0; h->h_addr_list[i]; i++)
 		    {
 			im += sizeof(char *);
-			im += sizeof(anAddress);
+			im += sizeof(sock_address);
 		    }
 		im += sizeof(char *);
 		for (i = 0; h->h_aliases[i]; i++)

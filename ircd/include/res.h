@@ -20,7 +20,7 @@ struct	hent {
 	char	*h_name;	/* official name of host */
 	char	*h_aliases[MAXALIASES];	/* alias list */
 	/* list of addresses from name server */
-	anAddress	h_addr_list[MAXADDRS];
+	sock_address	h_addr_list[MAXADDRS];
 #define	h_addr	h_addr_list[0]	/* address, for backward compatiblity */
 };
 
@@ -39,7 +39,7 @@ typedef	struct	reslist {
 	char	resend;	/* send flag. 0 == dont resend */
 	time_t	sentat;
 	time_t	timeout;
-	anAddress	addr;
+	sock_address	addr;
 	char	*name;
 	struct	reslist	*next;
 	Link	cinfo;

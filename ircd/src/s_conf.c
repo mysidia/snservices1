@@ -18,31 +18,21 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #define KLINE_RET_AKILL 3
 #define KLINE_RET_PERM 2
 #define KLINE_RET_DELOK 1
 #define KLINE_DEL_ERR 0
 
-#include "struct.h"
-#include "common.h"
 #include "sys.h"
 #include "numeric.h"
 #include <fcntl.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
-#include "h.h"
 #include "msg.h"
-
-#ifdef NEED_GETADDRINFO
-#include "getaddrinfo.h"
-#endif
-
-#include "ircd/match.h"
-#include "ircd/send.h"
-#include "ircd/string.h"
 
 IRCD_SCCSID("@(#)s_conf.c	2.56 02 Apr 1994 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
@@ -174,8 +164,6 @@ int	attach_Iline(aClient *cptr, struct HostEnt *hp, char *sockhost)
 	for (aconf = conf; aconf; aconf = aconf->next)
 	    {
 		if (aconf->status != CONF_CLIENT)
-			continue;
-		if (aconf->port && aconf->port != cptr->acpt->port)
 			continue;
 		if (!aconf->host || !aconf->name)
 			goto attach_iline;
@@ -583,7 +571,7 @@ aConfItem *find_socksline_host(char *host)
  * Find a conf line using the IP# stored in it to search upon.
  * Added 1/8/92 by Avalon.
  */
-aConfItem *find_conf_ip(Link *lp, anAddress *addr, char *user, int statmask)
+aConfItem *find_conf_ip(Link *lp, sock_address *addr, char *user, int statmask)
 {
 	aConfItem *tmp;
 	char	*s;
@@ -601,7 +589,7 @@ aConfItem *find_conf_ip(Link *lp, anAddress *addr, char *user, int statmask)
 			continue;
 		    }
 		*s = '@';
-		if (!addr_cmp(&tmp->addr, addr))
+		if (!address_compare(tmp->addr, addr))
 			return tmp;
 	    }
 	return NULL;
@@ -852,8 +840,6 @@ int 	initconf(int opt)
 	int	ccount = 0, ncount = 0;
 	aConfItem *aconf = NULL;
 	long int sendq = 0;
-	struct addrinfo	*res;
-
 
 	Debug((DEBUG_DEBUG, "initconf(): ircd.conf = %s", configfile));
 	if ((fd = openconf()) == -1)
@@ -1177,28 +1163,17 @@ int 	initconf(int opt)
 		*/
 		if (aconf->status == CONF_ME)
 		    {
-			int fail = 0;
-
 			strncpyzt(me.info, aconf->name, sizeof(me.info));
 			if (me.name[0] == '\0' && aconf->host[0])
 				strncpyzt(me.name, aconf->host,
 					  sizeof(me.name));
-			if (aconf->passwd[0] && (aconf->passwd[0] != '*'))
-			{
-				if (getaddrinfo(aconf->passwd, NULL, NULL, &res))
-					fail = 1;
-			}
-			else
-			{
-				if (getaddrinfo("0.0.0.0", NULL, NULL, &res))
-					fail = 1;
-			}
 
-			if ( !fail ) {
-				bzero(&me.addr, sizeof(anAddress));
-				bcopy(res->ai_addr, &me.addr, res->ai_addrlen);
-				freeaddrinfo(res);
+			if (localaddr != NULL)
+			{
+				address_free(localaddr);
 			}
+			localaddr = address_make(aconf->passwd, 0);
+
 			if (aconf->port > 0)
 				portnum = aconf->port;
 		    }
@@ -1235,7 +1210,6 @@ static	int	lookup_confhost(aConfItem *aconf)
 	char	*s;
 	/* struct	HostEnt *hp;*/
 	Link	ln;
-	struct addrinfo	*res;
 
 	if (BadPtr(aconf->host) || BadPtr(aconf->name))
 		goto badlookup;
@@ -1261,15 +1235,14 @@ static	int	lookup_confhost(aConfItem *aconf)
 	ln.value.aconf = aconf;
 	ln.flags = ASYNC_CONF;
 
-	if (getaddrinfo(s, NULL, NULL, &res) || !(res->ai_addr))
+	aconf->addr = address_make(s, 0);
+	if (aconf->addr == NULL)
+	{
 		goto badlookup;
-	bzero(&me.addr, sizeof(anAddress));
-	bcopy(&res->ai_addr[0], &aconf->addr, res->ai_addrlen);
-	freeaddrinfo(res);
-
+	}
 	return 0;
 badlookup:
-	bzero((char *)&aconf->addr, sizeof(anAddress));
+	memset(&aconf->addr, 0, sizeof(sock_address));
 	Debug((DEBUG_ERROR,"Host/server name error: (%s) (%s)",
 		aconf->host, aconf->name));
 	return -1;
@@ -1285,7 +1258,7 @@ int	find_kill(aClient *cptr, aConfItem *conf_target)
 
 	host = cptr->sockhost;
 	name = cptr->user->username;
-        if ((u_sip = inetntoa(&cptr->addr)))
+        if ((u_sip = address_tostring(cptr->sock->raddr, 0)))
             strncpyzt(u_ip, u_sip, HOSTLEN);
         else u_ip[0] = '\0';
 
@@ -1298,8 +1271,7 @@ int	find_kill(aClient *cptr, aConfItem *conf_target)
 	if (conf_target != NULL) {
 		if ((conf_target->status == CONF_KILL) && conf_target->host && conf_target->name &&
 		    (match(conf_target->host, u_ip) == 0 || match(conf_target->host, host) == 0) &&
-		    (!name || match(conf_target->name, name) == 0) &&
-		    (!conf_target->port || (conf_target->port == cptr->acpt->port))) {
+		    (!name || match(conf_target->name, name) == 0)) {
 			if (BadPtr(conf_target->passwd))
 				tmp = conf_target;
 			else if (is_comment(conf_target->passwd))
@@ -1311,8 +1283,7 @@ int	find_kill(aClient *cptr, aConfItem *conf_target)
 		for (tmp = conf; tmp; tmp = tmp->next)
 			if ((tmp->status == CONF_KILL) && tmp->host && tmp->name &&
 			    (match(tmp->host, u_ip) == 0 || match(tmp->host, host) == 0) &&
-			    (!name || match(tmp->name, name) == 0) &&
-			    (!tmp->port || (tmp->port == cptr->acpt->port))) {
+			    (!name || match(tmp->name, name) == 0)) {
 				/* can short-circuit evaluation - not taking chances
 				   cos check_time_interval destroys tmp->passwd
 				   - Mmmm
@@ -1377,8 +1348,7 @@ aConfItem	*find_ahurt(aClient *cptr)
 	for (tmp = conf; tmp; tmp = tmp->next)
  		if ((tmp->status == CONF_AHURT) && tmp->host && tmp->name &&
 		    (match(tmp->host, host) == 0) &&
- 		    (!name || match(tmp->name, name) == 0) &&
-		    (!tmp->port || (tmp->port == cptr->acpt->port)))
+ 		    (!name || match(tmp->name, name) == 0))
                 {
                         return tmp;
                 }
@@ -1397,7 +1367,7 @@ char    *find_sup_zap(aClient *cptr, int dokillmsg)
 
 	supbuf[0] = '\0';
 
-	if ((u_sip = inetntoa(&cptr->addr)))
+	if ((u_sip = address_tostring(cptr->sock->raddr, 0)))
 		strncpyzt(u_ip, u_sip, HOSTLEN);
 	else u_ip[0] = '\0';
 
@@ -1457,7 +1427,7 @@ char    *find_sup_zap(aClient *cptr, int dokillmsg)
                 sprintf(supbuf,
                         "ERROR :Closing Link: [%s] (You are not welcome on "
                         "this server: %s.  Email " KLINE_ADDRESS " for more"
-                        " information.)\r\n", inetntoa(&cptr->addr),
+                        " information.)\r\n", address_tostring(cptr->sock->raddr, 0),
                         retval);
                 retval = supbuf;
         }
@@ -1471,7 +1441,7 @@ char *find_zap(aClient *cptr, int dokillmsg)
 	char *retval = NULL;
 	for (tmp = conf; tmp; tmp = tmp->next)
 		if ((tmp->status == CONF_ZAP) && tmp->host &&
-			!match(tmp->host, inetntoa(&cptr->addr)))
+			!match(tmp->host, address_tostring(cptr->sock->raddr, 0)))
 			{
 				retval = (tmp->passwd) ? tmp->passwd :
 					"Reason unspecified";
@@ -1488,7 +1458,7 @@ char *find_zap(aClient *cptr, int dokillmsg)
 		sprintf(zlinebuf,
 			"ERROR :Closing Link: [%s] (You are not welcome on "
 			"this server: %s.  Email " KLINE_ADDRESS " for more"
-			" information.)\r\n", inetntoa(&cptr->addr),
+			" information.)\r\n", address_tostring(cptr->sock->raddr, 0),
 			retval);
 		retval = zlinebuf;
 	}
@@ -2026,7 +1996,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
 	if ((acptr = find_client(parv[1], NULL)))
 	{
-	  strcpy(userhost, inetntoa(&acptr->addr));
+	  strcpy(userhost, address_tostring(acptr->sock->raddr, 0));
 	  person = &acptr->name[0];
 	  acptr = NULL;
 	}

@@ -24,8 +24,8 @@ LINTFLAGS=-hba
 OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
 	class.o hash.o ircd.o list.o res.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
-	whowas.o userload.o md5.o version.o \
-	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO)
+	whowas.o userload.o md5.o version.o network.o socket.o socket_addr.o \
+	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO) $(SOCKET)
 
 SRC=$(OBJS:%.o=%.c)
 

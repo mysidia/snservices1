@@ -99,7 +99,6 @@ aClient	*make_client(aClient *from)
 	cptr->user = NULL;
 	cptr->serv = NULL;
 	cptr->status = STAT_UNKNOWN;
-	cptr->fd = -1;
 	(void)strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
@@ -375,10 +374,14 @@ void	remove_client_from_list(aClient *cptr)
 #endif
 	    }
 #ifdef	DEBUGMODE
-	if (cptr->fd == -2)
+	if (cptr->sock != NULL)
+	{
 		cloc.inuse--;
+	}
 	else
+	{
 		crem.inuse--;
+	}
 #endif
 	(void)free_client(cptr);
 	numclients--;
@@ -466,7 +469,7 @@ aConfItem	*make_conf()
 #ifdef	DEBUGMODE
 	aconfs.inuse++;
 #endif
-	bzero((char *)&aconf->addr, sizeof(anAddress));
+	memset(&aconf->addr, 0, sizeof(sock_address));
 	aconf->next = NULL;
 	aconf->host = aconf->passwd = aconf->name = NULL;
 	aconf->status = CONF_ILLEGAL;

@@ -18,6 +18,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "ircd.h"
+
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/time.h>
@@ -29,14 +31,9 @@
 #include <pwd.h>
 #include <errno.h>
 
-#include "struct.h"
-#include "common.h"
 #include "sys.h"
 #include "numeric.h"
 #include "userload.h"
-#include "h.h"
-
-#include "ircd/send.h"
 
 IRCD_SCCSID("@(#)ircd.c	2.48 3/9/94 (C) 1988 University of Oulu, Computing Center and Jarkko Oikarinen");
 IRCD_RCSID("$Id$");
@@ -54,6 +51,7 @@ static void setup_signals(void);
 
 char **myargv;
 int portnum = PORTNUM;		/* Default port for outgoing connections */
+sock_address *localaddr = NULL;	/* Default address for outgoing connections */
 char *configfile = CONFIGFILE;	/* Server configuration file */
 int debuglevel = -1;		/* Server debug level */
 int bootopt = BOOT_FORK;	/* Server boot option flags */
@@ -555,6 +553,9 @@ main(int argc, char **argv)
 	fprintf(stderr, "Pre-socket startup done.\n");
 	(void)init_sys();
 
+	socket_init(MAXCONNECTIONS);
+	resolver_init();
+
 #ifdef USE_SYSLOG
 	openlog(myargv[0], LOG_PID|LOG_NDELAY, LOG_FACILITY);
 #endif
@@ -636,7 +637,8 @@ main(int argc, char **argv)
 			delay = 1;
 		else
 			delay = MIN(delay, TIMESEC);
-		(void)read_message(delay);
+
+		network_wait(delay * 1000);
 		
 		Debug((DEBUG_DEBUG ,"Got message(s)"));
 
