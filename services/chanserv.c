@@ -6690,7 +6690,7 @@ CCMD(cs_delete)
 		sSend(":%s GLOBOPS :%s tried to use DROP command on %s (marked channel)", ChanServ,
 				from, args[1]);
 		chanlog->log(nick, CS_DELETE, args[1], LOGF_FAIL | LOGF_OPER);
-		return RET_OK_DB;
+		return RET_EFAULT;
 	}
 
 	sSend(":%s GLOBOPS :%s used DROP command on %s", ChanServ, from,
