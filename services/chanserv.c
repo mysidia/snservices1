@@ -5346,7 +5346,7 @@ CCMD(cs_set)
 		{"quiet", cs_set_bool, FOUNDER + 1, CSO(flags), "quiet changes",
 		 CQUIET},
 		{"gs_roll", cs_set_bool, FOUNDER, CSO(flags), "+v gameserv roll", CGAMESERV},
-		{"akickreasons", cs_set_bool, FOUNDER, CSO(flags), "use akick reasons"},
+		{"akickreasons", cs_set_bool, FOUNDER, CSO(flags), "use akick reasons", CAKICKREASONS},
 		{"passw*d", cs_set_passwd, FOUNDER + 1},
 		{"memo*", cs_set_memolvl, FOUNDER},
 		{"desc*", cs_set_fixed, FOUNDER, CSO(desc), "description",
