@@ -83,6 +83,16 @@ typedef u_int16_t HashKeyVal;
 struct memoblocklist_struct;
 struct RegNickIdMap;
 
+
+enum t_nickserv_acc_level
+{
+	ACC_OFFLINE = 0,
+	ACC_NOT_RECOGNIZED = 1,
+	ACC_RECOGNIZED = 2,
+	ACC_IDENTIFIED = 3,
+	ACC_DIGEST_AUTH = 4
+};
+
 /**
  * \brief Registered entity identity number
  */
