@@ -1,291 +1,69 @@
-<HTML
-><HEAD
-><TITLE
->Optional Directives</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.73
-"><LINK
-REL="HOME"
-TITLE="Services installation and operation manual"
-HREF="manual.html"><LINK
-REL="UP"
-TITLE="Configuring Services"
-HREF="config.html"><LINK
-REL="PREVIOUS"
-TITLE="Recommended Directives"
-HREF="confrec.html"><LINK
-REL="NEXT"
-TITLE="Administering Services"
-HREF="adms.html"></HEAD
-><BODY
-CLASS="SECT1"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->Services installation and operation manual</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="confrec.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
->Chapter 3. Configuring Services</TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="adms.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="CONFOPT"
->Optional Directives</A
-></H1
-><P
->				These directives are completely optional.
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Optional Directives</title><meta name="generator" content="DocBook XSL Stylesheets V1.61.3"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="config.html" title="Chapter 3. Configuring Services"><link rel="previous" href="confrec.html" title="Recommended Directives"><link rel="next" href="adms.html" title="Chapter 4. Administering Services"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Optional Directives</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="confrec.html">Prev</a> </td><th width="60%" align="center">Chapter 3. Configuring Services</th><td width="20%" align="right"> <a accesskey="n" href="adms.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="confopt"></a>Optional Directives</h2></div></div><div></div></div><p>
+				These directives are completely optional.
 				Some of them you may have reason to use,
 				some of them you may not.
-			</P
-><P
-></P
-><UL
-><LI
-><P
->					Services IPC port configuration (IPCPORT line):
-					<P
-></P
-><UL
-><LI
-><P
->						An IPCPORT line tells services to enable IPC (inter-process
+			</p><div class="itemizedlist"><ul type="disc"><li><p>
+					Services IPC port configuration (IPCPORT line):
+					</p><div class="itemizedlist"><ul type="circle"><li><p>
+						An IPCPORT line tells services to enable IPC (inter-process
 						communication) and listen on a particular port for
 						connections. Example:
-<PRE
-CLASS="PROGRAMLISTING"
->                IPCPORT:8560</PRE
->
-					</P
-></LI
-><LI
-><P
->						Note that it is necessary to set up IPC logins and be using proper
+</p><pre class="programlisting">
+                IPCPORT:8560
+</pre><p>
+					</p></li><li><p>
+						Note that it is necessary to set up IPC logins and be using proper
 						software for IPCPORT to be useful.
-					</P
-></LI
-><LI
-><P
->						If an IPCPORT line is not specified, then IPC is completely disabled
+					</p></li><li><p>
+						If an IPCPORT line is not specified, then IPC is completely disabled
 						for security reasons.
-					</P
-></LI
-></UL
->				
-				</P
-></LI
-><LI
-><P
->Services root configuration (SRA line):
-					<P
-></P
-><UL
-><LI
-><P
->A SRA line tells services that a particular registered nickname
+					</p></li></ul></div><p>				
+				</p></li><li><p>
+Services root configuration (SRA line):
+					</p><div class="itemizedlist"><ul type="circle"><li><p>
+A SRA line tells services that a particular registered nickname
        should be given Services Root access.
 Example:
-<PRE
-CLASS="PROGRAMLISTING"
->	SRA:Joe</PRE
->
-						</P
-></LI
-><LI
-><P
->Warning: Services root access allows a user to make any change to
+</p><pre class="programlisting">
+	SRA:Joe
+</pre><p>
+						</p></li><li><p>
+Warning: Services root access allows a user to make any change to
 services available to be made online. It is advisable to limit this
 access to competent operators and developers who are familiar with the internals
 of services: giving this permission flag to services can be thought of as
 giving a user on a unix system limited superuser access (and access to
 the services account analogous to full superuser access over services).
-						</P
-></LI
-><LI
-><P
->SRA lines should not be added for a nickname until that nickname
+						</p></li><li><p>
+SRA lines should not be added for a nickname until that nickname
        is registered -- presently, this would cause a security problem
        (a user you don't want to have this access could register the nick of
         a user you want to have access and gain that access).
-						</P
-></LI
-><LI
-><P
-> Services.conf can be reloaded to make a new SRA using the <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->OperServ reset</I
-></SPAN
->
+						</p></li><li><p>
+ Services.conf can be reloaded to make a new SRA using the <span class="emphasis"><em>OperServ reset</em></span>
 command.  If there is no SRA available to reload the configuration, then the only way
 to do that is to shut down the services process using a normal kill and bring them back on line.
-						</P
-></LI
-><LI
-><P
->Removing a services root requires a services restart.
-						</P
-></LI
-></UL
->
-				</P
-></LI
-><LI
-><P
->Services Operator configuration (SERVOP line):
+						</p></li><li><p>
+Removing a services root requires a services restart.
+						</p></li></ul></div><p>
+				</p></li><li><p>
+Services Operator configuration (SERVOP line):
 
-					<P
-></P
-><UL
-><LI
-><P
->A SERVOP line tells services that a particular registered nickname
+					</p><div class="itemizedlist"><ul type="circle"><li><p>
+A SERVOP line tells services that a particular registered nickname
 should be given ServOP access.  Syntax and usage are the same as that
 of the `SRA' directive.
-						</P
-></LI
-><LI
-><P
->ServOp access grants many of the SRA features such as the ability
+						</p></li><li><p>
+ServOp access grants many of the SRA features such as the ability
 to delete nicknames, channels, perm akills, ignores, autohurts;
 however, it does not grant the ability to change operator access
 flags, directly modify things, shutdown services, or access
 internal debugging commands.  The most useful of those abilities (other than
 actually setting flags or killing services) can now be assigned using the
-<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->OperServ SETOP</I
-></SPAN
-> command and appropriate permission flags,
+<span class="emphasis"><em>OperServ SETOP</em></span> command and appropriate permission flags,
 also.
-						</P
-></LI
-><LI
-><P
->ServOps can be added or removed when services is online using the
-       <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->/OperServ SETOP</I
-></SPAN
-> command (no restart required).
-						</P
-></LI
-></UL
->
-				</P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="confrec.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="manual.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="adms.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Recommended Directives</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="config.html"
-ACCESSKEY="U"
->Up</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Administering Services</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+						</p></li><li><p>
+ServOps can be added or removed when services is online using the
+       <span class="emphasis"><em>/OperServ SETOP</em></span> command (no restart required).
+						</p></li></ul></div><p>
+				</p></li></ul></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="confrec.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="config.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="adms.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Recommended Directives </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 4. Administering Services</td></tr></table></div></body></html>
