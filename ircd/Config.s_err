@@ -1,0 +1,436 @@
+awk='/usr/bin/awk'
+
+echo 'Welcome to numeric configuration for the SorceryNet-derived IRC server'
+echo 'version sor1.3.2-BETA+'
+echo ''
+echo '** You will be asked how you want to customize certain numeric'
+echo '   replies.'
+echo '** This works like the ordinary config script, press ENTER to'
+echo '   accept the default, "none" to effect a null entry where it'
+echo '   is allowed.'
+echo '** All text will be entered directly into s_err.h, it is therefore'
+echo '   necessary to surround literal text with quotes to make it a string'
+echo '   constant everything outside must be a preprocessor-defined literal'
+echo '   that evaluates to a string constant.'
+echo '** Note: Unless otherwise specified all responses should consist of'
+echo '   exaclty one word.'
+echo 'Press [ENTER] to continue.'
+read 'foobah'
+
+export SERVER_N="\"server\""
+export CHAN_N="\"channel\""
+export USER_N="\"user\""
+export OPER_N="\"operator\""
+export NICK_N="\"nick\""
+export LU_INVIS="\"invisible\""
+
+export WELC_MESSG="\"Welcome to the \"NETWORK\" IRC Network\""
+export AWAY_MESSG="\"You have been marked as being away\""
+export UNAWAY_MESSG="\"You are no longer marked as being away\""
+export OPER_MESSG="\"You are now an IRC \" UCASE_OPER_N"
+export WWAS_NONICK_N="\"nickname\""
+export PASSWD_MESSG="\"Password Incorrect\""
+export KLINE_MESSG="\"You are banned from this server.  Mail \" KLINE_ADDRESS \" for more information\""
+export NOOPER_HOST="\"No O-lines for your host\""
+export S_SERVER="UCASE_SERVER_N"
+export LU_USERS="LCASE_USER_N \"s\""
+export LU_SERVERS="LCASE_SERVER_N \"s\""
+export LU_OPER="LCASE_OPER_N"
+export LU_CHAN="LCASE_CHAN_N \"s\""
+export LU_ME_C="\"clients\""
+export REHASH_MESSG="\"Rehashing...\""
+export NOSUCH_N="LCASE_NICK_N\"/\"LCASE_CHAN_N"
+export NOSUCH_S_N="LCASE_SERVER_N"
+export NOSUCH_C_N="LCASE_CHAN_N"
+export CHAN_NOSEND_N="LCASE_CHAN_N"
+export ISOPER_MESSG="\"is an IRC Operator\""
+
+VARS="SERVER_N CHAN_N USER_N OPER_N NICK_N LU_INVIS WELC_MESSG AWAY_MESSG UNAWAY_MESSG OPER_MESSG WWAS_NONICK_N PASSWD_MESSG KLINE_MESSG NOOPER_HOST ISOPER_MESSG NONE"
+
+if [ -r ./s_err.defs ] ; then
+    . ./s_err.defs
+fi
+
+if [ "`eval echo -n 'a'`" = "-n a" ] ; then
+        c='\c'
+else
+        n='-n'
+fi
+
+FOO=""
+runonce=""
+while [ -z "$FOO" ] ; do
+    FOO="$SERVER_N"
+    echo "SERVER_NAME"
+    echo ""
+    echo "    What should the numeric replies call a server?"
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+        read 'cc'
+        runonce=Yes
+    else
+        cc=""
+    fi
+    if [ -z "$cc" ] ; then
+        cc=$FOO
+    fi
+    case "$cc" in 
+      *%[^%]*)
+         echo 'Any occurence of the % character needs to be followed by a %'
+         FOO=''
+         ;;
+    esac
+done
+SERVER_N="$cc"
+
+
+FOO=""
+runonce=""
+while [ -z "$FOO" ] ; do
+    FOO="$CHAN_N"
+    echo "CHANNEL"
+    echo ""
+    echo "    What should the numeric replies call a channel?"
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+        read 'cc'
+        runonce=Yes
+    else
+        cc=""
+    fi
+    if [ -z "$cc" ] ; then
+        cc=$FOO
+    fi
+    case "$cc" in 
+      %%)
+        ;;
+      %*)
+         echo 'Any occurence of the % character needs to be followed by a %'
+         FOO=''
+         ;;
+    esac
+done
+CHAN_N="$cc"
+
+
+FOO=""
+runonce=""
+while [ -z "$FOO" ] ; do
+    FOO="$USER_N"
+    echo "USER"
+    echo ""
+    echo "    What should the numeric replies call a user?"
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+        read 'cc'
+        runonce=Yes
+    else
+        cc=""
+    fi
+    if [ -z "$cc" ] ; then
+        cc=$FOO
+    fi
+    case "$cc" in 
+      %%)
+        ;;
+      %*)
+         echo 'Any occurence of the % character needs to be followed by a %'
+         FOO=''
+         ;;
+    esac
+done
+USER_N="$cc"
+
+
+
+FOO=""
+runonce=""
+while [ -z "$FOO" ] ; do
+    FOO="$OPER_N"
+    echo "OPERATOR"
+    echo ""
+    echo "    What should the numeric replies call an operator?"
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+        read 'cc'
+        runonce=Yes
+    else
+        cc=""
+    fi
+    if [ -z "$cc" ] ; then
+        cc=$FOO
+    fi
+    case "$cc" in 
+      %%)
+        ;;
+      %*)
+         echo 'Any occurence of the % character needs to be followed by a %'
+         FOO=''
+         ;;
+    esac
+done
+OPER_N="$cc"
+
+
+
+
+FOO=""
+runonce=""
+while [ -z "$FOO" ] ; do
+    FOO="$NICK_N"
+    echo "NICK"
+    echo ""
+    echo "    What should the numeric replies call a nick?"
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+        read 'cc'
+        runonce=Yes
+    else
+        cc=""
+    fi
+    if [ -z "$cc" ] ; then
+        cc=$FOO
+    fi
+    case "$cc" in 
+      %%)
+        ;;
+      %*)
+         echo 'Any occurence of the % character needs to be followed by a %'
+         FOO=''
+         ;;
+    esac
+done
+NICK_N="$cc"
+
+
+FOO=""
+runonce=""
+while [ -z "$FOO" ] ; do
+    FOO="$LU_INVIS"
+    echo "LUSERS_INVIS"
+    echo ""
+    echo "    What should the numeric replies call an invisible?"
+    echo ""
+    echo $n "[$FOO] -> $c"
+    if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+        read 'cc'
+        runonce=Yes
+    else
+        cc=""
+    fi
+    if [ -z "$cc" ] ; then
+        cc=$FOO
+    fi
+    case "$cc" in 
+      %%)
+        ;;
+      %*)
+         echo 'Any occurence of the % character needs to be followed by a %'
+         FOO=''
+         ;;
+    esac
+done
+LU_INVIS="$cc"
+
+while [ 1 ] ; do
+echo '[H[J'
+echo '-- Numeric options --'
+for i in $VARS ; do
+   jj="\$$i"
+   j=`eval echo $jj`
+   if [ -z "$j" ] ; then
+      j="\"\"";
+   fi
+   echo "$i	" | $awk -F'	' "{printf(\"[1;36m%15s[0;36m\", \"$i\" );}"
+   echo "      $j[0m"
+done
+
+echo '-- Accept current numerics and write s_err.h ? [Y/N] --'
+read 'cc'
+if [ -n "$cc" ] ; then
+   case "$cc" in 
+    [yY]*)
+        break; 
+         ;;
+    *)
+   echo 'Change what variable?'
+#
+   FOO=""
+   runonce=""
+   while [ -z "$FOO" ] ; do
+       FOO="none"
+       echo "SET NUMERIC"
+       echo ""
+       echo "    What variable do you wish to change?"
+       echo ""
+       echo $n "[$FOO] -> $c"
+       if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+           read 'cc'
+           runonce=Yes
+       else
+           cc=""
+       fi
+       if [ -z "$cc" ] ; then
+           cc=$FOO
+       fi
+       cc="`echo $cc | $awk '{print toupper($1)}'`"
+
+       for x in $VARS ; do 
+          if [ "$x" = "$cc" ] ; then
+              cc="$x"
+              break
+          fi
+          if [ "$x" = "NONE" ] ; then
+              x=''
+              break
+          fi
+       done
+
+       if [ -z "$x" ] ; then
+           FOO=''
+           echo 'No such variable.'
+       fi
+       done
+       VAR="$cc"
+
+       if [ "$VAR" = "NONE" ] ; then
+           VAR='none'
+           continue
+       fi
+
+#
+       if [ -n "$VAR" ] ; then
+#
+          jj="\$$VAR"
+          j=`eval echo $jj`
+          jj="$VAR"
+          FOO=""
+          runonce=""
+          while [ -z "$FOO" ] ; do
+              FOO="$j"
+              echo "SET VARIABLE"
+              echo ""
+              echo "    To what value do you wish to set $VAR?"
+              echo ""
+              echo $n "[$FOO] -> $c"
+              if [ -z "$AUTO_CONFIG" -o -n "$runonce" ] ; then
+                  read 'cc'
+                  runonce=Yes
+              else
+                  cc=""
+              fi
+              if [ -z "$cc" ] ; then
+                  cc=$FOO
+              fi
+              for x in $vars ; do 
+                 if [ "$x" = "NONE" ] ; then
+                     x=''
+                 fi
+                 if [ "$x" = "$cc" ] ; then
+                     break;
+                 fi
+              done
+             if [ -z $x ] ; then
+                 FOO=''
+                 echo 'No such variable.'
+             fi
+
+             case "$cc" in 
+             %%)
+              ;;
+             %*)
+               echo 'Any occurence of the % character needs to be followed by a %'
+               FOO=''
+               ;;
+             esac
+
+             done
+             eval `echo $jj=\'$cc\'`
+#
+       fi
+    esac
+
+fi
+
+done
+
+UCASE_SERVER_N="`echo $SERVER_N | $awk '{print toupper(substr($1, 1, 1)) substr($1, 2)}'`"
+LCASE_SERVER_N="`echo $SERVER_N | $awk '{print tolower($1)}'`"
+UCASE_CHAN_N="`echo $CHAN_N | $awk '{print toupper(substr($1, 1, 1)) substr($1, 2)}'`"
+LCASE_CHAN_N="`echo $CHAN_N | $awk '{print tolower($1)}'`"
+UCASE_USER_N="`echo $USER_N | $awk '{print toupper(substr($1, 1, 1)) substr($1, 2)}'`"
+LCASE_USER_N="`echo $USER_N | $awk '{print tolower($1)}'`"
+UCASE_OPER_N="`echo $OPER_N | $awk '{print toupper(substr($1, 1, 1)) substr($1, 2)}'`"
+LCASE_OPER_N="`echo $OPER_N | $awk '{print tolower($1)}'`"
+UCASE_NICK_N="`echo $NICK_N | $awk '{print toupper(substr($1, 1, 1)) substr($1, 2)}'`"
+LCASE_NICK_N="`echo $NICK_N | $awk '{print tolower($1)}'`"
+
+echo $n "Writing... $c"
+
+cat << __EOF__ > include/s_err.h
+/*
+ *
+ * s_err.h  Automatically generated by Config.s_err script at `date`
+ * by `whoami`
+ *
+ */
+
+#define UCASE_SERVER_N $UCASE_SERVER_N
+#define LCASE_SERVER_N $LCASE_SERVER_N
+#define LCASE_CHAN_N $LCASE_CHAN_N
+#define UCASE_CHAN_N $UCASE_CHAN_N
+#define LCASE_USER_N $LCASE_USER_N
+#define UCASE_USER_N $UCASE_USER_N
+#define LCASE_OPER_N $LCASE_OPER_N
+#define UCASE_OPER_N $UCASE_OPER_N
+#define LCASE_NICK_N $LCASE_NICK_N
+#define UCASE_NICK_N $UCASE_NICK_N
+#define LU_INVIS $LU_INVIS
+
+#define WELC_MESSG $WELC_MESSG
+#define AWAY_MESSG $AWAY_MESG
+#define UNAWAY_MESSG $UNAWAY_MESSG
+#define OPER_MESSG $OPER_MESSG
+#define WWAS_NONICK_N $WWAS_NONICK_N
+#define OPER_MESSG $OPER_MESSG
+#define WWAS_NONICK_N $WWAS_NONICK_N
+#define PASSWD_MESSG $PASSWD_MESSG
+#define KLINE_MESSG $KLINE_MESSG
+#define NOOPER_HOST $NOOPER_HOST
+#define S_SERVER $S_SERVER
+#define LU_USERS $LU_USERS
+#define LU_SERVERS $LU_SERVERS
+#define LU_OPER $LU_OPER
+#define LU_CHAN $LU_CHAN
+#define LU_ME_C $LU_ME_C
+#define REHASH_MESSG $REHASH_MESSG
+#define NOSUCH_N $NOSUCH_N
+#define NOSUCH_S_N $NOSUCH_S_N
+#define NOSUCH_C_N $NOSUCH_C_N
+#define CHAN_NOSEND_N $CHAN_NOSEND_N
+#define ISOPER_MESSG $ISOPER_MESSG
+__EOF__
+#cat << __EOF__ >>s_err.h
+#__EOF__
+
+cat <<__EOF__ > s_err.defs
+#
+# s_err.h  Automatically generated by Config.s_err script at `date`
+# by `whoami`
+#
+
+__EOF__
+for i in $VARS ; do
+   jj="\$$i"
+   j=`eval echo $jj`
+   if [ -z "$j" ] ; then
+      j="\"\"";
+   fi
+   echo "$i='$j'" >> s_err.defs
+done
+echo "done"

@@ -17,7 +17,7 @@
 #*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #*/
 
-CC=gcc
+CC=@CC@
 INCLUDEDIR=../include
 
 # [CHANGEME]
@@ -29,10 +29,10 @@ INCLUDEDIR=../include
 # IRCDLIBS blank.  If that fails, try recomendations below.
 #
 XCFLAGS=
-IRCDLIBS=
+IRCDLIBS=@LIBS@ @MD5CRYPT@
 
 #set this to fcrypt.o to enable des crypt()
-DESCRYPT=
+DESCRYPT=@DESCRYPT@
 
 #
 # use the following on MIPS:
@@ -82,12 +82,12 @@ DESCRYPT=
 #
 # WARNING: if you are making ircd SUID or SGID, check config.h to make sure
 #          you are not defining CMDLINE_CONFIG 
-IRCDMODE=
+IRCDMODE=@IRCDMODE@
 
 # [CHANGEME]
 # IRCDDIR must be the same as DPATH in include/config.h
 #
-IRCDDIR=
+IRCDDIR=@DPATH@
 
 # [CHANGEME]
 # Some SunOS versions want this.  Try it without first.
@@ -117,10 +117,10 @@ STRTOUL=
 # override it here and see what happens.
 FD_SETSIZE=
 
-CFLAGS=-I$(INCLUDEDIR) $(XCFLAGS) $(NEED_U_INT32_T) $(FD_SETSIZE)
+CFLAGS=-I$(INCLUDEDIR) -I@top_srcdir@/../ -I../md5 @CFLAGS@ $(XCFLAGS) $(FD_SETSIZE)
 
 SHELL=/bin/sh
-SUBDIRS=src
+SUBDIRS=md5 src
 BINDIR=$(IRCDDIR)
 MANDIR=/usr/local/man
 INSTALL=/usr/bin/install
@@ -140,11 +140,11 @@ MAKEARGS =	'CFLAGS=${CFLAGS}' 'CC=${CC}' 'IRCDLIBS=${IRCDLIBS}' \
 
 server:
 build:
-	-@if [ ! -f include/setup.h ] ; then \
-		echo "Hmm...doesn't look like you've run Config..."; \
-		echo "Doing so now."; \
-		sh Config; \
-	fi
+#	-@if [ ! -f include/setup.h ] ; then \
+#		echo "Hmm...doesn't look like you've run Config..."; \
+#		echo "Doing so now."; \
+#		sh Config; \
+#	fi
 
 	@if [ "$(DESCRYPT)" = "fcrypt.o" ] ; then \
 	        ./fcrypt.sh ; \
@@ -164,14 +164,22 @@ clean:
 		( cd $$i; ${MAKE} ${MAKEARGS} clean; ) \
 	done
 	-@if [ -f include/setup.h ] ; then \
-	  echo "To really restart installation, remove include/setup.h" ; \
+	  echo "To really restart installation, run make distclean" ; \
 	fi
-	-@if [ -f include/options.h ] ; then \
-	  echo "and include/options.h" ; \
-	fi
+	(cd md5;${MAKE} clean)
+	(cd tools;${MAKE} clean)
 
-cleandir: clean
-	rm -rf include/setup.h include/options.h Makefile Options
+distclean: clean
+	rm -f config.cache config.status Options
+	rm -f Config setup.h Makefile
+	(cd src;make distclean)
+	(cd md5;make distclean)
+	(cd tools;make distclean)
+
+cleandir: distclean
+
+maintainer-clean: distclean
+	rm -f configure config.cache
 
 depend:
 	@for i in $(SUBDIRS); do \
@@ -195,8 +203,5 @@ install: all
 	touch ${IRCDDIR}/users.log ${IRCDDIR}/opers.log
 	./helpdigest ${IRCDDIR}
 	$(CP) doc/example.conf ${IRCDDIR}
-	chmod +x src/buildm4
-	@$(RM) -f ${IRCDDIR}/ircd.m4
-	@$(TOUCH) ${IRCDDIR}/ircd.m4
-	src/buildm4 ${IRCDDIR}
 	@echo "done!"
+
