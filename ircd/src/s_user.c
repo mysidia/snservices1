@@ -537,13 +537,6 @@ static int register_user(aClient *cptr, aClient *sptr, char *nick, char *usernam
 	    }
 	}
 
-#ifdef R_LINES
-      if (find_restrict(sptr))
-	{
-	  ircstp->is_ref++;
-	  return exit_client(cptr, sptr, &me , "R-lined");
-	}
-#endif
 
 #ifdef                DISALLOW_MIXED_CASE
       /* check for mixed case usernames, meaning probably hacked   Jon2 3-94

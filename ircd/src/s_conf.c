@@ -31,9 +31,6 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#ifdef	R_LINES
-#include <signal.h>
-#endif
 #include <arpa/inet.h>
 
 #include "h.h"
@@ -716,16 +713,6 @@ int	rehash(aClient *cptr, aClient *sptr, int sig)
 			 * this....-avalon
 			 */
 			acptr->hostp = NULL;
-#if defined(R_LINES_REHASH) && !defined(R_LINES_OFTEN)
-			if (find_restrict(acptr))
-			    {
-				sendto_ops("Restricting %s, closing lp",
-					   get_client_name(acptr,FALSE));
-				if (exit_client(cptr,acptr,sptr,"R-lined") ==
-				    FLUSH_BUFFER)
-					ret = FLUSH_BUFFER;
-			    }
-#endif
 		    }
 	while ((tmp2 = *tmp))
 		if (tmp2->clients || tmp2->status & CONF_LISTEN_PORT)
@@ -1040,12 +1027,6 @@ int 	initconf(int opt)
 				  /* network. USE WITH CAUTION! */
 				aconf->status = CONF_QUARANTINED_SERVER;
 				break;
-#ifdef R_LINES
-			case 'R': /* extended K line */
-			case 'r': /* Offers more options of how to restrict */
-				aconf->status = CONF_RESTRICT;
-				break;
-#endif
 			case 'S': /* Service. Same semantics as   */
 			case 's': /* CONF_OPERATOR                */
 				aconf->status = CONF_SERVICE;
@@ -1594,122 +1575,6 @@ int	find_kill_byname(char *host, char *name)
 
  	return 0;
  }
-
-#ifdef R_LINES
-/* find_restrict works against host/name and calls an outside program 
- * to determine whether a client is allowed to connect.  This allows 
- * more freedom to determine who is legal and who isn't, for example
- * machine load considerations.  The outside program is expected to 
- * return a reply line where the first word is either 'Y' or 'N' meaning 
- * "Yes Let them in" or "No don't let them in."  If the first word 
- * begins with neither 'Y' or 'N' the default is to let the person on.
- * It returns a value of 0 if the user is to be let through -Hoppie
- */
-int	find_restrict(aClient *cptr)
-{
-	aConfItem *tmp;
-	char	reply[80], temprpl[80];
-	char	*rplhold = reply, *host, *name, *s;
-	char	rplchar = 'Y';
-	int	pi[2], rc = 0, n;
-
-	if (!cptr->user)
-		return 0;
-	name = cptr->user->username;
-	host = cptr->sockhost;
-	Debug((DEBUG_INFO, "R-line check for %s[%s]", name, host));
-
-	for (tmp = conf; tmp; tmp = tmp->next)
-	    {
-		if (tmp->status != CONF_RESTRICT ||
-		    (tmp->host && host && match(tmp->host, host)) ||
-		    (tmp->name && name && match(tmp->name, name)))
-			continue;
-
-		if (BadPtr(tmp->passwd))
-		    {
-			sendto_ops("Program missing on R-line %s/%s, ignoring",
-				   name, host);
-			continue;
-		    }
-
-		if (pipe(pi) == -1)
-		    {
-			report_error("Error creating pipe for R-line %s:%s",
-				     &me);
-			return 0;
-		    }
-		switch (rc = fork())
-		{
-		case -1 :
-			report_error("Error forking for R-line %s:%s", &me);
-			return 0;
-		case 0 :
-		    {
-			int	i;
-
-			(void)close(pi[0]);
-			for (i = 2; i < MAXCONNECTIONS; i++)
-				if (i != pi[1])
-					(void)close(i);
-			if (pi[1] != 2)
-				(void)dup2(pi[1], 2);
-			(void)dup2(2, 1);
-			if (pi[1] != 2 && pi[1] != 1)
-				(void)close(pi[1]);
-			(void)execlp(tmp->passwd, tmp->passwd, name, host, 0);
-			exit(-1);
-		    }
-		default :
-			(void)close(pi[1]);
-			break;
-		}
-		*reply = '\0';
-		(void)dgets(-1, NULL, 0); /* make sure buffer marked empty */
-		while ((n = dgets(pi[0], temprpl, sizeof(temprpl)-1)) > 0)
-		    {
-			temprpl[n] = '\0';
-			if ((s = (char *)index(temprpl, '\n')))
-			      *s = '\0';
-			if (strlen(temprpl) + strlen(reply) < sizeof(reply)-2)
-				(void)sprintf(rplhold, "%s %s", rplhold,
-					temprpl);
-			else
-			    {
-				sendto_ops("R-line %s/%s: reply too long!",
-					   name, host);
-				break;
-			    }
-		    }
-		(void)dgets(-1, NULL, 0); /* make sure buffer marked empty */
-		(void)close(pi[0]);
-		(void)kill(rc, SIGKILL); /* cleanup time */
-		(void)wait(0);
-
-		rc = 0;
-		while (*rplhold == ' ')
-			rplhold++;
-		rplchar = *rplhold; /* Pull out the yes or no */
-		while (*rplhold != ' ')
-			rplhold++;
-		while (*rplhold == ' ')
-			rplhold++;
-		(void)strcpy(reply,rplhold);
-		rplhold = reply;
-
-		if ((rc = (rplchar == 'n' || rplchar == 'N')))
-			break;
-	    }
-	if (rc)
-	    {
-		sendto_one(cptr, ":%s %d %s :Restriction: %s",
-			   me.name, ERR_YOUREBANNEDCREEP, cptr->name,
-			   reply);
-		return -1;
-	    }
-	return 0;
-}
-#endif
 
 /*
 **  output the reason for being k lined from a file  - Mmmm

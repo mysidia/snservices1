@@ -20,9 +20,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef	R_LINES
-#include <signal.h>
-#endif
 
 #include "struct.h"
 #include "common.h"
@@ -296,12 +293,6 @@ chkconf_initconf(int opt)
 		case 'q': /* network. USE WITH CAUTION! */
 			aconf->status = CONF_QUARANTINED_SERVER;
 			break;
-#ifdef R_LINES
-		case 'R': /* extended K line */
-		case 'r': /* Offers more options of how to restrict */
-			aconf->status = CONF_RESTRICT;
-			break;
-#endif
 		case 'S': /* Service. Same semantics as   */
 		case 's': /* CONF_OPERATOR                */
 			aconf->status = CONF_SERVICE;

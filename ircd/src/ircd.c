@@ -309,9 +309,6 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 		if (check_kills && !killflag && IsPerson(cptr))
 			if (find_zap(cptr, 1))
 				killflag = 1;
-#ifdef R_LINES_OFTEN
-		rflag = IsPerson(cptr) ? find_restrict(cptr) : 0;
-#endif
 		ping = IsRegistered(cptr) ? get_client_ping(cptr) :
 					    CONNECTTIMEOUT;
 		Debug((DEBUG_DEBUG, "c(%s)=%d p %d k %d r %d a %d",
@@ -399,11 +396,6 @@ check_pings(time_t currenttime, int check_kills, aConfItem *conf_target)
 				sendto_ops("Kill line active for %s",
 					   get_client_name(cptr, FALSE));
 
-#if defined(R_LINES) && defined(R_LINES_OFTEN)
-			if (IsPerson(cptr) && rflag)
-				sendto_ops("Restricting %s, closing link.",
-					   get_client_name(cptr,FALSE));
-#endif
                          if (killflag)
                                 (void)exit_client(cptr, cptr, &me,
                                   "User has been banned");
