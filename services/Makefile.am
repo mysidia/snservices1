@@ -44,7 +44,8 @@ HELP_PATH = @HELP_PATH@
 DEFINES = 
 
 
-CFLAGS  = @CFLAGS@ $(DEFS) -Wall $(WFLAGS) -g
+CFLAGS  = @CFLAGS@ $(DEFS) $(WFLAGS) -g
+CXXFLAGS = $(CFLAGS)
 
 DEFAULT_INCLUDES =
 
@@ -54,8 +55,8 @@ LIBS = @LIBS@ ${MD5_LIB}
 LDFLAGS = @LDFLAGS@
 
 # Warning flags
-WFLAGS  = -Wpointer-arith -Wcast-qual -Wcast-align \
--Wmissing-declarations -Woverloaded-virtual -Winline 
+WFLAGS  = -Wall -Wpointer-arith -Wcast-qual -Wcast-align \
+-Woverloaded-virtual -Winline 
 
 services_SOURCES = akill.c chanserv.c clone.c db.c hash.c help.c \
 main.c parse.cc memoserv.c nickserv.c operserv.c server.c stuff.c \

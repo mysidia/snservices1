@@ -29,18 +29,18 @@
 #
 
 DEFS = @DEFS@ $(DEFINES)
-CFLAGS  = @CFLAGS@ $(DEFS) -Wall $(WARN) -g
+CFLAGS  = @CFLAGS@ $(DEFS) $(WFLAGS) -g
 LDFLAGS = @LDFLAGS@
 INCLUDES = -I. -I- -I/usr/include -I@includedir@
 DEFAULT_INCLUDES = 
 #DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 
 # Warning flags
-WARN    = -Wpointer-arith \
+WFLAGS    = -Wall -Wpointer-arith \
 -Wcast-qual \
 -Wcast-align \
 -Wmissing-declarations \
--Woverloaded-virtual -Winline
+-Winline
 
 noinst_LIBRARIES = libmd5.a
 libmd5_a_SOURCES = md5.c passwd.c
