@@ -91,7 +91,7 @@ aClient	*make_client(aClient *from)
 	cptr->user = NULL;
 	cptr->serv = NULL;
 	cptr->status = STAT_UNKNOWN;
-	(void)strcpy(cptr->username, "unknown");
+	strcpy(cptr->username, "unknown");
 	if (size == CLIENT_LOCAL_SIZE)
 	    {
 		cptr->lnext = me.lnext;
@@ -350,7 +350,7 @@ void	remove_client_from_list(aClient *cptr)
 		off_history(cptr); /* Remove all pointers to cptr */
 	    }
 	if (cptr->user)
-		(void)free_user(cptr->user, cptr);
+		free_user(cptr->user, cptr);
 	if (cptr->serv)
 	    {
 		if (cptr->serv->user)
@@ -370,7 +370,7 @@ void	remove_client_from_list(aClient *cptr)
 		crem.inuse--;
 	}
 #endif
-	(void)free_client(cptr);
+	free_client(cptr);
 	numclients--;
 	return;
 }
@@ -552,8 +552,7 @@ void	send_listinfo(aClient *cptr, char *name)
 }
 #endif
 
-void    free_str_list(lp)
-	Link    *lp;
+void    free_str_list(Link *lp)
 {
         Link    *next;
 

@@ -71,9 +71,9 @@ debug(int level, char *form, ...)
 	va_start(ap, form);
 
 	if ((debuglevel >= 0) && (level <= debuglevel)) {
-		(void)vsprintf(debugbuf, form, ap);
-		(void)fprintf(stderr, "%s", debugbuf);
-		(void)fputc('\n', stderr);
+		vsprintf(debugbuf, form, ap);
+		fprintf(stderr, "%s", debugbuf);
+		fputc('\n', stderr);
 	}
 	errno = err;
 	va_end(ap);

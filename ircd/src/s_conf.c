@@ -55,7 +55,7 @@ void	det_confs_butmask(aClient *cptr, int mask)
 	    {
 		tmp2 = tmp->next;
 		if ((tmp->value.aconf->status & mask) == 0)
-			(void)detach_conf(cptr, tmp->value.aconf);
+			detach_conf(cptr, tmp->value.aconf);
 	    }
 }
 
@@ -103,10 +103,7 @@ add_temp_conf(unsigned int status, char *host, char *passwd, char *name,
 /*
  * delete a temporary conf line.  *only* temporary conf lines may be deleted.
  */
-int del_temp_conf(status, host, passwd, name, port, class, akill)
-unsigned int status, akill;
-char *host, *passwd, *name;
-int port, class;
+int del_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, unsigned int akill)
 {
 	aConfItem	*aconf, *bconf;
 	u_int	mask, result = KLINE_DEL_ERR;
@@ -169,7 +166,7 @@ int	attach_Iline(aClient *cptr, struct HostEnt *hp, char *sockhost)
 			for (i = 0, hname = hp->h_name; hname;
 			     hname = hp->h_aliases[i++])
 			    {
-				(void)strncpy(fullname, hname,
+				strncpy(fullname, hname,
 					sizeof(fullname)-1);
 				add_local_domain(fullname,
 						 HOSTLEN - strlen(fullname));
@@ -177,12 +174,12 @@ int	attach_Iline(aClient *cptr, struct HostEnt *hp, char *sockhost)
 				      sockhost, fullname));
 				if (index(aconf->name, '@'))
 				    {
-					(void)strcpy(uhost, cptr->username);
-					(void)strcat(uhost, "@");
+					strcpy(uhost, cptr->username);
+					strcat(uhost, "@");
 				    }
 				else
 					*uhost = '\0';
-				(void)strncat(uhost, fullname,
+				strncat(uhost, fullname,
 					sizeof(uhost) - strlen(uhost));
 				if (*uhost != '%') {
 					if (!match(aconf->name, uhost))
@@ -195,11 +192,11 @@ int	attach_Iline(aClient *cptr, struct HostEnt *hp, char *sockhost)
 		if (index(aconf->host, '@'))
 		    {
 			strncpyzt(uhost, cptr->username, sizeof(uhost));
-			(void)strcat(uhost, "@");
+			strcat(uhost, "@");
 		    }
 		else
 			*uhost = '\0';
-		(void)strncat(uhost, sockhost, sizeof(uhost) - strlen(uhost));
+		strncat(uhost, sockhost, sizeof(uhost) - strlen(uhost));
 		if (!match(aconf->host, uhost))
 			goto attach_iline;
 		continue;
@@ -394,7 +391,7 @@ aConfItem *find_conf_exact(char *name, char *user, char *host, int statmask)
 	aConfItem *tmp;
 	char	userhost[USERLEN+HOSTLEN+3];
 
-	(void)sprintf(userhost, "%s@%s", user, host);
+	sprintf(userhost, "%s@%s", user, host);
 
 	for (tmp = conf; tmp; tmp = tmp->next)
 	    {
@@ -1292,9 +1289,9 @@ int     m_killcomment(aClient *sptr, char *parv, char *filename)
        * stop NFS hangs...most systems should be able to open a file in
        * 3 seconds. -avalon (curtesy of wumpus)
        */
-      (void)alarm(3);
+      alarm(3);
       fd = open(filename, O_RDONLY);
-      (void)alarm(0);
+      alarm(0);
       if (fd == -1)
           {
               sendto_one(sptr, err_str(ERR_NOMOTD), me.name, parv);
@@ -1303,9 +1300,9 @@ int     m_killcomment(aClient *sptr, char *parv, char *filename)
                          me.name, ERR_YOUREBANNEDCREEP, parv);
               return 0;
           }
-      (void)fstat(fd, &sb);
+      fstat(fd, &sb);
       tm = localtime(&sb.st_mtime);
-      (void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
+      dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
       while (dgets(fd, line, sizeof(line)-1) > 0)
           {
               if ((tmp = (char *)index(line,'\n')))
@@ -1320,8 +1317,8 @@ int     m_killcomment(aClient *sptr, char *parv, char *filename)
        sendto_one(sptr,
                   ":%s %d %s :*** You are not welcome to this server.",
                    me.name, ERR_YOUREBANNEDCREEP, parv);
-      (void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
-      (void)close(fd);
+      dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
+      close(fd);
       return 0;
   }
 
@@ -1384,7 +1381,7 @@ static	int	check_time_interval(char *interval, char *reply)
 		    ? (perm_min <= now && now <= perm_max)
 		    : (perm_min <= now || now <= perm_max))
 		    {
-			(void)sprintf(reply,
+			sprintf(reply,
 				":%%s %%d %%s :%s %d:%02d to %d:%02d.",
 				"You are not allowed to connect from",
 				perm_min_hours, perm_min_minutes,
@@ -1395,7 +1392,7 @@ static	int	check_time_interval(char *interval, char *reply)
 		    ? (perm_min <= now + 5 && now + 5 <= perm_max)
 		    : (perm_min <= now + 5 || now + 5 <= perm_max))
 		    {
-			(void)sprintf(reply, ":%%s %%d %%s :%d minute%s%s",
+			sprintf(reply, ":%%s %%d %%s :%d minute%s%s",
 				perm_min-now,(perm_min-now)>1?"s ":" ",
 				"and you will be denied for further access");
 			return(ERR_YOUWILLBEBANNED);
@@ -1515,7 +1512,7 @@ int     m_rahurt(aClient *cptr, aClient *sptr, int parc, char *parv[])
                return 0;
 
                 	del_temp_conf(CONF_AHURT, parv[1], NULL, 
-				parv[2], NULL, NULL, 1); 
+				parv[2], 0, 0, 1); 
 
                 if(parv[3])
                         sendto_serv_butone(cptr, ":%s RAHURT %s %s :%s", 
@@ -1705,7 +1702,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			return 0;
 		}
 		result = del_temp_conf(CONF_KILL, host, NULL, name, 
-			NULL, NULL, 0);
+			0, 0, 0);
 		if (result == KLINE_RET_AKILL) {	/* akill - result = 3 */
 			sendto_one(sptr, "NOTICE %s :You may not remove autokills.  Only U:lined clients may.", parv[0]);
 			return 0;
@@ -1848,7 +1845,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    sendto_ops("%s added a temp z:line for %s (*@%s) [%s]", parv[0], person, userhost, reason?reason:"");
 	  else
 	    sendto_ops("%s added a temp z:line *@%s [%s]", parv[0], userhost, reason?reason:"");
-	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_TEMP); 
+	  add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_TEMP); 
         }
 	else
 	 {
@@ -1856,7 +1853,7 @@ int m_zline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	   sendto_ops("%s z:lined %s (*@%s) on %s [%s]", parv[0], person, userhost, server?server:NETWORK , reason?reason:"");
 	 else
 	   sendto_ops("%s z:lined *@%s on %s [%s]", parv[0], userhost, server?server:NETWORK , reason?reason:"");
-	  (void) add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
+	 add_temp_conf(CONF_ZAP, userhost,  reason, NULL, 0, 0, KLINE_AKILL); 
         }
 
                                            /* something's wrong if i'm

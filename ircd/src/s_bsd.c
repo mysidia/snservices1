@@ -68,9 +68,7 @@ extern	char *version;
 ** (as suggested by eps@TOASTER.SFSU.EDU)
 */
 
-void	add_local_domain(hname, size)
-char	*hname;
-int	size;
+void	add_local_domain(char *hname, int size)
 {
 #ifdef RES_INIT
 	/* try to fix up unqualified names */
@@ -83,8 +81,8 @@ int	size;
 		    }
 		if (_res.defdname[0])
 		    {
-			(void)strncat(hname, ".", size-1);
-			(void)strncat(hname, _res.defdname, size-2);
+			strncat(hname, ".", size-1);
+			strncat(hname, _res.defdname, size-2);
 		    }
 	    }
 #endif
@@ -103,8 +101,7 @@ int	size;
  * Create a new client which is essentially the stub like 'me' to be used
  * for a socket that is passive (listen'ing for connections to be accepted).
  */
-aClient	*add_listener(aconf)
-aConfItem *aconf;
+aClient	*add_listener(aConfItem *aconf)
 {
 	aClient	*cptr;
 
@@ -164,28 +161,28 @@ void	init_sys()
 
 	if (!getrlimit(RLIMIT_NOFILE, &limit)) {
 		if (limit.rlim_max < MAXCONNECTIONS) {
-			(void)fprintf(stderr, "ircd fd table too big\n");
-			(void)fprintf(stderr, "Hard Limit: %d IRC max: %d\n",
-				      (int)limit.rlim_max, MAXCONNECTIONS);
-			(void)fprintf(stderr,"Fix MAXCONNECTIONS\n");
+			fprintf(stderr, "ircd fd table too big\n");
+			fprintf(stderr, "Hard Limit: %d IRC max: %d\n",
+				(int)limit.rlim_max, MAXCONNECTIONS);
+			fprintf(stderr,"Fix MAXCONNECTIONS\n");
 			exit(-1);
 		}
 		limit.rlim_cur = limit.rlim_max; /* make soft limit the max */
 		if (setrlimit(RLIMIT_NOFILE, &limit) == -1) {
-			(void)fprintf(stderr,"error setting max fd's to %d\n",
-				      (int)limit.rlim_cur);
+			fprintf(stderr,"error setting max fd's to %d\n",
+				(int)limit.rlim_cur);
 			exit(-1);
 		}
 	}
 
-	(void)setlinebuf(stderr);
+	setlinebuf(stderr);
 
 	for (fd = 3; fd < MAXCONNECTIONS; fd++) {
 		if (LogFd(fd))
 			continue;
-		(void)close(fd);
+		close(fd);
 	}
-	(void)close(1); /* -- allow output a little more yet */
+	close(1); /* -- allow output a little more yet */
 
 	if ((bootopt & BOOT_FORK) != 0) {
 		if (fork())
@@ -204,11 +201,11 @@ void	write_pidfile()
 	if ((fd = open(IRCD_PIDFILE, O_CREAT|O_WRONLY, 0600))>=0)
 	    {
 		bzero(buff, sizeof(buff));
-		(void)sprintf(buff,"%5d\n", (int)getpid());
+		sprintf(buff,"%5d\n", (int)getpid());
 		if (write(fd, buff, strlen(buff)) == -1)
 			Debug((DEBUG_NOTICE,"Error writing to pid file %s",
 			      IRCD_PIDFILE));
-		(void)close(fd);
+		close(fd);
 		return;
 	    }
 #ifdef	DEBUGMODE
@@ -237,8 +234,7 @@ static int check_init(aClient *cptr, char *sockn)
  * -1 = Access denied
  * -2 = Bad socket.
  */
-int	check_client(cptr)
-aClient	*cptr;
+int	check_client(aClient *cptr)
 {
 	static	char	sockname[HOSTLEN+1];
 	struct	HostEnt *hp = NULL;
@@ -298,8 +294,7 @@ aClient	*cptr;
  * -1 = Access denied
  * -2 = Bad socket.
  */
-int	check_server_init(cptr)
-aClient	*cptr;
+int	check_server_init(aClient *cptr)
 {
 	char	*name;
 	aConfItem *c_conf = NULL, *n_conf = NULL;
@@ -372,11 +367,7 @@ aClient	*cptr;
 	return check_server(cptr, hp, c_conf, n_conf, 0);
 }
 
-int	check_server(cptr, hp, c_conf, n_conf, estab)
-aClient	*cptr;
-aConfItem	*n_conf, *c_conf;
-struct	HostEnt	*hp;
-int	estab;
+int	check_server(aClient *cptr, struct HostEnt *hp, aConfItem *c_conf, aConfItem *n_conf, int estab)
 {
 	char	*name;
 	char	abuff[HOSTLEN+USERLEN+2];
@@ -421,7 +412,7 @@ check_serverback:
 			add_local_domain(fullname, HOSTLEN-strlen(fullname));
 			Debug((DEBUG_DNS, "sv_cl: gethostbyaddr: %s->%s",
 				sockname, fullname));
-			(void)sprintf(abuff, "%s@%s", cptr->username, fullname);
+			sprintf(abuff, "%s@%s", cptr->username, fullname);
 			if (!c_conf)
 				c_conf = find_conf_host(lp, abuff, CFLAG);
 			if (!n_conf)
@@ -441,7 +432,7 @@ check_serverback:
 	 */
 	if (IsUnknown(cptr) && (!c_conf || !n_conf))
 	    {
-		(void)sprintf(abuff, "%s@%s", cptr->username, sockname);
+		sprintf(abuff, "%s@%s", cptr->username, sockname);
 		if (!c_conf)
 			c_conf = find_conf_host(lp, abuff, CFLAG);
 		if (!n_conf)
@@ -485,9 +476,9 @@ check_serverback:
 	/*
 	 * attach the C and N lines to the client structure for later use.
 	 */
-	(void)attach_conf(cptr, n_conf);
-	(void)attach_conf(cptr, c_conf);
-	(void)attach_confs(cptr, name, CONF_HUB|CONF_LEAF|CONF_UWORLD);
+	attach_conf(cptr, n_conf);
+	attach_conf(cptr, c_conf);
+	attach_confs(cptr, name, CONF_HUB|CONF_LEAF|CONF_UWORLD);
 
 	if (c_conf->addr == NULL)
 		c_conf->addr = address_copy(cptr->sock->raddr);
@@ -511,8 +502,7 @@ check_serverback:
 **	Return	TRUE, if successfully completed
 **		FALSE, if failed and ClientExit
 */
-int completed_connection(cptr)
-aClient	*cptr;
+int completed_connection(aClient *cptr)
 {
 	aConfItem *aconf;
 
@@ -546,8 +536,7 @@ aClient	*cptr;
 **	Close the physical connection. This function must make
 **	MyConnect(cptr) == FALSE, and set cptr->from == NULL.
 */
-void	close_connection(cptr)
-aClient *cptr;
+void	close_connection(aClient *cptr)
 {
         aConfItem *aconf;
 
@@ -852,10 +841,7 @@ int	read_packet(aClient *cptr)
 /*
  * connect_server
  */
-int	connect_server(aconf, by, hp)
-aConfItem *aconf;
-aClient	*by;
-struct	HostEnt	*hp;
+int	connect_server(aConfItem *aconf, aClient *by, struct HostEnt *hp)
 {
 	aClient *cptr, *c2ptr;
 	char	*s;
@@ -926,7 +912,7 @@ struct	HostEnt	*hp;
          * No need to check access and do gethostbyaddr calls.
          * There must at least be one as we got here C line...  meLazy
          */
-        (void)attach_confs_host(cptr, aconf->host,
+        attach_confs_host(cptr, aconf->host,
 		       CONF_NOCONNECT_SERVER | CONF_CONNECT_SERVER);
 
 	if (!find_conf_host(cptr->confs, aconf->host, CONF_NOCONNECT_SERVER) ||
@@ -946,21 +932,21 @@ struct	HostEnt	*hp;
 	/*
 	** The socket has been connected or connect is in progress.
 	*/
-	(void)make_server(cptr);
+	make_server(cptr);
 	if (by && IsPerson(by))
 	    {
-		(void)strcpy(cptr->serv->by, by->name);
+		strcpy(cptr->serv->by, by->name);
 		if (cptr->serv->user) free_user(cptr->serv->user, NULL);
 		cptr->serv->user = by->user;
 		by->user->refcnt++;
 	    }
 	    else
 	    {
-		(void)strcpy(cptr->serv->by, "AutoConn.");
+		strcpy(cptr->serv->by, "AutoConn.");
 		if (cptr->serv->user) free_user(cptr->serv->user, NULL);
 		cptr->serv->user = NULL;
 	    }
-	(void)strcpy(cptr->serv->up, me.name);
+	strcpy(cptr->serv->up, me.name);
 	cptr->acpt = &me;
 	SetConnecting(cptr);
 
@@ -977,10 +963,7 @@ struct	HostEnt	*hp;
 ** matches the server's name) and its primary IP#.  Hostname is stored
 ** in the client structure passed as a pointer.
 */
-void	get_my_name(cptr, name, len)
-aClient	*cptr;
-char	*name;
-int	len;
+void	get_my_name(aClient *cptr, char *name, int len)
 {
 	static	char tmp[HOSTLEN+1];
 	struct	hostent	*hp;
@@ -1098,7 +1081,7 @@ void do_dns_async()
 		ClearDNS(cptr);
 
 		if (check_server(cptr, hp, NULL, NULL, 1))
-		  (void)exit_client(cptr, cptr, &me, "No Authorization");
+		  exit_client(cptr, cptr, &me, "No Authorization");
 
 		break;
 

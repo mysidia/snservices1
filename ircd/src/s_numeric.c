@@ -65,11 +65,11 @@ int	do_numeric(int numeric, aClient *cptr, aClient *sptr, int parc, char *parv[]
 	    {
 		for (i = 2; i < (parc - 1); i++)
 		    {
-			(void)strcat(buffer, " ");
-			(void)strcat(buffer, parv[i]);
+			strcat(buffer, " ");
+			strcat(buffer, parv[i]);
 		    }
-		(void)strcat(buffer, " :");
-		(void)strcat(buffer, parv[parc-1]);
+		strcat(buffer, " :");
+		strcat(buffer, parv[parc-1]);
 	    }
 	for (; (nick = strtok_r(parv[1], ",", &p)); parv[1] = NULL)
 	    {

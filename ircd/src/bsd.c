@@ -36,15 +36,15 @@ dummy_sig(int sig)
 
 	act.sa_handler = dummy_sig;
 	act.sa_flags = 0;
-	(void)sigemptyset(&act.sa_mask);
-	(void)sigaddset(&act.sa_mask, SIGALRM);
-	(void)sigaddset(&act.sa_mask, SIGPIPE);
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGALRM);
+	sigaddset(&act.sa_mask, SIGPIPE);
 #ifdef SIGWINCH
-	(void)sigaddset(&act.sa_mask, SIGWINCH);
-	(void)sigaction(SIGWINCH, &act, NULL);
+	sigaddset(&act.sa_mask, SIGWINCH);
+	sigaction(SIGWINCH, &act, NULL);
 #endif
-	(void)sigaction(SIGALRM, &act, NULL);
-	(void)sigaction(SIGPIPE, &act, NULL);
+	sigaction(SIGALRM, &act, NULL);
+	sigaction(SIGPIPE, &act, NULL);
 }
 
 

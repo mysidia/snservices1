@@ -142,22 +142,22 @@ chkconf_initconf(int opt)
 	int	lineno;
 	aConfItem *aconf = NULL, *ctop = NULL;
 
-	(void)fprintf(stderr, "initconf(): ircd.conf = %s\n", configfile);
+	fprintf(stderr, "initconf(): ircd.conf = %s\n", configfile);
 	if ((fd = openconf()) == -1) {
 		return NULL;
 	}
 
         lineno = 1;
-	(void)dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
+	dgets(-1, NULL, 0); /* make sure buffer is at empty pos */
 	while ((dh = dgets(fd, line, sizeof(line) - 1)) > 0) {
                 printf("%u:    End of file\r",lineno++);
 		if (aconf) {
 			if (aconf->host)
-				(void)free(aconf->host);
+				free(aconf->host);
 			if (aconf->passwd)
-				(void)free(aconf->passwd);
+				free(aconf->passwd);
 			if (aconf->name)
-				(void)free(aconf->name);
+				free(aconf->name);
 		} else
 			aconf = (aConfItem *)malloc(sizeof(*aconf));
 
@@ -212,18 +212,18 @@ chkconf_initconf(int opt)
 			continue;
 
 		if (line[1] != ':') {
-                        (void)fprintf(stderr, "ERROR: Bad config line (%s)\n",
-				      line);
+                        fprintf(stderr, "ERROR: Bad config line (%s)\n",
+				line);
                         continue;
 		}
 
 		if (debugflag)
-			(void)printf("\n%s\n",line);
-		(void)fflush(stdout);
+			printf("\n%s\n",line);
+		fflush(stdout);
 
 		tmp = chkconf_getfield(line);
 		if (!tmp) {
-                        (void)fprintf(stderr, "\tERROR: no fields found\n");
+                        fprintf(stderr, "\tERROR: no fields found\n");
 			continue;
 		}
 
@@ -303,9 +303,9 @@ chkconf_initconf(int opt)
 			aconf->status = CONF_ZAP;
 			break;
 		default:
-			(void)fprintf(stderr,
-				      "\tERROR: unknown conf line letter (%c)\n",
-				      *tmp);
+			fprintf(stderr,
+				"\tERROR: unknown conf line letter (%c)\n",
+				*tmp);
 			break;
 		}
 
@@ -357,8 +357,8 @@ chkconf_initconf(int opt)
 					 | CONF_NOCONNECT_SERVER
 					 | CONF_OPS
 					 | CONF_CLIENT))) {
-			(void)fprintf(stderr,
-				      "\tWARNING: No class.  Default 0\n");
+			fprintf(stderr,
+				"\tWARNING: No class.  Default 0\n");
 			aconf->class = get_class(0);
 		}
 		/* Check for bad Z-lines */
@@ -378,17 +378,17 @@ chkconf_initconf(int opt)
 		 */
 		if (aconf->status & CONF_CLASS) {
 			if (!aconf->host) {
-				(void)fprintf(stderr,"\tERROR: no class #\n");
+				fprintf(stderr,"\tERROR: no class #\n");
 				continue;
 			}
 			if (!tmp) {
-				(void)fprintf(stderr,
-					      "\tWARNING: missing sendq field\n");
-				(void)fprintf(stderr, "\t\t default: %d\n",
-					      MAXSENDQLENGTH);
-				(void)sprintf(maxsendq, "%d", MAXSENDQLENGTH);
+				fprintf(stderr,
+					"\tWARNING: missing sendq field\n");
+				fprintf(stderr, "\t\t default: %d\n",
+					MAXSENDQLENGTH);
+				sprintf(maxsendq, "%d", MAXSENDQLENGTH);
 			} else
-				(void)sprintf(maxsendq, "%d", atoi(tmp));
+				sprintf(maxsendq, "%d", atoi(tmp));
 			new_class(atoi(aconf->host));
 			aconf->class = get_class(atoi(aconf->host));
 			goto print_confline;
@@ -396,12 +396,12 @@ chkconf_initconf(int opt)
 
 		if (aconf->status & CONF_LISTEN_PORT) {
 			if (!aconf->host)
-				(void)fprintf(stderr, "\tERROR: %s\n",
-					      "null host field in P-line");
+				fprintf(stderr, "\tERROR: %s\n",
+					"null host field in P-line");
 			else if (index(aconf->host, '/'))
-				(void)fprintf(stderr, "\t%s %s\n",
-					      "WARNING: / present in P-line", 
-					      "for non-UNIXPORT configuration");
+				fprintf(stderr, "\t%s %s\n",
+					"WARNING: / present in P-line", 
+					"for non-UNIXPORT configuration");
 			aconf->class = get_class(0);
 			goto print_confline;
 		}
@@ -409,19 +409,19 @@ chkconf_initconf(int opt)
 		if (aconf->status & CONF_SERVER_MASK
 		    && (!aconf->host || index(aconf->host, '*')
 			|| index(aconf->host, '?'))) {
-			(void)fprintf(stderr, "\tERROR: bad host field\n");
+			fprintf(stderr, "\tERROR: bad host field\n");
 			continue;
 		}
 
 		if (aconf->status & CONF_SERVER_MASK
 		    && BadPtr(aconf->passwd)) {
-			(void)fprintf(stderr,
-				      "\tERROR: empty/no password field\n");
+			fprintf(stderr,
+				"\tERROR: empty/no password field\n");
 			continue;
 		}
 
 		if (aconf->status & CONF_SERVER_MASK && !aconf->name) {
-			(void)fprintf(stderr, "\tERROR: bad name field\n");
+			fprintf(stderr, "\tERROR: bad name field\n");
 			continue;
 		}
 
@@ -432,7 +432,7 @@ chkconf_initconf(int opt)
 
 				len += strlen(aconf->host);
 				newhost = irc_malloc(len);
-				(void)sprintf(newhost, "*@%s", aconf->host);
+				sprintf(newhost, "*@%s", aconf->host);
 				irc_free(aconf->host);
 				aconf->host = newhost;
 			}
@@ -444,7 +444,7 @@ chkconf_initconf(int opt)
 		 */
 		if (!aconf->class)
 			aconf->class = get_class(0);
-		(void)sprintf(maxsendq, "%d", aconf->class->class);
+		sprintf(maxsendq, "%d", aconf->class->class);
 
 		if (!aconf->name)
 			aconf->name = nullfield;
@@ -454,18 +454,18 @@ chkconf_initconf(int opt)
 			aconf->host = nullfield;
 		if (aconf->status & (CONF_ME | CONF_ADMIN)) {
 			if (flags & aconf->status)
-				(void)fprintf(stderr,
-					      "ERROR: multiple %c-lines\n",
-					      irc_toupper(confchar(aconf->status)));
+				fprintf(stderr,
+					"ERROR: multiple %c-lines\n",
+					irc_toupper(confchar(aconf->status)));
 			else
 				flags |= aconf->status;
 		}
 print_confline:
 		if (debugflag > 8)
-			(void)printf("(%d) (%s) (%s) (%s) (%d) (%s)\n",
-				     aconf->status, aconf->host, aconf->passwd,
-				     aconf->name, aconf->port, maxsendq);
-		(void)fflush(stdout);
+			printf("(%d) (%s) (%s) (%s) (%d) (%s)\n",
+			       aconf->status, aconf->host, aconf->passwd,
+			       aconf->name, aconf->port, maxsendq);
+		fflush(stdout);
 		if (aconf->status & (CONF_SERVER_MASK | CONF_HUB | CONF_LEAF)) {
 			aconf->next = ctop;
 			ctop = aconf;
@@ -473,7 +473,7 @@ print_confline:
 		}
 	}
         printf("\n");
-	(void)close(fd);
+	close(fd);
 	return ctop;
 }
 
@@ -490,7 +490,7 @@ get_class(int cn)
 			break;
 		}
 	if (i == -1)
-		(void)fprintf(stderr,"\tWARNING: class %d not found\n", cn);
+		fprintf(stderr,"\tWARNING: class %d not found\n", cn);
 
 	return &cls;
 }
@@ -674,14 +674,14 @@ validate(aConfItem *top)
 			}
 	}
 
-	(void) fprintf(stderr, "\n");
+	fprintf(stderr, "\n");
 	for (aconf = top; aconf; aconf = aconf->next)
 		if (aconf->status & CONF_MATCH)
 			valid++;
 		else
-			(void)fprintf(stderr, "Unmatched %c:%s:%s:%s\n",
-				      confchar(aconf->status), aconf->host,
-				      aconf->passwd, aconf->name);
+			fprintf(stderr, "Unmatched %c:%s:%s:%s\n",
+				confchar(aconf->status), aconf->host,
+				aconf->passwd, aconf->name);
 	return valid ? 0 : -1;
 }
 

@@ -299,16 +299,16 @@ char *
 err_str(int numeric)
 {
 	if (numeric < 0 || numeric > (ERR_YOURHURT + 400)) {
-		(void)sprintf(numbuf,
-			      ":%%s %d %%s :INTERNAL ERROR: BAD NUMERIC! %d",
-			      numeric, numeric);
+		sprintf(numbuf,
+			":%%s %d %%s :INTERNAL ERROR: BAD NUMERIC! %d",
+			numeric, numeric);
 		return numbuf;
 	}
 
 	if (!replies[numeric]) {
-		(void)sprintf(numbuf,
-			      ":%%s %d %%s :NO ERROR FOR NUMERIC ERROR %d",
-			      numeric, numeric);
+		sprintf(numbuf,
+			":%%s %d %%s :NO ERROR FOR NUMERIC ERROR %d",
+			numeric, numeric);
 		return numbuf;
 	}
 
@@ -320,10 +320,10 @@ char *
 rpl_str(int numeric)
 {
 	if (numeric < 0 || numeric > 999) {
-		(void)sprintf(numbuf,
-			      ":%%s %d %%s "
-			      ":INTERNAL REPLY ERROR: BAD NUMERIC! %d",
-			      numeric, numeric);
+		sprintf(numbuf,
+			":%%s %d %%s "
+			":INTERNAL REPLY ERROR: BAD NUMERIC! %d",
+			numeric, numeric);
 		return numbuf;
 	}
 
@@ -331,9 +331,9 @@ rpl_str(int numeric)
 	       numeric, numeric, replies[numeric]));
 
 	if (!replies[numeric]) {
-		(void)sprintf(numbuf,
-			      ":%%s %d %%s :NO REPLY FOR NUMERIC ERROR %d",
-			      numeric, numeric);
+		sprintf(numbuf,
+			":%%s %d %%s :NO REPLY FOR NUMERIC ERROR %d",
+			numeric, numeric);
 		return numbuf;
 	}
 

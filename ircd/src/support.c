@@ -43,7 +43,7 @@ dumpcore(char *fmt, ...)
 	if (!lastd)
 		lastd = now;
 	else if (now - lastd < 60 && dumps > 2)
-		(void)s_die(0);
+		s_die(0);
 	if (now - lastd > 60)
 	    {
 		lastd = now;
@@ -57,8 +57,8 @@ dumpcore(char *fmt, ...)
 		kill(p, 9);
 	}
 	write_pidfile();
-	(void)sprintf(corename, "core.%d", p);
-	(void)rename("core", corename);
+	sprintf(corename, "core.%d", p);
+	rename("core", corename);
 	Debug((DEBUG_FATAL, "Dumped core : core.%d", p));
 	sendto_ops("Dumped core : core.%d", p);
 
@@ -68,7 +68,7 @@ dumpcore(char *fmt, ...)
 	va_end(ap2);
 	sendto_ops(msg, ap);
 	va_end(ap);
-	(void)s_die(0);
+	s_die(0);
 }
 #endif /* DEBUGMODE */
 

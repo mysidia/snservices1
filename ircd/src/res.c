@@ -118,8 +118,7 @@ SOCKET_HANDLER(res_read_handler)
 	do_dns_async();
 }
 
-static	int	add_request(new)
-ResRQ *new;
+static	int	add_request(ResRQ *new)
 {
 	if (!new)
 		return -1;
@@ -139,8 +138,7 @@ ResRQ *new;
  * remove a request from the list. This must also free any memory that has
  * been allocated for temporary storage of DNS results.
  */
-static	void	rem_request(old)
-ResRQ	*old;
+static	void	rem_request(ResRQ *old)
 {
 	ResRQ	**rptr, *r2ptr = NULL;
 	int	i;
@@ -176,8 +174,7 @@ ResRQ	*old;
 /*
  * Create a DNS request record for the server.
  */
-static	ResRQ	*make_request(lp)
-Link	*lp;
+static	ResRQ	*make_request(Link *lp)
 {
 	ResRQ	*nreq;
 
@@ -196,7 +193,7 @@ Link	*lp;
 	nreq->he.h_name = NULL;
 	nreq->he.h_aliases[0] = NULL;
 
-	(void)add_request(nreq);
+	add_request(nreq);
 	return nreq;
 }
 
@@ -204,8 +201,7 @@ Link	*lp;
  * Remove queries from the list which have been there too long without
  * being resolved.
  */
-time_t	timeout_query_list(now)
-time_t	now;
+time_t	timeout_query_list(time_t now)
 {
 	ResRQ	*rptr, *r2ptr;
 	time_t	next = 0, tout;
@@ -235,7 +231,7 @@ time_t	now;
 					sendto_ops("Host %s unknown", rptr->name);
 					ClearDNS(cptr);
 					if (check_server(cptr, NULL, NULL, NULL, 1))
-					  (void)exit_client(cptr, cptr, &me, "No Permission");
+					  exit_client(cptr, cptr, &me, "No Permission");
 					break;
 				case ASYNC_CONNECT :
 					sendto_ops("Host %s unknown", rptr->name);
@@ -268,8 +264,7 @@ time_t	now;
  * del_queries - called by the server to cleanup outstanding queries for
  * which there no longer exist clients or conf lines.
  */
-void	del_queries(cp)
-char	*cp;
+void	del_queries(char *cp)
 {
 	ResRQ	*rptr, *r2ptr;
 
@@ -288,9 +283,7 @@ char	*cp;
  * isnt present. Returns number of messages successfully sent to 
  * nameservers or -1 if no successful sends.
  */
-static	int	send_res_msg(msg, len, rcount)
-char	*msg;
-int	len, rcount;
+static	int	send_res_msg(char *msg, int len, int rcount)
 {
 	int	sent = 0;
 
@@ -313,8 +306,7 @@ int	len, rcount;
 /*
  * find a dns request id (id is determined by dn_mkquery)
  */
-static	ResRQ	*find_id(id)
-int	id;
+static	ResRQ	*find_id(int id)
 {
 	ResRQ	*rptr;
 
@@ -324,10 +316,7 @@ int	id;
 	return NULL;
 }
 
-struct	HostEnt	*gethost_byname(name, af, lp)
-char	*name;
-int	af;
-Link	*lp;
+struct	HostEnt	*gethost_byname(char *name, int af, Link *lp)
 {
 	aCache	*cp;
 
@@ -336,13 +325,11 @@ Link	*lp;
 		return (struct HostEnt *)&(cp->he);
 	if (!lp)
 		return NULL;
-	(void)do_query_name(lp, name, af, NULL);
+	do_query_name(lp, name, af, NULL);
 	return NULL;
 }
 
-struct	HostEnt	*gethost_byaddr(addr, lp)
-sock_address	*addr;
-Link	*lp;
+struct	HostEnt	*gethost_byaddr(sock_address *addr, Link *lp)
 {
 	aCache	*cp;
 
@@ -351,29 +338,25 @@ Link	*lp;
 		return (struct HostEnt *)&(cp->he);
 	if (!lp)
 		return NULL;
-	(void)do_query_number(lp, addr, NULL);
+	do_query_number(lp, addr, NULL);
 	return NULL;
 }
 
-static	int	do_query_name(lp, name, af, rptr)
-Link	*lp;
-char	*name;
-int	af;
-ResRQ	*rptr;
+static	int	do_query_name(Link *lp, char *name, int af, ResRQ *rptr)
 {
 	char	hname[HOSTLEN+1];
 	int	len;
 
-	(void)strncpy(hname, name, sizeof(hname) - 1);
+	strncpy(hname, name, sizeof(hname) - 1);
 	hname[sizeof(hname) - 1] = '\0';
 
 	len = strlen(hname);
 
 	if (rptr && !index(hname, '.') && _res.options & RES_DEFNAMES)
 	    {
-		(void)strncat(hname, dot, sizeof(hname) - len - 1);
+		strncat(hname, dot, sizeof(hname) - len - 1);
 		len++;
-		(void)strncat(hname, _res.defdname, sizeof(hname) - len -1);
+		strncat(hname, _res.defdname, sizeof(hname) - len -1);
 	    }
 	/*
 	 * Store the name passed as the one to lookup and generate other host
@@ -394,7 +377,7 @@ ResRQ	*rptr;
 #endif
 		}
 		rptr->name = (char *)irc_malloc(strlen(name) + 1);
-		(void)strcpy(rptr->name, name);
+		strcpy(rptr->name, name);
 	    }
 	switch (af)
 	{
@@ -411,10 +394,7 @@ ResRQ	*rptr;
 /*
  * Use this to do reverse IP# lookups.
  */
-static	int	do_query_number(lp, numb, rptr)
-Link	*lp;
-sock_address	*numb;
-ResRQ	*rptr;
+static	int	do_query_number(Link *lp, sock_address *numb, ResRQ *rptr)
 {
 	char	ipbuf[73];
 	u_char	*cp;
@@ -426,7 +406,7 @@ ResRQ	*rptr;
 	{
 		case AF_INET:
 			cp = (u_char *)&((struct sockaddr_in *)numb->addr)->sin_addr.s_addr;
-			(void)sprintf(ipbuf,"%u.%u.%u.%u.in-addr.arpa.",
+			sprintf(ipbuf,"%u.%u.%u.%u.in-addr.arpa.",
 				(u_int)(cp[3]), (u_int)(cp[2]),
 				(u_int)(cp[1]), (u_int)(cp[0]));
 			break;
@@ -459,10 +439,7 @@ ResRQ	*rptr;
 /*
  * generate a query based on class, type and name.
  */
-static	int	query_name(name, class, type, rptr)
-char	*name;
-int	class, type;
-ResRQ	*rptr;
+static	int	query_name(char *name, int class, int type, ResRQ *rptr)
 {
 	struct	timeval	tv;
 	char	buf[MAXPACKET];
@@ -474,12 +451,12 @@ ResRQ	*rptr;
 	r = res_mkquery(QUERY, name, class, type, NULL, 0, NULL,
 			buf, sizeof(buf));
 	if (r <= 0)
-	    {
+	  {
 		h_errno = NO_RECOVERY;
 		return r;
 	    }
 	hptr = (HEADER *)buf;
-	(void) gettimeofday(&tv, NULL);
+	gettimeofday(&tv, NULL);
 	do {
 		/* htons/ntohs can be assembler macros, which cannot
 		   be nested. Thus two lines.	-Vesa		    */
@@ -501,8 +478,7 @@ ResRQ	*rptr;
 	return 0;
 }
 
-static	void	resend_query(rptr)
-ResRQ	*rptr;
+static	void	resend_query(ResRQ *rptr)
 {
 	if (rptr->resend == 0)
 		return;
@@ -510,14 +486,14 @@ ResRQ	*rptr;
 	switch(rptr->type)
 	{
 	case T_PTR:
-		(void)do_query_number(NULL, &rptr->addr, rptr);
+		do_query_number(NULL, &rptr->addr, rptr);
 		break;
 	case T_A:
-		(void)do_query_name(NULL, rptr->name, AF_INET, rptr);
+		do_query_name(NULL, rptr->name, AF_INET, rptr);
 		break;
 #ifdef AF_INET6
 	case T_AAAA:
-		(void)do_query_name(NULL, rptr->name, AF_INET6, rptr);
+		do_query_name(NULL, rptr->name, AF_INET6, rptr);
 #endif
 	default:
 		break;
@@ -528,10 +504,7 @@ ResRQ	*rptr;
 /*
  * process name server reply.
  */
-static	int	proc_answer(rptr, hptr, buf, eob)
-ResRQ	*rptr;
-char	*buf, *eob;
-HEADER	*hptr;
+static	int	proc_answer(ResRQ *rptr, HEADER *hptr, char *buf, char *eob)
 {
 	char	*cp, **alias;
 	struct	hent	*hp;
@@ -575,9 +548,9 @@ HEADER	*hptr;
 		/* name server never returns with trailing '.' */
 		if (!index(hostbuf,'.') && (_res.options & RES_DEFNAMES))
 		    {
-			(void)strcat(hostbuf, dot);
+			strcat(hostbuf, dot);
 			len++;
-			(void)strncat(hostbuf, _res.defdname,
+			strncat(hostbuf, _res.defdname,
 				sizeof(hostbuf) - 1 - len);
 			len = MIN(len + strlen(_res.defdname),
 				  sizeof(hostbuf) - 1);
@@ -607,7 +580,7 @@ cp, sizeof(struct in_addr));
 			if (!hp->h_name)
 			    {
 				hp->h_name =(char *)irc_malloc(len+1);
-				(void)strcpy(hp->h_name, hostbuf);
+				strcpy(hp->h_name, hostbuf);
 			    }
 			ans++;
 			adr++;
@@ -635,7 +608,7 @@ cp, sizeof(struct in_addr));
 			if (!hp->h_name)
 			    {
 				hp->h_name =irc_malloc(len+1);
-				(void)strcpy(hp->h_name, hostbuf);
+				strcpy(hp->h_name, hostbuf);
 			    }
 			ans++;
 			adr++;
@@ -660,13 +633,13 @@ cp, sizeof(struct in_addr));
 				if (alias >= &(hp->h_aliases[MAXALIASES-1]))
 					break;
 				*alias = irc_malloc(len + 1);
-				(void)strcpy(*alias++, hostbuf);
+				strcpy(*alias++, hostbuf);
 				*alias = NULL;
 			    }
 			else
 			    {
 				hp->h_name = irc_malloc(len + 1);
-				(void)strcpy(hp->h_name, hostbuf);
+			        strcpy(hp->h_name, hostbuf);
 			    }
 			ans++;
 			break;
@@ -675,7 +648,7 @@ cp, sizeof(struct in_addr));
 			if (alias >= &(hp->h_aliases[MAXALIASES-1]))
 				break;
 			*alias = irc_malloc(len + 1);
-			(void)strcpy(*alias++, hostbuf);
+			strcpy(*alias++, hostbuf);
 			*alias = NULL;
 			ans++;
 			break;
@@ -698,8 +671,7 @@ cp, sizeof(struct in_addr));
  * read a dns reply from the nameserver and process it.
  * UNIX version.
  */
-struct	HostEnt	*get_res(lp)
-char	*lp;
+struct	HostEnt	*get_res(char *lp)
 {
 	static	char	buf[sizeof(HEADER) + MAXPACKET];
 	HEADER	*hptr;
@@ -891,8 +863,7 @@ hash_number(sock_address *ip)
 	return (hashv);
 }
 
-static	int	hash_name(name)
-char	*name;
+static	int	hash_name(char *name)
 {
 	u_int	hashv = 0;
 
@@ -905,8 +876,7 @@ char	*name;
 /*
 ** Add a new cache item to the queue and hash table.
 */
-static	aCache	*add_to_cache(ocp)
-aCache	*ocp;
+static	aCache	*add_to_cache(aCache *ocp)
 {
 	aCache	*cp = NULL;
         int	hashv;
@@ -956,9 +926,7 @@ aCache	*ocp;
 ** it already contains the correct expire time, if it is a new entry. Old
 ** entries have the expirey time updated.
 */
-static	void	update_list(rptr, cachep)
-ResRQ	*rptr;
-aCache	*cachep;
+static	void	update_list(ResRQ *rptr, aCache *cachep)
 {
         aCache	**cpp, *cp = cachep;
 	char	*s, *t, **base;
@@ -1072,8 +1040,7 @@ aCache	*cachep;
 	return;
 }
 
-static	aCache	*find_cache_name(name)
-char	*name;
+static	aCache	*find_cache_name(char *name)
 {
 	aCache	*cp;
 	char	*s;
@@ -1118,9 +1085,7 @@ char	*name;
 /*
  * find a cache entry by ip# and update its expire time
  */
-static	aCache	*find_cache_number(rptr, numb)
-ResRQ	*rptr;
-sock_address	*numb;
+static	aCache	*find_cache_number(ResRQ *rptr, sock_address *numb)
 {
 	aCache	*cp;
 	int	hashv,i;
@@ -1168,8 +1133,7 @@ sock_address	*numb;
 	return NULL;
 }
 
-static	aCache	*make_cache(rptr)
-ResRQ	*rptr;
+static	aCache	*make_cache(ResRQ *rptr)
 {
 	aCache	*cp;
 	int	i, n;
@@ -1254,8 +1218,7 @@ ResRQ	*rptr;
  *     delete a cache entry from the cache structures and lists and return
  *     all memory used for the cache back to the memory pool.
  */
-static	void	rem_cache(ocp)
-aCache	*ocp;
+static	void	rem_cache(aCache *ocp)
 {
 	aCache	**cp;
 	struct	HostEnt *hp = &ocp->he;
@@ -1347,8 +1310,7 @@ aCache	*ocp;
  * removes entries from the cache which are older than their expirey times.
  * returns the time at which the server should next poll the cache.
  */
-time_t	expire_cache(now)
-time_t	now;
+time_t	expire_cache(time_t now)
 {
 	aCache	*cp, *cp2;
 	time_t	next = 0;
@@ -1379,10 +1341,7 @@ void	flush_cache()
 		rem_cache(cp);
 }
 
-int	m_dns(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_dns(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	aCache	*cp;
 	int	i;
@@ -1424,8 +1383,7 @@ char	*parv[];
 	return 0;
 }
 
-u_long	cres_mem(sptr)
-aClient	*sptr;
+u_long	cres_mem(aClient *sptr)
 {
 	aCache	*c = cachetop;
 	struct	HostEnt	*h;

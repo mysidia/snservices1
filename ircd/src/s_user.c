@@ -181,7 +181,7 @@ int hunt_server(aClient *cptr, aClient *sptr, char *command, int server, int par
 		if (acptr->from == sptr->from && !MyConnect(acptr))
 			acptr = NULL;
 	if (!acptr)
-		for (acptr = client, (void)collapse(parv[server]);
+		for (acptr = client, collapse(parv[server]);
 		     (acptr = next_client(acptr, parv[server]));
 		     acptr = acptr->next)
 		    {
@@ -309,7 +309,7 @@ canonize(char *buffer)
 				*(cp-1) = ',';
 			else
 				l = 1;
-			(void)strcpy(cp, s);
+			strcpy(cp, s);
 			if (p)
 				cp += (p - s);
 		    }
@@ -536,7 +536,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 	}
 
       if (oldstatus == STAT_MASTER && MyConnect(sptr))
-	(void)m_oper(&me, sptr, 1, parv);
+	m_oper(&me, sptr, 1, parv);
     }
   else
     if (user->username != username)
@@ -555,9 +555,9 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 		     me.name, version);
 	  sendto_one(sptr, rpl_str(RPL_PROTOCTL), me.name, parv[0]);
 
-	  (void)m_lusers(sptr, sptr, 1, parv);
+	  m_lusers(sptr, sptr, 1, parv);
 	  update_load();
-	  (void)m_motd(sptr, sptr, 1, parv);
+	  m_motd(sptr, sptr, 1, parv);
 
           if (!IsUserVersionKnown(sptr)) {
 #if defined(REQ_VERSION_RESPONSE)		      
@@ -1090,7 +1090,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 				 acptr->from->name,
 				 get_client_name(cptr, FALSE));
 	      ClientFlags(sptr) |= FLAGS_KILLED;
-	      (void)exit_client(NULL, sptr, &me,
+	      exit_client(NULL, sptr, &me,
 				"Nick collision (you're a ghost)");
 	    }
 	    if (lastnick && lastnick != acptr->lastnick)
@@ -1106,7 +1106,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			   me.name, acptr->name, me.name,
 			   acptr->from->name, get_client_name(cptr, FALSE));
 	ClientFlags(acptr) |= FLAGS_KILLED;
-	(void)exit_client(NULL, acptr, &me,
+	exit_client(NULL, acptr, &me,
 			  "Nick collision (older nick overruled)");
 
 	if (lastnick == acptr->lastnick)
@@ -1277,7 +1277,7 @@ nickkilldone:
 #endif /* NOSPOOF */
 	  
 	  /* This had to be copied here to avoid problems.. */
-	  (void)strcpy(sptr->name, nick);
+	  strcpy(sptr->name, nick);
 
 	  if (sptr->user && IsNotSpoof(sptr))
 	  {
@@ -1299,12 +1299,12 @@ nickkilldone:
 	 *  Finally set new nick name.
 	 */
 	if (sptr->name[0]) {
-	  (void)del_from_client_hash_table(sptr->name, sptr);
+	  del_from_client_hash_table(sptr->name, sptr);
 	  samenick = mycmp(sptr->name, nick) ? 0 : 1;
 	  if (IsPerson(sptr) && !samenick)
 	      hash_check_watch(sptr, RPL_LOGOFF);
         }
-	(void)strcpy(sptr->name, nick);
+	strcpy(sptr->name, nick);
 
         if (IsPerson(sptr) && MyClient(sptr))
 	{
@@ -1319,7 +1319,7 @@ nickkilldone:
 	   }	
 	}
 
-	(void)add_to_client_hash_table(nick, sptr);
+	add_to_client_hash_table(nick, sptr);
 	if (IsPerson(sptr) && !samenick)
 	    hash_check_watch(sptr, RPL_LOGON);
 	if (IsServer(cptr) && parc>7)
@@ -1892,7 +1892,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if ((s = (char *)index(mask, ',')))
 		    {
 			parv[1] = ++s;
-			(void)m_who(cptr, sptr, parc, parv);
+			m_who(cptr, sptr, parc, parv);
 		    }
 		clean_channelname(mask);
 	    }
@@ -1922,7 +1922,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		mask = NULL;
 	else
 		channame = mask;
-	(void)collapse(mask);
+	collapse(mask);
 
 	if (IsChannelName(channame))
 	    {
@@ -2054,7 +2054,7 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		int	invis, showperson, member, wilds;
 
 		found = 0;
-		(void)collapse(nick);
+		collapse(nick);
 		wilds = (index(nick, '?') || index(nick, '*'));
 		if (wilds && IsServer(cptr)) continue;
 		for (acptr = client; (acptr = next_client(acptr, nick));
@@ -2136,9 +2136,9 @@ int m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 						*(buf + len++) = '+';
 					if (len)
 						*(buf + len) = '\0';
-					(void)strcpy(buf + len, chptr->chname);
+					strcpy(buf + len, chptr->chname);
 					len += strlen(chptr->chname);
-					(void)strcat(buf + len, " ");
+					strcat(buf + len, " ");
 					len++;
 				    }
 			    }
@@ -3135,7 +3135,7 @@ int m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (kcount < 2) {
 		    if (!BadPtr(path))
 		    {
-			(void)sprintf(buf, "%s%s (%s)",
+			sprintf(buf, "%s%s (%s)",
 				cptr->name, IsOper(sptr) ? "" : "(L)", path);
 			path = buf;
 		    }
@@ -3234,7 +3234,7 @@ int m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	** set in any other place)
 	*/
 	if (MyConnect(acptr) && MyConnect(sptr) && IsAnOper(sptr))
-		(void)sprintf(buf2, "Local kill by %s (%s)", sptr->name,
+		sprintf(buf2, "Local kill by %s (%s)", sptr->name,
 			BadPtr(parv[2]) ? sptr->name : parv[2]);
 	else
 	    {
@@ -3249,7 +3249,7 @@ int m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		    }
 		else
 			killer = path;
-		(void)sprintf(buf2, "Killed (%s)", killer);
+		sprintf(buf2, "Killed (%s)", killer);
 	    }
           if (exit_client(cptr, acptr, sptr, buf2) == FLUSH_BUFFER)
                return FLUSH_BUFFER;
@@ -3311,7 +3311,7 @@ int m_away(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		away = irc_malloc(strlen(awy2)+1);
 
 	sptr->user->away = away;
-	(void)strcpy(away, awy2);
+	strcpy(away, awy2);
 	if (MyConnect(sptr))
 		sendto_one(sptr, rpl_str(RPL_NOWAWAY), me.name, parv[0]);
 	return 0;
@@ -3592,7 +3592,7 @@ int	m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
 	else
 	    {
-		(void)detach_conf(sptr, aconf);
+		detach_conf(sptr, aconf);
 		sendto_one(sptr,err_str(ERR_PASSWDMISMATCH),me.name, parv[0]);
                 if (IsHurt(sptr) && MyConnect(sptr))
                 {
@@ -3669,7 +3669,7 @@ int	m_userhost(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		return 0;
 
 	if (parc > 2)
-		(void)m_userhost(cptr, sptr, parc-1, parv+1);
+		m_userhost(cptr, sptr, parc-1, parv+1);
 
 	if (parc < 2)
 	    {
@@ -3748,7 +3748,7 @@ int     m_ison(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 return 0;
 	  }
  
-        (void)sprintf(buf, rpl_str(RPL_ISON), me.name, *parv);
+        sprintf(buf, rpl_str(RPL_ISON), me.name, *parv);
         len = strlen(buf);
  
         for (s = strtok_r(*++pav, " ", &p); s; s = strtok_r(NULL, " ", &p))
@@ -3766,9 +3766,9 @@ int     m_ison(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                 *--user='!';
 		    }
  
-                        (void)strncat(buf, s, sizeof(buf) - len);
+                        strncat(buf, s, sizeof(buf) - len);
                         len += strlen(s);
-                        (void)strncat(buf, " ", sizeof(buf) - len);
+                        strncat(buf, " ", sizeof(buf) - len);
                         len++;
 		  }
 	  }
@@ -4456,7 +4456,7 @@ static int add_silence(aClient *sptr, char *mask)
   bzero((char *)lp, sizeof(Link));
   lp->next = sptr->user->silence;
   lp->value.cp = irc_malloc(strlen(mask)+1);
-  (void)strcpy(lp->value.cp, mask);
+  strcpy(lp->value.cp, mask);
   sptr->user->silence = lp;
   return 0;
 }
@@ -4517,7 +4517,7 @@ int m_silence(aClient *cptr, aClient *sptr, int parc, char *parv[])
   }
   else if ((acptr = find_person(parv[1], NULL)))
   {
-    (void)add_silence(sptr,parv[2]);
+    add_silence(sptr,parv[2]);
     if (!MyClient(acptr))
 	    sendto_one(acptr, ":%s SILENCE %s :%s",
 			    parv[0], parv[1], parv[2]); 
@@ -4578,7 +4578,7 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
       sendto_one(sptr, err_str(ERR_NICKNAMEINUSE), me.name, parv[0], parv[2]);
       return 0;
    }
-   (void)strncpy(newnick, parv[2], NICKLEN);
+   strncpy(newnick, parv[2], NICKLEN);
    if ( *parv[2] == '\0'|| do_nick_name(newnick, 1) == 0 || 
         strcmp(newnick, parv[2]))
    {
@@ -4591,13 +4591,13 @@ int m_cnick(aClient *cptr, aClient *sptr, int parc, char *parv[])
    sendto_prefix_one(acptr, acptr, ":%s NICK :%s", parv[1], parv[2]);
    sendto_common_channels(acptr, ":%s NICK :%s", parv[1], parv[2]);
    if (IsPerson(acptr))
-   (void)add_history(acptr);
+   add_history(acptr);
    sendto_serv_butone(NULL, ":%s NICK %s :%i",
                       parv[1], parv[2], ts);
-   (void)del_from_client_hash_table(acptr->name, acptr);
+   del_from_client_hash_table(acptr->name, acptr);
    hash_check_watch(acptr, RPL_LOGOFF);
-   (void)strncpy(acptr->name, parv[2], NICKLEN);
-   (void)add_to_client_hash_table(parv[2], acptr);
+   strncpy(acptr->name, parv[2], NICKLEN);
+   add_to_client_hash_table(parv[2], acptr);
    hash_check_watch(acptr, RPL_LOGON);
 
   return 0;  
