@@ -894,7 +894,7 @@ static	void	report_configured_links(aClient *sptr, int mask)
 	static	char	null[] = "<NULL>";
 	aConfItem *tmp;
 	int	*p, port, tmpmask;
-	char	c, *host, *pass, *name, *pt;
+	char	c, *host, *pass, *name, *pt, *cl;
         char oflag_list[BUFSIZE+5];
         unsigned        long    int     oflagset                 = 0;
         int     *s;
@@ -913,6 +913,8 @@ static	void	report_configured_links(aClient *sptr, int mask)
 			host = BadPtr(tmp->host) ? null : tmp->host;
 			pass = BadPtr(tmp->passwd) ? null : tmp->passwd;
 			name = BadPtr(tmp->name) ? null : tmp->name;
+			cl = BadPtr(tmp->class) ? null : tmp->class->name;
+
 			port = (int)tmp->port;
 
 			if (tmp->status == CONF_KILL &&
@@ -978,12 +980,12 @@ static	void	report_configured_links(aClient *sptr, int mask)
 					sendto_one(sptr, rpl_str(p[1]), me.name,
 						sptr->name, c,  host,
 						name, oflag_list,
-						tmp->class->name );
+						cl );
 			       else
 					sendto_one(sptr, rpl_str(p[1]), me.name,
 						sptr->name, c,  "*",
 						name, oflag_list,
-						tmp->class->name );
+						cl );
 
 				continue;
 			}
@@ -1041,7 +1043,7 @@ static	void	report_configured_links(aClient *sptr, int mask)
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c,  host,
 					   buf, name, port,
-					   tmp->class->name);
+					   cl);
 			}
 			/* Only display on X if server is missing */
 			else if (mask == CONF_MISSING) {
@@ -1055,11 +1057,11 @@ static	void	report_configured_links(aClient *sptr, int mask)
 				      && tmp->status != CONF_CLIENT)))
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c, host, name, port,
-					   tmp->class->name);
+					   cl);
 				else
 				sendto_one(sptr, rpl_str(p[1]), me.name,
 					   sptr->name, c, "*", name, port,
-					   tmp->class->name);
+					   cl);
                                }
 		    }
 	return;
