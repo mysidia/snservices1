@@ -635,10 +635,9 @@ int socket_write(sock *sock, void *buffer, int len)
 void socket_close(sock *sock)
 {
 #ifdef HAVE_SSL
-	if (sock->sslstate != SSL_OFF)
+	if (sock->ssl != NULL)
 	{
 		SSL_shutdown(sock->ssl);
-		sock->sslstate = SSL_IDLE;
 	}
 #endif
 	socket_unmonitor(sock, MONITOR_READ|MONITOR_WRITE|MONITOR_ERROR);

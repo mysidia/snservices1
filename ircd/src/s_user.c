@@ -1131,6 +1131,9 @@ nickkilldone:
 	  add_client_to_list(sptr);
 	  if (parc > 2)
 	    sptr->hopcount = atoi(parv[2]);
+	  /* quick ugly hack to let old servers connect succesfully */
+	  if (sptr->hopcount < 2)
+	    sptr->hopcount = 2;
 	  if (parc > 3)
 	    sptr->lastnick = atoi(parv[3]);
 	  else /* Little bit better, as long as not all upgraded */
