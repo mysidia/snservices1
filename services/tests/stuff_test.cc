@@ -12,6 +12,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION( StuffCTestCase );
 
 char *sfgets(char*, int, FILE*);
 
+
 void
 StuffCTestCase::testMatch()
 {
@@ -209,7 +210,9 @@ StuffCTestCase::testxor()
 void
 StuffCTestCase::testparse_str()
 {
-	void parse_str(char **, int, int, char *, size_t);
+	/* void parse_str(char **, int, int, char *, size_t); */
+	void parse_str(char **, unsigned int, unsigned int, char *, size_t);
+
 	char *args[] = {
 		 "junkarg-1", "bcdef-2", "ghi 3",
 		 "jkl_$$^@#%@#4", "madgja65", "a^I$A#_^(",

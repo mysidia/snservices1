@@ -282,7 +282,7 @@ const char* TimeLengthString::asString(char* buf, int len, bool pad,
 
 
 	if (showdays) {
-		TIME_WRITE(length.days, "%ldld", "%4ldld", "%4ld days");
+		TIME_WRITE(length.days, "%ldd", "%4ldd", "%4ld days");
 	}
 
 	// Number of hours output
