@@ -895,6 +895,7 @@ static CONF_HANDLER(conf_server)
 			aconf = make_conf();
 			aconf->status = CONF_UWORLD;
 			aconf->host = irc_strdup(name);
+			aconf->name = irc_strdup("*");
 			aconf->next = conf;
 			conf = aconf;
 			confs[3] = aconf;
