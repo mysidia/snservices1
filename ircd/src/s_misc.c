@@ -202,8 +202,12 @@ char	*get_client_name(aClient *sptr, int showip)
       } 
       else
       {
-	  if (mycmp(sptr->name, sptr->sockhost))
-	    (void)sprintf(nbuf, "%s[%s]", sptr->name, sptr->sockhost);
+	  if (mycmp(sptr->name, sptr->sockhost)) {
+		  if (!IsServer(sptr))
+		  	  (void)sprintf(nbuf, "%s[%s]", sptr->name, sptr->sockhost);
+		  else
+			  (void)sprintf(nbuf, "%s[ip-masked]", sptr->name);
+	  }
 	  else
 	    return sptr->name;
       }
