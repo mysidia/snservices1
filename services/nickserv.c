@@ -947,7 +947,7 @@ int hasValidModeR(UserList* user)
 {
 	if (!user->reg || !(user->oflags & NOISREG))
 		return 0;
-	if (user->timestamp >= user->reg->timereg
+	if (user->timestamp <= user->reg->timereg
 	     || user->timestamp > CTime)
 	{
 		user->oflags &= ~NOISREG;
