@@ -389,7 +389,7 @@ parseLine(char *line)
 				sSend
 					(":%s NOTICE %s :You are on services ignore, you may not use any Service",
 					 NickServ, tmp->nick);
-			if (!isOper(tmp) || tmp->caccess < 2 || !tmp->reg
+			if (!isOper(tmp) || tmp->caccess < ACC_RECOGNIZED || !tmp->reg
 				|| !(tmp->reg->opflags & OROOT))
 				return;
 		}

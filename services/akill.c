@@ -421,7 +421,7 @@ void checkAkillAllUsers(struct akill *ak)
 			if (tmpnick->oflags & NISOPER)
 				continue;
 			if (ak->type == A_AHURT
-				&& (tmpnick->caccess >= 2 && tmpnick->reg
+				&& (tmpnick->caccess >= ACC_RECOGNIZED && tmpnick->reg
 					&& ((tmpnick->reg->flags & NBYPASS)
 						|| (tmpnick->reg->opflags))))
 				 continue;

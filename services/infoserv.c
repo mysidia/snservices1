@@ -118,7 +118,7 @@ newsNag(UserList * nick)
 	SomeNews *news;
 	int count = 0, ict = 0, tupdate = 0;
 	if (!nick || !nick->reg || nick->reg->is_readtime >= is_last_post_time
-		|| nick->caccess < 2)
+		|| nick->caccess < ACC_RECOGNIZED)
 		return;
 	for (news = is_listhead; news; news = news->next) {
 		++ict;
@@ -314,7 +314,7 @@ ICMD(is_listnews)
 
 	for (; blah != 0; blah = blah->next, i++) {
 		if (blah->importance == 0 && !isOper(nick)
-			&& (!nick->reg || nick->caccess < 2
+			&& (!nick->reg || nick->caccess < ACC_RECOGNIZED
 				|| !(nick->reg->opflags & OOPER))) continue;
 
 		time = localtime(&blah->timestamp);
