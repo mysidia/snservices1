@@ -3590,7 +3590,7 @@ CCMD(cs_identify)
 	if (!chan->facc)
 		return RET_OK;
 
-	if (nick->reg && nick->caccess > 1)
+	if (nick->reg && nick->caccess > ACC_NOT_RECOGNIZED)
 	{
 		newitem = getChanOpData(chan, from);
 

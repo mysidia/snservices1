@@ -4152,7 +4152,7 @@ NCMD(ns_acc)
 					cacc = ACC_RECOGNIZED;
 				if (isIdentified(info, tmpnick))
 					cacc = ACC_IDENTIFIED;
-				if ((info->reg == tmpnick) && (info->caccess > 3))
+				if ((info->reg == tmpnick) && (info->caccess > ACC_IDENTIFIED))
 					cacc = info->caccess;
 
 				sSend(":%s NOTICE %s :%s -> %s ACC %i",
