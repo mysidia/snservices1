@@ -258,6 +258,7 @@ Run configure with appropriate options (see ./configure
 			    --with-network='sorcery.net' \
 			    --with-klinemail='kline@example.net' \
 			    --with-md5 \
+			    --with-opsemail='ircops@bogus.example.net' \
 			    --with-sendmail='/usr/sbin/sendmail -T' \
 			    --disable-grpops
 </programlisting>
