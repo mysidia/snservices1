@@ -39,7 +39,7 @@ int casetable = 0;
  * instead.
  */
 
-#if 1
+#ifndef CR_CHKCONF
 int expr_match(const char *mask, const char *text)
 {
 regex_t *preg;

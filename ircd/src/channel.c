@@ -164,12 +164,23 @@ char *s;
  */
 static int IsIpMask(const char *mask)
 {
+  char *s;
+  
   if (!mask)
     return 0;
+
+  s = strchr(mask, '@');
+
+  if ( s )
+	mask = s;
+  
+  if (strchr(mask, ':'))
+	  return 1;
+
   while (*mask)
     {
       if (isalpha(*mask))
-	return 0;
+		return 0;
       ++mask;
     }
   return 1;
@@ -187,7 +198,7 @@ aClient *cptr;
   if (!MyClient(cptr))
     return NULL;
 
-  host = inetntoa((char *)&cptr->ip);
+  host = inetntoa(&cptr->addr);
   bzero(namebuf, sizeof(namebuf));
   nick = check_string(nick);
   strncpyzt(namebuf, nick, NICKLEN + 1);
@@ -493,18 +504,20 @@ int *bantype;
 
 		if (*tmp->value.ban.banstr == '%')
 		{
-			if (match(tmp->value.ban.banstr, nuh) == 0)
-			    break;
-			if ((MyClient(cptr) && IsIpMask(tmp->value.ban.banstr+1) &&
-			   (s_ip = make_nick_user_ip(cptr)) && !match(tmp->value.ban.banstr+1, s_ip ) ))
+			int is_an_ipmask = (MyClient(cptr) && 
+				IsIpMask(tmp->value.ban.banstr+1)) ? 1 : 0;
+
+			if ( !is_an_ipmask ) {
+				if (match(tmp->value.ban.banstr, nuh) == 0)
+				    break;
+			}
+			else if ((s_ip = make_nick_user_ip(cptr)) &&
+				 !match(tmp->value.ban.banstr+1, s_ip )) {
 			   break;
+			}
 			continue;
 		}
 
-		if (match(tmp->value.ban.banstr, nuh) == 0 ||
-                   (MyClient(cptr) && IsIpMask(tmp->value.ban.banstr) &&
-                   (s_ip = make_nick_user_ip(cptr)) && !match(tmp->value.ban.banstr, s_ip ) ))
-			break;
 		if (match(tmp->value.ban.banstr, nuhmask) == 0)
 			break;
 
@@ -836,7 +849,10 @@ time_t	creationtime;
 		    {
 			(void)strcat(parabuf, " ");
 			(void)strcat(parabuf, name);
-			count++;
+			if (strchr(name, ' '))
+				count = 6;
+			else
+				count++;
 			*cp++ = flag;
 			*cp = '\0';
 		    }
@@ -1877,7 +1893,11 @@ void	clean_channelname(cn)
 char *cn;
 {
 	for (; *cn; cn++)
-		if (*cn == '\007' || *cn == ' ' || *cn == ',')
+		if (*cn == '\007' || *cn == ' ' || *cn == ',' ||
+		    ((unsigned char)*cn) == 160 || *cn == '\033' ||
+		    *cn == '\t' || *cn == '\003'  || *cn == '\017' ||
+		    *cn == '\026' || *cn == '\037' || *cn == '\002' ||
+		    *cn == '\001' || *cn == '\b')
 		    {
 			*cn = '\0';
 			return;
@@ -2071,7 +2091,7 @@ char	*parv[];
 	if (check_registered_user(sptr))
 		return 0;
 
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 	if (MyClient(sptr) && !IsUserVersionKnown(sptr) && parc >= 2) {
 			sendto_one(sptr,
 				":%s %d %s %s :Sorry, cannot join channel. (Client hasn't responded to version check, try typing /join %s  again in a moment)",

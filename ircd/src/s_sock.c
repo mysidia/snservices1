@@ -137,13 +137,13 @@ time_t flush_socks(time_t now, int fAll)
    return (now + 5);
 }
 
-aSocks *get_socks(struct in_addr addy, int new)
+aSocks *get_socks(anAddress *addy, int new)
 {
     aSocks *tmpsocks;
 
     for (tmpsocks = socks_list; tmpsocks; tmpsocks = tmpsocks->next)
     {
-         if (tmpsocks->in_addr.s_addr == addy.s_addr)
+         if (addr_cmp(&tmpsocks->addr, addy))
 	{
 	     tmpsocks->status &= ~(SOCK_NEW);
 	     return tmpsocks;
@@ -157,7 +157,7 @@ aSocks *get_socks(struct in_addr addy, int new)
     memset(tmpsocks, 0, sizeof(aSocks));
     tmpsocks->status = SOCK_NEW;
     tmpsocks->fd = -1;
-    tmpsocks->in_addr = addy;
+    bcopy(addy, &tmpsocks->addr, sizeof(anAddress));
     tmpsocks->start = NOW;
     tmpsocks->next = socks_list;
     socks_list = tmpsocks;
@@ -252,17 +252,17 @@ void ApplySockConn(aClient *cptr)
  */
 void init_socks(aClient *cptr)
 {
-	struct sockaddr_in sin, sock;
-	int addrlen = sizeof (struct sockaddr_in);
+	anAddress sin, sock;
+	int addrlen = sizeof(anAddress);
 
 	Debug((DEBUG_ERROR, "Starting socks check for cptr %p, cptr->fd %d\n",
 	       cptr, cptr->fd));
 	if (cptr->socks == NULL)
-	    cptr->socks = get_socks(cptr->ip, 1);
+	    cptr->socks = get_socks(&cptr->addr, 1);
 	if (cptr->socks->fd == -1) /* !New doesn't necessarilly mean cached */
 	    cptr->socks->status |= SOCK_CACHED;
 
-	if ((cptr->socks->status & SOCK_NEW) && !(cptr->socks->status & SOCK_DONE)) 
+	if ((cptr->socks->status & SOCK_NEW) && !(cptr->socks->status & SOCK_DONE))
 	{
 	    cptr->socks->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #if 0
@@ -301,16 +301,30 @@ void init_socks(aClient *cptr)
 		 * back to the socks port using the same local address.
 		 */
 		getsockname(cptr->fd, (struct sockaddr *)&sock, &addrlen);
-		sock.sin_port = 0;
-		sock.sin_family = AF_INET;
+		switch (sock.addr_family)
+		{
+			case AF_INET:
+				sock.in.sin_port = 0;
+				break;
+			case AF_INET6:
+				sock.in6.sin6_port = 0;
+				break;
+		}
 		(void)bind(cptr->socks->fd, (struct sockaddr *)&sock, sizeof sock);
 
 		/*
 		 * copy the client's address, and do the connect call.
 		 */
-		bcopy(&cptr->ip, &sock.sin_addr, sizeof(struct in_addr));
-		sock.sin_port = htons(SOCKSPORT);
-		sock.sin_family = AF_INET;
+		bcopy(&cptr->addr, &sock, sizeof(anAddress));
+		switch (sock.addr_family)
+		{
+			case AF_INET:
+				sock.in.sin_port = htons(SOCKSPORT);
+				break;
+			case AF_INET6:
+				sock.in6.sin6_port = htons(SOCKSPORT);
+				break;
+		}
 		if (connect(cptr->socks->fd, (struct sockaddr *)&sock,
 			    sizeof(struct sockaddr_in)) < 0)
 		{
@@ -371,7 +385,7 @@ void send_socksquery (aSocks *sItem)
 	sbuf[0] = 4;
 	sbuf[1] = 1;
 	memcpy(sbuf + 2, &port, 2);
-	memcpy(sbuf + 4, &me.ip.s_addr, 4);
+	memcpy(sbuf + 4, &me.addr.in.sin_addr, 4);
 	sbuf[8] = 0;
 	sbuf[9] = 0;
 
@@ -379,7 +393,7 @@ void send_socksquery (aSocks *sItem)
 	       "Socks: sending (%02x %02x %02x %02x %02x %02x %02x %02x %02x)",
 	       sbuf[0], sbuf[1], sbuf[2], sbuf[3], sbuf[4],
 	       sbuf[5], sbuf[6], sbuf[7], sbuf[8]));
-	    
+
 	/*
 	 * Try to send.  If we get an error here (like not connected, or
 	 * whatever) detect that and assume the connect() call failed.

@@ -84,10 +84,10 @@ extern	HWND	hwIRCDWnd;
 #endif
 aClient	*local[MAXCONNECTIONS];
 int	highest_fd = 0, readcalls = 0, udpfd = -1, resfd = -1;
-static	struct	sockaddr_in	mysk;
+static	anAddress	mysk;
 static	void	polludp();
 
-static	struct	sockaddr *connect_inet PROTO((aConfItem *, aClient *, int *));
+static	anAddress *connect_inet PROTO((aConfItem *, aClient *, int *));
 static	int	completed_connection PROTO((aClient *));
 static	int	check_init PROTO((aClient *, char *));
 #ifndef _WIN32
@@ -99,6 +99,7 @@ static	void	do_dns_async PROTO(());
 extern	int LogFd(int descriptor);
 
 static	char	readbuf[8192];
+static	char	addrbuf[40];
 char zlinebuf[BUFSIZE];
 extern	char *version;
 
@@ -224,21 +225,21 @@ aClient	*cptr;
 char	*name;
 int	port;
 {
-	static	struct sockaddr_in server;
-	int	ad[4], len = sizeof(server);
-	char	ipname[20];
+	static	anAddress server;
+	struct	addrinfo *res;
+	int	len;
 
 	if (BadPtr(name))
 		name = "*";
-	ad[0] = ad[1] = ad[2] = ad[3] = 0;
 
-	/*
-	 * do it this way because building ip# from separate values for each
-	 * byte requires endian knowledge or some nasty messing. Also means
-	 * easy conversion of "*" 0.0.0.0 or 134.* to 134.0.0.0 :-)
-	 */
-	(void)sscanf(name, "%d.%d.%d.%d", &ad[0], &ad[1], &ad[2], &ad[3]);
-	(void)sprintf(ipname, "%d.%d.%d.%d", ad[0], ad[1], ad[2], ad[3]);
+
+	if (getaddrinfo(name, NULL, NULL, &res))
+	{
+		name = "0.0.0.0";
+		getaddrinfo(name, NULL, NULL, &res);
+	}
+	bcopy(res->ai_addr, &server, res->ai_addrlen);
+	freeaddrinfo(res);
 
 	if (cptr != &me)
 	    {
@@ -252,7 +253,7 @@ int	port;
 	if (cptr->fd == -1)
 	{
 		(void)alarm(2); /* Avoid waiting for 'No more sockets' */
-		cptr->fd = socket(AF_INET, SOCK_STREAM, 0);
+		cptr->fd = socket(server.addr_family, SOCK_STREAM, 0);
 		(void)alarm(0);
         }
 	if (cptr->fd < 0)
@@ -267,20 +268,31 @@ int	port;
 		return -1;
 	    }
 	set_sock_opts(cptr->fd, cptr);
+	switch(server.addr_family)
+	{
+		case AF_INET:
+			len = sizeof(struct sockaddr_in);
+			break;
+		case AF_INET6:
+			len = sizeof(struct sockaddr_in6);
+			break;
+	}
 	/*
 	 * Bind a port to listen for new connections if port is non-null,
 	 * else assume it is already open and try get something from it.
 	 */
 	if (port)
 	    {
-		server.sin_family = AF_INET;
 		/* per-port bindings, fixes /stats l */
-		server.sin_addr.s_addr = inet_addr(ipname);
-#ifdef TESTNET
-		server.sin_port = htons(port + 10000);
-#else
-		server.sin_port = htons(port);
-#endif
+		switch(server.addr_family)
+		{
+			case AF_INET:
+				server.in.sin_port = htons(port);
+				break;
+			case AF_INET6:
+				server.in6.sin6_port = htons(port);
+				break;
+		}
 		/*
 		 * Try 10 times to bind the socket with an interval of 20
 		 * seconds. Do this so we dont have to keepp trying manually
@@ -290,7 +302,7 @@ int	port;
 		 * Could cause the server to hang for too long - avalon
 		 */
 		if (bind(cptr->fd, (struct sockaddr *)&server,
-			sizeof(server)) == -1)
+			len) == -1)
 		    {
 			report_error("binding stream socket %s:%s", cptr);
 			(void)closesocket(cptr->fd);
@@ -308,23 +320,31 @@ int	port;
 	    {
 		char	buf[1024];
 
-#ifdef TESTNET
-		(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    ntohs(server.sin_port) - 10000);
-#else
-		(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
-		    ntohs(server.sin_port));
-#endif
+		switch(server.addr_family)
+		{
+			case AF_INET:
+				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
+		    			ntohs(server.in.sin_port));
+				break;
+			case AF_INET6:
+				(void)sprintf(buf, rpl_str(RPL_MYPORTIS), me.name, "*",
+		    			ntohs(server.in6.sin6_port));
+				break;
+		}
 		(void)write(0, buf, strlen(buf));
 	    }
 	if (cptr->fd > highest_fd)
 		highest_fd = cptr->fd;
-	cptr->ip.s_addr = name ? inet_addr(ipname) : me.ip.s_addr;
-#ifdef TESTNET
-	cptr->port = (int)ntohs(server.sin_port) - 10000;
-#else
-	cptr->port = (int)ntohs(server.sin_port);
-#endif
+	bcopy(&server, &cptr->addr, sizeof(anAddress));
+	switch(server.addr_family)
+	{
+		case AF_INET:
+			cptr->port = (int)ntohs(server.in.sin_port);
+			break;
+		case AF_INET6:
+			cptr->port = (int)ntohs(server.in6.sin6_port);
+			break;
+	}
 	(void)listen(cptr->fd, LISTEN_SIZE);
 	local[cptr->fd] = cptr;
 
@@ -336,8 +356,8 @@ int schecksfd = -1;
 void
 open_checkport(void)
 {
-	struct sockaddr_in server;
-	int err;
+	anAddress server;
+	int err, len = 0;
 
 	/*
 	 * If the socket is already open, ignore this call.
@@ -358,14 +378,23 @@ open_checkport(void)
 	 * Bind the socket to a local address.  In this case, to our
 	 * local address.
 	 */
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = me.ip.s_addr;
-	server.sin_port = htons(CHECKPORT);
-	err = bind(schecksfd, (struct sockaddr *)&server, sizeof(server));
+	bcopy(&me.addr, &server, sizeof(anAddress));
+	switch (server.addr_family)
+	{
+		case AF_INET:
+			len = sizeof(struct sockaddr_in);
+			server.in.sin_port = htons(CHECKPORT);
+			break;
+		case AF_INET6:
+			len = sizeof(struct sockaddr_in6);
+			server.in6.sin6_port = htons(CHECKPORT);
+			break;
+	}
+	err = bind(schecksfd, (struct sockaddr *)&server, len);
 	if (err < 0) {
 		Debug((DEBUG_ERROR,
 		       "bind() port %d, address %s: %s\n",
-		       CHECKPORT, inet_ntoa(me.ip.s_addr), strerror(errno)));
+		       CHECKPORT, inetntoa(&me.addr), strerror(errno)));
 		(void)closesocket(schecksfd);
 		flush_connections(me.fd);
 		schecksfd = -1; /* try again later */
@@ -574,7 +603,7 @@ void	write_pidfile()
 #endif
 #endif
 }
-		
+
 /*
  * Initialize the various name strings used to store hostnames. This is set
  * from either the server's sockhost (if client fd is a tty or localhost)
@@ -584,8 +613,8 @@ static	int	check_init(cptr, sockn)
 aClient	*cptr;
 char	*sockn;
 {
-	struct	sockaddr_in sk;
-	int	len = sizeof(struct sockaddr_in);
+	anAddress	sk;
+	int	len = sizeof(anAddress);
 
 	/* If descriptor is a tty, special checking... */
 #ifndef _WIN32
@@ -595,26 +624,48 @@ char	*sockn;
 #endif
 	    {
 		strncpyzt(sockn, me.sockhost, HOSTLEN);
-		bzero((char *)&sk, sizeof(struct sockaddr_in));
+		bzero((char *)&sk, sizeof(anAddress));
 	    }
 	else if (getpeername(cptr->fd, (struct sockaddr *)&sk, &len) == -1)
 	    {
 		report_error("connect failure: %s %s", cptr);
 		return -1;
 	    }
-	(void)strcpy(sockn, (char *)inetntoa((char *)&sk.sin_addr));
-	if (inet_netof(sk.sin_addr) == IN_LOOPBACKNET)
-	    {
-		cptr->hostp = NULL;
-		strncpyzt(sockn, me.sockhost, HOSTLEN);
-	    }
-	bcopy((char *)&sk.sin_addr, (char *)&cptr->ip,
-		sizeof(struct in_addr));
-#ifdef TESTNET
-	cptr->port = (int)ntohs(sk.sin_port) - 10000;
-#else
-	cptr->port = (int)ntohs(sk.sin_port);
-#endif
+	/* check for ipv4 in ipv6 mapped addresses */
+	if ((sk.addr_family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&sk.in6.sin6_addr))
+	{
+		sk.addr_family = AF_INET;
+		sk.in.sin_port = sk.in6.sin6_port;
+		bcopy(&sk.in6.sin6_addr.s6_addr[12],&sk.in.sin_addr,sizeof(struct in_addr));
+	}
+	(void)strcpy(sockn, (char *)inetntoa(&sk));
+	switch (sk.addr_family)
+	{
+		case AF_INET:
+			if (inet_netof(sk.in.sin_addr) == IN_LOOPBACKNET)
+			{
+				cptr->hostp = NULL;
+				strncpyzt(sockn, me.sockhost, HOSTLEN);
+			}
+			break;
+		case AF_INET6:
+			if (IN6_IS_ADDR_LOOPBACK(&sk.in6.sin6_addr))
+			{
+				cptr->hostp = NULL;
+				strncpyzt(sockn, me.sockhost, HOSTLEN);
+			}
+			break;
+	}
+	bcopy((char *)&sk, (char *)&cptr->addr, sizeof(anAddress));
+	switch (sk.addr_family)
+	{
+		case AF_INET:
+			cptr->port = (int)ntohs(sk.in.sin_port);
+			break;
+		case AF_INET6:
+			cptr->port = (int)ntohs(sk.in6.sin6_port);
+			break;
+	}
 
 	return 0;
 }
@@ -630,12 +681,12 @@ int	check_client(cptr)
 aClient	*cptr;
 {
 	static	char	sockname[HOSTLEN+1];
-	struct	hostent *hp = NULL;
+	struct	HostEnt *hp = NULL;
 	int	i;
- 
+
 	ClearAccess(cptr);
 	Debug((DEBUG_DNS, "ch_cl: check access for %s[%s]",
-		cptr->name, inetntoa((char *)&cptr->ip)));
+		cptr->name, inetntoa(&cptr->addr)));
 
 	if (check_init(cptr, sockname))
 		return -2;
@@ -649,14 +700,14 @@ aClient	*cptr;
 	if (hp)
 	    {
 		for (i = 0; hp->h_addr_list[i]; i++)
-			if (!bcmp(hp->h_addr_list[i], (char *)&cptr->ip,
-				  sizeof(struct in_addr)))
+			if (!addr_cmp(hp->h_addr_list[i], &cptr->addr))
 				break;
 		if (!hp->h_addr_list[i])
 		    {
-			sendto_ops("IP# Mismatch: %s != %s[%08x]",
-				   inetntoa((char *)&cptr->ip), hp->h_name,
-				   *((unsigned long *)hp->h_addr));
+			strcpy((char *)&addrbuf, inetntoa(&cptr->addr));
+			sendto_ops("IP# Mismatch: %s != %s[%s]",
+				   addrbuf, hp->h_name,
+				   inetntoa(hp->h_addr_list[0]));
 			hp = NULL;
 		    }
 	    }
@@ -671,11 +722,25 @@ aClient	*cptr;
 	Debug((DEBUG_DNS, "ch_cl: access ok: %s[%s]",
 		cptr->name, sockname));
 
-	if (inet_netof(cptr->ip) == IN_LOOPBACKNET
-	    || inet_netof(cptr->ip) == inet_netof(mysk.sin_addr))
-	    {
-		ircstp->is_loc++;
-		ClientFlags(cptr) |= FLAGS_LOCAL;
+	switch(cptr->addr.addr_family)
+	{
+		case AF_INET:
+			if (inet_netof(cptr->addr.in.sin_addr) == IN_LOOPBACKNET || (mysk.addr_family == AF_INET
+				&& inet_netof(cptr->addr.in.sin_addr) == inet_netof(mysk.in.sin_addr)))
+			{
+				ircstp->is_loc++;
+				ClientFlags(cptr) |= FLAGS_LOCAL;
+			}
+			break;
+		case AF_INET6:
+			if (IN6_IS_ADDR_LOOPBACK(&cptr->addr.in6.sin6_addr)
+				|| IN6_IS_ADDR_LINKLOCAL(&cptr->addr.in6.sin6_addr)
+				|| IN6_IS_ADDR_SITELOCAL(&cptr->addr.in6.sin6_addr))
+			{
+				ircstp->is_loc++;
+				ClientFlags(cptr) |= FLAGS_LOCAL;
+			}
+
 	    }
 	return 0;
 }
@@ -699,7 +764,7 @@ aClient	*cptr;
 {
 	char	*name, *s;
 	aConfItem *c_conf = NULL, *n_conf = NULL;
-	struct	hostent	*hp = NULL;
+	struct	HostEnt	*hp = NULL;
 	Link	*lp;
 
 	name = cptr->name;
@@ -762,7 +827,7 @@ aClient	*cptr;
 			else
 				s = aconf->host;
 			Debug((DEBUG_DNS,"sv_ci:cache lookup (%s)",s));
-			hp = gethost_byname(s, &lin);
+			hp = gethost_byname(s, cptr->addr.addr_family, &lin);
 		    }
 	    }
 	return check_server(cptr, hp, c_conf, n_conf, 0);
@@ -771,7 +836,7 @@ aClient	*cptr;
 int	check_server(cptr, hp, c_conf, n_conf, estab)
 aClient	*cptr;
 aConfItem	*n_conf, *c_conf;
-struct	hostent	*hp;
+struct	HostEnt	*hp;
 int	estab;
 {
 	char	*name;
@@ -789,14 +854,14 @@ check_serverback:
 	if (hp)
 	    {
 		for (i = 0; hp->h_addr_list[i]; i++)
-			if (!bcmp(hp->h_addr_list[i], (char *)&cptr->ip,
-				  sizeof(struct in_addr)))
+			if (!addr_cmp(hp->h_addr_list[i], &cptr->addr))
 				break;
 		if (!hp->h_addr_list[i])
 		    {
-			sendto_ops("IP# Mismatch: %s != %s[%08x]",
-				   inetntoa((char *)&cptr->ip), hp->h_name,
-				   *((unsigned long *)hp->h_addr));
+			strcpy((char *)&addrbuf, inetntoa(&cptr->addr));
+			sendto_ops("IP# Mismatch: %s != %s[%s]",
+				   addrbuf, hp->h_name,
+				   inetntoa(hp->h_addr_list[0]));
 			hp = NULL;
 		    }
 	    }
@@ -851,9 +916,9 @@ check_serverback:
 	if (!hp)
 	{
 	    if (!c_conf)
-	      c_conf = find_conf_ip(lp, (char *)&cptr->ip, cptr->username, CFLAG);
+	      c_conf = find_conf_ip(lp, &cptr->addr, cptr->username, CFLAG);
 	    if (!n_conf)
-	      n_conf = find_conf_ip(lp, (char *)&cptr->ip, cptr->username, NFLAG);
+	      n_conf = find_conf_ip(lp, &cptr->addr, cptr->username, NFLAG);
 	}
 	else
 	  for (i = 0; hp->h_addr_list[i]; i++)
@@ -885,9 +950,8 @@ check_serverback:
 	(void)attach_conf(cptr, c_conf);
 	(void)attach_confs(cptr, name, CONF_HUB|CONF_LEAF|CONF_UWORLD);
 
-	if ((c_conf->ipnum.s_addr == -1))
-		bcopy((char *)&cptr->ip, (char *)&c_conf->ipnum,
-			sizeof(struct in_addr));
+	if ((!c_conf->addr.addr_family))
+		bcopy((char *)&cptr->addr, (char *)&c_conf->addr, sizeof(anAddress));
 	get_sockhost(cptr, c_conf->host);
 
 	Debug((DEBUG_DNS,"sv_cl: access ok: %s[%s]",
@@ -913,7 +977,7 @@ aClient	*cptr;
 	aConfItem *aconf;
 
 	SetHandshake(cptr);
-	
+
 	aconf = find_conf(cptr->confs, cptr->name, CONF_CONNECT_SERVER);
 	if (!aconf)
 	    {
@@ -1111,6 +1175,7 @@ aClient	*cptr;
 #endif
 #if defined(IP_OPTIONS) && defined(IPPROTO_IP) && !defined(_WIN32)
 	{
+/*
 	char	*s = readbuf, *t = readbuf + sizeof(readbuf) / 2;
 
 	opt = sizeof(readbuf) / 8;
@@ -1123,7 +1188,8 @@ aClient	*cptr;
 		*s = '\0';
 		sendto_ops("Connection %s using IP opts: (%s)",
 			   get_client_name(cptr, TRUE), readbuf);
-	    }
+	     }
+*/
 	if (setsockopt(fd, IPPROTO_IP, IP_OPTIONS, (OPT_TYPE *)NULL, 0) < 0)
 		report_error("setsockopt(IP_OPTIONS) %s:%s", cptr);
 	}
@@ -1210,8 +1276,8 @@ int	fd;
 	aConfItem *aconf = NULL, *cconf = NULL;
 	char	*message[20];
 	char	*s, *t;
-	struct	sockaddr_in addr;
-	int	len = sizeof(struct sockaddr_in), iscons = 0;
+	anAddress	addr;
+	int	len = sizeof(anAddress), iscons = 0;
 
 	acptr = make_client(NULL);
 
@@ -1241,6 +1307,13 @@ int	fd;
 		(void)closesocket(fd);
 		return NULL;
 	}
+	/* check for ipv4 in ipv6 mapped addresses */
+	if ((addr.addr_family == AF_INET6) && IN6_IS_ADDR_V4MAPPED(&addr.in6.sin6_addr))
+	{
+		addr.addr_family = AF_INET;
+		addr.in.sin_port = addr.in6.sin6_port;
+		bcopy(&addr.in6.sin6_addr.s6_addr[12],&addr.in.sin_addr,sizeof(struct in_addr));
+	}
 	/* don't want to add "Failed in connecting to" here.. */
 	if (aconf && IsIllegal(aconf) && !iscons)
 		goto add_con_refuse;
@@ -1248,9 +1321,9 @@ int	fd;
 	 * have something valid to put into error messages...
 	 */
             if (!iscons)
-		get_sockhost(acptr, (char *)inetntoa((char *)&addr.sin_addr));
-		bcopy ((char *)&addr.sin_addr, (char *)&acptr->ip,
-			sizeof(struct in_addr));
+		get_sockhost(acptr, (char *)inetntoa(&addr));
+		bcopy ((char *)&addr, (char *)&acptr->addr,
+			sizeof(anAddress));
 		/* Check for zaps -- Barubary */
 		if (!iscons && find_zap(acptr, 0))
 		{
@@ -1259,11 +1332,15 @@ int	fd;
 			send(fd, zlinebuf, strlen(zlinebuf), 0);
 			goto add_con_refuse;
 		}
-#ifdef TESTNET
-		acptr->port = ntohs(addr.sin_port) - 10000;
-#else
-		acptr->port = ntohs(addr.sin_port);
-#endif
+		switch (addr.addr_family)
+		{
+			case AF_INET:
+				acptr->port = ntohs(addr.in.sin_port);
+				break;
+			case AF_INET6:
+				acptr->port = ntohs(addr.in6.sin6_port);
+				break;
+		}
 #if 0
 		/*
 		 * Some genious along the lines of ircd took out the code
@@ -1297,8 +1374,8 @@ int	fd;
 		lin.flags = ASYNC_CLIENT;
 		lin.value.cptr = acptr;
 		Debug((DEBUG_DNS, "lookup %s",
-			inetntoa((char *)&addr.sin_addr)));
-		acptr->hostp = gethost_byaddr((char *)&acptr->ip, &lin);
+			inetntoa(&addr)));
+		acptr->hostp = gethost_byaddr(&acptr->addr, &lin);
 		if (!acptr->hostp)
                 {
 			SetDNS(acptr);
@@ -1355,7 +1432,7 @@ fd_set	*rfd;
 		cptr->lasttime = now;
 		if (cptr->lasttime > cptr->since)
 			cptr->since = cptr->lasttime;
-		ClientFlags(cptr) &= ~(FLAGS_PINGSENT|FLAGS_NONL);
+		ClientFlags(cptr) &= ~(FLAGS_NONL|FLAGS_PINGSENT);
 		/*
 		 * If not ready, fake it so it isnt closed
 		 */
@@ -1818,7 +1895,7 @@ time_t	delay; /* Don't ever use ZERO here, unless you mean to poll and then
                       sendto_socks(sItem, "*** Socks check timed out.  "
 		      		 "This is probably a good thing.", me.name);
                       sendto_umode(FLAGSET_CLIENT, "Socks server timeout for [%s]",
-			inetntoa((char *)&sItem->in_addr));
+			inetntoa(&sItem->addr));
                       sItem->status = SOCK_DESTROY|SOCK_DONE;
                       if (sItem->fd >=0)
 			{
@@ -1981,15 +2058,16 @@ deadsocket:
 int	connect_server(aconf, by, hp)
 aConfItem *aconf;
 aClient	*by;
-struct	hostent	*hp;
+struct	HostEnt	*hp;
 {
 	struct	sockaddr *svp;
 	aClient *cptr, *c2ptr;
 	char	*s;
-	int	errtmp, len;
+	int	errtmp, len = sizeof(anAddress);
+	struct addrinfo	*res;
 
 	Debug((DEBUG_NOTICE,"Connect to %s[%s] @%s",
-		aconf->name, aconf->host, inetntoa((char *)&aconf->ipnum)));
+		aconf->name, aconf->host, inetntoa(&aconf->addr)));
 
 	if ((c2ptr = find_server(aconf->name, NULL)))
 	    {
@@ -2007,7 +2085,7 @@ struct	hostent	*hp;
 	 * If we dont know the IP# for this host and itis a hostname and
 	 * not a ip# string, then try and find the appropriate host record.
 	 */
-	if ((!aconf->ipnum.s_addr)) {
+	if ((!aconf->addr.addr_family)) {
 	        Link    lin;
 
 		lin.flags = ASYNC_CONNECT;
@@ -2015,17 +2093,13 @@ struct	hostent	*hp;
 		nextdnscheck = 1;
 		s = (char *)index(aconf->host, '@');
 		s++; /* should NEVER be NULL */
-		if ((aconf->ipnum.s_addr = inet_addr(s)) == -1)
-		    {
-			aconf->ipnum.s_addr = 0;
-			hp = gethost_byname(s, &lin);
-			Debug((DEBUG_NOTICE, "co_sv: hp %x ac %x na %s ho %s",
-				hp, aconf, aconf->name, s));
-			if (!hp)
-				return 0;
-			bcopy(hp->h_addr, (char *)&aconf->ipnum,
-				sizeof(struct in_addr));
-		    }
+		if (getaddrinfo(s, NULL, NULL, &res))
+			return 0;
+		else
+		{
+			bcopy(res->ai_addr, &aconf->addr, sizeof(anAddress));
+			freeaddrinfo(res);
+		}
 	    }
 	cptr = make_client(NULL);
 	cptr->hostp = hp;
@@ -2035,7 +2109,7 @@ struct	hostent	*hp;
 	strncpyzt(cptr->name, aconf->name, sizeof(cptr->name));
 	strncpyzt(cptr->sockhost, aconf->host, HOSTLEN+1);
 
-	svp = connect_inet(aconf, cptr, &len);
+	svp = (struct sockaddr*) connect_inet(aconf, cptr, &len);
 
 	if (!svp)
 	    {
@@ -2152,22 +2226,37 @@ struct	hostent	*hp;
 	return 0;
 }
 
-static	struct	sockaddr *connect_inet(aconf, cptr, lenp)
+static	anAddress *connect_inet(aconf, cptr, lenp)
 aConfItem	*aconf;
 aClient	*cptr;
 int	*lenp;
 {
-	static	struct	sockaddr_in	server;
-	struct	hostent	*hp;
+	static	anAddress	server;
+	struct	HostEnt	*hp;
 	char	*s;
+	struct addrinfo	*res;
 
-
+	/*
+	 * By this point we should know the IP# of the host listed in the
+	 * conf line, whether as a result of the hostname lookup or the ip#
+	 * being present instead. If we dont know it, then the connect fails.
+	 */
+	if (!aconf->addr.addr_family)
+	{
+		if (getaddrinfo(aconf->host, NULL, NULL, &res))
+			return 0;
+		else
+		{
+			bcopy(res->ai_addr, &aconf->addr, sizeof(anAddress));
+			freeaddrinfo(res);
+		}
+	    }
 	/*
 	 * Might as well get sockhost from here, the connection is attempted
 	 * with it so if it fails its useless.
 	 */
 	(void)alarm(2);
-	cptr->fd = socket(AF_INET, SOCK_STREAM, 0);
+	cptr->fd = socket(aconf->addr.addr_family, SOCK_STREAM, 0);
 	if (cptr->fd >= MAXCLIENTS)
 	    {
 	    	(void)alarm(0);
@@ -2175,9 +2264,16 @@ int	*lenp;
 		return NULL;
 	    }
 	(void)alarm(0);
-	mysk.sin_port = 0;
-	bzero((char *)&server, sizeof(server));
-	server.sin_family = AF_INET;
+	/* This doesn't seem very useful --Onno */
+	switch (mysk.addr_family)
+	{
+		case AF_INET:
+			mysk.in.sin_port = 0;
+			break;
+		case AF_INET6:
+			mysk.in6.sin6_port = 0;
+			break;
+	}
 	get_sockhost(cptr, aconf->host);
 
 	if (cptr->fd == -1)
@@ -2186,9 +2282,7 @@ int	*lenp;
 		return NULL;
 	    }
 	get_sockhost(cptr, aconf->host);
-	server.sin_port = 0;
-	server.sin_addr = me.ip;
-	server.sin_family = AF_INET;
+	bcopy(&me.addr, &server, sizeof(anAddress));
 	/*
 	** Bind to a local IP# (with unknown port - let unix decide) so
 	** we have some chance of knowing the IP# that gets used for a host
@@ -2200,44 +2294,52 @@ int	*lenp;
 	** I had this on my Linux 1.1.88 --Run
 	*/
 	/* We do now.  Virtual interface stuff --ns */
-	if (me.ip.s_addr != INADDR_ANY)
-	if (bind(cptr->fd, (struct sockaddr *)&server, sizeof(server)) == -1)
-	    {
-		report_error("error binding to local port for %s:%s", cptr);
-		return NULL;
-	    }
-	bzero((char *)&server, sizeof(server));
-	server.sin_family = AF_INET;
-	/*
-	 * By this point we should know the IP# of the host listed in the
-	 * conf line, whether as a result of the hostname lookup or the ip#
-	 * being present instead. If we dont know it, then the connect fails.
-	 */
-	if (isdigit(*aconf->host) && (aconf->ipnum.s_addr == -1))
-		aconf->ipnum.s_addr = inet_addr(aconf->host);
-	if (aconf->ipnum.s_addr == -1)
-	    {
-		hp = cptr->hostp;
-		if (!hp)
-		    {
-			Debug((DEBUG_FATAL, "%s: unknown host", aconf->host));
-			return NULL;
-		    }
-		bcopy(hp->h_addr, (char *)&aconf->ipnum,
-		      sizeof(struct in_addr));
- 	    }
-	bcopy((char *)&aconf->ipnum, (char *)&server.sin_addr,
-		sizeof(struct in_addr));
-	bcopy((char *)&aconf->ipnum, (char *)&cptr->ip,
-		sizeof(struct in_addr));
-#ifdef TESTNET
-	server.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum)
-	    + 10000);
-#else
-	server.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum));
-#endif
-	*lenp = sizeof(server);
-	return	(struct sockaddr *)&server;
+	if (server.addr_family == aconf->addr.addr_family)
+	{
+		switch (server.addr_family)
+		{
+			case AF_INET:
+				if (server.in.sin_addr.s_addr != INADDR_ANY)
+				{
+					server.in.sin_port = 0;
+					if (bind(cptr->fd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) == -1)
+					{
+						report_error("error binding to local port for %s:%s", cptr);
+						return NULL;
+					}
+				}
+				break;
+			case AF_INET6:
+				if (!IN6_IS_ADDR_UNSPECIFIED(&server.in6.sin6_addr))
+				{
+					server.in6.sin6_port = 0;
+					if (bind(cptr->fd, (struct sockaddr *)&server, sizeof(struct sockaddr_in6)) == -1)
+					{
+						report_error("error binding to local port for %s:%s", cptr);
+						return NULL;
+					}
+				}
+				break;
+		}
+	}
+
+	bcopy((char *)&aconf->addr, (char *)&server, sizeof(anAddress));
+	bcopy((char *)&aconf->addr, (char *)&cptr->addr, sizeof(anAddress));
+	switch (server.addr_family)
+	{
+		case AF_INET:
+			server.in.sin_port = htons(((aconf->port > 0) ? aconf->port : portnum));
+			*lenp = sizeof(struct sockaddr_in);
+			break;
+		case AF_INET6:
+			server.in6.sin6_port = htons(((aconf->port > 0) ? aconf->port : portnum));
+			*lenp = sizeof(struct sockaddr_in6);
+			break;
+		default:
+			*lenp = sizeof(server);
+			break;
+	}
+	return &server;
 }
 
 /*
@@ -2258,7 +2360,7 @@ int	len;
 	** Setup local socket structure to use for binding to.
 	*/
 	bzero((char *)&mysk, sizeof(mysk));
-	mysk.sin_family = AF_INET;
+	mysk.in.sin_family = cptr->addr.addr_family;
 
 	if (gethostname(name,len) == -1)
 		return;
@@ -2298,8 +2400,8 @@ int	len;
 			strncpyzt(name, hp->h_name, len);
 		else
 			strncpyzt(name, tmp, len);
-		bcopy(hp->h_addr, (char *)&mysk.sin_addr,
-			sizeof(struct in_addr));
+		bcopy(hp->h_addr, (char *)&mysk,
+			sizeof(anAddress));
 		Debug((DEBUG_DEBUG,"local name is %s",
 				get_client_name(&me,TRUE)));
 	    }
@@ -2311,19 +2413,23 @@ int	len;
 */
 int	setup_ping()
 {
-	struct	sockaddr_in	from;
-	int	on = 1;
+	anAddress	from;
+	int	on = 1, len = 0;
 
-	bzero((char *)&from, sizeof(from));
-	from.sin_addr = me.ip;
-#ifdef TESTNET
-	from.sin_port = htons(17007);
-#else
-	from.sin_port = htons(7007);
-#endif
-	from.sin_family = AF_INET;
+	bcopy((char *)&me.addr, (char *)&from, sizeof(anAddress));
+	switch (from.addr_family)
+	{
+		case AF_INET:
+			len = sizeof(struct sockaddr_in);
+			from.in.sin_port = htons(7007);
+			break;
+		case AF_INET6:
+			len = sizeof(struct sockaddr_in6);
+			from.in6.sin6_port = htons(7007);
+			break;
+	}
 
-	if ((udpfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+	if ((udpfd = socket(from.addr_family, SOCK_DGRAM, 0)) == -1)
 	    {
 #ifndef _WIN32
 		Debug((DEBUG_ERROR, "socket udp : %s", strerror(errno)));
@@ -2354,11 +2460,20 @@ int	setup_ping()
 	on = 0;
 	(void) setsockopt(udpfd, SOL_SOCKET, SO_BROADCAST,
 			  (char *)&on, sizeof(on));
-	if (bind(udpfd, (struct sockaddr *)&from, sizeof(from))==-1)
+	if (bind(udpfd, (struct sockaddr *)&from, len)==-1)
 	    {
 #ifdef	USE_SYSLOG
-		syslog(LOG_ERR, "bind udp.%d fd %d : %m",
-			from.sin_port, udpfd);
+		switch (from.addr_family)
+		{
+			case AF_INET:
+				syslog(LOG_ERR, "bind udp.%d fd %d : %m",
+					from.in.sin_port, udpfd);
+				break;
+			case AF_INET6:
+				syslog(LOG_ERR, "bind udp.%d fd %d : %m",
+					from.in6.sin6_port, udpfd);
+				break;
+		}
 #endif
 #ifndef _WIN32
 		Debug((DEBUG_ERROR, "bind : %s", strerror(errno)));
@@ -2388,7 +2503,7 @@ int	setup_ping()
 static	void	polludp()
 {
 	char	*s;
-	struct	sockaddr_in	from;
+	anAddress	from;
 	int	n, fromlen = sizeof(from);
 	static	time_t	last = 0, now;
 	static	int	cnt = 0, mlen = 0;
@@ -2462,7 +2577,7 @@ int	id;
 	static	Link	ln;
 	aClient	*cptr;
 	aConfItem	*aconf;
-	struct	hostent	*hp;
+	struct	HostEnt	*hp;
 
 	ln.flags = -1;
 #ifndef _WIN32
@@ -2499,8 +2614,8 @@ int	id;
 		aconf = ln.value.aconf;
 		if (hp && aconf)
 		{
-		    bcopy(hp->h_addr, (char *)&aconf->ipnum,
-			  sizeof(struct in_addr));
+		    bcopy(hp->h_addr, (char *)&aconf->addr,
+			  sizeof(anAddress));
 		    (void)connect_server(aconf, NULL, hp);
 		}
 		else
@@ -2511,8 +2626,8 @@ int	id;
 	      case ASYNC_CONF :
 		aconf = ln.value.aconf;
 		if (hp && aconf)
-		  bcopy(hp->h_addr, (char *)&aconf->ipnum,
-			sizeof(struct in_addr));
+		  bcopy(hp->h_addr, (char *)&aconf->addr,
+			sizeof(anAddress));
 		break;
 
 	      case ASYNC_SERVER :

@@ -30,12 +30,15 @@ extern	aChannel *channel;
 extern	struct	stats	*ircstp;
 extern	int	bootopt;
 /* Prototype added to force errors -- Barubary */
-extern	time_t	check_pings(time_t now, int check_kills);
+extern	time_t	check_pings(time_t now, int check_kills, aConfItem *conf_target);
 #ifdef _WIN32
 extern	void	*hCio;
 #endif
 
 extern int expr_match (const char *pattern, const char *text);
+
+extern void dup_sup_version(anUser* user, const char* text);
+extern void free_sup_version(char* text);
 
 extern	aChannel *find_channel PROTO((char *, aChannel *));
 extern	void	remove_user_from_channel PROTO((aClient *, aChannel *));
@@ -62,7 +65,7 @@ extern	int	conf_xbits(aConfItem *aconf, char *field);
 extern	int	attach_conf PROTO((aClient *, aConfItem *));
 extern	aConfItem *attach_confs PROTO((aClient*, char *, int));
 extern	aConfItem *attach_confs_host PROTO((aClient*, char *, int));
-extern	int	attach_Iline PROTO((aClient *, struct hostent *, char *));
+extern	int	attach_Iline PROTO((aClient *, struct HostEnt *, char *));
 extern	aConfItem *conf, *find_me PROTO(()), *find_admin PROTO(());
 extern	aConfItem *count_cnlines PROTO((Link *));
 extern	void	det_confs_butmask PROTO((aClient *, int));
@@ -73,16 +76,17 @@ extern	aConfItem *find_conf_exact PROTO((char *, char *, char *, int));
 extern	aConfItem *find_conf_host PROTO((Link *, char *, int));
 extern  aConfItem *find_socksline_host(char *host);
 extern	aConfItem *find_iline_host PROTO((char *));
-extern	aConfItem *find_conf_ip PROTO((Link *, char *, char *, int));
+extern	aConfItem *find_conf_ip PROTO((Link *, anAddress *, char *, int));
 extern	aConfItem *find_conf_name PROTO((char *, int));
 extern  aConfItem *find_temp_conf_entry PROTO((aConfItem *, u_int));
 extern  aConfItem *find_conf_servern PROTO((char *));
-extern	int	find_kill PROTO((aClient *));
+extern	int	find_kill(aClient *, aConfItem*);
+extern  char    *find_sup_zap PROTO((aClient *, int));
 extern	char	*find_zap PROTO((aClient *, int));
 extern	int	find_restrict PROTO((aClient *));
 extern	int	rehash PROTO((aClient *, aClient *, int));
 extern	int	initconf PROTO((int));
-extern	void	add_temp_conf();
+extern	aConfItem *add_temp_conf(unsigned int status, char *host, char *passwd, char *name, int port, int class, int temp);
 
 extern	char	*MyMalloc PROTO((int)), *MyRealloc PROTO((char *, int));
 extern	char	*debugmode, *configfile, *sbrk0;
@@ -91,7 +95,8 @@ extern	void	get_sockhost PROTO((aClient *, char *));
 extern	char	*rpl_str PROTO((int)), *err_str PROTO((int));
 extern	char	*strerror PROTO((int));
 extern	int	dgets PROTO((int, char *, int));
-extern	char	*inetntoa PROTO((char *));
+extern	char	*inetntoa PROTO((anAddress *));
+extern	int	addr_cmp PROTO((anAddress *, anAddress *));
 
 #ifdef _WIN32
 extern	int	dbufalloc, dbufblocks, debuglevel;
@@ -104,12 +109,12 @@ extern	aClient	*add_connection PROTO((aClient *, int));
 extern	int	add_listener PROTO((aConfItem *));
 extern	void	add_local_domain PROTO((char *, int));
 extern	int	check_client PROTO((aClient *));
-extern	int	check_server PROTO((aClient *, struct hostent *, \
+extern	int	check_server PROTO((aClient *, struct HostEnt *, \
 				    aConfItem *, aConfItem *, int));
 extern	int	check_server_init PROTO((aClient *));
 extern	void	close_connection PROTO((aClient *));
 extern	void	close_listeners PROTO(());
-extern	int connect_server PROTO((aConfItem *, aClient *, struct hostent *));
+extern	int connect_server PROTO((aConfItem *, aClient *, struct HostEnt *));
 extern	void	get_my_name PROTO((aClient *, char *, int));
 extern	int	get_sockerr PROTO((aClient *));
 extern	int	inetport PROTO((aClient *, char *, int));
@@ -237,11 +242,11 @@ extern	int	get_conf_class PROTO((aConfItem *));
 extern	void	report_classes PROTO((aClient *));
 
 #ifndef _WIN32
-extern	struct	hostent	*get_res PROTO((char *));
+extern	struct	HostEnt	*get_res PROTO((char *));
 #endif
 
-extern	struct	hostent	*gethost_byaddr PROTO((char *, Link *));
-extern	struct	hostent	*gethost_byname PROTO((char *, Link *));
+extern	struct	HostEnt	*gethost_byaddr PROTO((anAddress *, Link *));
+extern	struct	HostEnt	*gethost_byname PROTO((char *, int, Link *));
 extern	void	flush_cache PROTO(());
 extern	int	init_resolver PROTO((int));
 extern	time_t	timeout_query_list PROTO((time_t));

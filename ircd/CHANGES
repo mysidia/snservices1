@@ -1,3 +1,23 @@
+Wed Jul 16 13:39:51 CDT 2003  sor1.3.5 - Mysidia
+ * Ipv6 improved masking support
+ * Ipv6 patch [Onno]
+ * REQ_VERSION_RESPONSE now separate from NO_VERSION_CHECK
+ * Show version reply in whois [Onno]
+ * Bugfix [channel.c] rule-based bans, ban list could prevously be truncated 
+   during net.merge; this change allows spaces in bans to work properly
+ * Don't allow \033, \037, \026, \017, \b, \t, \003, \002, \001, or \240
+   in channel names
+ * New ircd configuration line: W-line, enhanced K-line for banning by information 
+   supplied in the User line, usage:
+       W:[host]:[reason]:[nickname]:[username]:[sup user]:[sup server]:[real name]
+           ^        ^      ^           ^         ^           ^           ^
+          host   passwd   name       string4     string5     string6    string7
+
+   For example:
+       W::Blah blah:::::Forbidden Realname
+       
+ * Changes to the akill command to reduce CPU usage [Skandranon]
+
 Sat Mar 15 17:53:03 PST 2003 - Mysidia - sor1.3.4_2
 	* Reduced false positives in version check, for ircle
 	  and clients that don't like CTCP before completion

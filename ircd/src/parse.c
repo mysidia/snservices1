@@ -494,14 +494,30 @@ struct	Message *mptr;
 				    mptr->func != m_heal && mptr->func != m_userhost)*/
 			if (IsPerson(from) && MyConnect(from))
 			{
-#if defined(NOSPOOF) && !defined(NO_VERSION_CHECK)
+#if defined(NOSPOOF) && defined(REQ_VERSION_RESPONSE)
 			        if (MyClient(from) && !IsUserVersionKnown(from)
+					&& IsHurt(from)
+					&& !IsAnOper(from)
 					&& mptr->func != m_notice && mptr->func != m_mode 
                                         && mptr->func != m_mode  && mptr->func != m_ison
 					&& mptr->func != m_join
+					&& mptr->func != m_private
+					&& mptr->func != m_who
                                         && (mptr->while_hurt < 1 ||
-					mptr->while_hurt > 1)) {
-	        			        return FailClientCheck(from);
+					mptr->while_hurt > 2)) {
+
+					{
+					   sendto_one(from, ":%s NOTICE %s :Sorry, but your IRC software "
+                                                      "program has not yet reported its version. "
+                                                      "Your request (%s) was not "
+                                                      "processed.",
+                                                       me.name, from->name, 
+                                                       mptr->cmd);
+					   from->since += 3;
+
+					   return 0;
+						
+					}
         			}
 #endif
 
@@ -510,7 +526,8 @@ struct	Message *mptr;
 				{
 					if (!IsHurt(from))
 					   from->hurt = 0;
-					if (IsHurt(from) && from->hurt)
+					if (IsHurt(from) && from->hurt
+					    && from->hurt != 4)
 					{
 						if ((NOW < from->hurt || (from->hurt>0 && from->hurt<5)) &&
                                                     (from->hurt != 3 || !IsOper(from)))
@@ -674,6 +691,16 @@ char	*newline;
 		return(NULL);
 
 	field = line;
+	if (*line == '<')
+	{
+		if ((line = (char *)index(line,'>')) == NULL)
+			line = field;
+		else
+		{
+			field++;
+			*line++ = '\0';
+		}
+	}
 	if ((end = (char *)index(line,':')) == NULL)
 	    {
 		line = NULL;

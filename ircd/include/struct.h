@@ -50,6 +50,7 @@
 #include <sys/time.h>
 #endif
 
+typedef	union	Address	anAddress;
 typedef	struct	ConfItem aConfItem;
 typedef	struct 	Client	aClient;
 typedef	struct	Socks	aSocks;
@@ -555,13 +556,40 @@ typedef struct help_struct {
 #define	CURSES_TERM	1
 #define	TERMCAP_TERM	2
 
+/*
+ * Don't use sockaddr_storage: it's too big. --Onno
+ */
+union Address
+{
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+	u_char  addr_dummy[2];
+#define addr_family addr_dummy[1]
+#else
+	unsigned short int	addr_family;
+#endif
+	struct sockaddr_in	in;
+	struct sockaddr_in6	in6;
+};
+
+struct HostEnt
+{
+  char *h_name;                 /* Official name of host.  */
+  char **h_aliases;             /* Alias list.  */
+  anAddress **h_addr_list;      /* List of addresses from name server. */
+#define h_addr  h_addr_list[0]  /* Address, for backward compatibility.  */
+};
+
 struct	ConfItem	{
 	unsigned int	status;	/* If CONF_ILLEGAL, delete when no clients */
 	int	clients;	/* Number of *LOCAL* clients using this */
-	struct	in_addr ipnum;	/* ip number of host field */
+	anAddress	addr;	/* network address of host */
 	char	*host;
 	char	*passwd;
 	char	*name;
+	char    *string4;
+	char    *string5;
+	char	*string6;
+	char	*string7;
 	int	port;
 	time_t	hold;	/* Hold action until this time (calendar time) */
 	int	tmpconf, bits;
@@ -601,8 +629,9 @@ struct	ConfItem	{
 #define CONF_CRULEAUTO          0x400000
 #define CONF_MISSING		0x800000
 #define CONF_AHURT		0x1000000
+#define CONF_SUP_ZAP		0x2000000
 
-#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT)
+#define CONF_SHOWPASS		(CONF_KILL | CONF_ZAP | CONF_QUARANTINE | CONF_AHURT | CONF_SUP_ZAP)
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER)
 #define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_SERVICE | CONF_OPS | CONF_SERVER_MASK )
@@ -612,6 +641,20 @@ struct	ConfItem	{
 #define	IsIllegal(x)	((x)->status & CONF_ILLEGAL)
 #define	IsCNLine(x)	((x)->status & CONF_SERVER_MASK)
 #define IsTemp(x)	((x)->tmpconf)
+
+#define GetUserSupVersion(x)	((x)->sup_version)
+
+struct  StringHash
+{
+	struct StringHashElement* ptr;
+};
+
+struct	StringHashElement {
+	char* str;
+	int   refct;
+
+	struct StringHashElement* next;
+};
 
 /*
  * Client structures
@@ -629,6 +672,9 @@ struct	User	{
 	char	username[USERLEN+1];
 	char	host[HOSTLEN+1];
         char	server[HOSTLEN+1];
+#if !defined(NO_VERSION_CHECK) 
+        char    *sup_version;
+#endif
 #ifdef  KEEP_HURTBY
 	char    *hurtby;
 #endif
@@ -660,7 +706,7 @@ struct Socks {
 	int fd;
 	int status;
 	time_t start;
-	struct in_addr in_addr;
+	anAddress addr;
 	struct Socks *next;
 };
 
@@ -670,7 +716,7 @@ struct Client	{
 	aServer	*serv;		/* ...defined, if this is a server */
 	aSocks  *socks;		/* socks check data */
 	int	hashv;		/* raw hash value */
-	time_t  hurt;           /* hurt til... */  
+	time_t  hurt;           /* hurt til... */
 	time_t	lasttime;	/* ...should be only LOCAL clients? --msa */
 	time_t	firsttime;	/* time client was created */
 	time_t	since;		/* last time we parsed something */
@@ -712,9 +758,9 @@ struct Client	{
 	Link	*confs;		/* Configuration record associated */
 	Link	*watch;		/* User's watch list */
 	int	authfd;		/* fd for rfc931 authentication */
-	struct	in_addr	ip;	/* keep real ip# too */
+	anAddress	addr;	/* keep real ip# too */
 	u_short	port;	/* and the remote port# too :-) */
-	struct	hostent	*hostp;
+	struct	HostEnt	*hostp;
 	LOpts   *lopt;
 #ifdef	pyr
 	struct	timeval	lw;

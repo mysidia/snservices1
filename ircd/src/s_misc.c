@@ -212,7 +212,7 @@ char	*get_client_name(aClient *sptr, int showip)
 	  sprintf(nbuf, "%s[%s@%s.%u]",
 		  sptr->name,
 		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
-		  inetntoa((char *)&sptr->ip), (unsigned int)sptr->port);
+		  inetntoa(&sptr->addr), (unsigned int)sptr->port);
       } 
       else
       {
@@ -239,8 +239,8 @@ char	*get_client_name_mask(aClient *sptr, int showip, int showport, int mask)
 	  sprintf(nbuf, "%s[%s@%s.%u]",
 		  sptr->name,
 		  (ClientFlags(sptr) & FLAGS_GOTID) ? sptr->username : "",
-		  mask ? genHostMask(inetntoa((char *)&sptr->ip)) : inetntoa((char *)&sptr->ip), showport ? (unsigned int)sptr->port : (unsigned int)0);
-      } 
+		  mask ? genHostMask(inetntoa(&sptr->addr)) : inetntoa(&sptr->addr), showport ? (unsigned int)sptr->port : (unsigned int)0);
+      }
       else
       {
 	  if (mycmp(sptr->name, sptr->sockhost))
