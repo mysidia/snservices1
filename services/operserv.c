@@ -502,7 +502,7 @@ OCMD(os_akill)
 		char nick[MAXBUF], user[MAXBUF], host[MAXBUF];
 		if (t > (10800 * 1) || !t)
 			t = 10800;
-		sscanf(args[2], "%s!%s@%s", nick, user, host);
+		sscanf(args[2], "%[^ !]!%[^ @]@%s", nick, user, host);
 
 		if (strlen(args[2]) > 255 || strlen(nick) > 2*NICKLEN ||
                      strlen(user) > 2*USERLEN || strlen(host) > 2*HOSTLEN
