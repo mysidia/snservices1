@@ -676,6 +676,9 @@ OCMD(os_mode)
 			  OperServ, from);
 		return RET_SYNTAX;
 	}
+
+	on = 1;
+	onarg = 3;
 	
 	for (i = 0; args[2][i]; i++) {
 		switch (args[2][i]) {
