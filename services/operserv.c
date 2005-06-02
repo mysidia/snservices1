@@ -645,6 +645,38 @@ OCMD(os_mode)
 		return RET_EFAULT;
 	}
 
+	for (i = 0; args[2][i]; i++)
+	{
+		switch (args[2][i])
+		{
+			case '+':
+				on = 1;
+				break;
+			case '-':
+				on = 0;
+				break;
+			case 'b':
+			case 'o':
+			case 'v':
+				onarg++;
+				break;
+			case 'l':
+			case 'k':
+				if (on)
+				{
+					onarg++;
+				}
+				break;
+		}
+	}
+
+	if (onarg != numargs)
+	{
+		sSend(":%s NOTICE %s :Wrong number of parameters.",
+			  OperServ, from);
+		return RET_SYNTAX;
+	}
+	
 	for (i = 0; args[2][i]; i++) {
 		switch (args[2][i]) {
 		case '+':
@@ -678,16 +710,26 @@ OCMD(os_mode)
 
 		case 'l':
 			SETCLR(tmp->modes, PM_L, on);
-			if ((on == 0) && tmp->reg)
+			if (on)
+			{
+				onarg++;
+			}
+			else if (tmp->reg)
+			{
 				tmp->reg->limit = 0;
-			onarg++;
+			}
 			break;
 
 		case 'k':
 			SETCLR(tmp->modes, PM_K, on);
-			if ((on == 0) && tmp->reg)
+			if (on)
+			{
+				onarg++;
+			}
+			else if (tmp->reg)
+			{
 				tmp->reg->key[0] = 0;
-			onarg++;
+			}
 			break;
 
 		case 'm':
