@@ -34,7 +34,6 @@
 #include "common.h"
 #include "sys.h"
 #include "numeric.h"
-#include "userload.h"
 #include "h.h"
 
 #include <ctype.h>
@@ -461,7 +460,6 @@ main(int argc, char **argv)
 	tolog(LOG_IRCD, "Setting up signals...");
 	setup_signals();
 	tolog(LOG_IRCD, "done");
-	initload();
 
 #ifdef FORCE_CORE
         tolog(LOG_IRCD, "Removing corefile size limits...");

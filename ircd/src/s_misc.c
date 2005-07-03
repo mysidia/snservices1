@@ -26,7 +26,6 @@
 #include "common.h"
 #include "sys.h"
 #include "numeric.h"
-#include "userload.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -347,16 +346,11 @@ int	exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
                 if (IsPerson(sptr))
                  sendto_umode(FLAGSET_CLIENT,"*** Notice -- Client exiting: %s (%s@%s) [%s]", 
                   sptr->name, sptr->user->username, sptr->user->host, comment);
-		current_load_data.conn_count--;
 		if (IsPerson(sptr)) {
 		  char mydom_mask[HOSTLEN + 1];
 		  mydom_mask[0] = '*';
 		  strncpy(&mydom_mask[1], DOMAINNAME, HOSTLEN - 1);
-		  current_load_data.client_count--;
-		  if (match(mydom_mask, sptr->sockhost) == 0)
-		    current_load_data.local_count--;
 		}
-		update_load();
 		on_for = NOW - sptr->firsttime;
 		if (IsPerson(sptr)) {
                         /* poof goes their watchlist! */

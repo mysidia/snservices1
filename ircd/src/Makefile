@@ -24,7 +24,7 @@ LINTFLAGS=-hba
 OBJS=bsd.o dbuf.o packet.o send.o match.o parse.o support.o channel.o \
 	class.o hash.o ircd.o list.o res.o s_bsd.o s_conf.o \
 	s_debug.o s_err.o s_misc.o s_numeric.o s_serv.o s_user.o s_service.o \
-	whowas.o userload.o crule.o md5.o help.o version.o \
+	whowas.o crule.o md5.o help.o version.o \
 	snprintf.o memory.o string.o $(RES) $(STRTOUL) $(GETADDRINFO)
 
 SRC=$(OBJS:%.o=%.c)
@@ -81,8 +81,6 @@ match.o: match.c $(INCLUDES)
 	$(CC) $(XCFLAGS) $(CFLAGS) -o match.o -c match.c
 support.o: support.c $(INCLUDES)
 	$(CC) $(XCFLAGS) $(CFLAGS) -o support.o -c support.c
-userload.o: userload.c $(INCLUDES)
-	$(CC) $(XCFLAGS) $(CFLAGS) -o userload.o -c userload.c
 help.o: help.c $(INCLUDES)
 
 #install: all

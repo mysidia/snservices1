@@ -23,7 +23,6 @@
 #include "numeric.h"
 #include "msg.h"
 #include "channel.h"
-#include "userload.h"
 #include <sys/stat.h>
 #include "h.h"
 

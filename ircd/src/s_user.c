@@ -31,7 +31,6 @@
 #include "numeric.h"
 #include "msg.h"
 #include "channel.h"
-#include "userload.h"
 #include "h.h"
 
 #include "ircd/match.h"
@@ -558,11 +557,9 @@ int register_user(aClient *cptr, aClient *sptr, char *nick, char *username)
 		     me.name, version);
 	  sendto_one(sptr, rpl_str(RPL_PROTOCTL), me.name, parv[0]);
 
-	  (void)m_lusers(sptr, sptr, 1, parv);
-	  update_load();
-	  (void)m_motd(sptr, sptr, 1, parv);
+	  m_lusers(sptr, sptr, 1, parv);
+	  m_motd(sptr, sptr, 1, parv);
 	} else { 
-		update_load();
 		sendto_one(sptr, rpl_str(RPL_WELCOME), me.name, nick, nick);
 	}
 #ifdef HOSTILENAME

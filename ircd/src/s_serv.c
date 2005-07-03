@@ -27,7 +27,6 @@
 #include "numeric.h"
 #include "msg.h"
 #include "channel.h"
-#include "userload.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "h.h"
@@ -577,9 +576,6 @@ m_server_estab(aClient *cptr)
 
 	inpath = get_client_name(cptr,TRUE); /* "refresh" inpath with host */
 	host = cptr->name;
-
-	current_load_data.conn_count++;
-	update_load();
 
 	/* Look for the N:line, dump the connection if it's not there */
 	if (!(aconf = find_conf(cptr->confs, host, CONF_NOCONNECT_SERVER)))
@@ -1283,9 +1279,6 @@ m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 			   max_connection_count, max_client_count);
 		break;
 	    }
-        case 'W' : case 'w' :
-                calc_load(sptr, parv[0]);
-                break;
 	case 'X' : case 'x' :
 		report_configured_links(sptr, CONF_MISSING);
 		break;
@@ -1567,9 +1560,6 @@ int	 m_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
             sendto_ops("Maximum connections: %d (%d clients)",
                      max_connection_count, max_client_count);
         }
-        current_load_data.local_count = m_client_local;
-        current_load_data.client_count = m_client;
-        current_load_data.conn_count = m_client + m_server;
 	return 0;
     }
 
