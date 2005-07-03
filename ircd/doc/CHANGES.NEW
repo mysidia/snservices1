@@ -11,6 +11,11 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+CHANGED BEHAVIOUR IN ircd-sor1.3.8
+*********************************************************************
+
+ * Changed masking on 64-bit architectures to match it on 32-bit ones.
+
 CHANGED BEHAVIOUR IN ircd-sor1.3.7
 *********************************************************************
 
@@ -24,42 +29,3 @@ Modes:
 Others:
  * Give clients some extra information again when the connection is closed
    because nospoof/version check times out.
-
-
-CHANGED BEHAVIOUR IN ircd-sor1.3.6
-*********************************************************************
-
- * Status messages now go to ircd.log instead of stderr.
-
-CHANGED BEHAVIOUR IN ircd-sor1.3.5
-*********************************************************************
-
-Configuration:
- * New ircd configuration line: W-line, enhanced K-line for banning by
-   information supplied in the USER line, usage:
-
-   W:[host]:[reason]:[nickname]:[username]:[sup user]:[sup server]:[real name]
-        ^       ^        ^          ^          ^           ^           ^
-      host   passwd     name     string4     string5     string6    string7
-
-   For example:
-       W::Blah blah:::::Forbidden Realname
-
-Networking:
- * IPv6 support
- * NXDOMAIN DNS replies are now handled correctly. (no longer wait for timeout)
-
-Modes:
- * +o users are allowed to send commands at full speed.
- * +g/+s are restricted to opers.
- * New +r/+R and +v/+V usermodes, new /whois entry.
- * New ban types RR and RV. (require registered, require validated)
-
-Others:
- * Back to version check of 1.3.4_1, with option to not reject clients without
-   reply. (define REQ_VERSION_RESPONSE to reject clients without version reply,
-   or NO_VERSION_CHECK to skip the whole check)
- * Supplied client version is shown in whois reply.
- * Don't allow \033, \037, \026, \017, \b, \t, \003, \002, \001, or \240
-   in channel names anymore.
- * Default NS_URL has changed because of the new website.
