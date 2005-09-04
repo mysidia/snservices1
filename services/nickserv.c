@@ -766,7 +766,7 @@ void setMode(char *nick, char *mode)
 	mode++;						/* We don't need to bother with the : */
 
 	for (i = 0; mode[i] != 0; i++) {
-		switch (tolower(mode[i])) {
+		switch (mode[i]) {
 		case '-':
 			c = 0;
 			break;
@@ -814,6 +814,8 @@ void setMode(char *nick, char *mode)
 				changeme->oflags &= ~NISOPER;
 			break;
 		}
+
+		default: ;
 	}
 
 	mode--;
