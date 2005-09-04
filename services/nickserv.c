@@ -813,9 +813,8 @@ void setMode(char *nick, char *mode)
 			} else
 				changeme->oflags &= ~NISOPER;
 			break;
-		}
-
 		default: ;
+		}
 	}
 
 	mode--;
