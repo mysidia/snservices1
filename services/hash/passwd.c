@@ -39,6 +39,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/types.h>
 #include "md5.h"
 #include "md5pw.h"
 
