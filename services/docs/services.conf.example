@@ -66,6 +66,19 @@ IU:sorcerer
 IH:sorcery.net
 IR:Information Services
 IM:
+### GameServ ###
+GN:GameServ
+GU:sorcerer
+GH:sorcery.net
+GR:Game Services
+GM:+oi
+## SpamServ
+#AN:SpamServ
+#AU:service
+#AH:sorcery.net
+#AR:SpamServ
+#AM:+sgw
+
 
 ##############################################################################
 # Services Root:
