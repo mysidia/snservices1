@@ -556,7 +556,21 @@ Example:
                 IU:sorcerer
                 IH:sorcery.net
                 IR:Information Services
-                IM:
+		IM:
+
+		### GameServ ###
+		GN:GameServ
+		GU:sorcerer
+		GH:sorcery.net
+		GR:Game Services
+		GM:+oi
+
+		## SpamServ
+		AN:SpamServ
+		AU:service
+		AH:test.sorcery.net
+		AR:SpamServ
+		AM:+sgw		
 </programlisting>
 			</para></listitem>
 		</itemizedlist>
