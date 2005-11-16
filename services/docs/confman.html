@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Mandatory configuration directives</title><meta name="generator" content="DocBook XSL Stylesheets V1.61.3"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="config.html" title="Chapter 3. Configuring Services"><link rel="previous" href="config.html" title="Chapter 3. Configuring Services"><link rel="next" href="confrec.html" title="Recommended Directives"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Mandatory configuration directives</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="config.html">Prev</a> </td><th width="60%" align="center">Chapter 3. Configuring Services</th><td width="20%" align="right"> <a accesskey="n" href="confrec.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="confman"></a>Mandatory configuration directives</h2></div></div><div></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Mandatory configuration directives</title><meta name="generator" content="DocBook XSL Stylesheets V1.65.1"><link rel="home" href="index.html" title="Services installation and operation manual"><link rel="up" href="config.html" title="Chapter 3. Configuring Services"><link rel="previous" href="config.html" title="Chapter 3. Configuring Services"><link rel="next" href="confrec.html" title="Recommended Directives"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Mandatory configuration directives</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="config.html">Prev</a> </td><th width="60%" align="center">Chapter 3. Configuring Services</th><td width="20%" align="right"> <a accesskey="n" href="confrec.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="confman"></a>Mandatory configuration directives</h2></div></div><div></div></div><p>
 				This first set of directives are essnetial
 				because any valid services.conf must have
 				at least one of each for services to fully
@@ -81,6 +81,20 @@ Example:
                 IU:sorcerer
                 IH:sorcery.net
                 IR:Information Services
-                IM:
+		IM:
+
+		### GameServ ###
+		GN:GameServ
+		GU:sorcerer
+		GH:sorcery.net
+		GR:Game Services
+		GM:+oi
+
+		## SpamServ
+		AN:SpamServ
+		AU:service
+		AH:test.sorcery.net
+		AR:SpamServ
+		AM:+sgw		
 </pre><p>
 			</p></li></ul></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="config.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="config.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="confrec.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 3. Configuring Services </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Recommended Directives</td></tr></table></div></body></html>
