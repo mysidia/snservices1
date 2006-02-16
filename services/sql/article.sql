@@ -1,9 +1,11 @@
+CREATE SEQUENCE article_id_seq;
+
 CREATE TABLE articles (
-	id		int4 auto_increment PRIMARY KEY,
+	id		nextval('article_id_seq'),
 	poster		varchar(80),
 	header		varchar(80),
 	body		TEXT,
-	sent_at		DATETIME,
-	importance	int4,
-	INDEX(sent_at)
+	sent_at		ABSTIME UNIQUE,
+	importance	integer,
+	PRIMARY KEY(id)
 );

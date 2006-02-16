@@ -1,18 +1,18 @@
+CREATE SEQUENCE akill_id_seq;
+
 CREATE TABLE akills (
-	id		int4 NOT NULL auto_increment PRIMARY KEY,
-	active		BOOL NOT NULL default '1',
+	akill_id	integer DEFAULT nextval('akill_id_seq'),
+	active		boolean NOT NULL DEFAULT 't',
 	nick		VARCHAR(80)  NOT NULL default '',
-	user		VARCHAR(40) NOT NULL default '',
+	user		VARCHAR(40)  NOT NULL default '',
 	host		VARCHAR(255) NOT NULL default '',
-	type		ak_type	ENUM(
-				'autokill', 'autohurt', 'ignore', 'zline'
-			),
-
+	type		VARCHAR(15),
 	added_by	VARCHAR(80) NOT NULL default '',
-	duration	int4,
-	add_time	DATETIME NOT NULL,
-	expire_time	DATETIME,
+	duration	integer,
+	add_time	ABSTIME NOT NULL,
+	expire_time	ABSTIME,
 	reason		VARCHAR(255),
+	timer_id        INTEGER,
 
-	INDEX(active, type)
+        PRIMARY KEY(akill_id)
 );
