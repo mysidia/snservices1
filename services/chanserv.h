@@ -93,6 +93,7 @@
 #define CENCRYPT	0x00002000	///< Channel password encrypted
 #define CGAMESERV	0x00004000	///< Enable GameServ
 #define CAKICKREASONS   0x00008000      ///< Use akick reasons
+#define CVOICEALL       0x00010000      ///< Voice all users on entry
 
 /************************************************************************/
 
